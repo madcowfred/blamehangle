@@ -12,14 +12,13 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-MONEY_CONVERT = 'MONEY_CONVERT'
 MONEY_CURRENCY = 'MONEY_CURRENCY'
+MONEY_EXCHANGE = 'MONEY_EXCHANGE'
 
-CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
+EXCHANGE_RE = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 
 EXCHANGE_URL = 'http://finance.yahoo.com/m5?a=%(amt)s&s=%(from)s&t=%(to)s&c=0'
-
 
 # ---------------------------------------------------------------------------
 
@@ -54,41 +53,41 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		conv_dir = PluginTextEvent(MONEY_CONVERT, IRCT_PUBLIC_D, CONVERT_RE)
-		conv_msg = PluginTextEvent(MONEY_CONVERT, IRCT_MSG, CONVERT_RE)
 		curr_dir = PluginTextEvent(MONEY_CURRENCY, IRCT_PUBLIC_D, CURRENCY_RE)
 		curr_msg = PluginTextEvent(MONEY_CURRENCY, IRCT_MSG, CURRENCY_RE)
+		conv_dir = PluginTextEvent(MONEY_EXCHANGE, IRCT_PUBLIC_D, EXCHANGE_RE)
+		conv_msg = PluginTextEvent(MONEY_EXCHANGE, IRCT_MSG, EXCHANGE_RE)
 		
 		self.register(conv_dir, conv_msg, curr_dir, curr_msg)
 		self.__set_help_msgs()
 	
 	def __set_help_msgs(self):
-		MONEY_CONVERT_HELP = "'\02convert\02 <amount> <currency 1> \02to\02 <currency 2>' : Convert currency using current exchange rates. Currencies are specified using their three letter code"
 		MONEY_CURRENCY_HELP = "'\02currency\02 <code OR partial name>' : Look up the currency code and name, given the specified information"
+		MONEY_EXCHANGE_HELP = "'\02exchange\02 <amount> <currency 1> \02to\02 <currency 2>' : Convert currency using current exchange rates. Currencies are specified using their three letter code."
 		
-		self.setHelp('money', 'convert', MONEY_CONVERT_HELP)
 		self.setHelp('money', 'currency', MONEY_CURRENCY_HELP)
+		self.setHelp('money', 'exchange', MONEY_EXCHANGE_HELP)
 	
 	# -----------------------------------------------------------------------
 
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		
-		# Someone wants to do a money conversion
-		if trigger.name == MONEY_CONVERT:
-			self.__Currency_Convert(trigger)
-		
 		# Someone wants to look for a currency
 		elif trigger.name == MONEY_CURRENCY:
 			self.__Currency_Search(trigger)
+		
+		# Someone wants to do a money conversion
+		if trigger.name == MONEY_EXCHANGE:
+			self.__Currency_Exchange(trigger)
 	
 	def _message_REPLY_URL(self, message):
 		(trigger, data), page_text = message.data
 		page_text = page_text.replace('&amp;', ' and ')
 		
-		if trigger.name == MONEY_CONVERT:
+		if trigger.name == MONEY_EXCHANGE:
 			parser = YahooParser()
-
+			
 			try:
 				parser.feed(page_text)
 				parser.close()
@@ -112,7 +111,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Currency_Convert(self, trigger):
+	def __Currency_Exchange(self, trigger):
 		data = {}
 		data['amt'] = '%.2f' % float(trigger.match.group('amt'))
 		data['from'] = trigger.match.group('from').upper()
