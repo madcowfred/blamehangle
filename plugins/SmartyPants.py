@@ -204,8 +204,9 @@ class SmartyPants(Plugin):
 		elif trigger.name == FACT_SET:
 			name = trigger.match.group('name')
 			if len(name) > MAX_FACT_NAME_LENGTH:
-				replytext = "factoid name is too long"
-				self.sendReply(trigger, replytext)
+				if not trigger.event.name == IRCT_PUBLIC:
+					replytext = "factoid name is too long"
+					self.sendReply(trigger, replytext)
 			else:
 				query = (GET_QUERY, name)
 				self.dbQuery(trigger, query)
