@@ -138,9 +138,9 @@ def URLThread(parent, myindex):
 		#request.add_header("If-Modified-Since", format_http_date(modified))
 		#request.add_header("Accept-encoding", "gzip")
 		
-		the_page = urllib2.urlopen(request)
-		
 		try:
+			the_page = urllib2.urlopen(request)
+			
 			while 1:
 				try:
 					can_read = _select([the_page], [], [], 1)[0]
