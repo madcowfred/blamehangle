@@ -164,6 +164,8 @@ class News(Plugin):
 	def __Setup_RSS_Feeds(self):
 		self.RSS_Feeds = {}
 		
+		currtime = time.time()
+		
 		for section in self.Config.sections():
 			if not section.startswith('RSS.'):
 				continue
@@ -186,6 +188,7 @@ class News(Plugin):
 				feed['interval'] = self.Config.getint(section, 'interval') * 60
 			else:
 				feed['interval'] = self.__rss_default_interval
+			feed['checked'] = currtime
 			
 			self.__Setup_RSS_Target(section, feed)
 			
@@ -223,19 +226,21 @@ class News(Plugin):
 		# RSS feed commands
 		self.setTextEvent(RSS_LIST, RSS_LIST_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(RSS_SHOW, RSS_SHOW_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		# RSS feeds
-		feednames = self.RSS_Feeds.keys()
-		if feednames:
-			feednames.sort()
-			# Add a timed event for each feed
-			for name in feednames:
-				feed = self.RSS_Feeds[name]
-				self.setTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
-				
-				tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
-				self.putlog(LOG_DEBUG, tolog)
-			
-			tolog = "Registered %d RSS feeds" % len(feednames)
+		# RSS feeds should be tried every 10 seconds
+		if self.RSS_Feeds:
+			self.setTimedEvent(NEWS_RSS, 10, None)
+		#feednames = self.RSS_Feeds.keys()
+		#if feednames:
+		#	feednames.sort()
+		#	# Add a timed event for each feed
+		#	for name in feednames:
+		#		feed = self.RSS_Feeds[name]
+		#		self.setTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
+		#		
+		#		tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
+		#		self.putlog(LOG_DEBUG, tolog)
+		#	
+			tolog = "Registered %d RSS feeds" % len(self.RSS_Feeds)
 			self.putlog(LOG_ALWAYS, tolog)
 		
 		# Timed event for cleaning up the database once an hour
@@ -345,10 +350,22 @@ class News(Plugin):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
 	
 	def _trigger_NEWS_RSS(self, trigger):
-		name = trigger.args[0]
-		if name in self.RSS_Feeds:
-			feed = self.RSS_Feeds[name]
-			self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
+		# see if any feeds should be triggering around about now
+		currtime = time.time()
+		for name, feed in self.RSS_Feeds.items():
+			if currtime - feed['checked'] < feed['interval']:
+				continue
+			
+			feed['checked'] = currtime
+			
+			# Build a fake timed event trigger
+			new_trigger = PluginTimedEvent(NEWS_RSS, 1, feed['targets'], name)
+			self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
+		
+		#name = trigger.args[0]
+		#if name in self.RSS_Feeds:
+		#	feed = self.RSS_Feeds[name]
+		#	self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
@@ -363,6 +380,7 @@ class News(Plugin):
 		
 		# See if any of them will match
 		articles = []
+		currtime = int(time.time())
 		
 		for chunk in chunks:
 			# Look for the URL and story title
@@ -384,7 +402,7 @@ class News(Plugin):
 			else:
 				description = m.group(1).strip()
 			
-			data = [title, url, description, time.time()]
+			data = [title, url, description, currtime]
 			articles.append(data)
 		
 		# Go for it!
@@ -403,6 +421,7 @@ class News(Plugin):
 		
 		# See if any of them have articles
 		articles = []
+		currtime = int(time.time())
 		
 		for table in tables:
 			if table.find('<a class=y') >= 0:
@@ -424,7 +443,7 @@ class News(Plugin):
 				else:
 					description = m.group(1).strip()
 				
-				data = [title, url, description, time.time()]
+				data = [title, url, description, currtime]
 				articles.append(data)
 		
 		# Go for it!
@@ -444,7 +463,7 @@ class News(Plugin):
 			r.feed(page_text)
 		
 		except SGMLParseError, msg:
-			tolog = "Error parsing feed '%s': %s" % (feed, msg)
+			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
@@ -456,6 +475,7 @@ class News(Plugin):
 		
 		# Get any articles out of the feed
 		articles = []
+		currtime = int(time.time())
 		
 		for item in r.items[:feed['maximum_new']]:
 			item_title = item.get('title', '<No Title>').strip()
@@ -472,7 +492,7 @@ class News(Plugin):
 			description = item.get('description', '')
 			
 			article_title = '%s: %s' % (feed_title, item_title)
-			data = [article_title, link, description, time.time()]
+			data = [article_title, link, description, currtime]
 			articles.append(data)
 		
 		# Go for it!
