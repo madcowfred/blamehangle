@@ -2,7 +2,9 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
-"This file contains the main IRC event handling code."
+"""
+Main IRC event handler. Slightly terrifying due to multiple server code.
+"""
 
 import re
 import time

@@ -3,8 +3,9 @@
 # ---------------------------------------------------------------------------
 
 """
-This is the main loop of blamehangle, which handles inter-object messages and
-logging. Don't mess with it.
+This is the main loop of blamehangle, which handles inter-object message
+passing, the main asyncore poll() loop, logging and several other important
+things. Don't mess with it.
 """
 
 import asyncore

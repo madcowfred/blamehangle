@@ -1,9 +1,11 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains the Database class, which handles the DB
-# communication and most of the abstraction.
-# ---------------------------------------------------------------------------
+
+"""
+Our own abstracted database class. Does connections, variable interpolation
+and turning result sets into a dictionary.
+"""
 
 import os
 import sys

@@ -1,18 +1,20 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This class wraps an IRC connection into something slightly easier to deal
-# with.
+
+"""
+Wraps an asyncIRC connection and the various things we need to care about
+into one object that's a lot easier to deal with.
+"""
 
 import random
 import socket
 import time
 import types
 
+from classes.asyncIRC import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
 from classes.Constants import *
 from classes.Userlist import Userlist
-
-from classes.asyncIRC import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
 
 # ---------------------------------------------------------------------------
 # How long in seconds to wait for a connect attempt to time out

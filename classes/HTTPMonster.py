@@ -31,11 +31,6 @@ line_re = re.compile('(?:\r\n|\r|\n)')
 # ---------------------------------------------------------------------------
 
 class HTTPMonster(Child):
-	"""
-	This class takes requests for URLs and fetches them asynchronously to
-	ensure that the bot will not freeze due to slow servers, or whatever.
-	"""
-	
 	def setup(self):
 		self.active = 0
 		self.urls = []

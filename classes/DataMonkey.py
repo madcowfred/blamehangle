@@ -2,25 +2,24 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
+"""
+This implements threaded database requests. For anything using a socket
+connection (MySQL and Postgres so far), long operations are just a blocking
+read() on the socket. We can run database requests in a thread and allow
+other things to happen at the same time.
+"""
+
+import time
 from Queue import *
 from threading import Thread
-import time
-
-# ---------------------------------------------------------------------------
-
-from classes.Children import Child
-from classes.Constants import *
 
 from classes import Database
+from classes.Children import Child
+from classes.Constants import *
 
 # ---------------------------------------------------------------------------
 
 class DataMonkey(Child):
-	"""
-	This class handles database requests, using a supposedly intelligent
-	queue/return method and multiple DB threads.
-	"""
-	
 	def setup(self):
 		self.Requests = Queue(0)
 		self.threads = []
@@ -89,3 +88,5 @@ class DataMonkey(Child):
 		message.data['db_queries'] = self.__queries
 		
 		self.sendMessage('HTTPMonster', GATHER_STATS, message.data)
+
+# ---------------------------------------------------------------------------
