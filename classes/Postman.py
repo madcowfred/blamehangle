@@ -6,6 +6,7 @@
 # ---------------------------------------------------------------------------
 
 import signal
+import smtplib
 import sys
 import time
 import traceback
@@ -23,6 +24,11 @@ from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
 from classes.Plugin import Plugin
 from classes.Helper import Helper
+
+# ---------------------------------------------------------------------------
+
+MAIL_TEXT =  "This is an automatic e-mail message from blamehangle. You are receiving this because "
+MAIL_TEXT += "someone has you listed in their config as an admin."
 
 # ---------------------------------------------------------------------------
 
@@ -97,6 +103,10 @@ class Postman:
 		self.__log_debug_query = self.Config.getboolean('logging', 'debug_query')
 		
 		self.__plugin_list = self.Config.get('plugin', 'plugins').split()
+		
+		self.__mail_server = self.Config.get('mail', 'server')
+		self.__mail_from = self.Config.get('mail', 'from')
+		self.__mail_tracebacks = self.Config.get('mail', 'tracebacks').split()
 	
 	# -----------------------------------------------------------------------
 	# Load a plugin
@@ -219,6 +229,7 @@ class Postman:
 										# If reloadme is empty, rehash now
 										if not self.__reloadme:
 											self.sendMessage(None, REQ_REHASH, None)
+							
 							except KeyError:
 								tolog = "Postman received a message from '%s', but it's dead!" % (child)
 								self.__Log(LOG_WARNING, tolog)
@@ -302,25 +313,70 @@ class Postman:
 				entries = traceback.extract_tb(_tb)
 				del _tb
 				
+				# Log these lines
+				logme = []
+				
 				# Remember the last filename
 				last_file = ''
 				
-				self.__Log(LOG_ALWAYS, '*******************************************************')
+				logme.append('*******************************************************')
 				
-				self.__Log(LOG_ALWAYS, 'Traceback (most recent call last):')
+				logme.append('Traceback (most recent call last):')
 				
 				for entry in entries:
 					last_file = entry[:-1][0]
 					tolog = '  File "%s", line %d, in %s' % entry[:-1]
-					self.__Log(LOG_ALWAYS, tolog)
+					logme.append(tolog)
 					tolog = '    %s' % entry[-1]
-					self.__Log(LOG_ALWAYS, tolog)
+					logme.append(tolog)
 				
 				for line in traceback.format_exception_only(_type, _value):
 					tolog = line.replace('\n', '')
-					self.__Log(LOG_ALWAYS, tolog)
+					logme.append(tolog)
 				
-				self.__Log(LOG_ALWAYS, '*******************************************************')
+				logme.append('*******************************************************')
+				
+				# Log all that stuff now
+				for line in logme:
+					self.__Log(LOG_ALWAYS, line)
+				
+				# Maybe e-mail our bosses
+				if self.__mail_tracebacks:
+					lines = []
+					
+					line = 'From: %s' % self.__mail_from
+					lines.append(line)
+					
+					mailto = ', '.join(self.__mail_tracebacks)
+					line = 'To: %s' % mailto
+					lines.append(line)
+					
+					line = 'Subject: blamehangle error message'
+					lines.append(line)
+					
+					line = 'X-Mailer: blamehangle Postman'
+					lines.append(line)
+					
+					lines.append('')
+					lines.append(MAIL_TEXT)
+					lines.append('')
+					lines.extend(logme)
+					
+					# Send it!
+					message = '\r\n'.join(lines)
+					
+					try:
+						server = smtplib.SMTP(self.__mail_server)
+						server.sendmail(self.__mail_from, self.__mail_tracebacks, message)
+						server.quit()
+					
+					except Exception, msg:
+						tolog = 'Error sending mail: %s' % msg
+						self.__Log(LOG_WARNING, tolog)
+					
+					else:
+						tolog = 'Sent error mail to: %s' % mailto
+						self.__Log(LOG_ALWAYS, tolog)
 				
 				# We crashed during shutdown? Not Good.
 				if self.__Stopping == 1:
