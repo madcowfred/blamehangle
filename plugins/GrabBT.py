@@ -93,10 +93,13 @@ class GrabBT(Plugin):
 		for file in files:
 			# If it's a new file, spam it
 			if file not in self.__files:
+				localfile = os.path.join(self._new_dir, file)
+				filesize = os.path.getsize(localfile) / 1024 / 1024
+				
 				if self._http_base:
-					replytext = '\x0303New file\x03: %s - %s%s' % (file, self._http_base, QuoteURL(file))
+					replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (file, filesize, self._http_base, QuoteURL(file))
 				else:
-					replytext = '\x0303New file\x03: %s' % (file)
+					replytext = '\x0303New file\x03: %s (%.1fMB)' % (file, filesize)
 				
 				self.privmsg(self.__newfiles, None, replytext)
 		
