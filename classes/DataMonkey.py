@@ -9,7 +9,9 @@ read() on the socket. We can run database requests in a thread and allow
 other things to happen at the same time.
 """
 
+import sys
 import time
+
 from Queue import Empty, Queue
 from threading import Thread
 
