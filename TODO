@@ -6,7 +6,7 @@ important:
 	  have been setting new stuff on efnet
 
 not important but more than whatever:
-	* stuff from sey's emails (anyone)
+	* NickServ auth (fred, since zhar has never even seen a nickserv)
 	* Mobygames/HOTU searches (fred?)
 	* make Children.urlQuery(), much like Children.dbQuery() .. and go through
 	  everything and change all the sendMessage('HTTPMonster, blahblah) things
