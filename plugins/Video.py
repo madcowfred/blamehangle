@@ -59,7 +59,7 @@ class Video(Plugin):
 	def __IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
 		if resp.data.find('title search</title>') < 0:
-			self.__IMDb_Title(trigger, resp.url, resp.data)
+			self.__IMDb_Title(trigger, resp)
 			return
 		
 		movie = trigger.match.group(1)
@@ -209,7 +209,7 @@ class Video(Plugin):
 		
 		# It's not a search result
 		if resp.data.find('Show search for:') < 0:
-			self.__TVTome_Show(trigger, resp.url, resp.data)
+			self.__TVTome_Show(trigger, resp)
 		
 		# It is a search result!
 		else:
