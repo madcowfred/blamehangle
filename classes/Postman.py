@@ -422,6 +422,7 @@ class Postman:
 			return
 		
 		self.__Stopping = 1
+		self.__Shutdown_Start = time.time()
 		
 		tolog = 'Shutting down (%s)...' % why
 		self.__Log(LOG_ALWAYS, tolog)
@@ -440,8 +441,15 @@ class Postman:
 			sys.exit(1)
 		
 		elif alive:
-			tolog = 'Objects still alive: %s' % ', '.join(alive)
-			self.__Log(LOG_DEBUG, tolog)
+			# If we've been shutting down for a while, just give up
+			if time.time() - self.__Shutdown_Start >= 10:
+				tolog = 'Shutdown timeout expired: %s' % ', '.join(alive)
+				self.__Log(LOG_ALWAYS, tolog)
+				sys.exit(1)
+			
+			else:
+				tolog = 'Objects still alive: %s' % ', '.join(alive)
+				self.__Log(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	
