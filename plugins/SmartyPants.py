@@ -90,8 +90,8 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_REGISTER(self, message):
-		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE)
-		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_RE)
+		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE, exclusive=1)
+		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_RE, exclusive=1)
 		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE)
 		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE)
 		del_dir = PluginTextEvent(FACT_DEL, IRCT_PUBLIC_D, DEL_RE)
@@ -101,8 +101,7 @@ class SmartyPants(Plugin):
 		info_dir = PluginTextEvent(FACT_INFO, IRCT_PUBLIC_D, INFO_RE)
 		info_msg = PluginTextEvent(FACT_INFO, IRCT_MSG, INFO_RE)
 		
-		# We register GET last, since it's the least specific match we have
-		self.register(set_dir, set_msg, del_dir, del_msg, info_dir, info_msg, get_dir, get_msg)
+		self.register(get_dir, get_msg, set_dir, set_msg, del_dir, del_msg, info_dir, info_msg)
 	
 	#------------------------------------------------------------------------
 	

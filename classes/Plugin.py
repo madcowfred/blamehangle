@@ -35,15 +35,18 @@ class PluginTextEvent:
 	"""
 	This class encapsulates all the data regarding an event that triggers off
 	text from IRC.
-	name    : a unique name for this event
-	IRCType : the IRCType this event should trigger on
-	regexp  : a compiled re object that will be used to match against lines of
-		the appropriate IRCType
+	name      : a unique name for this event
+	IRCType   : the IRCType this event should trigger on
+	regexp    : a compiled re object that will be used to match against lines of
+	            the appropriate IRCType
+	exclusive : FIXME
 	"""
-	def __init__(self, name, IRCType, regexp):
+	
+	def __init__(self, name, IRCType, regexp, exclusive=0):
 		self.name = name
 		self.IRCType = IRCType
 		self.regexp = regexp
+		self.exclusive = exclusive
 	
 	def __str__(self):
 		return "%s: %s" % (self.IRCType, self.name)
@@ -102,8 +105,8 @@ class PluginTextTrigger:
 			name)
 		userinfo : a userinfo object describing the guy that sent the line
 			that caused this match
-
 	"""
+	
 	def __init__(self, event, match, conn, target, userinfo):
 		self.event = event
 		self.match = match

@@ -51,11 +51,6 @@ class PluginHandler(Child):
 				event.last_trigger = currtime
 				self.sendMessage(plugin, PLUGIN_TRIGGER, event)
 	
-	# -----------------------------------------------------------------------
-	
-	#def run_always(self):
-		#pass
-	
 	#------------------------------------------------------------------------
 
 	# Generate a list of all the plugins.
@@ -85,9 +80,8 @@ class PluginHandler(Child):
 				raise ValueError, errtext
 			else:
 				eventStore[event.name] = (event, message.source)
-
+	
 	#------------------------------------------------------------------------
-
 	# Something has happened on IRC, and we are being told about it. Search
 	# through the appropriate collection of events and see if any match. If
 	# we find a match, send the TRIGGER message to the appropriate plugin.
@@ -97,19 +91,30 @@ class PluginHandler(Child):
 	# special case code here.
 	def _message_IRC_EVENT(self, message):
 		conn, IRCtype, userinfo, target, text = message.data
-
+		
 		eventStore = self.__getRelevantStore(IRCtype)
-
+		
+		normal = []
+		exclusive = []
+		
 		for name in eventStore:
 			event, plugin = eventStore[name]
-			match = event.regexp.match(text)
-			if match:
-				trigger = PluginTextTrigger(event, match, conn, target, userinfo)
-				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
-				# Should we break here? do we want it to be possible to
-				# have more than one plugin trigger on the same text?
+			m = event.regexp.match(text)
+			if m:
+				trigger = PluginTextTrigger(event, m, conn, target, userinfo)
+				if event.exclusive:
+					exclusive.append([plugin, trigger])
+				else:
+					normal.append([plugin, trigger])
 		
-
+		if normal:
+			for plugin, trigger in normal:
+				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+		
+		elif exclusive:
+			for plugin, trigger in exclusive:
+				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+	
 	#------------------------------------------------------------------------		
 	# We just got a reply from a plugin.
 	def _message_PLUGIN_REPLY(self, message):
