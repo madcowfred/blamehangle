@@ -57,7 +57,7 @@ class WrapConn:
 		self.requested_quit = 0
 		
 		# Reset ourselves to the disconnected state
-		self.disconnected()
+		self.reset()
 		
 		# Parse our options
 		self.parse_options(options)
@@ -133,7 +133,7 @@ class WrapConn:
 	
 	# -----------------------------------------------------------------------
 	# Reset ourselves to the disconnected state
-	def disconnected(self):
+	def reset(self):
 		self.stoned = 0
 		self.trynick = 0
 		
@@ -395,5 +395,10 @@ class WrapConn:
 					self.conn.disconnect()
 				else:
 					self.privmsg(self.conn.getnick(), "Stoned yet?")
+	
+	# -----------------------------------------------------------------------
+	# Are we connected?
+	def connected(self):
+		return (self.conn.status == STATUS_CONNECTED)
 
 # ---------------------------------------------------------------------------
