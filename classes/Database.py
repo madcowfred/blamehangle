@@ -15,8 +15,8 @@ from classes.Constants import *
 
 # --------------------------------------------------------------
 
-#sys.path.append(os.path.expanduser('~/lib/python'))
-#
+sys.path.append(os.path.expanduser('~/lib/python'))
+
 #import MySQLdb
 #from _mysql_exceptions import OperationalError
 #from MySQLdb.cursors import DictCursor
@@ -177,8 +177,6 @@ def DataThread(parent, db, myindex):
 				results.append(result)
 			
 			data = [toreturn, results]
-			
-			print 'RESULT:', data
 			
 			message = Message('DataMonkey', message.source, REPLY_QUERY, data)
 			parent.outQueue.append(message)
