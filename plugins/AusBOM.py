@@ -244,8 +244,12 @@ class AusBOM(Plugin):
 			# Split the row into lines
 			lines = StripHTML(tr)
 			
-			# Work out where we are
-			place = lines[0].replace(' &times;', '')
+			# Work out where we are, removing evil chars
+			place = lines[0]
+			
+			# Strip some crap
+			for crap in (' &times;', ' *'):
+				place = place.replace(crap, '')
 			
 			# If we're just updating location data, do that
 			if location is None:
