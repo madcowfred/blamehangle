@@ -10,7 +10,6 @@ plugin developer, and generally make life easier.
 It also contains the various Triggers and Events that Plugins rely on.
 """
 
-import os
 import time
 
 from classes.Children import Child
