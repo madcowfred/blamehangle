@@ -11,8 +11,6 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
-from classes.BeautifulSoup import BeautifulSoup
-
 # ---------------------------------------------------------------------------
 
 SCRAPE_TIMER = 'SCRAPE_TIMER'
@@ -107,31 +105,40 @@ class TorrentScraper(Plugin):
 				items[newurl] = (now, newurl, description)
 		
 		# Otherwise, go the easy way
-		else:
-			# Parse it with BeautifulSoup
-			soup = BeautifulSoup()
-			soup.feed(resp.data)
-			
-			t4 = time.time()
-			
-			# Find all of the torrent URLs
-			links = soup('a', {'href': '%.torrent%'})
-			if not links:
+ 		else:
+ 			_case = 0
+ 			
+			# Find all of our URLs
+			chunks = FindChunks(resp.data, '<a ', '</a>') + FindChunks(resp.data, '<A ', '</A>')
+			if not chunks:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
-			
-			for link in links:
-				# Build the new URL
-				newurl = UnquoteHTML(UnquoteURL(urlparse.urljoin(resp.url, link['href'])))
-				if newurl in items:
+ 			
+ 			t4 = time.time()
+ 			
+			# See if any are talking about torrents
+			for chunk in chunks:
+				# Find the URL
+				href = FindChunk(chunk, 'href="', '"')
+				if not href:
+					href = FindChunk(chunk, 'HREF="', '"')
+				
+				if not href or href.find('.torrent') < 0:
 					continue
 				
-				# Get some text to describe it
-				desc = str(link.contents[0])
-				
-				lines = StripHTML(desc)
-				if len(lines) != 1:
+ 				# Build the new URL
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+ 				if newurl in items:
+ 					continue
+ 				
+ 				# Get some text to describe it
+				bits = chunk.split('>', 1)
+				if len(bits) != 2:
 					continue
+ 				
+				lines = StripHTML(bits[1])
+ 				if len(lines) != 1:
+ 					continue
 				
 				# Keep it for a bit
 				items[newurl] = (now, newurl, lines[0])
@@ -156,7 +163,7 @@ class TorrentScraper(Plugin):
 		
 		query = SELECT_QUERY % (querybit, querybit)
 		
-		print 'Page parsed: %.3fs %.3fs %.3fs %.3fs %.3fs' % (time.time() - t5, t5-t4, t4 - t3, t3 - t2, t2 - t1)
+		print 'Page parsed - %.3fs %.3fs %.3fs %.3fs %.3fs' % (t2-t1, t3-t2, t4-t3, t5-t4, time.time()-t5)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
