@@ -193,13 +193,8 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# Connection has been closed
 	def handle_close(self):
-		#if self.data:
 		# We have some data, might as well process it?
-		self.process_data(self.data)
-	
-	def process_data(self, pagetext):
 		if len(pagetext) > 0:
-			# Dodgy HTML fix up time
 			m = dodgy_html_check(pagetext)
 			while m:
 				pre = pagetext[:m.start()]
@@ -213,8 +208,6 @@ class async_http(asyncore.dispatcher_with_send):
 			self.parent.putlog(LOG_DEBUG, tolog)
 			
 			data = [self.returnme, pagetext]
-			#message = Message('HTTPMonster', self.source, REPLY_URL, data)
-			#self.parent.outQueue.append(message)
 			self.parent.sendMessage(self.source, REPLY_URL, data)
 		
 		self.close()
