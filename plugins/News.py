@@ -4,14 +4,6 @@
 # This is the news-gatherer plugin for Blamehangle. It scours the web for
 # news, and reports it.
 # exciting stuff.
-#
-#CREATE TABLE news (
-#	title varchar(255) NOT NULL default '',
-#	url varchar(255) default NULL,
-#	description text default NULL,
-#	time bigint UNSIGNED default NULL,
-#	PRIMARY KEY (title)
-#	) TYPE=MyISAM;
 
 from random import Random
 import cPickle
@@ -46,8 +38,8 @@ NEWS_SEARCH = "NEWS_SEARCH"
 MAX_NEWS_SEARCH_RESULTS = 6
 
 NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
-INSERT_QUERY = "INSERT INTO news (title, url, description, time) VALUES (%s,%s,%s,%s)"
-TIME_QUERY = "DELETE FROM news WHERE time < %s"
+INSERT_QUERY = "INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)"
+TIME_QUERY = "DELETE FROM news WHERE added < %s"
 SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 
 NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
@@ -328,7 +320,7 @@ class News(Plugin):
 	def run_sometimes(self, currtime):
 		# Periodically check if we need to send some text out to IRC
 		if self.__outgoing:
-			if currtime - self.__Last_Spam_Time >= self.__spam_delay:
+			if (currtime - self.__Last_Spam_Time) >= self.__spam_delay:
 				self.__Last_Spam_Time = currtime
 				
 				# We pull out a random item from our outgoing list so that
