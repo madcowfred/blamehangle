@@ -514,14 +514,16 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	
 	# Pickle an object into the given file
-	def __pickle(self, obj, pickle):
+	def __pickle(self, obj, filename):
 		try:
-			f = open(pickle, "wb")
+			f = open(filename, "wb")
 		except:
 			# We couldn't open our file :(
 			tolog = "Unable to open %s for writing" % filename
 			self.putlog(LOG_WARNING, tolog)
 		else:
+			tolog = "saving pickle to %s" % filename
+			self.putlog(LOG_DEBUG, tolog)
 			# the 1 turns on binary-mode pickling
 			cPickle.dump(obj, f, 1)
 			f.flush()
@@ -530,15 +532,15 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	
 	# Unpickle an object from the given file
-	def __unpickle(self, pickle):
+	def __unpickle(self, filename):
 		try:
-			f = open(pickle, "rb")
+			f = open(filename, "rb")
 		except:
 			# Couldn't open the pickle file, so don't try to unpickle
 			pass
 		else:
 			# We have a pickle!
-			tolog = "loading pickle from %s" % pickle
+			tolog = "loading pickle from %s" % filename
 			self.putlog(LOG_DEBUG, tolog)
 			obj = cPickle.load(f)
 			f.close()
