@@ -72,9 +72,6 @@ class ChatterGizmo(Child):
 			for option in self.Config.options(network):
 				options[option] = self.Config.get(network, option)
 			
-			tolog = "Found network: %s" % network
-			self.putlog(LOG_DEBUG, tolog)
-			
 			
 			conn = self.__ircobj.server()
 			self.Conns[conn] = WrapConn(conn, options)

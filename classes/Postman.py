@@ -52,11 +52,14 @@ class Postman:
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
 		
-		#plugins = self.__Children['PluginHandler'].pluginList()
-		#
-		#for cls in plugins:
-		#	instance = cls(cls.__name__, self.inQueue, self.Config)
-		#	self.__Children[cls.__name__] = instance
+		plugins = self.__Children['PluginHandler'].pluginList()
+		
+		for cls in plugins:
+			tolog = "Starting plugin object '%s'" % cls.__name__
+			self.__Log(LOG_DEBUG, tolog)
+			
+			instance = cls(cls.__name__, self.inQueue, self.Config)
+			self.__Children[cls.__name__] = instance
 	
 	# -----------------------------------------------------------------------
 	
