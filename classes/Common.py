@@ -6,6 +6,7 @@
 # ---------------------------------------------------------------------------
 
 import os, re, time, types
+from classes.Constants import REPLY_URL
 
 # ---------------------------------------------------------------------------
 # Generic Message object that gets passed around the queues.
@@ -42,7 +43,10 @@ class Message:
 	# Return a printable string with info about ourself, including
 	# how long it's been since we were sent.
 	def __str__(self):
-		return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, self.data)
+		if self.ident == REPLY_URL:
+			return '%s --> %s: (%s) <data omitted>' % (self.sourec, self.targetstring, self.ident)
+		else:
+			return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, self.data)
 
 
 # ---------------------------------------------------------------------------
