@@ -253,7 +253,12 @@ class async_http(buffered_dispatcher):
 				self.failed(failmsg)
 			else:
 				# Build a header dictionary
-				headers = dict([l.split(': ', 1) for l in self.headlines[1:]])
+				headers = {}
+				for line in self.headlines[1:]:
+					k, v = line.split(': ', 1)
+					while k.endswith(':'):
+						k = k[:-1]
+					headers[k] = v
 				
 				# Various redirect responses
 				if response in ('301', '302', '303', '307'):
