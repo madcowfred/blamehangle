@@ -16,6 +16,7 @@ import types
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
+from classes.SimpleCacheDict import SimpleCacheDict
 
 # ---------------------------------------------------------------------------
 
@@ -43,7 +44,7 @@ INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
 LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%'"
-LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value LIKE '%%%s%%'"
+LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE '%%%s%%'"
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -114,6 +115,9 @@ class SmartyPants(Plugin):
 		self.__sets = 0
 		self.__modifys = 0
 		self.__dels = 0
+		
+		# Don't try to insert a factoid more than once every 5 seconds
+		self.InsertCache = SimpleCacheDict(5)
 		
 		self.rehash()
 	
