@@ -280,7 +280,9 @@ class WeatherMan(Plugin):
 				if chunks[0] == 'Wind':
 					parts = chunks[1].split()
 					
-					if parts[0] == 'Variable':
+					if parts[0].startswith('Calm'):
+						data['wind'] = 'Calm'
+					elif parts[0] == 'Variable':
 						data['wind'] = '%s %s' % (parts[0], self.GetWind(trigger, parts[2]))
 						if len(parts) > 7 and parts[6] == 'gusting':
 							data['wind'] = '%s (gusting to %s)' % (data['wind'], self.GetWind(trigger, parts[9]))
@@ -302,6 +304,10 @@ class WeatherMan(Plugin):
 					parts = chunks[1].split()
 					data['temps'] = self.GetTemp(trigger, parts[0])
 				
+				elif chunks[0] == 'Dew Point':
+					parts = chunks[1].split()
+					data['dewpoint'] = self.GetTemp(trigger, parts[0])
+				
 				elif chunks[0] == 'Relative Humidity':
 					data['humidity'] = chunks[1]
 				
@@ -322,10 +328,15 @@ class WeatherMan(Plugin):
 		elif trigger.name == '__Fetch_DMETAR':
 			parts = []
 			
+			if 'sky' in data:
+				parts.append(data['sky'])
 			if 'weather' in data:
 				parts.append(data['weather'])
 			if 'temps' in data:
 				part = 'Currently: %s' % (data['temps'])
+				parts.append(part)
+			if 'dewpoint' in data:
+				part = 'Dew Point: %s' % (data['dewpoint'])
 				parts.append(part)
 			if 'wind' in data:
 				part = 'Wind: %s' % (data['wind'])
@@ -376,7 +387,7 @@ class WeatherMan(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def GetTemp(self, trigger, f_val):
-		f_val = f_val.strip()
+		f_val = float(f_val.strip())
 		c_val = ToCelsius(f_val)
 		
 		format = self.Options.get_net('format', trigger, trigger.target)
@@ -384,11 +395,11 @@ class WeatherMan(Plugin):
 			format = self.Options['default_format']
 		
 		if format == 'both':
-			return '%sC (%sF)' % (c_val, f_val)
+			return '%.1fC (%.1fF)' % (c_val, f_val)
 		elif format == 'metric':
-			return '%sC' % (c_val)
+			return '%.1fC' % (c_val)
 		elif format == 'imperial':
-			return '%sF' % (f_val)
+			return '%.1fF' % (f_val)
 		else:
 			raise ValueError, '%s is an invalid format' % format
 	
@@ -413,13 +424,13 @@ class WeatherMan(Plugin):
 
 def ToCelsius(val):
 	try:
-		return '%d' % round((int(val) - 32) * 5.0 / 9)
+		return (round(val - 32) * 5.0 / 9)
 	except ValueError:
-		return '0'
+		return 0.0
 
 def ToKilometers(val):
 	try:
-		return '%d' % round(int(val) * 1.60934)
+		return '%d' % round(float(val) * 1.60934)
 	except ValueError:
 		return '0'
 
