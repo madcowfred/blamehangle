@@ -543,10 +543,9 @@ class News(Plugin):
 	
 	# A news item has been inserted, try the next one if we have to
 	def __News_Inserted(self, trigger, result):
-		# Error!
+		# Error, just log it, we want to keep inserting news items
 		if result is None:
 			self.putlog(LOG_WARNING, '__News_Inserted: A DB error occurred!')
-			return
 		
 		# If we have no more articles, go home now
 		if len(trigger.insertme) == 0:
