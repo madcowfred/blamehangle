@@ -111,7 +111,12 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	# The connection got closed somehow
 	def handle_close(self):
+		self.status = STATUS_DISCONNECTED
+		
 		self.close()
+		
+		# Trigger a disconnect
+		self.__trigger_event(None, None, 'disconnect', None, None)
 	
 	# An exception occured somewhere
 	def handle_error(self):
@@ -122,7 +127,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		if _type == 'KeyboardInterrupt':
 			raise
 		else:
-			self.failed(_value)
+			print 'ERROR!', _value
 	
 	# There is some data waiting to be read
 	def handle_read(self):
@@ -221,10 +226,6 @@ class asyncIRC(asyncore.dispatcher_with_send):
 				
 				# Trigger the event
 				self.__trigger_event(prefix, userinfo, command, target, arguments)
-	
-	def failed(self, errormsg):
-		# FIXME - do something useful
-		print 'FAILED! %s' % errormsg
 	
 	# -----------------------------------------------------------------------
 	# Connect to a server
