@@ -268,7 +268,6 @@ class GrabBT(Plugin):
 			return
 		
 		# See how much disk space we have then
-		# self._new_dir
 		if hasattr(os, 'statvfs'):
 			try:
 				info = os.statvfs(self._new_dir)
@@ -293,7 +292,7 @@ class GrabBT(Plugin):
 				freegb = float(parts[3]) / 1024 / 1024
 				
 				per = freegb / totalgb * 100
-				replytext = '%.1f of %.1f (%d%%) GB free' % (freegb, totalgb, per)
+				replytext = '%.1fGB of %.1fGB (%d%%) free' % (freegb, totalgb, per)
 			else:
 				replytext = 'ERROR!'
 		
