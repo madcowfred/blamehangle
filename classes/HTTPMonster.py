@@ -157,7 +157,10 @@ class async_http(asyncore.dispatcher_with_send):
 		if not self.header:
 			chunks = self.data.split('\r\n\r\n', 1)
 			if len(chunks) <= 1:
-				return
+				# Some retarded web servers seem to send \n\n\n\n, try that instead
+				chunks = self.data.split('\n\n\n\n', 1)
+				if len(chunks) <= 1:
+					return
 			
 			header, data = chunks
 			self.header = header
