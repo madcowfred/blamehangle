@@ -222,7 +222,7 @@ class Karma(Plugin):
 			if hasattr(trigger, 'karmaname'):
 				replytext = '%s has karma of %d' % (trigger.karmaname, total)
 			else:
-				replytext = '%s has karma of %d' % (name, result[0]['value'])
+				replytext = '%s has karma of %d' % (name, total)
 		
 		self.sendReply(trigger, replytext)
 	
