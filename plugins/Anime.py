@@ -151,6 +151,14 @@ class Anime(Plugin):
 			# Spit it out
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
+		
+		# Adult content, pfft
+		elif page_text.find('Adult Content Warning'):
+			self.sendReply(trigger, "Seems to be hentai, you'll need an AniDB user account to see the details :(")
+		
+		# Parsing failed
+		else:
+			self.sendReply(trigger, 'Page parsing failed.')
 	
 	# ---------------------------------------------------------------------------
 	# Parse the output of an AnimeNFO query
