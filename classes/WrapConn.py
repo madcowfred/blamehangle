@@ -93,9 +93,9 @@ class WrapConn:
 		for chunk in options.get('channel', {}).values():
 			parts = chunk.split()
 			if len(parts) == 1:
-				self.channels[parts[0]] = None
+				self.channels[parts[0].lower()] = None
 			else:
-				self.channels[parts[0]] = parts[1]
+				self.channels[parts[0].lower()] = parts[1]
 		
 		# Update our channels if we're connected
 		if self.conn.status == STATUS_CONNECTED:
