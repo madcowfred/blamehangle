@@ -122,7 +122,7 @@ class async_animenfo(asyncore.dispatcher_with_send):
 			self.connect((ANIMENFO_HOST, ANIMENFO_PORT))
 		except socket.gaierror, msg:
 			tolog = "Error while trying to visit AnimeNFO: %s - %s" % (self.url, msg)
-			self.parent.putlog(LOG_ALWAYS, tolog)
+			self.parent.putlog(LOG_WARNING, tolog)
 			self.close()
 	
 	def handle_connect(self):
