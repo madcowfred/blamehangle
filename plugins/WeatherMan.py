@@ -18,7 +18,7 @@ WEATHER_RE = re.compile('^weather\s+(?P<location>.+)$')
 WEATHER_HELP = '\02weather\02 <location> : Retrieve weather information for location'
 WEATHER_URL = "http://search.weather.yahoo.com/search/weather2?p=%s"
 
-s1 = '[%(place)s] %(weather)s, Currently: %(currently)s°F (%(currently_c)s°C)'
+s1 = '[%(location)s] %(weather)s, Currently: %(currently)s°F (%(currently_c)s°C)'
 s2 = ', High: %(hi)s°F (%(hi_c)s°C), Low: %(lo)s°F (%(lo_c)s°C)'
 WEATHER_REPLY = s1 + s2
 
@@ -63,47 +63,62 @@ class WeatherMan(Plugin):
 			
 			# Only one result, hopefully?
 			else:
-				# Strip comments, they're annoying
-				mangled = re.sub(r'(?ms)<\!--.*?-->', '', page_text)
-				lines = mangled.splitlines()
-				
 				data = {}
-				upto = 0
 				
-				order = 'place currently weather hi lo'.split()
-				REs = {
-					'place': re.compile(r'^<td><font face=arial size=4><b>(.+) Today</b>'),
-					'currently': re.compile(r'^(\d+)\&ordm;'),
-					'weather': re.compile(r'^(.+)</font></td>'),
-					'hi': re.compile(r'>Hi:\&nbsp;<b>(\d+)</b>'),
-					'lo': re.compile(r'^Lo:\&nbsp;<b>(\d+)</b>'),
-				}
 				
-				for line in lines:
-					m = REs[order[upto]].search(line)
-					if m:
-						data[order[upto]] = m.group(1)
-						upto += 1
-						if upto == len(order):
-							break
+				# Find the chunk that tells us where we are
+				m = re.search(r'<\!--BROWSE: ADD BREADCRUMBS-->(.*?)<script', page_text, re.M | re.S)
+				if not m:
+					self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
+					self.sendReply(trigger, 'Failed to parse page properly')
+					return
 				
-				broken = 0
-				for thing in order:
-					if not REs.has_key(thing):
-						tolog = 'Weather missing data: %s' % thing
-						self.putlog(LOG_WARNING, tolog)
-						broken = 1
+				# Remove all HTML tags
+				mangled = re.sub(r'(?s)<.*?>', '', m.group(1))
+				# Eat escaped bits and pieces
+				mangled = re.sub(r'\&.*?\;', '', mangled)
 				
-				if broken:
-					self.sendReply(trigger, "Failed to parse page properly")
+				# Split into lines that aren't empty
+				lines = [s for s in mangled.splitlines() if s.strip()]
 				
-				else:
-					data['currently_c'] = ToCelsius(data['currently'])
-					data['hi_c'] = ToCelsius(data['hi'])
-					data['lo_c'] = ToCelsius(data['lo'])
-					
-					replytext = WEATHER_REPLY % data
-					self.sendReply(trigger, replytext)
+				# Extract location!
+				loc1 = lines[-1]
+				loc2 = lines[-2][:-2]
+				data['location'] = '%s, %s' % (loc1, loc2)
+				
+				
+				# Find the chunk with the weather data we need
+				m = re.search(r'<\!--CURCON-->(.*?)<\!--END CURCON-->', page_text, re.M | re.S)
+				if not m:
+					self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
+					self.sendReply(trigger, 'Failed to parse page properly')
+					return
+				
+				# Remove all HTML tags
+				mangled = re.sub(r'(?s)<.*?>', '', m.group(1))
+				# Eat escaped bits and pieces
+				mangled = re.sub(r'\&.*?\;', '', mangled)
+				
+				# Split into lines that aren't empty
+				lines = [s for s in mangled.splitlines() if s.strip()]
+				
+				
+				# Extract current conditions!
+				data['currently'] = lines[1]
+				data['weather'] = lines[2]
+				data['hi'] = lines[3][3:]
+				data['lo'] = lines[4][3:]
+				
+				#if broken:
+				#	self.sendReply(trigger, "Failed to parse page properly")
+				
+				#else:
+				data['currently_c'] = ToCelsius(data['currently'])
+				data['hi_c'] = ToCelsius(data['hi'])
+				data['lo_c'] = ToCelsius(data['lo'])
+				
+				replytext = WEATHER_REPLY % data
+				self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
 
