@@ -45,6 +45,9 @@ class Postman:
 		
 		self.__Stopping = 0
 		
+		# We can't recreate this all the time or children lose the reference
+		self.Userlist = HangleUserList(self)
+		
 		# Install our signal handlers here
 		# note, win32 has no SIGHUP signal
 		if hasattr(signal, 'SIGHUP'):
@@ -464,7 +467,6 @@ class Postman:
 					self.Config.read(os.path.join(config_dir, config_file))
 		
 		# Set up the userlist now
-		self.Userlist = HangleUserList(self)
 		self.Userlist.Reload()
 	
 	# Reload our config, duh
@@ -511,9 +513,6 @@ class Postman:
 						self.__Log(LOG_ALWAYS, tolog)
 						
 						self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
-		
-		# Reload the user list
-		self.Userlist.Reload()
 		
 		# This is where you'd expect the code to remove any imported plugins
 		# that are no longer needed to go, but instead we put it in the handler
