@@ -88,7 +88,7 @@ class TorrentScraper(Plugin):
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
 			
-			t4
+			t4 = time.time()
 			
 			# Yuck
 			for chunk in chunks:
@@ -112,7 +112,7 @@ class TorrentScraper(Plugin):
 			soup = BeautifulSoup()
 			soup.feed(resp.data)
 			
-			t4
+			t4 = time.time()
 			
 			# Find all of the torrent URLs
 			links = soup('a', {'href': '%.torrent%'})
