@@ -576,6 +576,13 @@ class Google(HTMLParser):
 						self.__temp_href = value[7:]
 					else:
 						self.__temp_href = value
+
+					# fix up google's mangling of the url. this seems to be
+					# causing breakage when following the links to some sites
+					self.__temp_href = self.__temp_href.replace('%3F', '?')
+					self.__temp_href = self.__temp_href.replace('%3D', '=')
+					self.__temp_href = self.__temp_href.replace('%26', '&')
+					self.__temp_href = self.__temp_href.replace('%25', '%')
 		
 		if self.__found_a and tag == 'br':
 			if self.__found_br1:
