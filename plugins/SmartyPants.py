@@ -945,22 +945,21 @@ class SmartyPants(Plugin):
 		
 		# Some results!
 		else:
-			# TEMP: fix this once people update their configs
-			max_search_results = self.Options.get('max_search_results', 25)
+			search_results = self.Options.get('search_results', 25)
 			
 			if len(result) == SEARCH_LIMIT:
 				results = '\02%d\02 (or more)' % (len(result))
 			else:
 				results = '\02%d\02' % (len(result))
 			
-			if len(result) > max_search_results:
+			if len(result) > search_results:
 				replytext = "Factoid %s search for '\02%s\02' found %s results, first \02%d\02" % (
-					what, findme, results, max_search_results)
+					what, findme, results, search_results)
 			else:
 				replytext = "'Factoid %s search for '\02%s\02' found %s results" % (
 					what, findme, results)
 			
-			names = [row['name'] for row in result[:max_search_results]]
+			names = [row['name'] for row in result[:search_results]]
 			replytext = '%s: %s' % (replytext, ' \02;\02 '.join(names))
 			
 			self.sendReply(trigger, replytext)
