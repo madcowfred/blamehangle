@@ -468,14 +468,9 @@ class News(Plugin):
 					tolog = "RSS item '%s' has no link!" % item_title
 					self.putlog(LOG_DEBUG, tolog)
 					continue
-				article_link = item['link']
+				article_link = item['link'].replace('&amp;', '&')
 			else:
-				article_link = '<no link>'
-			
-			if article_link:
-				article_link = article_link.replace('&amp;', '&')
-			else:
-				article_link = '<no link>'
+				article_link = '<No Link>'
 			
 			description = item.get('description', '')
 			
@@ -534,7 +529,11 @@ class News(Plugin):
 		# Add the new articles to our outgoing queue, then start adding them
 		# to the database.
 		for title, url, description, ctime in articles:
-			replytext = '%s - %s' % (title, UnquoteURL(url))
+			# Only unquote HTTP urls
+			if url.startswith('http://'):
+				replytext = '%s - %s' % (title, UnquoteURL(url))
+			else:
+				replytext = '%s - %s' % (title, url)
 			
 			# Attach the spam prefix if we have ot
 			if self.__spam_prefix:
