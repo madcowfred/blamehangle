@@ -107,11 +107,11 @@ class Converter(Plugin):
 					_to = MAP[data['to']]
 				else:
 					for key, value in MAP.items():
-						if value[0] == data['from']:
+						if value[0] == data['to']:
 							_to = value
 							break
 						# Handle non-plurals too
-						elif value[0].endswith('s') and value[0][:-1] == data['from']:
+						elif value[0].endswith('s') and value[0][:-1] == data['to']:
 							_to = value
 							break
 				
