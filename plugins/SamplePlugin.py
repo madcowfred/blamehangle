@@ -68,13 +68,14 @@ class SamplePlugin(Plugin):
 		# This is a private message + public directed event (the default)
 		self.addTextEvent(
 			method = self.__Method1,
-			regexp = re.compile(r'^method1$'),
+			regexp = r'^method1$',
 			help = ('method1', '\02method1\02 : Our first example method!'),
 		)
-		# This is a private message event only
+		# This is a private message event only, and we don't want the regexp
+		# to be case-insensitive
 		self.addTextEvent(
 			method = self.__Method2,
-			regexp = re.compile(r'^method2$'),
+			regexp = re.compile(r'^Method2$'),
 			IRCTypes = (IRCT_MSG, IRCT_PUBLIC_D),
 			help = ('method2', '\02method2\02 : Our second example method!'),
 		)
