@@ -94,8 +94,8 @@ def DataThread(parent, db, message):
 		else:
 			args = []
 		
-		tolog = 'Query: %s, Args: %s' % (query, args)
-		parent.putlog(LOG_DEBUG, tolog)
+		#tolog = 'Query: %s, Args: %s' % (query, args)
+		#parent.putlog(LOG_DEBUG, tolog)
 		
 		try:
 			result = db.query(query, *args)
