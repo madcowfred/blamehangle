@@ -577,21 +577,23 @@ class News(Plugin):
 		else:
 			# Too many matches
 			if len(result) > NEWS_SEARCH_MAX_RESULTS:
-				replytext = "Search for '\02%s\02' yielded too many results. Please refine your query." % search_text
+				replytext = "Search for '\02%s\02' yielded too many results (%d > %d). Please refine your query." % (search_text, len(result), NEWS_SEARCH_MAX_RESULTS)
 			
 			# We found more than one and less than the max number of items
 			elif len(result) > 1:
-				replytext = "\02%d\02 Headlines found: " % len(results)
-				while results:
-					# can't use string.join() here :(
-					replytext += "%s" % results[0]['title']
-					results = results[1:]
-					if results:
-						replytext += " \02;;\02 "
+				titles = []
+				for row in result:
+					title = '\02[\02%s\02]\02' % row['title']
+					titles.append(title)
+				
+				replytext = 'Found \02%d\02 headlines: %s' % (len(result), ' '.join(titles))
 			
 			# We found exactly one item
 			else:
-				replytext = '%(title)s - %(url)s : %(description)s' % result[0]
+				if result[0]['description']:
+					replytext = '%(title)s - %(url)s : %(description)s' % result[0]
+				else:
+					replytext = '%(title)s - %(url)s' % result[0]
 		
 		# Spit out a reply
 		self.sendReply(trigger, replytext)
