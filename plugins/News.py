@@ -222,15 +222,23 @@ class News(Plugin):
 		show_msg = PluginTextEvent(RSS_SHOW, IRCT_MSG, RSS_SHOW_RE)
 		self.register(list_pub, list_msg, show_pub, show_msg)
 		
-		for name in self.RSS_Feeds:
+		feedevents = []
+		feednames = self.RSS_Feeds.keys()
+		feednames.sort()
+		for name in feednames:
 			feed = self.RSS_Feeds[name]
 			
 			tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
 			self.putlog(LOG_DEBUG, tolog)
 			
 			event = PluginTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
-			self.register(event)
+			feedevents.append(event)
 		
+		self.register(*feedevents)
+		
+		if feedevents:
+			tolog = "Registered %d RSS feeds" % len(feedevents)
+			self.putlog(LOG_ALWAYS, tolog)
 		
 		self.__setup_help_msgs()
 	
