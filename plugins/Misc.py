@@ -46,7 +46,7 @@ class Misc(Plugin):
 	# Parse the returned page.
 	def __Parse_BugMeNot(self, trigger, resp):
 		# No accounts
-		if resp.data.find('No accounts found for ') >= 0:
+		if resp.data.find('"add.php?notFound=true') >= 0:
 			self.sendReply(trigger, "No accounts found.")
 		
 		# Result!
@@ -72,6 +72,10 @@ class Misc(Plugin):
 			# All done, build the reply and send it
 			replytext = 'Login info for %s \x02::\x02 %s \x02/\x02 %s' % (forsite, parts[0], parts[1])
 			self.sendReply(trigger, replytext)
+		
+		# Err?
+		else:
+			self.sendReply(trigger, "Failed to parse page!")
 	
 	# -----------------------------------------------------------------------
 	# Fetch the search results.
