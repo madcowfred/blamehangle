@@ -114,16 +114,16 @@ class WeatherMan(Plugin):
 				# Extract!
 				data['like_f'] = lines[2]
 				
-				windbits = lines[10].split()
+				windbits = lines[-9].split()
 				if len(windbits) == 3:
 					data['wind'] = '%s kph (%s mph)' % (ToKilometers(windbits[1]), windbits[1])
 				else:
 					data['wind'] = windbits[0]
 				
-				data['humidity'] = lines[12]
-				data['sunrise'] = lines[14]
-				data['visibility'] = lines[16]
-				data['sunset'] = lines[18]
+				data['humidity'] = lines[-7]
+				data['sunrise'] = lines[-5]
+				data['visibility'] = lines[-3]
+				data['sunset'] = lines[-1]
 				
 				
 				#if broken:
@@ -145,6 +145,8 @@ def StripHTML(text):
 	mangled = re.sub(r'(?s)<.*?>', '', text)
 	# Eat escaped bits and pieces
 	mangled = re.sub(r'\&.*?\;', '', mangled)
+	# Eat annoying degrees!
+	mangled = re.sub('°', '', mangled)
 	# Split into lines that aren't empty
 	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
 	# Return!
