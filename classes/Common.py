@@ -44,7 +44,9 @@ class Message:
 	# how long it's been since we were sent.
 	def __str__(self):
 		data = repr(self.data)
-		if len(data) >= 100:
+		#if len(data) >= 100:
+		#	data = '<data omitted>'
+		if self.ident == REPLY_URL:
 			data = '<data omitted>'
 		
 		return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, data)
