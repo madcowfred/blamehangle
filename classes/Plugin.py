@@ -8,8 +8,11 @@
 #----------------------------------------------------------------------------
 
 import time
+
 from classes.Children import Child
 from classes.Constants import *
+
+#----------------------------------------------------------------------------
 
 class Plugin(Child):
 	def __init__(self, *args, **kwargs):
@@ -18,10 +21,10 @@ class Plugin(Child):
 		self.__Help = {}
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		raise Error, 'need to overwrite REGISTER message handler in %s' % self.__name
+		raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self.__name
 	
 	def _message_PLUGIN_TRIGGER(self, message):
-		raise Error, 'need to overwrite TRIGGER message handler in %s' % self.__name
+		raise Exception, 'need to overwrite PLUGIN_TRIGGER message handler in %s' % self.__name
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
@@ -35,8 +38,8 @@ class Plugin(Child):
 	
 	# -----------------------------------------------------------------------
 	
-	def sendReply(self, trigger, replytext):
-		reply = PluginReply(trigger, replytext)
+	def sendReply(self, trigger, replytext, process=1):
+		reply = PluginReply(trigger, replytext, process)
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
 	# -----------------------------------------------------------------------
