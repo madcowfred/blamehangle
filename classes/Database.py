@@ -45,11 +45,8 @@ class DatabaseWrapper:
 		cursor = self.db.cursor()
 		
 		if args:
-			if hasattr(self, 'escape'):
-				newquery = self._escape(sqlquery, args)
-				cursor.execute(newquery)
-			else:
-				cursor.execute(sqlquery, args)
+			newquery = self._escape(sqlquery, args)
+			cursor.execute(newquery)
 		else:
 			cursor.execute(sqlquery)
 		
