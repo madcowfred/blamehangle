@@ -3,11 +3,14 @@
 # ---------------------------------------------------------------------------
 # Lookup rhymes, synonyms, or antonyms of words using rhymezone.com
 # Look up dictionary meanings via the DICT protocol (RFC 2229)
+# Check the spelling of a word with aspell/ispell
+# Look up words on urbandictionary.com
 
 import asyncore
 import os
 import re
 import socket
+import time
 from urllib import quote
 
 from classes.Common import *
@@ -53,6 +56,11 @@ WORD_SPELL = 'WORD_SPELL'
 SPELL_HELP = '\02spell\02 <word> : Check spelling of a word.'
 SPELL_RE = re.compile('^spell\s+(?P<word>\S+)$')
 
+WORD_URBAN = 'WORD_URBAN'
+URBAN_HELP = '\02urban\02 [n] <term> : Look up <term> on urbandictionary.com, possibly getting definition <n>.'
+URBAN_RE = re.compile('^urban\s+(?P<n>\d+|)\s*(?P<term>.+)$')
+URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
+
 # ---------------------------------------------------------------------------
 
 class WordStuff(Plugin):
@@ -76,6 +84,9 @@ class WordStuff(Plugin):
 			
 			else:
 				self.__spell_bin = '%s -a -S' % bin
+		
+		# Urban stuff
+		self.__Urban_Defs = {}
 	
 	# -----------------------------------------------------------------------
 	
@@ -88,6 +99,8 @@ class WordStuff(Plugin):
 		self.setTextEvent(WORD_DICT, DICT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# Spell
 		self.setTextEvent(WORD_SPELL, SPELL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		# UrbanDictionary
+		self.setTextEvent(WORD_URBAN, URBAN_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		
 		self.registerEvents()
 		
@@ -96,6 +109,7 @@ class WordStuff(Plugin):
 		self.setHelp('words', 'synonyms', SYNONYM_HELP)
 		self.setHelp('words', 'dict', DICT_HELP)
 		self.setHelp('words', 'spell', SPELL_HELP)
+		self.setHelp('words', 'urban', URBAN_HELP)
 		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
@@ -132,6 +146,25 @@ class WordStuff(Plugin):
 			self.__Spell(trigger)
 		else:
 			self.sendReply(trigger, 'spell is broken until my owner fixes it.')
+	
+	def _trigger_WORD_URBAN(self, trigger):
+		term = trigger.match.group('term').lower()
+		if len(term) > 30:
+			self.sendReply(trigger, "That's too long!")
+		
+		else:
+			if term in self.__Urban_Defs:
+				# Older than 12 hours, kill it
+				if (time.time() - self.__Urban_Defs[term]['time']) > 43200:
+					del self.__Urban_Defs[term]
+				# Use the cached one
+				else:
+					self.__Urban_Reply(trigger)
+					return
+			
+			# Fetch a new one
+			url = URBAN_URL % QuoteURL(term)
+			self.urlRequest(trigger, self.__Urban, url)
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of a RhymeZone page
@@ -240,6 +273,96 @@ class WordStuff(Plugin):
 			replytext = 'Failed to parse [ai]spell output.'
 			self.putlog(LOG_DEBUG, line)
 		
+		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Urban dictionary got back to us, yo
+	def __Urban(self, trigger, page_text):
+		term = trigger.match.group('term').lower()
+		
+		# No match!
+		if page_text.find('No definitions found') >= 0:
+			replytext = "No definitions found for '%s'" % term
+			self.sendReply(trigger, replytext)
+		
+		# Some matches!
+		else:
+			# Find the definitions
+			chunks = FindChunks(page_text, '<blockquote>', '</blockquote>')
+			if not chunks:
+				self.sendReply(trigger, 'Page parsing failed: blockquotes.')
+				return
+			
+			# Parse the definitions
+			defs = []
+			
+			for chunk in chunks:
+				out = []
+				
+				# Find each line
+				ps = FindChunks(chunk, '<p>', '</p>')
+				if not ps:
+					self.sendReply(trigger, 'Page parsing failed: lines.')
+					return
+				
+				for p in ps:
+					# If it's an empty quote, skip it
+					if p == '<i></i>':
+						continue
+					
+					# Remove annoying <br>s
+					p = p.replace('\r<br />\n', ' ')
+					
+					# If it's a quote, make it look like one
+					quote = FindChunk(p, '<i>', '</i>')
+					if quote:
+						p = '"%s"' % (quote)
+					
+					# Get rid of evil links
+					p = StripHTML(p)[0]
+					
+					# Stick it in the list
+					out.append(p)
+				
+				# If we got something, add it to the defs list
+				if out:
+					definition = ' '.join(out)
+					defs.append(definition)
+			
+			# If we got some definitions, add them to the cache and spit
+			# something out
+			if defs:
+				self.__Urban_Defs[term] = {
+					'time': time.time(),
+					'defs': defs
+				}
+				
+				self.__Urban_Reply(trigger)
+			
+			# If not, cry
+			else:
+				replytext = 'Page parsing failed: definition.'
+				self.sendReply(trigger, replytext)
+	
+	# Spit out something from our UD cache
+	def __Urban_Reply(self, trigger):
+		try:
+			n = int(trigger.match.group('n'))
+		except ValueError:
+			n = 1
+		term = trigger.match.group('term').lower()
+		
+		# See if they're being stupid
+		numdefs = len(self.__Urban_Defs[term]['defs'])
+		
+		if n > numdefs:
+			replytext = "There are only %d definitions for '%s'!"% (numdefs, term)
+		
+		# Guess they're not
+		else:
+			replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (term, n, numdefs, self.__Urban_Defs[term]['defs'][n-1])
+		
+		# Spit it out
 		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
