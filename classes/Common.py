@@ -176,7 +176,7 @@ QUOTED = {
 def unquote_things(m):
 	whole = m.group(0)
 	thing = m.group(1).lower()
-	if thing.startswith('&'):
+	if thing.startswith('#'):
 		try:
 			c = chr(int(thing[1:]))
 		except ValueError:
