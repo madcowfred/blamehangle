@@ -10,7 +10,7 @@ import time
 
 from classes.Common import *
 from classes.Constants import *
-from classes.Plugin import Plugin
+from classes.Plugin import Plugin, PluginFakeTrigger
 
 # ---------------------------------------------------------------------------
 # Tuples of 'products'. Should be (product name, page code, priority). If a
