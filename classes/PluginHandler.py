@@ -63,11 +63,11 @@ class PluginHandler(Child):
 	# Check to see if we have any TIMED events that need to trigger. If we
 	# have some, make a new PluginTimedTrigger and send it out
 	def run_sometimes(self, currtime):
-		ready = [(e, p) for e, p in self.__Events[IRCT_TIMED].values() if currtime - e.last_trigger >= e.interval]
-		for event, plugin in ready:
-			event.last_trigger = currtime
-			trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
-			self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+		for event, plugin in self.__Events[IRCT_TIMED.values():
+			if currtime - event.last_trigger >= event.interval:
+				event.last_trigger += event.interval
+				trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
+				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
 	# -----------------------------------------------------------------------
 	# Postman has asked us to rehash our config. We reset our events and ask
