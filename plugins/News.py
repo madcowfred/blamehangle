@@ -36,16 +36,18 @@ SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 # ---------------------------------------------------------------------------
 
 ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/lp.html?keywords=Quirkies&menu=news.quirkies'
-GOOGLE_BUSINESS_URL = 'http://news.google.com/news/en/us/business.html'
-GOOGLE_HEALTH_URL = 'http://news.google.com/news/en/us/health.html'
-GOOGLE_SCIENCE_URL = 'http://news.google.com/news/en/us/technology.html'
-GOOGLE_SPORT_URL = 'http://news.google.com/news/en/us/sports.html'
-GOOGLE_WORLD_URL = 'http://news.google.com/news/en/us/world.html'
+GOOGLE_BUSINESS_URL = 'http://news.google.com/?ned=us&topic=b'
+GOOGLE_HEALTH_URL = 'http://news.google.com/?ned=us&topic=m'
+GOOGLE_SCIENCE_URL = 'http://news.google.com/?ned=us&topic=t'
+GOOGLE_SPORT_URL = 'http://news.google.com/?ned=us&topic=s'
+GOOGLE_WORLD_URL = 'http://news.google.com/?ned=us&topic=w'
 
 # ---------------------------------------------------------------------------
-
-GOOGLE_STORY_TITLE_RE = re.compile(r'<a class=y href="/url\?ntc=\S+&q=(.*?)">(.*?)</a>')
-GOOGLE_STORY_TEXT_RE = re.compile(r'</b><br>(.*?)<br>')
+# Dirty dirty regexps
+GOOGLE_STORY_TITLE_RE = re.compile(r'<td valign=top><a href="(http://.*?)" id=.*?><b>(.*?)</b>')
+GOOGLE_STORY_TEXT_RE = re.compile(r'<font size=-1>(?!<)(.*?)</font>')
+#GOOGLE_STORY_TITLE_RE = re.compile(r'<a class=y href="/url\?ntc=\S+&q=(.*?)">(.*?)</a>')
+#GOOGLE_STORY_TEXT_RE = re.compile(r'</b><br>(.*?)<br>')
 
 # ---------------------------------------------------------------------------
 
@@ -421,35 +423,39 @@ class News(Plugin):
 		resp.data = UnquoteHTML(resp.data)
 		
 		# Find some tables
-		tables = FindChunks(resp.data, '<table', '</table>')
+		#tables = FindChunks(resp.data, '<table', '</table>')
+		tables = FindChunks(resp.data, '<table border=0 width=75% valign=top', '</table>')
 		if not tables:
-			self.putlog(LOG_WARNING, 'Google News parsing failed')
+			self.putlog(LOG_WARNING, 'Google News parsing failed: no artice tables.')
 			return
 		
 		# See if any of them have articles
 		articles = []
 		
 		for table in tables:
-			if table.find('<a class=y') >= 0:
-				# Look for the URL and story title
-				m = GOOGLE_STORY_TITLE_RE.search(table)
-				if not m:
-					continue
-				
-				url, title = m.groups()
-				
-				# Look for the story text
-				m = GOOGLE_STORY_TEXT_RE.search(table)
-				if not m:
-					description = ''
-				else:
-					description = m.group(1).strip()
-				
-				data = [title, url, description]
-				articles.append(data)
+			# Look for the URL and story title
+			m = GOOGLE_STORY_TITLE_RE.search(table)
+			if not m:
+				continue
+			
+			url, title = m.groups()
+			
+			# Look for the story text
+			m = GOOGLE_STORY_TEXT_RE.search(table)
+			if m:
+				description = m.group(1).strip()
+			else:
+				description = ''
+			
+			data = [title, url, description]
+			articles.append(data)
 		
+		# If we got no articles, cry here
+		if not articles:
+			self.putlog(LOG_WARNING, "Google News parsing failed: no articles.")
 		# Go for it!
-		self.__News_New(trigger, articles)
+		else:
+			self.__News_New(trigger, articles)
 	
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
