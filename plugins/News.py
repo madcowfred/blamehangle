@@ -130,9 +130,9 @@ class News(Plugin):
 		# db
 		if currtime - self.__Last_Clearout_Time >= 3600:
 			self.__Last_Clearout_Time = currtime
-			week = 604800
-			a_week_ago = currtime - week
-			data = [(TIME_CHECK, None), (TIME_QUERY, [week, a_week_ago])]
+			two_days = 172800
+			two_days_ago = currtime - two_days
+			data = [(TIME_CHECK, None), (TIME_QUERY, [two_days, two_days_ago])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 	# -----------------------------------------------------------------------
