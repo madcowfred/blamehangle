@@ -17,6 +17,7 @@ from Plugins import *
 
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
+from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
 
 # ---------------------------------------------------------------------------
@@ -43,7 +44,7 @@ class Postman:
 		# Create our children
 		self.__Children = {}
 
-		system = [ DataMonkey, PluginHandler, ChatterGizmo ]
+		system = [ DataMonkey, PluginHandler, ChatterGizmo, HTTPMonster ]
 		
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
