@@ -23,7 +23,7 @@ class Helper(Plugin):
 	Plugins execute a self.setHelp(topic, command, help_text) command
 	Users on IRC can then say "help" to get a list of all the help topics, or
 	"help <topic>" to get a list of commands fort he given topic, or 
-	"help <command>" to get the help_text provided for that command.
+	"help <topic> <command>" to get the help_text provided for that command.
 	"""
 
 	def setup(self):
@@ -61,7 +61,7 @@ class Helper(Plugin):
 		
 		# register a new trigger for this command
 		com_name = "__%s__%s__" % (topic, command)
-		com_pattern = re.compile("^help +(?P<command>%s)$" % command)
+		com_pattern = re.compile("^help +(?P<topic>%s) +(?P<command>%s)$" % (topic, command))
 		com_dir = PluginTextEvent(com_name, IRCT_PUBLIC_D, com_pattern)
 		com_msg = PluginTextEvent(com_name, IRCT_MSG, com_pattern)
 		self.register(com_dir, com_msg)
@@ -94,7 +94,8 @@ class Helper(Plugin):
 			help_text = [text for com, text in self.__help[topic] if com == command][0]
 			replytext = "Help for '\02%s\02': " % command
 			replytext += help_text
-			self.sendReply(trigger, replytext)
+			#self.sendReply(trigger, replytext)
+			self.sendReply(trigger, help_text)
 
 		# Something went wrong
 		else:
