@@ -149,7 +149,7 @@ class IMDb(Plugin):
 			data = {}
 			
 			# Find the movie's title and year
-			m = re.search(r'<title>(.+) \(.*?\)</title>', page_text)
+			m = re.search(r'<title>(.+) \((\d+).*?\)</title>', page_text)
 			if not m:
 				self.sendReply(trigger, 'Page parsing failed: title.')
 				return
