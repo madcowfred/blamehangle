@@ -68,8 +68,6 @@ class News(Plugin):
 	def setup(self):
 		self.__outgoing = self.__unpickle('.news.out_pickle') or []
 		
-		self.__to_process = {}
-		
 		self.__Last_Spam_Time = time.time()
 		self.__Last_Clearout_Time = time.time()
 		
