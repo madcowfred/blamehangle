@@ -19,8 +19,6 @@ plugins:
 	* Spam text at intervals (easy way to use PluginTimedEvent?
 	* MapQuest: return URL with other data (?)
 	* SmartyPants: random factoid spam at interval(s)
-	* Karma: combine nicknames
-	* Karma: top/bottom <n> karmas
 	* animenfo.com lookup
 	* 'seen'? not possible for a plugin with the current range of IRCT events.
 	* SmartyPants: Add/remove/ignore users via ctcp for admin. Possibly
