@@ -12,6 +12,7 @@ import asyncore
 import re
 import socket
 import sys
+import types
 
 # ---------------------------------------------------------------------------
 # Yes, this thing is horrible.
@@ -48,7 +49,7 @@ class UserInfo:
 		return '%s (%s@%s)' % (self.nick, self.ident, self.host)
 	
 	def __repr__(self):
-		return '<IRCEvent: %s>' % (self.hostmask)
+		return '<UserInfo: %s>' % (self.hostmask)
 
 # Is this a channel?
 def is_channel(s):
@@ -79,7 +80,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		print 'EVENT:', repr(args)
 		event = IRCEvent(*args)
 		for method in self.__handlers:
-			method(event)
+			method(self, event)
 	
 	# Your basic 'send a line of text to the server' method
 	def sendline(self, line, *args):
@@ -105,7 +106,9 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		self.close()
 	
 	# An exception occured somewhere
-	def ahandle_error(self):
+	def handle_error(self):
+		raise
+		
 		_type, _value = sys.exc_info()[:2]
 		
 		if _type == 'KeyboardInterrupt':
@@ -122,7 +125,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		lines = _linesep_regexp.split(self.__read_buf)
 		self.__read_buf = lines.pop()
 		
-		for line in lines[:-1]:
+		for line in lines:
 			print '<', repr(line)
 			
 			prefix = command = target = userinfo = None
@@ -145,6 +148,8 @@ class asyncIRC(asyncore.dispatcher_with_send):
 				if len(a) == 2:
 					arguments.append(a[1])
 			
+			#print 'prefix:', prefix, 'command:', command, 'args:', arguments
+			
 			
 			# Keep our nickname up to date
 			if command == '001':
@@ -161,15 +166,37 @@ class asyncIRC(asyncore.dispatcher_with_send):
 			# NOTICE/PRIVMSG are special
 			if command in ('notice', 'privmsg'):
 				target, message = arguments
+				messages = _ctcp_dequote(message)
 				
-				if command == 'privmsg':
-					if is_channel(target):
-						command = 'pubmsg'
-				else:
+				if command == 'notice':
 					if is_channel(target):
 						command = 'pubnotice'
 					else:
 						command = 'privnotice'
+				
+				elif command == 'privmsg':
+					if is_channel(target):
+						command = 'pubmsg'
+				
+				# This is slightly confusing
+				for m in messages:
+					if type(m) is types.TupleType:
+						if command in ('privmsg', 'pubmsg'):
+							command = 'ctcp'
+						else:
+							command = 'ctcpreply'
+						
+						arguments = list(m)
+					
+					else:
+						arguments = [m]
+					
+					# Trigger the event
+					self.__trigger_event(prefix, userinfo, command, target, arguments)
+					#if DEBUG:
+					#	print "command: %s, source: %s, target: %s, arguments: %s" % (
+					#		command, prefix, target, [m])
+					#self._handle_event(Event(command, prefix, target, [m]))
 			
 			else:
 				if command not in ('quit', 'ping'):
@@ -402,3 +429,74 @@ numeric_events = {
 	"501": "umodeunknownflag",
 	"502": "usersdontmatch",
 }
+
+# ---------------------------------------------------------------------------
+# This whole thing terrifies me.
+_LOW_LEVEL_QUOTE = "\020"
+_CTCP_LEVEL_QUOTE = "\134"
+_CTCP_DELIMITER = "\001"
+
+_low_level_mapping = {
+	"0": "\000",
+	"n": "\n",
+	"r": "\r",
+	_LOW_LEVEL_QUOTE: _LOW_LEVEL_QUOTE
+}
+
+_low_level_regexp = re.compile(_LOW_LEVEL_QUOTE + "(.)")
+
+def _ctcp_dequote(message):
+	"""[Internal] Dequote a message according to CTCP specifications.
+
+	The function returns a list where each element can be either a
+	string (normal message) or a tuple of one or two strings (tagged
+	messages).  If a tuple has only one element (ie is a singleton),
+	that element is the tag; otherwise the tuple has two elements: the
+	tag and the data.
+
+	Arguments:
+
+		message -- The message to be decoded.
+	"""
+
+	def _low_level_replace(match_obj):
+		ch = match_obj.group(1)
+
+		# If low_level_mapping doesn't have the character as key, we
+		# should just return the character.
+		return _low_level_mapping.get(ch, ch)
+
+	if _LOW_LEVEL_QUOTE in message:
+		# Yup, there was a quote.  Release the dequoter, man!
+		message = _low_level_regexp.sub(_low_level_replace, message)
+
+	if _CTCP_DELIMITER not in message:
+		return [message]
+	else:
+		# Split it into parts.  (Does any IRC client actually *use*
+		# CTCP stacking like this?)
+		chunks = string.split(message, _CTCP_DELIMITER)
+
+		messages = []
+		i = 0
+		while i < len(chunks)-1:
+			# Add message if it's non-empty.
+			if len(chunks[i]) > 0:
+				messages.append(chunks[i])
+
+			if i < len(chunks)-2:
+				# Aye!  CTCP tagged data ahead!
+				messages.append(tuple(string.split(chunks[i+1], " ", 1)))
+
+			i = i + 2
+
+		if len(chunks) % 2 == 0:
+			# Hey, a lonely _CTCP_DELIMITER at the end!  This means
+			# that the last chunk, including the delimiter, is a
+			# normal message!  (This is according to the CTCP
+			# specification.)
+			messages.append(_CTCP_DELIMITER + chunks[-1])
+
+		return messages
+
+# ---------------------------------------------------------------------------
