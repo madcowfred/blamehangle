@@ -52,63 +52,67 @@ class Karma(Plugin):
 		self.registerHelp()
 	
 	#------------------------------------------------------------------------
-	# We don't care what sort it is, as they all use the same select query
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		name = trigger.match.group('name')
-		name = name.lower()
-		query = (SELECT_QUERY, name)
-		self.dbQuery(trigger, query)
+	
+	def _trigger_KARMA_LOOKUP(self, trigger):
+		name = trigger.match.group('name').lower()
+		self.dbQuery(trigger, self.__Karma_Lookup, SELECT_QUERY, name)
+	
+	def _trigger_KARMA_PLUS(self, trigger):
+		name = trigger.match.group('name').lower()
+		self.dbQuery(trigger, self.__Karma_Plus, SELECT_QUERY, name)
+	
+	def _trigger_KARMA_MINUS(self, trigger):
+		name = trigger.match.group('name').lower()
+		self.dbQuery(trigger, self.__Karma_Minus, SELECT_QUERY, name)
 	
 	#------------------------------------------------------------------------
+	# Does karma lookups
+	def __Karma_Lookup(self, trigger, result):
+		name = trigger.match.group('name').lower()
+		
+		# Error!
+		if result is None:
+			replytext = 'A database error occurred, eek!'
+		
+		# No karma for this yet
+		elif result == ():
+			replytext = '%s has neutral karma' % name
+		
+		# Some karma for this
+		else:
+			replytext = '%s has karma of %d' % (name, result[0]['value'])
+		
+		self.sendReply(trigger, replytext)
 	
-	def _message_REPLY_QUERY(self, message):
-		trigger, result = message.data
-		name = trigger.match.group('name')
+	# Does ++ stuff
+	def __Karma_Plus(self, trigger, result):
+		name = trigger.match.group('name').lower()
 		
-		if trigger.name == KARMA_LOOKUP:
-			if result == [()]:
-				# no karma!
-				replytext = "%s has neutral karma." % name
-				self.sendReply(trigger, replytext)
-			else:
-				info = result[0][0]
-				if info['value'] == 0:
-					replytext = "%s has neutral karma." % name
-				else:
-					replytext = "%s has karma of %d" % (name, info['value'])
-				self.sendReply(trigger, replytext)
+		if result is None:
+			self.sendReply(trigger, 'A database error occurred, eek!')
 		
-		elif trigger.name == KARMA_PLUS:
-			trigger.name = KARMA_MOD
-			if result == [()]:
-				# no karma, so insert as 1
-				query = (INSERT_QUERY, name, 1)
-				self.dbQuery(trigger, query)
-			else:
-				# increment existing karma
-				query = (UPDATE_QUERY, 1, name)
-				self.dbQuery(trigger, query)
-		
-		elif trigger.name == KARMA_MINUS:
-			trigger.name = KARMA_MOD
-			if result == [()]:
-				# no karma, so insert as -1
-				query = (INSERT_QUERY, name, -1)
-				self.dbQuery(trigger, query)
-			else:
-				# decrement existing karma
-				query = (UPDATE_QUERY, -1, name)
-				self.dbQuery(trigger, query)
-		
-		elif trigger.name == KARMA_MOD:
-			# The database just made our requested modifications to the karma
-			# table. We don't need to do anything about this, so just pass
-			pass
+		elif result == ():
+			self.dbQuery(trigger, self.__Karma_Mod, INSERT_QUERY, name, 1)
 		
 		else:
-			# We got a wrong message, what the fuck?
-			errtext = "Database sent Karma an erroneous %s" % event
-			raise ValueError, errtext
+			self.dbQuery(trigger, self.__Karma_Mod, UPDATE_QUERY, 1, name)
+	
+	# Does -- stuff
+	def __Karma_Minus(self, trigger, result):
+		name = trigger.match.group('name').lower()
+		
+		if result is None:
+			self.sendReply(trigger, 'A database error occurred, eek!')
+		
+		elif result == ():
+			self.dbQuery(trigger, self.__Karma_Mod, INSERT_QUERY, name, -1)
+		
+		else:
+			self.dbQuery(trigger, self.__Karma_Mod, UPDATE_QUERY, -1, name)
+	
+	# Does nothing
+	def __Karma_Mod(self, trigger, result):
+		if result is None:
+			self.sendReply(trigger, 'A database error occurred, eek!')
 	
 #----------------------------------------------------------------------------
