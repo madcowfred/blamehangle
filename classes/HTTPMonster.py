@@ -180,6 +180,8 @@ class async_http(buffered_dispatcher):
 		# host.
 		try:
 			self.connect((ip, port))
+		except socket.error, msg:
+			self.failed(msg)
 		except socket.gaierror, msg:
 			self.failed(msg)
 		else:
