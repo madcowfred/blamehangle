@@ -58,8 +58,8 @@ class DatabaseWrapper:
 		for arg in args:
 			if type(arg) in types.StringTypes:
 				# escape annoying chars
-				for char in ('$'):
-					arg = arg.replace(char, '\\%s' % char)
+				arg = arg.replace('$', '\\$')
+				arg = arg.replace('\\', '\\\\')
 				# double up on quotes to stop evilness
 				arg = arg.replace("'", "''")
 				
@@ -82,8 +82,8 @@ class DatabaseWrapper:
 				arg = row[i]
 				# unescape annoying chars
 				if type(arg) == types.StringType:
-					for char in ('$'):
-						arg = arg.replace('\\%s' % char, char)
+					arg = arg.replace('\\$', '$')
+					arg = arg.replace('\\\\', '\\')
 				
 				thisrow[columns[i][0]] = arg
 			
