@@ -316,7 +316,7 @@ class News(Plugin):
 				self.putlog(LOG_DEBUG, tolog)
 				
 				# Re-pickle the current outgoing queue
-				self.__pickle(self.__outgoing, '.news.out_pickle')
+				# self.__pickle(self.__outgoing, '.news.out_pickle')
 		
 		# Once an hour, go and check for old news and purge it from the
 		# db
