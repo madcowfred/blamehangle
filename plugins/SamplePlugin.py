@@ -6,6 +6,7 @@
 #----------------------------------------------------------------------------
 
 import re
+from classes.Constants import *
 from classes.Plugin import Plugin
 
 class SamplePlugin(Plugin):
