@@ -112,7 +112,7 @@ class AusBOM(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse a Current Observations page.
-	def __Parse_Current(self, trigger, page_text):
+	def __Parse_Current(self, trigger, page_url, page_text):
 		# Work out what our location should be
 		if trigger.name == AUSBOM_AUSBOM:
 			location = trigger.match.group('location')

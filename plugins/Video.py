@@ -56,7 +56,7 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	
-	def __IMDb(self, trigger, page_text):
+	def __IMDb(self, trigger, page_url, page_text):
 		# If this isn't a search result, try it as a title.
 		if page_text.find('title search</title>') < 0:
 			self.__IMDb_Title(trigger, page_text)
@@ -130,7 +130,7 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	
-	def __IMDb_Title(self, trigger, page_text):
+	def __IMDb_Title(self, trigger, page_url, page_text):
 		page_text = UnquoteHTML(page_text)
 		
 		# No match, arg!
@@ -204,7 +204,7 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse a TVTome search results page
-	def __TVTome(self, trigger, page_text):
+	def __TVTome(self, trigger, page_url, page_text):
 		findme = trigger.match.group(1).lower()
 		
 		# It's not a search result
@@ -256,7 +256,7 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse a TVTome show info page
-	def __TVTome_Show(self, trigger, page_text):
+	def __TVTome_Show(self, trigger, page_url, page_text):
 		# Find the show title
 		show_title = FindChunk(page_text, '<h1>', '</h1>')
 		if not show_title:

@@ -154,7 +154,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the ASX page and spit out any results
-	def __ASX(self, trigger, page_text):
+	def __ASX(self, trigger, page_url, page_text):
 		# Get all table rows
 		trs = FindChunks(page_text, '<tr', '</tr>')
 		if not trs:
@@ -199,7 +199,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the exchange page and spit out a result
-	def __Exchange(self, trigger, page_text):
+	def __Exchange(self, trigger, page_url, page_text):
 		data = trigger.data
 		page_text = page_text.replace('&amp;', ' and ')
 		
@@ -223,7 +223,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock quote page and spit out a result
-	def __Quote(self, trigger, page_text):
+	def __Quote(self, trigger, page_url, page_text):
 		symbol = trigger.match.group('symbol').upper()
 		
 		# Invalid symbol, sorry
@@ -281,7 +281,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock symbol page and spit out a result
-	def __Symbol(self, trigger, page_text):
+	def __Symbol(self, trigger, page_url, page_text):
 		findme = trigger.match.group('findme').upper()
 		
 		# No matches, sorry

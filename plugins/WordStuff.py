@@ -168,7 +168,7 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of a RhymeZone page
-	def __RhymeZone(self, trigger, page_text):
+	def __RhymeZone(self, trigger, page_url, page_text):
 		word = trigger.match.group('word').lower()
 		
 		# If the word wasn't found at all, we don't need to do anything else
@@ -277,7 +277,7 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Urban dictionary got back to us, yo
-	def __Urban(self, trigger, page_text):
+	def __Urban(self, trigger, page_url, page_text):
 		term = trigger.match.group('term').lower()
 		
 		# No match!

@@ -51,7 +51,7 @@ class GameStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We got a response from KLOV!
-	def __Parse_KLOV(self, trigger, page_text):
+	def __Parse_KLOV(self, trigger, page_url, page_text):
 		title = trigger.match.group('title').lower()
 		
 		# Nothing, booo
@@ -131,7 +131,7 @@ class GameStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We got a response from MobyGames!
-	def __Parse_MobyGames(self, trigger, page_text):
+	def __Parse_MobyGames(self, trigger, page_url, page_text):
 		title = trigger.match.group('title').lower()
 		
 		# Nothing, booo

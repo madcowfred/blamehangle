@@ -118,7 +118,7 @@ class Google(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Google(self, trigger, page_text):
+	def __Google(self, trigger, page_url, page_text):
 		findme = trigger.match.group(1)
 		
 		# Woops, no matches
@@ -193,7 +193,7 @@ class Google(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Translate(self, trigger, page_text):
+	def __Translate(self, trigger, page_url, page_text):
 		# Couldn't translate
 		if page_text.find('Sorry, this text could not be translated') >= 0:
 			replytext = 'Sorry, this text could not be translated.'
@@ -209,7 +209,7 @@ class Google(Plugin):
 		# Spit out our answer
 		self.sendReply(trigger, replytext)
 	
-	def __Transmangle(self, trigger, page_text):
+	def __Transmangle(self, trigger, page_url, page_text):
 		replytext = None
 		
 		# Couldn't translate

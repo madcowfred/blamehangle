@@ -74,7 +74,7 @@ class Anime(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse an AniDB page
-	def __Parse_AniDB(self, trigger, page_text):
+	def __Parse_AniDB(self, trigger, page_url, page_text):
 		findme = trigger.match.group('findme').lower()
 		
 		# If it's search results, parse them and spit them out

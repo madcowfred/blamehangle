@@ -353,7 +353,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
-	def __Parse_Ananova(self, trigger, page_text):
+	def __Parse_Ananova(self, trigger, page_url, page_text):
 		page_text = UnquoteHTML(page_text)
 		
 		# Find some articles
@@ -394,7 +394,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse Google News!
-	def __Parse_Google(self, trigger, page_text):
+	def __Parse_Google(self, trigger, page_url, page_text):
 		page_text = UnquoteHTML(page_text)
 		
 		# Find some tables
@@ -435,7 +435,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
-	def __Parse_RSS(self, trigger, page_text):
+	def __Parse_RSS(self, trigger, page_url, page_text):
 		page_text = UnquoteHTML(page_text)
 		
 		name = trigger.args[0]

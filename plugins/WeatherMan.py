@@ -126,7 +126,7 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse a Yahoo Weather page
-	def __Parse_Weather(self, trigger, page_text):
+	def __Parse_Weather(self, trigger, page_url, page_text):
 		# No results
 		if page_text.find('No match found') >= 0:
 			replytext = "No matches found for '%s'" % trigger.match.group('location')
@@ -266,7 +266,7 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse a semi-decoded METAR file
-	def __Parse_METAR(self, trigger, page_text):
+	def __Parse_METAR(self, trigger, page_url, page_text):
 		stationid = trigger.match.group('station').upper()
 		
 		# No results
@@ -353,7 +353,7 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse scary TAF info
-	def __Parse_TAF(self, trigger, page_text):
+	def __Parse_TAF(self, trigger, page_url, page_text):
 		stationid = trigger.match.group('station').upper()
 		
 		# No results

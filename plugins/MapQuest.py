@@ -102,7 +102,7 @@ class MapQuest(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We heard back from mapquest. yay!
-	def __Parse_Distance(self, trigger, page_text):
+	def __Parse_Distance(self, trigger, page_url, page_text):
 		# Can't find a route
 		if page_text.find('We are having trouble finding a route') >= 0:
 			self.sendReply(trigger, 'Unable to find a route between those places!')

@@ -243,7 +243,7 @@ class async_http(asyncore.dispatcher_with_send):
 						tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
 						self.parent.putlog(LOG_DEBUG, tolog)
 						
-						data = [self.trigger, self.method, page_text]
+						data = [self.trigger, self.method, self.url, page_text]
 						self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up

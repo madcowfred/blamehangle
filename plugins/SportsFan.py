@@ -45,7 +45,7 @@ class SportsFan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We heard back from Yahoo. yay!
-	def __Parse_Scores(self, trigger, page_text):
+	def __Parse_Scores(self, trigger, page_url, page_text):
 		team = trigger.match.group('team').lower()
 		league = trigger.match.group('league').lower()
 		

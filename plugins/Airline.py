@@ -131,7 +131,7 @@ class Airline(Plugin):
 			self.sendReply(trigger, replytext)
 	
 	# Site replied
-	def __Parse_IATA(self, trigger, page_text):
+	def __Parse_IATA(self, trigger, page_url, page_text):
 		code = trigger.match.group('code').upper()
 		page_text = page_text.replace('&deg;', '°')
 		
@@ -225,7 +225,7 @@ class Airline(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Travelocity has replied
-	def __Parse_Travelocity(self, trigger, page_text):
+	def __Parse_Travelocity(self, trigger, page_url, page_text):
 		# No results
 		if page_text.find('No match found') >= 0:
 			replytext = 'Unable to find flight information'
