@@ -22,7 +22,7 @@
 #	created_time int(11) default NULL,
 #	modified_time int(11) default NULL,
 #	requested_time int(11) default NULL,
-#	locked_time varchar (11) default NULL,
+#	locked_time int (11) default NULL,
 #	PRIMARY KEY (name)
 # ) TYPE=MyISAM;
 #
@@ -55,7 +55,7 @@ MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host =
 DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
 INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
-REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, requester_nick = %s, requester_host = %s WHERE name = %s"
+REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, requester_nick = %s, requester_host = %s, requested_time = %s WHERE name = %s"
 
 LOCK_QUERY = "UPDATE factoids SET locker_nick = %s, locker_host = %s, locked_time = %s WHERE name = %s"
 UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, locked_time = NULL WHERE name = %s"
@@ -78,14 +78,20 @@ MAX_FACT_VAL_LENGTH = 455
 OK = [
 	"OK",
 	"you got it",
-	"done"
+	"done",
+	"okay",
+	"okie",
+	"as you wish",
+	"by your command"
 ]
 
 DUNNO = [
 	"no idea",
 	"I don't know",
 	"you got me",
-	"not a clue"
+	"not a clue",
+	"nfi",
+	"I dunno"
 ]
 
 #----------------------------------------------------------------------------
@@ -255,7 +261,8 @@ class SmartyPants(Plugin):
 			name = row['name']
 			requester_nick = trigger.userinfo.nick
 			requester_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
-			data = [trigger, (REQUESTED_QUERY, [requester_nick, requester_host, name])]
+			now = int(time.time())
+			data = [trigger, (REQUESTED_QUERY, [requester_nick, requester_host, now, name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
 		self.sendReply(trigger, replytext)
@@ -278,7 +285,7 @@ class SmartyPants(Plugin):
 				value = trigger.match.group('value')
 				author_nick = trigger.userinfo.nick
 				author_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
-				created_time = time.time()
+				created_time = int(time.time())
 				data = [trigger, (SET_QUERY, [name, value, author_nick, author_host, created_time])]
 				
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
@@ -343,7 +350,7 @@ class SmartyPants(Plugin):
 	# Update a factoid by adding our new text to the end of it
 	#------------------------------------------------------------------------
 	def __Fact_Update(self, trigger, value):
-		modified_time = time.time()
+		modified_time = int(time.time())
 		modifier_nick = trigger.userinfo.nick
 		modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
 		name = trigger.match.group('name')
@@ -505,7 +512,7 @@ class SmartyPants(Plugin):
 						# Not locked, so lock it
 						locker_nick = trigger.userinfo.nick
 						locker_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
-						locked_time = time.time()
+						locked_time = int(time.time())
 						data = [trigger, (LOCK_QUERY, [locker_nick, locker_host, locked_time, name])]
 						self.sendMessage('DataMonkey', REQ_QUERY, data)
 				else:
@@ -578,18 +585,82 @@ class SmartyPants(Plugin):
 		else:
 			row = results[0][0]
 			
-			now = time.time()
-			
-			text = '%(name)s -- created by %(author_nick)s (%(author_host)s), some time ago'
+			now = int(time.time())
+			then = row['created_time']
+			row['created_time'] = self.__nice_time(now - then)
+			text = '%(name)s -- created by %(author_nick)s (%(author_host)s), %(created_time)s ago'
 			if row['request_count']:
-				#diff = row['requested_time'] - time.time()
-				text += '; requested %(request_count)d time(s), last by %(requester_nick)s, some time ago'
+				then = row['requested_time']
+				row['requested_time'] = self.__nice_time(now - then)
+				text += '; requested %(request_count)d time(s), last by %(requester_nick)s, %(requested_time)s ago'
 			if row['modifier_nick']:
-				text += '; last modified by %(modifier_nick)s (%(modifier_host)s), some time ago'
+				then = row['modified_time']
+				row['modified_time'] = self.__nice_time(now - then)
+				text += '; last modified by %(modifier_nick)s (%(modifier_host)s), %(modified_time)s ago'
+			if row['locker_nick']:
+				then = row['locked_time']
+				row['locked_time'] = self.__nice_time(now - then)
+				text += '; locked by %(locker_nick)s (%(locker_host)s), %(locked_time)s ago'
 			
 			replytext = text % row
 		
 		self.sendReply(trigger, replytext)
+	
+	#------------------------------------------------------------------------
+	# Turn an amount of seconds into a nice string detailing how long it
+	# is in english
+	#------------------------------------------------------------------------
+	def __nice_time(self, seconds):
+		text = ""
+		
+		# a year
+		if seconds >= 3156000:
+			years = seconds / 3156000
+			seconds %= 3156000
+			text += "%d year" % years
+			if years > 1:
+				text += "s, "
+			else:
+				text += ", "
+
+		# a day
+		if seconds >= 86400:
+			days = seconds / 86400
+			seconds %= 86400
+			text += "%d day" % days
+			if days > 1:
+				text += "s, "
+			else:
+				text += ", "
+		
+		# an hour
+		if seconds >= 3600:
+			hours = seconds / 3600
+			seconds %= 3600
+			text += "%d hour" % hours
+			if hours > 1:
+				text += "s, "
+			else:
+				text += ", "
+
+		# a minute
+		if seconds >= 60:
+			minutes = seconds / 60
+			seconds %= 60
+			text += "%d minute" % minutes
+			if minutes > 1:
+				text += "s, "
+			else:
+				text += ", "
+		
+		# leftover seconds
+		if seconds == 1:
+			text += "%d second" % seconds
+		else:
+			text += "%d seconds" % seconds
+
+
+		return text
 	
 	#------------------------------------------------------------------------
 	
