@@ -400,19 +400,17 @@ class Postman:
 		for plugin_name in old_plugin_list:
 			if plugin_name not in self.__plugin_list:
 				self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
-
+		
 		# Check for any new plugins that have been added to the list
 		for plugin_name in self.__plugin_list:
 			if plugin_name not in old_plugin_list:
 				self.__import_plugin(plugin_name)
 				if hasattr(self.__Children[plugin_name], 'run_once'):
 					self.__Children[plugin_name].run_once()
-
+		
 		# This is where you'd expect the code to remove any imported plugins
 		# that are no longer needed to go, but instead we put it in the handler
 		# for the REPLY_SHUTDOWN message we get.
-
-
 		
 		# Tell everyone we reloaded
 		self.sendMessage(None, REQ_REHASH, None)
