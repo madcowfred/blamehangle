@@ -42,7 +42,7 @@ NEWS_INSERT = "NEWS_INSERT"
 TIME_CHECK = "TIME_CHECK"
 
 NEWS_SEARCH = "NEWS_SEARCH"
-MAX_NEWS_SEARCH_RESULTS = 5
+MAX_NEWS_SEARCH_RESULTS = 6
 
 NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
 INSERT_QUERY = "INSERT INTO news (title, url, description, time) VALUES (%s,%s,%s,%s)"
@@ -280,12 +280,9 @@ class News(Plugin):
 					for word in words:
 						crit = 'title like "%%%s%%"' % word
 						crits.append(crit)
-					
 					critstr = ' and '.join(crits)
+					
 					query = (SEARCH_QUERY % critstr, )
-					
-					print query
-					
 					self.dbQuery(event, query)
 		
 		elif event.name == NEWS_RSS:
