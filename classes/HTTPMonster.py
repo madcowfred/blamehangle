@@ -190,7 +190,7 @@ class async_http(asyncore.dispatcher_with_send):
 									tolog = 'Redirection limit reached while trying to fetch %s' % (self.url)
 									self.parent.putlog(LOG_WARNING, tolog)
 								else:
-									self.message.data[1] = newurl
+									self.message.data[2] = newurl
 									async_http(self.parent, self.message, self.seen)
 							
 							break
