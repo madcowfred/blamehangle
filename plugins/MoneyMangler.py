@@ -279,7 +279,6 @@ class MoneyMangler(Plugin):
 					bit = 2
 					
 					part = '\02[\02%s: %s\02]\02' % (symbol, line)
-					print part
 					parts.append(part)
 					
 					if len(parts) == 10:
