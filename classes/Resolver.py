@@ -15,7 +15,6 @@ from threading import Thread
 
 from classes.Children import Child
 from classes.Constants import *
-from classes.Plugin import PluginTimedEvent
 from classes.SimpleCacheDict import SimpleCacheDict
 
 # ---------------------------------------------------------------------------
@@ -41,10 +40,6 @@ class Resolver(Child):
 	# We start our threads here to allow useful early shutdown
 	def run_once(self):
 		self.__Start_Threads()
-		
-		# Now we pretend to be a plugin so we can have a timed event
-		event = PluginTimedEvent('RESOLVER_CLEANUP', 300, None, [])
-		self.sendMessage('PluginHandler', PLUGIN_REGISTER, [event])
 	
 	# -----------------------------------------------------------------------
 	# Start our threads!
