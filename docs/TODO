@@ -1,10 +1,8 @@
 critical:
 
 important:
-	* Generic DB-backed way of storing/verifying user data. Needs to
-	  have a way for plugins to add their own flags. There are currently
-	  at least two seperate user settings (both for SmartyPants?).
-	
+    * Fix the shutdown logic. When shutting down for real, plugins shouldn't
+      be sending UNSET_HELP to Helper. (fred)
 	* Seems like it is finally time to do the plugin trigger prioritisation
 	  stuff. (zhar, when he gets bored)
 
@@ -19,13 +17,12 @@ plugins:
 	* Stock quotes & symbol lookups
 	* dictionary.com lookup
 	* Spam text at intervals (easy way to use PluginTimedEvent?
-	* MapQuest: return URL with other data
+	* MapQuest: return URL with other data (?)
 	* SmartyPants: random factoid spam at interval(s)
 	* Karma: combine nicknames
 	* Karma: top/bottom <n> karmas
 	* animenfo.com lookup
-	* 'seen' (last time someone was seen)
-	* Leave notes for people (possibly combined with above)
+	* 'seen'? not possible for a plugin with the current range of IRCT events.
 	* SmartyPants: Add/remove/ignore users via ctcp for admin. Possibly
 	  move user list to database?
 	* World time/date display
