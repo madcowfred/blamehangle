@@ -13,8 +13,9 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-TOTAL_TIME_RE = re.compile(r'Total Est. Time:.*?</font>\s*(.*?)\s*</td>')
-TOTAL_DISTANCE_RE = re.compile(r'Total Est. Distance:.*?</font>\s*(.*?)\s*</td>')
+TITLE_RE = re.compile(r'<title>Driving Directions from (.*?) to (.*?)</title>')
+TOTAL_TIME_RE = re.compile(r'Total Est. Time:</b>\s*(.*?)\s*<')
+TOTAL_DISTANCE_RE = re.compile(r'Total Est. Distance:</b>\s*(.*?)\s*<')
 
 # ---------------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ class MapQuest(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_Distance,
-			regexp = re.compile(r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$'),
+			regexp = r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$',
 			help = ('distance', "\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip> : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."),
 		)
 	
@@ -138,19 +139,13 @@ class MapQuest(Plugin):
 			return
 		
 		# Find the source and destination info
-		chunks = FindChunks(resp.data, 'valign=center align=left class=size12>', '</td>')
-		if not chunks:
+		m = TITLE_RE.search(resp.data)
+		if not m:
 			self.sendReply(trigger, 'Failed to parse page: source/dest info.')
 			return
 		
-		# Did we find enough chunks?
-		if len(chunks) < 2:
-			self.sendReply(trigger, 'Failed to parse page: not enough chunks.')
-			return
-		
 		# Get our locations
-		source_loc = StripHTML(chunks[0])[0]
-		dest_loc = StripHTML(chunks[1])[0]
+		source_loc, dest_loc = m.groups()
 		
 		# Find out the total time
 		m = TOTAL_TIME_RE.search(resp.data)
@@ -170,8 +165,10 @@ class MapQuest(Plugin):
 		
 		# Build the output!
 		distance = total_distance.replace(' miles', '\02 miles')
-		replytext  = '\02%s\02 is about \02%s from \02%s\02' % (source_loc, distance, dest_loc)
-		replytext += ' with an approximate driving time of \02%s\02' % (total_time)
+		replytext = '\02%s\02 is about \02%s from \02%s\02' % (
+			source_loc, distance, dest_loc)
+		replytext += 'with an approximate driving time of \02%s\02 - %s' % (
+			total_time, resp.url)
 		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
