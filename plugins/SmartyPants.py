@@ -41,7 +41,7 @@ FACT_SET = "FACT_SET"
 FACT_GET = "FACT_GET"
 FACT_ALSO = "FACT_ALSO"
 FACT_DEL = "FACT_DEL"
-FACT_MOD = "FACT_REPLACE"
+FACT_REPLACE = "FACT_REPLACE"
 FACT_INFO = "FACT_INFO"
 #FACT_STATUS = "FACT_STATUS"
 FACT_LOCK = "FACT_LOCK"
@@ -49,7 +49,7 @@ FACT_UNLOCK = "FACT_UNLOCK"
 
 FACT_UPDATEDB = "FACT_MOD"
 
-GET_QUERY = "SELECT name, value FROM factoids WHERE name = %s"
+GET_QUERY = "SELECT name, value, locker_nick FROM factoids WHERE name = %s"
 SET_QUERY = "INSERT INTO factoids (name, value, author_nick, author_host, created_time) VALUES (%s, %s, %s, %s, %s)"
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
 DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
@@ -64,11 +64,14 @@ GET_RE = re.compile("^(?P<name>.+?)\??$")
 SET_RE = re.compile("^(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
 ALSO_RE = re.compile("(?P<name>.+?) (is|are) also (?P<value>.+)$")
 DEL_RE = re.compile("^forget (?P<name>.+)$")
-MOD_RE = re.compile("^(?P<name>.+?) =~ (?P<modstring>.+)$")
+REP_RE = re.compile("^(?P<name>.+?) =~ (?P<modstring>.+)$")
 LOCK_RE = re.compile("^lock (?P<name>.+)$")
 UNLOCK_RE = re.compile("^unlock (?P<name>.+)$")
 INFO_RE = re.compile("^factinfo (?P<name>.+)\??$")
 #STATUS_RE = re.compile("^status$")
+
+MAX_FACT_NAME_LENGTH = 32
+MAX_FACT_VAL_LENGTH = 455
 
 #----------------------------------------------------------------------------
 
@@ -113,8 +116,8 @@ class SmartyPants(Plugin):
 		also_msg = PluginTextEvent(FACT_ALSO, IRCT_MSG, ALSO_RE)
 		del_dir = PluginTextEvent(FACT_DEL, IRCT_PUBLIC_D, DEL_RE)
 		del_msg = PluginTextEvent(FACT_DEL, IRCT_MSG, DEL_RE)
-		#mod_dir =
-		#mod_msg =
+		rep_dir = PluginTextEvent(FACT_REPLACE, IRCT_PUBLIC_D, REP_RE)
+		rep_msg = PluginTextEvent(FACT_REPLACE, IRCT_MSG, REP_RE)
 		lock_dir = PluginTextEvent(FACT_LOCK, IRCT_PUBLIC_D, LOCK_RE)
 		lock_msg = PluginTextEvent(FACT_LOCK, IRCT_MSG, LOCK_RE)
 		unlock_dir = PluginTextEvent(FACT_UNLOCK, IRCT_PUBLIC_D, UNLOCK_RE)
@@ -122,7 +125,7 @@ class SmartyPants(Plugin):
 		info_dir = PluginTextEvent(FACT_INFO, IRCT_PUBLIC_D, INFO_RE)
 		info_msg = PluginTextEvent(FACT_INFO, IRCT_MSG, INFO_RE)
 		
-		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg)
+		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg)
 	
 	#------------------------------------------------------------------------
 	
@@ -139,7 +142,7 @@ class SmartyPants(Plugin):
 		# to go to hell.
 		elif trigger.name == FACT_SET:
 			name = trigger.match.group('name')
-			if len(name) > 32:
+			if len(name) > MAX_FACT_NAME_LENGTH:
 				replytext = "factoid name is too long"
 				self.sendReply(trigger, replytext)
 			else:
@@ -149,11 +152,11 @@ class SmartyPants(Plugin):
 		# Someone wants to add to the definition of a factoid
 		elif trigger.name == FACT_ALSO:
 			name = trigger.match.group('name')
-			if len(name) > 32:
+			if len(name) > MAX_FACT_NAME_LENGTH:
 				replytext = "factoid name is too long"
 				self.sendReply(trigger, replytext)
 			else:
-				data = [trigger, (INFO_QUERY, [name])]
+				data = [trigger, (GET_QUERY, [name])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
 		# Someone wants to delete a factoid
@@ -162,16 +165,22 @@ class SmartyPants(Plugin):
 			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
+		# Someone wants to do a search/replace on a factoid
+		elif trigger.name == FACT_REPLACE:
+			name = trigger.match.group('name')
+			data = [trigger, (GET_QUERY, [name])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
+
 		# Someone wants to lock a factoid
 		elif trigger.name == FACT_LOCK:
 			name = trigger.match.group('name')
-			data = [trigger, (INFO_QUERY, [name])]
+			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 		# Someone wants to unlock a factoid
 		elif trigger.name == FACT_UNLOCK:
 			name = trigger.match.group('name')
-			data = [trigger, (INFO_QUERY, [name])]
+			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
 		# Someone wants information on a factoid
@@ -196,6 +205,9 @@ class SmartyPants(Plugin):
 		
 		elif trigger.name == FACT_DEL:
 			self.__Fact_Del(trigger, results)
+
+		elif trigger.name == FACT_REPLACE:
+			self.__Fact_Replace(trigger, results)
 
 		elif trigger.name == FACT_LOCK:
 			self.__Fact_Lock(trigger, results)
@@ -305,15 +317,18 @@ class SmartyPants(Plugin):
 				# It was already in our database, so add to the definition
 				# if it fits, checking first to see if it is locked
 				row = results[0][0]
+				extra_value = trigger.match.group('value')
 				if row['locker_nick']:
 					if not self.__Check_User_Flags(trigger.userinfo, 'lock'):
 						replytext = "you are not allowed to alter locked factoids"
 						self.sendReply(trigger, replytext)
 					
 					else:
-						self.__Fact_Also_Update(trigger, row['value'])
+						new_value = "%s, or %s" % (row['value'], extra_value)
+						self.__Fact_Update(trigger, new_value)
 				else:
-					self.__Fact_Also_Update(trigger, row['value'])
+					new_value = "%s, or %s" % (row['value'], extra_value)
+					self.__Fact_Update(trigger, new_value)
 					
 		# UPDATE reply
 		elif typ == types.LongType:
@@ -327,22 +342,13 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	# Update a factoid by adding our new text to the end of it
 	#------------------------------------------------------------------------
-	def __Fact_Also_Update(self, trigger, old_value):
-		new_value = "%s, or %s" % (old_value, trigger.match.group('value'))
-		# I stole this number from devinfo's config file.
-		# we should probably put this into a config file also,
-		# but then again maybe not. At least this way people can't
-		# break things. heh.
-		if len(new_value) > 455:
-			replytext = "that's too long"
-			self.sendReply(trigger, replytext)
-		else:
-			modified_time = time.time()
-			modifier_nick = trigger.userinfo.nick
-			modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
-			name = trigger.match.group('name')
-			data = [trigger, (MOD_QUERY, [new_value, modifier_nick, modifier_host, modified_time, name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+	def __Fact_Update(self, trigger, value):
+		modified_time = time.time()
+		modifier_nick = trigger.userinfo.nick
+		modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
+		name = trigger.match.group('name')
+		data = [trigger, (MOD_QUERY, [value, modifier_nick, modifier_host, modified_time, name])]
+		self.sendMessage('DataMonkey', REQ_QUERY, data)
 							
 					
 
@@ -382,6 +388,68 @@ class SmartyPants(Plugin):
 				replytext = self.__Random(OK)
 			self.sendReply(trigger, replytext)
 	
+	#------------------------------------------------------------------------
+	# A user just tried t odo a search/replace on a factoid.
+	#------------------------------------------------------------------------
+	def __Fact_Replace(self, trigger, results):
+		typ = type(results[0])
+		name = trigger.match.group('name')
+
+		# SELECT reply
+		if typ == types.TupleType:
+			if results == [()]:
+				# That factoid wasn't in our database
+				replytext = "no such factoid: '\02%s\02'" % name
+				self.sendReply(trigger, replytext)
+				
+			else:
+				# It was in our database
+				row = results[0][0]
+				value = row['value']
+
+				if row['locker_nick'] and not self.__Check_User_Flags(trigger.userinfo, 'lock'):
+					replytext = "you don't have permission to alter locked factoids"
+					self.sendReply(trigger, replytext)
+					return
+				
+				modstring = trigger.match.group('modstring')
+				if modstring.startswith("s"):
+					bits = modstring.split(modstring[1])
+					# break the modstring into its components
+					if len(bits) == 4:
+						search = bits[1]
+						replace = bits[2]
+						try:
+							s = re.compile(search)
+						except:
+							replytext = "'%s is not a valid regexp" % search
+							self.sendReply(trigger, replytext)
+						else:
+							new_value = re.sub(s, replace, value)
+							if len(new_value) > MAX_FACT_VAL_LENGTH:
+								replytext = "that will make the factoid too long"
+								self.sendReply(trigger, replytext)
+							else:
+								# make the changes!
+								self.__Fact_Update(trigger, new_value)
+								
+					else:
+						# we got a junk modstring
+						replytext = "'%s' is not a valid search/replace string" % modstring
+						self.sendReply(trigger, replytext)
+				else:
+					replytext = "'%s' is not a valid search/replace string" % modstring
+					self.sendReply(trigger, replytext)
+					
+		# UPDATE reply
+		elif typ == types.LongType:
+			result = results[0]
+			if result == 0:
+				replytext = 'factoid insertion failed, warning, warning!'
+			elif result == 1:
+				replytext = self.__Random(OK)
+			self.sendReply(trigger, replytext)
+
 	#------------------------------------------------------------------------
 	# A user just tried to lock a factoid.
 	# Check to make sure that they have the appropriate access, then
