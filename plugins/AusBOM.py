@@ -265,7 +265,7 @@ class AusBOM(Plugin):
 				
 				else:
 					if tz:
-						part = '\02[\02Updated: %s %s\02]\02' % (updated, tz)
+						part = '\02[\%s %s\02]\02' % (updated, tz)
 					else:
 						part = '\02[\02Updated: %s\02]\02' % (updated)
 					parts.append(part)
