@@ -68,7 +68,7 @@ tr.desc {
 		pname = os.path.join('plugins', plugin) + '.py'
 		lines = open(pname).read().splitlines()
 		
-		realcmds = []
+		realcmds = {}
 		
 		#bold_re = re.compile(r'\02(.+?)\02')
 		
@@ -87,7 +87,11 @@ tr.desc {
 				# Split it into useful bits
 				command, help = help_text.split(' : ', 1)
 				
-				realcmds.append((command, help))
+				realcmds[command] = help
+		
+		
+		realcmds = realcmds.items()
+		realcmds.sort()
 		
 		
 		# Spit out the info for this plugin
