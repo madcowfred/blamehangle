@@ -11,7 +11,7 @@ import types
 from classes.Constants import *
 from classes.Userlist import Userlist
 
-from classes.irclib import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
+from classes.asyncIRC import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
 
 # ---------------------------------------------------------------------------
 
