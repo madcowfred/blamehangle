@@ -44,15 +44,15 @@ class Postman:
 			signal.signal(signal.SIGHUP, self.SIG_HUP)
 		signal.signal(signal.SIGTERM, self.SIG_TERM)
 		
-		# Open our log file and rotate it if we have to
-		self.__Log_Open()
-		self.__Log_Rotate()
-		
 		# ?
 		self.__Setup_From_Config()
 		
 		# Load all the configs supplied for plugins
 		self.__Load_Configs()
+		
+		# Open our log file and rotate it if we have to
+		self.__Log_Open()
+		self.__Log_Rotate()
 		
 		
 		# Create our children
@@ -71,9 +71,9 @@ class Postman:
 		
 		# add Helper to the list of plugins so that it can do its thing
 		self.__plugin_list.append('Helper')
-
+	
 	# -----------------------------------------------------------------------
-
+	
 	def __Setup_From_Config(self):
 		self.__logfile_filename = self.Config.get('logging', 'log_file')
 		self.__log_debug = self.Config.getboolean('logging', 'debug')
@@ -402,6 +402,3 @@ class Postman:
 		
 		# Tell everyone we reloaded
 		self.sendMessage(None, REQ_REHASH, None)
-	
-
-# ---------------------------------------------------------------------------
