@@ -148,8 +148,6 @@ class TorrentScraper(Plugin):
  				if newurl in items:
  					continue
  				
- 				print newurl
- 				
  				# Get some text to describe it
 				bits = chunk.split('>', 1)
 				if len(bits) != 2:

@@ -91,8 +91,6 @@ class Anime(Plugin):
 			names = {}
 			
 			for chunk in chunks:
-				print repr(chunk)
-				
 				# See if it's a "blah (see: blah)" link
 				m = ANIDB_AKA_RE.search(chunk)
 				if m:
