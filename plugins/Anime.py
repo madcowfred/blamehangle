@@ -162,6 +162,10 @@ class Anime(Plugin):
 		elif page_text.find('Adult Content Warning') >= 0:
 			self.sendReply(trigger, "Seems to be hentai, you need an AniDB user account to see the details :(")
 		
+		# Maintenance?
+		elif page_text.find('maintenance') >= 0:
+			self.sendReply(trigger, "AniDB seems to be under maintenance. Again.")
+		
 		# Parsing failed
 		else:
 			self.sendReply(trigger, 'Page parsing failed.')
