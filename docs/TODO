@@ -4,19 +4,18 @@ important:
 	* rhyme, synonyms, antonyms - looks like the site changed its html.
 
 not important but more than whatever:
-	* NickServ auth (fred, since zhar has never even seen a nickserv)
+	* NickServ GHOST command support (kill people with our nick, or timed
+	  out versions of ourselves)
 
 whatever:
 	* testing! :) (anyone)
 
 
 plugins:
-	* dictionary.com lookup
-	* Spam text at intervals (easy way to use PluginTimedEvent?
+	* Spam text at intervals (easy way to use PluginTimedEvent?)
 	* MapQuest: return URL with other data (?)
 	* SmartyPants: random factoid spam at interval(s)
 	* 'seen'? not possible for a plugin with the current range of IRCT events.
 	* SmartyPants: Add/remove/ignore users via ctcp for admin. Possibly
 	  move user list to database?
-	* World time/date display
 	* News: admin command to flush news queue.
