@@ -359,7 +359,6 @@ class WordStuff(Plugin):
 				out = []
 				
 				# We only want the first line
-				print repr(chunk)
 				definition = FindChunk(chunk, '<div class="def">', '</div>')
 				if not definition:
 					self.sendReply(trigger, 'Page parsing failed: def.')
