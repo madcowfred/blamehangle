@@ -75,7 +75,10 @@ class Child:
 		tolog = '%s shutting down' % self.__name
 		self.putlog(LOG_DEBUG, tolog)
 		
-		self.stopnow = 1
+		if hasattr(self, 'shutdown'):
+			self.shutdown()
+		else:
+			self.stopnow = 1
 	
 	# -----------------------------------------------------------------------
 	# Send a message, takes the same arguments as Message()

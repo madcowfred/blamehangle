@@ -41,6 +41,14 @@ class ChatterGizmo(Child):
 		self.Conns = {}
 		self.stopping = 0
 	
+	def shutdown(self):
+		quitmsg = 'Shutting down: %s' % message.data
+		for wrap in self.Conns.values():
+			if wrap.status == STATUS_CONNECTED:
+				wrap.conn.quit(quitmsg)
+		
+		self.stopping = 1
+	
 	# -----------------------------------------------------------------------
 	
 	def run_once(self):
@@ -340,19 +348,6 @@ class ChatterGizmo(Child):
 		else:
 			data = [conn, IRCT_CTCP, userinfo, None, first + rest]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
-	
-	# -----------------------------------------------------------------------
-	
-	def _message_REQ_SHUTDOWN(self, message):
-		tolog = 'ChatterGizmo shutting down'
-		self.putlog(LOG_DEBUG, tolog)
-		
-		quitmsg = 'Shutting down: %s' % message.data
-		for wrap in self.Conns.values():
-			if wrap.status == STATUS_CONNECTED:
-				wrap.conn.quit(quitmsg)
-		
-		self.stopping = 1
 	
 	# -----------------------------------------------------------------------
 	
