@@ -8,11 +8,9 @@ import os
 import re
 import time
 
-from classes.Common import NiceSize
+from classes.Common import NiceSize, NiceTime
 from classes.Constants import *
 from classes.Plugin import Plugin
-
-from plugins.SmartyPants import NiceTime
 
 # ---------------------------------------------------------------------------
 
@@ -34,15 +32,20 @@ class BotStatus(Plugin):
 	# Gathered!
 	def _message_GATHER_STATS(self, message):
 		data = message.data
+		now = time.time()
 		
-		# Work out our memory usage
+		# Work out our memory and CPU usage
 		cmdline = '/bin/ps u -p %s' % os.getpid()
 		lines = os.popen(cmdline, 'r').readlines()
-		parts = lines[1].split(None, 6)
+		parts = lines[1].split(None, 10)
 		data['memory'] = int(parts[5])
 		
+		mins, secs = parts[9].split(':')
+		secs = (int(mins) * 60) + (int(secs) * 60)
+		data['cputime'] = NiceTime(secs)
+		
 		# Make something up
-		running = NiceTime(time.time(), data['started'])
+		running = NiceTime(time.time() - data['started'])
 		
 		chans = (data['irc_chans'] == 1) and 'channel' or 'channels'
 		nets = (data['irc_nets'] == 1) and 'network' or 'networks'
@@ -53,7 +56,7 @@ class BotStatus(Plugin):
 		if data['http_bytes']:
 			urls = '%s (%s)' % (urls, NiceSize(data['http_bytes']))
 		
-		replytext = 'I have been running for %s. I am currently in %d %s on %d %s. I am using %dKB of memory. I have performed %d database %s. I have fetched %d %s. I have %d %s loaded.' % (running, data['irc_chans'], chans, data['irc_nets'], nets, data['memory'], data['db_queries'], queries, data['http_reqs'], urls, data['plugins'], plugins)
+		replytext = 'I have been running for %s. I am currently in %d %s on %d %s. I have used %s of CPU time. I am using %dKB of memory. I have performed %d database %s. I have fetched %d %s. I have %d %s loaded.' % (running, data['irc_chans'], chans, data['irc_nets'], nets, data['cputime'], data['memory'], data['db_queries'], queries, data['http_reqs'], urls, data['plugins'], plugins)
 		self.sendReply(message.data['trigger'], replytext)
 
 # ---------------------------------------------------------------------------

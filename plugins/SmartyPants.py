@@ -896,23 +896,23 @@ class SmartyPants(Plugin):
 			
 			# Created info
 			part = '%s -- created by %s (%s), %s ago' % (name, row['author_nick'],
-				row['author_host'], NiceTime(now, row['created_time']))
+				row['author_host'], self.__NiceTime(now, row['created_time']))
 			parts.append(part)
 			
 			# Requested info
 			if row['request_count']:
 				part = 'requested %s time(s), last by %s, %s ago' % (row['request_count'],
-					row['requester_nick'], NiceTime(now, row['requested_time']))
+					row['requester_nick'], self.__NiceTime(now, row['requested_time']))
 				parts.append(part)
 			# Modified info
 			if row['modifier_nick']:
 				part = 'last modified by %s (%s), %s ago' % (row['modifier_nick'],
-					row['modifier_host'], NiceTime(now, row['modified_time']))
+					row['modifier_host'], self.__NiceTime(now, row['modified_time']))
 				parts.append(part)
 			# Lock info
 			if row['locker_nick']:
 				part = 'locked by %s (%s), %s ago' % (row['locker_nick'], row['locker_host'],
-					NiceTime(now, row['locked_time']))
+					self.__NiceTime(now, row['locked_time']))
 				parts.append(part)
 			
 			# Put it back together
@@ -1018,45 +1018,11 @@ class SmartyPants(Plugin):
 		newname = newname.replace('\\are', 'are')
 		
 		return newname
+	
+	def __NiceTime(self, now, seconds):
+		if seconds < 1000:
+			return 'a long time'
+		else:
+			return NiceTime(now - seconds)
 
-# -----------------------------------------------------------------------
-# Turn an amount of seconds into a nice understandable string
-# -----------------------------------------------------------------------
-def NiceTime(now, seconds):
-	parts = []
-	
-	if seconds < 1000:
-		return 'a long time'
-	
-	# 365.242199 days in a year, according to Google
-	years, seconds = divmod(now - seconds, 31556926)
-	days, seconds = divmod(seconds, 86400)
-	hours, seconds = divmod(seconds, 3600)
-	minutes, seconds = divmod(seconds, 60)
-	
-	# a year
-	if years:
-		part = '%dy' % years
-		parts.append(part)
-	# a day
-	if days:
-		part = '%dd' % days
-		parts.append(part)
-	# an hour
-	if hours:
-		part = '%dh' % hours
-		parts.append(part)
-	# a minute
-	if minutes:
-		part = '%dm' % minutes
-		parts.append(part)
-	# any leftover seconds
-	if seconds:
-		part = '%ds' % seconds
-		parts.append(part)
-	
-	# If we have any stuff, return it
-	if parts:
-		return ' '.join(parts)
-	else:
-		return '0s'
+# ---------------------------------------------------------------------------

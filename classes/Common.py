@@ -155,7 +155,7 @@ def UnquoteURL(url):
 	return urllib.unquote(url).replace(' ', '%20')
 
 # ---------------------------------------------------------------------------
-
+# Turn an amount of bytes into a sane string
 def NiceSize(bytes):
 	bytes = float(bytes)
 	
@@ -167,3 +167,42 @@ def NiceSize(bytes):
 		return '%.1fMB' % (bytes / 1024.0 / 1024.0)
 	else:
 		return '%.1fGB' % (bytes / 1024.0 / 1024.0 / 1024.0)
+
+# Turn an amount of seconds into a sane string
+def NiceTime(seconds):
+	parts = []
+	
+	# 365.242199 days in a year, according to Google
+	years, seconds = divmod(seconds, 31556926)
+	days, seconds = divmod(seconds, 86400)
+	hours, seconds = divmod(seconds, 3600)
+	minutes, seconds = divmod(seconds, 60)
+	
+	# a year
+	if years:
+		part = '%dy' % years
+		parts.append(part)
+	# a day
+	if days:
+		part = '%dd' % days
+		parts.append(part)
+	# an hour
+	if hours:
+		part = '%dh' % hours
+		parts.append(part)
+	# a minute
+	if minutes:
+		part = '%dm' % minutes
+		parts.append(part)
+	# any leftover seconds
+	if seconds:
+		part = '%ds' % seconds
+		parts.append(part)
+	
+	# If we have any stuff, return it
+	if parts:
+		return ' '.join(parts)
+	else:
+		return '0s'
+
+# -----------------------------------------------------------------------
