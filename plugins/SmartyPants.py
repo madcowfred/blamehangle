@@ -70,7 +70,7 @@ LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
 
 GET_D_RE = re.compile("^ *(?P<name>.+?)\??$")
 GET_RE = re.compile("^ *(?P<name>.+?)\?$")
-SET_RE = re.compile("^(?!no, +)(?P<name>.+?) +(is|are) (?!also +)(?P<value>.+)$")
+SET_RE = re.compile("^ *(?!no, +)(?P<name>.+?) +(is|are) (?!also +)(?P<value>.+)$")
 NO_RE = re.compile("^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
 ALSO_RE = re.compile("^ *(?P<name>.+?) +(is|are) +also +(?P<value>.+)$")
 DEL_RE = re.compile("^ *forget +(?P<name>.+)$")
