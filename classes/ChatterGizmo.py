@@ -278,7 +278,6 @@ class ChatterGizmo(Child):
 		
 		# Parse the mode list
 		modes = []
-		#parts = ' '.join(event.arguments).split()
 		if not event.arguments:
 			return
 		
@@ -299,14 +298,20 @@ class ChatterGizmo(Child):
 		
 		# Now do something with them
 		for sign, mode, arg in modes:
-			# We don't care about non-user modes right now
-			if arg is None or mode not in 'hov':
-				continue
+			# User mdoes
+			if mode in 'hov':
+				if sign == '+':
+					self.Conns[connid].users.add_mode(chan, arg, mode)
+				elif sign == '-':
+					self.Conns[connid].users.del_mode(chan, arg, mode)
 			
-			if sign == '+':
-				self.Conns[connid].users.add_mode(chan, arg, mode)
-			elif sign == '-':
-				self.Conns[connid].users.del_mode(chan, arg, mode)
+			# Channel basic modes
+			elif mode in 'iklmnpst':
+				pass
+			
+			# Channel list modes
+			elif mode in 'beI':
+				pass
 	
 	# -----------------------------------------------------------------------
 	# Someone just invited us to a channel
@@ -565,6 +570,7 @@ class ChatterGizmo(Child):
 		
 		elif isinstance(conn, dict):
 			for network, targets in conn.items():
+				found = 0
 				net = network.lower()
 				for wrap in self.Conns.values():
 					if wrap.name.lower() == net:
@@ -577,7 +583,12 @@ class ChatterGizmo(Child):
 							for target in targets:
 								self.privmsg(wrap.conn.connid, target, text)
 						
+						found = 1
 						break
+				
+				if found == 0:
+					tolog = "Invalid network in PRIVMSG from '%s': %s" % (message.source, net)
+					self.putlog(LOG_WARNING, tolog)
 		
 		else:
 			tolog = "Unknown REQ_PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
