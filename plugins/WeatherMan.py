@@ -135,8 +135,7 @@ class WeatherMan(Plugin):
 			data = {}
 			
 			# Eat the degree symbols
-			resp.data = resp.data.replace('&ordm;', '')
-			resp.data = resp.data.replace('°', '')
+			resp.data = resp.data.replace('&deg;', '').replace('&ordm;', '').replace('°', '')
 			
 			
 			# Find the chunk that tells us where we are
@@ -168,11 +167,11 @@ class WeatherMan(Plugin):
 				elif re.match(r'^\d+$', line):
 					chunk = 'Currently: %s' % (self.GetTemp(trigger, line))
 					data['current'] = chunk
-				elif line.startswith('Hi:'):
-					chunk = 'High: %s' % (self.GetTemp(trigger, line[3:]))
+				elif line.startswith('High:'):
+					chunk = 'High: %s' % (self.GetTemp(trigger, line[5:]))
 					data['high'] = chunk
-				elif line.startswith('Lo:'):
-					chunk = 'Low: %s' % (self.GetTemp(trigger, line[3:]))
+				elif line.startswith('Low:'):
+					chunk = 'Low: %s' % (self.GetTemp(trigger, line[4:]))
 					data['low'] = chunk
 				else:
 					data['conditions'] = line
