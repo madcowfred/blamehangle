@@ -19,11 +19,8 @@ from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
 from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
-<<<<<<< Postman.py
 from classes.TimeKeeper import TimeKeeper
-=======
 from classes.Helper import Helper
->>>>>>> 1.22
 
 # ---------------------------------------------------------------------------
 
@@ -246,6 +243,9 @@ class Postman:
 			self.__Log(LOG_ALWAYS, 'Shutdown complete')
 			
 			sys.exit(1)
+		
+		else:
+			print alive
 	
 	# -----------------------------------------------------------------------
 	
