@@ -413,8 +413,6 @@ class async_http(buffered_dispatcher):
 			self.parent._totalbytes += self.received
 		
 		self.close()
-		
-		raise
 
 # ---------------------------------------------------------------------------
 # Simple class to wrap the data that we're returning
