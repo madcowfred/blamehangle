@@ -15,7 +15,8 @@ from classes.Plugin import *
 VIDEO_IMDB = 'VIDEO_IMDB'
 IMDB_HELP = "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a title."
 IMDB_RE = re.compile(r'^imdb (.+)$')
-IMDB_URL = "http://us.imdb.com/find?q=%s&type=fuzzy&tv=off&sort=smart;tt=1"
+IMDB_URL = 'http://us.imdb.com/find?q=%s&type=fuzzy&tv=off&sort=smart;tt=1'
+TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
 EXACT_RE = re.compile(r'href="/title/tt(\d+)/">')
 APPROX_RE = re.compile(r'href="/title/tt(\d+)/">(.+)')
