@@ -10,7 +10,6 @@
 # remote http server responds slowly.
 
 import asyncore
-#import select
 import socket
 import sys
 import time
@@ -96,13 +95,13 @@ class HTTPMonster(Child):
 		asyncore.poll()
 		
 		if self.urls and len(asyncore.socket_map) < self.max_conns:
-			async_http(self, self.urls.pop(0))
+			async_http(self, self.urls.pop(0), {})
 
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
 		if len(asyncore.socket_map) < self.max_conns:
-			async_http(self, message)
+			async_http(self, message, {})
 		else:
 			self.urls.append(message)
 		
@@ -111,7 +110,7 @@ class HTTPMonster(Child):
 # ---------------------------------------------------------------------------
 
 class async_http(asyncore.dispatcher_with_send):
-	def __init__(self, parent, message, seen={}):
+	def __init__(self, parent, message, seen):
 		asyncore.dispatcher_with_send.__init__(self)
 		
 		self.data = ''
@@ -121,7 +120,6 @@ class async_http(asyncore.dispatcher_with_send):
 		self.message = message
 		self.seen = seen
 		
-		self.source = message.source
 		self.returnme = message.data[0]
 		self.url = message.data[1]
 		
@@ -234,7 +232,7 @@ class async_http(asyncore.dispatcher_with_send):
 				# Anything else
 				else:
 					if len(self.data) > 0:
-						pagetext = self.data
+						pagetext = self.data[:]
 						m = dodgy_html_check(pagetext)
 						while m:
 							pre = pagetext[:m.start()]
@@ -248,7 +246,10 @@ class async_http(asyncore.dispatcher_with_send):
 						self.parent.putlog(LOG_DEBUG, tolog)
 						
 						data = [self.returnme, pagetext]
-						self.parent.sendMessage(self.source, REPLY_URL, data)
+						self.parent.sendMessage(self.message.source, REPLY_URL, data)
+		
+		# Clean up
+		del self.parent, self.message, self.seen, self.returnme, self.url
 		
 		self.close()
 
