@@ -12,12 +12,12 @@ from classes.Plugin import *
 
 CONVERT_CONVERT = 'CONVERT_CONVERT'
 CONVERT_HELP = '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?' 
-CONVERT_RE = re.compile('^convert (?P<amt>\d\.+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
+CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
 
 # ---------------------------------------------------------------------------
 
 MAPPINGS = {
-	'C': ('°C', ('F', lambda x: x * 9.0 / 5))
+	'C': ('°C', ('F', lambda x: x * 9.0 / 5)),
 	'F': ('°F', ('C', lambda x: x * 5.0 / 9))
 }
 
@@ -40,21 +40,23 @@ class Converter(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def __Convert(self, trigger):
-		data['amt'] = '%.3f' % float(trigger.match.group('amt'))
+		data = {}
+		data['amt'] = float(trigger.match.group('amt'))
 		data['from'] = trigger.match.group('from').upper()
 		data['to'] = trigger.match.group('to').upper()
 		
 		if not MAPPINGS.has_key(data['from']):
 			replytext = '%(from)s is not a valid measurement' % data
 		
-		elif not MAPPINGS.has_Key(data['to']):
+		elif not MAPPINGS.has_key(data['to']):
 			replytext = '%(to)s is not a valid measurement' % data
 		
 		else:
 			useme = [to for to in MAPPINGS[data['from']][1:] if to[0] == data['to']]
 			if useme:
-				result = '%s%s' % (useme[0][1](data['amt']), MAPPINGS[data['to']][0])
-				replytext = '%s %s == %s %s' % (data['amt'], data['from'], result, data['to'])
+				value = '%.1f' % useme[0][1](data['amt'])
+				result = '%s%s' % (value, MAPPINGS[data['to']][0])
+				replytext = '%s %s == %s %s' % (data['amt'], MAPPINGS[data['from']][0], result, data['to'])
 			
 			else:
 				replytext = 'Unable to convert between %(from)s and %(to)s' % data

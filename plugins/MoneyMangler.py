@@ -74,11 +74,11 @@ class MoneyMangler(Plugin):
 		trigger = message.data
 		
 		# Someone wants to look for a currency
-		elif trigger.name == MONEY_CURRENCY:
+		if trigger.name == MONEY_CURRENCY:
 			self.__Currency_Search(trigger)
 		
 		# Someone wants to do a money conversion
-		if trigger.name == MONEY_EXCHANGE:
+		elif trigger.name == MONEY_EXCHANGE:
 			self.__Currency_Exchange(trigger)
 	
 	def _message_REPLY_URL(self, message):
