@@ -123,6 +123,9 @@ class Plugin(Child):
 			f.close()
 	
 	def loadPickle(self, filename):
+		config_dir = self.Config.get('plugin', 'config_dir')
+		filename = os.path.join(config_dir, filename)
+		
 		try:
 			f = open(filename, "rb")
 		except:
