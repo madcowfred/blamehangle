@@ -163,7 +163,8 @@ class ChatterGizmo(Child):
 		
 		self.connlog(conn, LOG_ALWAYS, 'Disconnected from server')
 		
-		self.addTimer(TIMER_RECONNECT, 5, conn)
+		if not self.stopping:
+			self.addTimer(TIMER_RECONNECT, 5, conn)
 	
 	# It was bad.
 	def _handle_error(self, conn, event):
