@@ -2,8 +2,7 @@
 # $Id$
 # ---------------------------------------------------------------------------
 # This is the news-gatherer plugin for Blamehangle. It scours the web for
-# news, and reports it.
-# exciting stuff.
+# news, and reports it. Exciting stuff.
 
 from random import Random
 import cPickle
