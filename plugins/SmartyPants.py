@@ -374,9 +374,10 @@ class SmartyPants(Plugin):
 			# <reply> and <action> check
 			m = REPLY_ACTION_RE.match(row['value'])
 			if m:
-				if m.group('type') == 'reply':
+				typ = m.group('type').lower()
+				if typ == 'reply':
 					replytext = m.group('value')
-				elif m.group('type') == 'action':
+				elif typ == 'action':
 					replytext = '\x01ACTION %s\x01' % m.group('value')
 				reply = PluginReply(trigger, replytext, process=0)
 			else:
