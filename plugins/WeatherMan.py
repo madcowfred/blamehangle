@@ -317,17 +317,22 @@ class WeatherMan(Plugin):
 				
 				# Temperature
 				if report.getTemperatureCelsius() is not None:
-					chunk = 'Temp: %.1fC' % report.getTemperatureCelsius()
+					chunk = 'Temperature: %.1fC' % report.getTemperatureCelsius()
 					chunks.append(chunk)
 				
 				# Wind
 				if report.getWindSpeed() > 0.0:
 					chunk = 'Wind: %s %dkt' % (report.getWindCompass(), report.getWindSpeed())
-					if report.getWindGusts():
-						chunk += ' (gusting to %dkt)' % (report.getWindGusts())
+					if report.windgusts:
+						chunk += ' (gusting to %dkt)' % report.windgusts
 				else:
 					chunk = 'Wind: calm'
 				chunks.append(chunk)
+				
+				# Wind chill
+				if report.windchill:
+					chunk = 'Windchill: %.1fC' % report.windchill
+					chunks.append(chunk)
 				
 				# Visibility
 				if report.getVisibility() is not None:

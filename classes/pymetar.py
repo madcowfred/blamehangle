@@ -379,6 +379,7 @@ class WeatherReport:
         self.windgusts=None
         self.winddir=None
         self.vis=None
+        self.windchill=None
         self.dewp=None
         self.humid=None
         self.press=None
@@ -851,6 +852,12 @@ class ReportParser:
                 #        break
                 #    except ValueError:
                 #        pass
+
+            # wind chill
+            
+            elif (header == "Windchill"):
+                wc,i=data.split(" ",1)
+                self.Report.windchill=(float(wc)-32)*(5.0/9.0)
 
             # dew point
             
