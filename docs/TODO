@@ -1,10 +1,6 @@
 critical:
 
 important:
-    * Fix the shutdown logic. When shutting down for real, plugins shouldn't
-      be sending UNSET_HELP to Helper. (fred)
-	* Seems like it is finally time to do the plugin trigger prioritisation
-	  stuff. (zhar, when he gets bored)
 
 not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
