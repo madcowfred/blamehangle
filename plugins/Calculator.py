@@ -32,7 +32,7 @@ class Calculator(Plugin):
 	# --------------------------------------------------------------------------
 	# We have been given a string containing an expression... so lets go ahead
 	# and work it out!
-	def __trigger_CALC(self, trigger):
+	def _trigger_CALC(self, trigger):
 		# mangle the string we have been given slightly.. remove any nasty
 		# attempts at **, and change every number into a float
 		calcstr = trigger.match.group(0)
