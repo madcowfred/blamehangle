@@ -46,7 +46,7 @@ TIME_CHECK = "TIME_CHECK"
 
 
 TITLE_QUERY = "SELECT title FROM news WHERE title = %s"
-INSERT_QUERY = "INSERT INTO news VALUES (%s,%s)"
+INSERT_QUERY = "INSERT INTO news (title, time) VALUES (%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE time < %s"
 
 # All this crap should be moved into the config, and then dealt with during
@@ -265,11 +265,15 @@ class News(Plugin):
 		if currtime - self.__Last_Clearout_Time >= 3600:
 			tolog = "Purging old news"
 			self.putlog(LOG_DEBUG, tolog)
+			
 			self.__Last_Clearout_Time = currtime
 			old_time = currtime - self.__old_threshold
-			data = [(TIME_CHECK, None), (TIME_QUERY, [old_time])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+			
+			query = (TIME_QUERY, old_time)
+			self.dbQuery(TIME_CHECK, query)
+			#data = [(TIME_CHECK, None), (TIME_QUERY, [old_time])]
+			#self.sendMessage('DataMonkey', REQ_QUERY, data)
+	
 	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_URL(self, message):
@@ -309,10 +313,18 @@ class News(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 		
 		else:
+			titles = []
+			queries = []
 			for title in parser.news:
-				data = [(event, title), (TITLE_QUERY, [title])]
 				self.__to_process[title] = parser.news[title]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				
+				titles.append(title)
+				query = (TITLE_QUERY, title)
+				queries.append(query)
+			
+			if queries:
+				returnme = (event, titles)
+				self.dbQuery(returnme, *queries)
 	
 	def __do_rss(self, page_text, event, name):
 		feed = self.RSS_Feeds[name]
@@ -321,35 +333,61 @@ class News(Plugin):
 		r.feed(page_text)
 		
 		if feed['title']:
-			title = feed['title']
+			feed_title = feed['title']
 		else:
-			title = r.channel['title']
+			feed_title = r.channel['title']
 		
+		titles = []
+		queries = []
 		for item in r.items:
-			replytext = '%s: %s - %s' % (title, item['title'], item['link'])
-			reply = PluginReply(event, replytext)
-			self.__outgoing.append(reply)
+			title = '%s: %s' % (feed_title, item['title'])
+			self.__to_process[title] = item['link']
+			
+			titles.append(title)
+			query = (TITLE_QUERY, title)
+			queries.append(query)
+		
+		if queries:
+			returnme = (event, titles)
+			self.dbQuery(returnme, *queries)
 	
 	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_QUERY(self, message):
-		(event, title), result = message.data
+		event, results = message.data
+		if type(event) in (types.ListType, types.TupleType):
+			event, titles = event
 		
 		if isinstance(event, PluginTimedEvent):
 			# this wasn't a modification request
-			if result == [()]:
-				# the title wasn't in the news db
+			currtime = time.time()
+			queries = []
+			
+			for i in range(len(titles)):
+				title = titles[i]
+				result = results[i]
+				
+				# the title was in the news db, don't add it again
+				if result:
+					continue
+				
 				replytext = "%s - %s" % (title, self.__to_process[title])
 				del self.__to_process[title]
+				
 				reply = PluginReply(event, replytext)
 				self.__outgoing.append(reply)
+				
 				# add it to the db!
-				data = [(TITLE_INSERT, title), (INSERT_QUERY, [title, time.time()])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				query = (INSERT_QUERY, title, currtime)
+				queries.append(query)
+			
+			if queries:
+				self.dbQuery(TITLE_INSERT, *queries)
 		
 		elif event == TITLE_INSERT:
 			# we just added a new item to our db
 			pass
+		
 		elif event == TIME_CHECK:
 			# we just did an hourly check for old news
 			pass
@@ -375,7 +413,7 @@ class News(Plugin):
 			f.close()
 	
 	# -----------------------------------------------------------------------
-
+	
 	# Unpickle an object from the given file
 	def __unpickle(self, pickle):
 		try:
