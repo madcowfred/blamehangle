@@ -150,8 +150,12 @@ class Postman:
 							child = message.source
 							if issubclass(globals()[child], Plugin):
 								del self.__Children[child]
-								#del globals()[message.source]
-								del sys.modules['plugins.'+child]
+								del globals()[child]
+								# 'unimport' it
+								try:
+									del sys.modules['plugins.'+child]
+								except KeyError:
+									pass
 								
 								# If it's really being reloaded, do that
 								if self.__reloadme.has_key(child):
