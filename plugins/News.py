@@ -53,7 +53,7 @@ MAX_TITLE_LENGTH = 200
 
 # ---------------------------------------------------------------------------
 
-NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
+NEWS_QUERY = "SELECT title, url, description FROM news WHERE title IN (%s) OR url IN (%s)"
 INSERT_QUERY = "INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE added < %s"
 SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
@@ -371,7 +371,6 @@ class News(Plugin):
 		
 		# See if any of them will match
 		articles = []
-		currtime = int(time.time())
 		
 		for chunk in chunks:
 			# Look for the story URL
@@ -389,7 +388,7 @@ class News(Plugin):
 			description = FindChunk(chunk, '<small>', '</small>') or ''
 			
 			# And keep it for later
-			data = [title, url, description, currtime]
+			data = [title, url, description]
 			articles.append(data)
 		
 		# Go for it!
@@ -408,7 +407,6 @@ class News(Plugin):
 		
 		# See if any of them have articles
 		articles = []
-		currtime = int(time.time())
 		
 		for table in tables:
 			if table.find('<a class=y') >= 0:
@@ -426,7 +424,7 @@ class News(Plugin):
 				else:
 					description = m.group(1).strip()
 				
-				data = [title, url, description, currtime]
+				data = [title, url, description]
 				articles.append(data)
 		
 		# Go for it!
@@ -463,7 +461,6 @@ class News(Plugin):
 		
 		# Get any articles out of the feed
 		articles = []
-		currtime = int(time.time())
 		
 		for item in r.items[:feed['maximum_new']]:
 			item_title = item.get('title', '<No Title>').strip() or '<No Title>'
@@ -491,7 +488,7 @@ class News(Plugin):
 			description = UnquoteHTML(description).replace('\t', ' ')
 			
 			# Keep the article for later
-			data = [article_title, article_link, description, currtime]
+			data = [article_title, article_link, description]
 			articles.append(data)
 		
 		# If we found no real articles, cry a bit
@@ -522,6 +519,14 @@ class News(Plugin):
 		trigger.articles = articles
 		
 		# Build our query
+		args = [article[0] for article in articles] + [article[1] for article in articles]
+		querybit = ', '.join(['%s'] * len(articles))
+		query = NEWS_QUERY % (querybit, querybit)
+		
+		# And execute
+		self.dbQuery(trigger, self.__News_Reply, query, *args)
+		return
+		
 		querybits = [NEWS_QUERY]
 		args = [trigger.articles[0][0]]
 		
@@ -542,19 +547,26 @@ class News(Plugin):
 		articles = trigger.articles
 		del trigger.articles
 		
-		# We don't need to add any that are already in the database
-		for row in result:
-			eatme = [a for a in articles if a[0].lower() == row['title'].lower()]
-			for eat in eatme:
-				articles.remove(eat)
+		# This way is anywhere from 2 to 20 times faster than the old way.
+		newarticles = []
+		
+		ltitles = dict([(row['title'].lower(), None) for row in result])
+		lurls = dict([(row['url'].lower(), None) for row in result])
+		
+		now = int(time.time())
+		for article in articles:
+			# If we haven't seen this before, keep it for a bit
+			if (article[0].lower() not in ltitles) and (article[1].lower() not in lurls):
+				newarticles.append(article)
 		
 		# If we don't have any new articles, go home now
-		if len(articles) == 0:
+		if len(newarticles) == 0:
 			return
 		
 		# Add the new articles to our outgoing queue, then start adding them
 		# to the database.
-		for title, url, description, ctime in articles:
+		ctime = time.time()
+		for title, url, description in newarticles:
 			# Only unquote HTTP urls
 			if url.startswith('http://'):
 				url = UnquoteURL(url).replace('&amp;', '&')
@@ -573,15 +585,9 @@ class News(Plugin):
 			# stick it in the outgoing queue
 			reply = PluginReply(trigger, replytext)
 			self.__outgoing.append(reply)
-		
-		# Start the DB fun
-		#article = articles.pop(0)
-		#trigger.insertme = articles
-		#self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
-		
-		# Insert the rows now
-		for article in articles:
-			self.dbQuery(trigger, None, INSERT_QUERY, *article)
+			
+			# Insert it into the DB
+			self.dbQuery(trigger, None, INSERT_QUERY, title, url, description, ctime)
 	
 	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title
