@@ -48,14 +48,23 @@ def main():
 	Config = ConfigParser()
 	Config.read(ConfigFile)
 	
-	# Start up the Postman, and run him forever
+	# Start up the Postman, and run him forever. If we're profiling, do that.
+	Post = Postman(ConfigFile, Config)
+	
 	if Profiled:
-		global Post
-		Post = Postman(ConfigFile, Config)
-		import profile
-		profile.run('Post.run_forever()', 'profile.data')
+		import hotshot
+		prof = hotshot.Profile('hangle.prof')
+		prof.runcall(Post.run_forever)
+		prof.close()
+		
+		# Print some profile stats
+		import hotshot.stats
+		stats = hotshot.stats.load('hangle.prof')
+		stats.strip_dirs()
+		stats.sort_stats('time', 'calls')
+		stats.print_stats(25)
+	
 	else:
-		Post = Postman(ConfigFile, Config)
 		Post.run_forever()
 
 # ---------------------------------------------------------------------------
