@@ -68,10 +68,11 @@ STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 LISTKEYS_QUERY = 'SELECT name FROM factoids WHERE name LIKE "%%%s%%"'
 LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
 
-GET_RE = re.compile("^(?P<name>.+?)\??$")
+GET_D_RE = re.compile("^(?P<name>.+?)\??$")
+GET_RE = re.compile("^(?P<name>.+?)\?$")
 SET_RE = re.compile("^(?!no, )(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
 NO_RE = re.compile("^no, (?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
-ALSO_RE = re.compile("(?P<name>.+?) (is|are) also (?P<value>.+)$")
+ALSO_RE = re.compile("^(?P<name>.+?) (is|are) also (?P<value>.+)$")
 DEL_RE = re.compile("^forget (?P<name>.+)$")
 REP_RE = re.compile("^(?P<name>.+?) =~ (?P<modstring>.+)$")
 LOCK_RE = re.compile("^lock (?P<name>.+)$")
@@ -133,8 +134,9 @@ class SmartyPants(Plugin):
 		self.__dels = 0
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE, exclusive=1)
-		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_RE, exclusive=1)
+		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_D_RE, exclusive=1)
+		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_D_RE, exclusive=1)
+		get_pub = PluginTextEvent(FACT_GET, IRCT_PUBLIC, GET_RE, exclusive=1)
 		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE)
 		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE)
 		no_dir = PluginTextEvent(FACT_NO, IRCT_PUBLIC_D, NO_RE)
