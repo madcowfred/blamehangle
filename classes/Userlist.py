@@ -25,7 +25,7 @@ class Userlist:
 	
 	def quit(self, nick):
 		for chan in self.__u.keys():
-			self.user_part(chan, nick)
+			self.parted(chan, nick)
 	
 	def user_nick(self, oldnick, newnick):
 		for chan in self.__u.keys():
