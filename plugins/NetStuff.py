@@ -235,13 +235,17 @@ class NetStuff(Plugin):
 		domain, parts = args
 		
 		# We only want IPv4 hosts.
-		hosts = [h for h in hosts if h[0] == 4]
 		if not hosts:
-			replytext = "%s doesn't seem to be a valid TLD!" % (parts[-1])
+			wsn = '%s.whois-servers.net' % (parts[-1])
+			host = WHOIS_HOSTS.get(parts[-1], wsn)
+			
+			replytext = "Unable to resolve '%s' - invalid TLD?" % (host)
 			self.sendReply(trigger, replytext)
+			
 			return
 		
 		# Spawn the WHOIS client
+		hosts = [h for h in hosts if h[0] == 4]
 		async_whois(self, trigger, domain, hosts[0][1])
 	
 	# Parse the result!
