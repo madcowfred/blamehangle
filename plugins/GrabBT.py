@@ -35,8 +35,6 @@ class GrabBT(Plugin):
 		if not self.Options['commands'] and not self.Options['newfiles']:
 			self.putlog(LOG_WARNING, "No channels configured!")
 		
-		self.Options['need_mode'] = self.Options.get('need_mode', '').split('')
-		
 		# Compile our regexps
 		self.__grab_res = []
 		for regexp in self.OptionsList('GrabBT-Allowed'):
