@@ -43,8 +43,8 @@ INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
-LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%'"
-LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE '%%%s%%'"
+LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%' ORDER BY request_count DESC"
+LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE '%%%s%%' ORDER BY request_count DESC"
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -66,8 +66,6 @@ MAX_FACT_NAME_LENGTH = 64
 MIN_FACT_VALUE_LENGTH = 200
 DEF_FACT_VALUE_LENGTH = 800
 MAX_FACT_VALUE_LENGTH = 2000
-
-MAX_FACT_SEARCH_RESULTS = 40
 
 # ---------------------------------------------------------------------------
 
@@ -947,15 +945,18 @@ class SmartyPants(Plugin):
 		
 		# Some results!
 		else:
-			# Too many!
-			if len(result) > MAX_FACT_SEARCH_RESULTS:
-				replytext = "Factoid search of '\02%s\02' by %s yielded too many results (%d). Please refine your query." % (findme, what, len(result))
-			# Enough
+			# TEMP: fix this once people update their configs
+			max_search_results = self.Options.get('max_search_results', 25)
+			
+			if len(result) > max_search_results:
+				replytext = "Factoid %s search for '\02%s\02' found \02%d\02 results, first \02%d\02" % (
+					what, findme, len(result), max_search_results)
 			else:
-				replytext = "Factoid search of '\02%s\02' by %s (\02%d\02 results): " % (findme, what, len(result))
-				
-				names = [row['name'] for row in result]
-				replytext += ' \02;;\02 '.join(names)
+				replytext = "'Factoid %s search for '\02%s\02' found \02%d\02 results" % (
+					what, findme, len(result))
+			
+			names = [row['name'] for row in result[:max_search_results]]
+			replytext = '%s: %s' % (replytext, ' \02;\02 '.join(names))
 			
 			self.sendReply(trigger, replytext)
 	
