@@ -2,7 +2,9 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
-'Yahoo Sports game result lookup.'
+"""
+FIXME: parsing is broken, either fix or find decent pages to use!
+"""
 
 import re
 
