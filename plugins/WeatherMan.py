@@ -160,6 +160,7 @@ class WeatherMan(Plugin):
 			data = {}
 			
 			# Eat the degree symbols
+			page_text = page_text.replace('&ordm;', '')
 			page_text = page_text.replace('°', '')
 			
 			
