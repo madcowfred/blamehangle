@@ -211,7 +211,7 @@ class WrapConn:
 				
 				if self.stoned > STONED_COUNT:
 					self.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
-					self.conn.disconnet()
+					self.conn.disconnect()
 				else:
 					self.stoned += 1
 					self.privmsg(self.conn.real_nickname, "Stoned yet?")
