@@ -11,11 +11,9 @@ import select
 import time
 import types
 
-#from classes import irclib
 from classes import asyncIRC
 
 from classes.Children import Child
-from classes.Common import *
 from classes.Constants import *
 from classes.Userlist import Userlist
 from classes.WrapConn import *
@@ -37,13 +35,6 @@ class ChatterGizmo(Child):
 	"""
 	
 	def setup(self):
-		# Add handlers for any event we're supposed to handle
-		#for thing in dir(self):
-		#	if not thing.startswith('_handle_'):
-		#		continue
-		#	event = thing[8:]
-		#	self.__ircobj.add_global_handler(event, getattr(self, thing), -10)
-		
 		self.Conns = {}
 		self.stopping = 0
 		
@@ -86,7 +77,7 @@ class ChatterGizmo(Child):
 				self.Conns[connid].channels = new_chans
 				self.Conns[connid].join_channels()
 			
-			# Quit and remove any gone networks
+			# Quit and remove any 'gone' networks
 			else:
 				self.Conns[connid].requested_quit = 1
 				
@@ -187,7 +178,7 @@ class ChatterGizmo(Child):
 					networks.append(section)
 			
 			if not networks:
-				raise Exception, 'No networks defined in config file'
+				raise Exception, 'No IRC networks defined in config file'
 			
 			for network in networks:
 				options = {}
@@ -225,7 +216,7 @@ class ChatterGizmo(Child):
 			method(connid, self.Conns[connid].conn, event)
 	
 	# -----------------------------------------------------------------------
-	# Raw 001 - Welcome to the server, foo
+	# Raw 001 - Welcome to the server
 	# -----------------------------------------------------------------------
 	def _handle_welcome(self, connid, conn, event):
 		wrap = self.Conns[connid]
@@ -248,6 +239,7 @@ class ChatterGizmo(Child):
 			self.privmsg(connid, _nick, text)
 			
 			# Delay our joins by 2 seconds so that we're (probably) identified
+			# FIXME: make this not use magic numbers
 			badtime = time.time() - 18
 			for chan in wrap.channels:
 				data = [badtime, wrap.conn.connid, wrap.connect_id, chan]
@@ -381,7 +373,6 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_kick(self, connid, conn, event):
 		chan = event.target.lower()
-		#kicker = irclib.nm_to_n(event.source())
 		kicked = event.arguments[0]
 		
 		if kicked == conn.getnick():
@@ -527,7 +518,7 @@ class ChatterGizmo(Child):
 			text = RE_STRIP_CODES.sub('', event.arguments[0])
 			# Strip leading and trailing spaces
 			text = text.strip()
-			
+			# If we still have text, trigger the event
 			if text != '':
 				data = [wrap, IRCT_MSG, event.userinfo, None, text]
 				self.sendMessage('PluginHandler', IRC_EVENT, data)
@@ -543,10 +534,6 @@ class ChatterGizmo(Child):
 		# Skip ignored people
 		if self.Userlist.Has_Flag(event.userinfo, 'Global', 'ignore'):
 			return
-		
-		# Ignore them if they're not on any of our channels
-		#if self.__Nice_Person_Check(userinfo):
-		#	return
 		
 		
 		first = event.arguments[0].upper()

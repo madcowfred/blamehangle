@@ -7,7 +7,7 @@
 # to fetch the URL.
 #
 # This is done so that url requests will not cause the bot to hang if the
-# remote http server responds slowly.
+# remote server responds slowly.
 
 import asyncore
 import gzip
@@ -24,7 +24,6 @@ from classes.async_buffered import buffered_dispatcher
 
 from classes.Children import Child
 from classes.Constants import *
-from classes.Common import *
 
 # ---------------------------------------------------------------------------
 

@@ -7,11 +7,12 @@
 
 import os
 import sys
+import time
 import types
 from Queue import *
 
-from classes.Common import *
 from classes.Constants import *
+from classes.Message import Message
 
 # ---------------------------------------------------------------------------
 

@@ -6,6 +6,7 @@
 # ---------------------------------------------------------------------------
 
 import asyncore
+import os
 import signal
 import smtplib
 import sys
@@ -15,8 +16,9 @@ from exceptions import SystemExit
 
 # ---------------------------------------------------------------------------
 
-from classes.Common import *
 from classes.Constants import *
+from classes.Message import Message
+from classes.Plugin import Plugin
 from classes.Users import *
 
 from classes.ChatterGizmo import ChatterGizmo
@@ -25,8 +27,6 @@ from classes.Helper import Helper
 from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
 from classes.Resolver import Resolver
-
-from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 

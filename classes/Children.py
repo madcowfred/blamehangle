@@ -4,8 +4,8 @@
 # This file contains the objects for each 'component' of Blamehangle.
 # ---------------------------------------------------------------------------
 
-from classes.Common import *
 from classes.Constants import *
+from classes.Message import Message
 
 # ---------------------------------------------------------------------------
 # This is the main object. The threaded object is a subclass of this.
