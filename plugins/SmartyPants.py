@@ -170,6 +170,14 @@ class SmartyPants(Plugin):
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		
+		# Check to see if this user is ignored
+		#
+		# This will possibly be superceeded if a blamehangle-wide ignore
+		# list is implemented... but perhaps not. It could be useful to
+		# only ignore a user here, but let them access other plugins. Maybe.
+		if self.__Check_User_Flags(trigger.userinfo, 'ignore'):
+			return
+		
 		# Someone wants to view a factoid.
 		if trigger.name == FACT_GET:
 			name = trigger.match.group('name')
