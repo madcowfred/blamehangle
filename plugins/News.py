@@ -14,6 +14,8 @@ import cPickle, time
 
 NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
 NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
+NEWS_GOOGLE_HEALTH = "NEWS_GOOGLE_HEALTH"
+NEWS_GOOGLE_BIZ = "NEWS_GOOGLE_BIZ"
 NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
 
 TITLE_INSERT = "TITLE_INSERT"
@@ -57,6 +59,8 @@ ANANOVA_TARGETS = {
 
 GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
 GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
+GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
+GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
 
 
@@ -85,11 +89,15 @@ class News(Plugin):
 
 		self.__gwn_targets = {}
 		self.__gsci_targets = {}
+		self.__gh_targets = {}
+		self.__gbiz_targets = {}
 		self.__anaq_targets = {}
 		self.__setup_targets()
 
 		self.__gwn_interval = self.Config.getint('News', 'google_world_interval')
 		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval')
+		self.__gh_interval = self.Config.getint('News', 'google_health_interval')
+		self.__gbiz_interval = self.Config.getint('News', 'google_business_interval')
 		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')
 	
 	# -----------------------------------------------------------------------
@@ -97,17 +105,21 @@ class News(Plugin):
 	def __setup_targets(self):
 		for option in self.Config.options('News'):
 			if option.startswith('google_world.'):
-				network = option.split('.')[1]
-				targets = self.Config.get('News', option).split()
-				self.__gwn_targets[network] = targets
+				self.__setup_target(self.__gwn_targets, option)
 			elif option.startswith('google_sci.'):
-				network = option.split('.')[1]
-				targets = self.Config.get('News', option).split()
-				self.__gsci_targets[network] = targets
+				self.__setup_target(self.__gsci_targets, option)
+			elif option.startswith('google_health.'):
+				self.__setup_target(self.__gh_targets, option)
+			elif option.startswith('google_business.'):
+				self.__setup_target(self.__gbiz_targets, option)
 			elif option.startswith('ananova.'):
-				network = option.split('.')[1]
-				targets = self.Config.get('News', option).split()
-				self.__anaq_targets[network] = targets
+				self.__setup_target(self.__anaq_targets, option)
+	
+	def __setup_target(self, target_store, option):
+		network = option.split('.')[1]
+		targets = self.Config.get('News', option).split()
+		target_store[network] = targets
+		
 	
 	# -----------------------------------------------------------------------
 
@@ -115,9 +127,20 @@ class News(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
 		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
 		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
+		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
+		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
 		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
 
-		self.register(gwn, gsci, anaq)
+		if self.__gwn_interval:
+			self.register(gwn)
+		if self.__gsci_interval:
+			self.register(gsci)
+		if self.__gh_interval:
+			self.register(gh)
+		if self.__gbiz_interval:
+			self.register(gbiz)
+		if self.__anaq_interval:
+			self.register(anaq)
 	
 	# -----------------------------------------------------------------------
 	
@@ -125,13 +148,14 @@ class News(Plugin):
 		event = message.data
 		
 		if event.name == NEWS_GOOGLE_WORLD:
-			#pass
 			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_WORLD, event])
 		elif event.name == NEWS_GOOGLE_SCI:
-			#pass
 			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_SCI, event])
+		elif event.name == NEWS_GOOGLE_HEALTH:
+			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_HEALTH, event])
+		elif event.name == NEWS_GOOGLE_BIZ:
+			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_BIZ, event])
 		elif event.name == NEWS_ANANOVA:
-			#pass
 			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, event])
 		else:
 			errstring = "News has no event: %s" % event.name
@@ -171,7 +195,9 @@ class News(Plugin):
 	def _message_REPLY_URL(self, message):
 		page_text, event = message.data
 
-		if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI:
+		if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI \
+			or event.name == NEWS_GOOGLE_HEALTH or event.name == NEWS_GOOGLE_BIZ:
+
 			parser = Google()
 		elif event.name == NEWS_ANANOVA:
 			parser = Ananova()
