@@ -9,6 +9,7 @@ from classes.Plugin import Plugin
 from classes.Constants import *
 
 from HTMLParser import HTMLParser
+from random import Random
 import cPickle, time
 
 NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
@@ -56,16 +57,17 @@ class News(Plugin):
 		
 		self.__Last_Spam_Time = time.time()
 		self.__Last_Clearout_Time = time.time()
+
+		self.__rand_gen = Random(time.time())
 		
 	
 	# -----------------------------------------------------------------------
 
 	# Check google news every 5 minutes, and ananova every 6 hours
 	def _message_PLUGIN_REGISTER(self, message):
-		# 2400, 2400, 18000
 		reply = [
-		#(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
-		#(IRCT_TIMED, 300, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
+		(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
+		(IRCT_TIMED, 1800, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
 		(IRCT_TIMED, 3600, ANANOVA_TARGETS, NEWS_ANANOVA)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
@@ -94,10 +96,17 @@ class News(Plugin):
 		# Periodically check if we need to send some text out to IRC
 		if currtime - self.__Last_Spam_Time >= 30:
 			if self.__outgoing:
-				reply = self.__outgoing.pop(0)
+				# We pull out a random item from our outgoing list so that
+				# we don't end up posting slabs of stories from the same
+				# site in a row
+				index = self.__rand_gen.randint(0, len(self.__outgoing))
+				reply = self.__outgoing.pop(index)
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 				self.__Last_Spam_Time = currtime
+
+				tolog = "%s news items remaining in outgoing queue" % len(self.__outgoing)
+				self.putlog(LOG_DEBUG, tolog)
 
 			# This is also an appropriate place to check to see if any news
 			# items in our various stores are old and need to be purged
@@ -111,7 +120,7 @@ class News(Plugin):
 
 				for title in store:
 					url, post_time = store[title]
-					# 60 sec * 60 min * 24 hour * 2 day = 86400
+					# 60 sec * 60 min * 24 hour * 2 day = 172800
 					if currtime - post_time > 172800:
 						del store[title]
 
@@ -181,18 +190,17 @@ class News(Plugin):
 	# all these values
 	def __pickle(self, obj, pickle):
 		filename = self.pickle_dir + pickle
-		if obj:
-			try:
-				f = open(filename, "wb")
-			except:
-				# We couldn't open our file :(
-				tolog = "Unable to open %s for writing" % filename
-				self.putlog(LOG_WARNING, tolog)
-			else:
-				# the 1 turns on binary-mode pickling
-				cPickle.dump(obj, f, 1)
-				f.flush()
-				f.close()
+		try:
+			f = open(filename, "wb")
+		except:
+			# We couldn't open our file :(
+			tolog = "Unable to open %s for writing" % filename
+			self.putlog(LOG_WARNING, tolog)
+		else:
+			# the 1 turns on binary-mode pickling
+			cPickle.dump(obj, f, 1)
+			f.flush()
+			f.close()
 	
 	# -----------------------------------------------------------------------
 
