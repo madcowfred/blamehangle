@@ -534,7 +534,6 @@ class News(Plugin):
 			# If we have to, see if we can find a real URL
 			if feed['find_real_url']:
 				parsed = urlparse.urlparse(article_link)
-				print repr(parsed)
 				if parsed[4]:
 					for key, val in [s.split('=', 1) for s in parsed[4].split('&')]:
 						uval = UnquoteURL(val)
