@@ -12,23 +12,31 @@ from classes.Plugin import Plugin
 
 #----------------------------------------------------------------------------
 
-SELECT_QUERY = "SELECT value FROM karma WHERE name in (%s)"
-INSERT_QUERY = "INSERT INTO karma VALUES (%s,%s)"
-UPDATE_QUERY = "UPDATE karma SET value = value + %s WHERE name = %s"
+SELECT_QUERY = 'SELECT value FROM karma WHERE name in (%s)'
+INSERT_QUERY = 'INSERT INTO karma (name, value) VALUES (%s, %s)'
+UPDATE_QUERY = 'UPDATE karma SET value = value + %s WHERE name = %s'
 
 KARMA_PLUS = "KARMA_PLUS"
 KARMA_MINUS = "KARMA_MINUS"
 KARMA_LOOKUP = "KARMA_LOOKUP"
 KARMA_MOD = "KARMA_MOD"
 
-#PLUS_RE = re.compile("^(?P<name>[ \w]+)\s*\+\+$")
-#MINUS_RE = re.compile("^(?P<name>[ \w]+)--$")
 PLUS_RE = re.compile("^(?P<name>.+)\+\+$")
 MINUS_RE = re.compile("^(?P<name>.+)--$")
 LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
-KARMA_CHANGE_HELP = "<something>\02++\02 OR <something>\02--\02 : Increment or decrement karma for <something>"
-KARMA_HELP = "\02karma\02 <something> : Look up <something>'s karma level"
+KARMA_CHANGE_HELP = '<key>\02++\02 OR <key>\02--\02 : Increment or decrement karma for <key>.'
+KARMA_HELP = "\02karma\02 <key> : Look up <key>'s karma level."
+
+KARMA_BEST = 'KARMA_BEST'
+BEST_HELP = '\02bestkarma\02 : See the keys with the best karma.'
+BEST_QUERY = 'SELECT name, value FROM karma ORDER BY value DESC LIMIT %s'
+BEST_RE = re.compile('^bestkarma$')
+
+KARMA_WORST = 'KARMA_WORST'
+WORST_HELP = '\02worstkarma\02 : See the keys with the worst karma.'
+WORST_QUERY = 'SELECT name, value FROM karma ORDER BY value LIMIT %s'
+WORST_RE = re.compile('^worstkarma$')
 
 #----------------------------------------------------------------------------
 
@@ -51,9 +59,11 @@ class Karma(Plugin):
 		self.rehash()
 	
 	def rehash(self):
-		# Load our karma combines
-		self.__Combines = {}
+		# Load our options
+		self.Options = self.SetupOptions('Karma')
 		
+		# Set up our combines
+		self.__Combines = {}
 		for name in self.Config.options('Karma-Combines'):
 			self.__Combines[name.lower()] = self.Config.get('Karma-Combines', name).lower().split(',')
 	
@@ -61,10 +71,20 @@ class Karma(Plugin):
 		self.setTextEvent(KARMA_PLUS, PLUS_RE, IRCT_PUBLIC)
 		self.setTextEvent(KARMA_MINUS, MINUS_RE, IRCT_PUBLIC)
 		self.setTextEvent(KARMA_LOOKUP, LOOKUP_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
+		
+		# bestkarma might be disabled.
+		if self.Options['num_best']:
+			self.setTextEvent(KARMA_BEST, BEST_RE, IRCT_PUBLIC_D, IRCT_MSG)
+			self.setHelp('karma', 'bestkarma', BEST_HELP)
+		# worstkarma might be disabled.
+		if self.Options['num_worst']:
+			self.setTextEvent(KARMA_WORST, WORST_RE, IRCT_PUBLIC_D, IRCT_MSG)
+			self.setHelp('karma', 'worstkarma', WORST_HELP)
 		
 		self.setHelp('karma', 'karma', KARMA_HELP)
 		self.setHelp('karma', 'modify', KARMA_CHANGE_HELP)
+		
+		self.registerEvents()
 		self.registerHelp()
 	
 	#------------------------------------------------------------------------
@@ -147,6 +167,12 @@ class Karma(Plugin):
 		else:
 			self.sendReply(trigger, 'Invalid key name!')
 	
+	def _trigger_KARMA_BEST(self, trigger):
+		self.dbQuery(trigger, self.__Karma_Best, BEST_QUERY, self.Options['num_best'])
+	
+	def _trigger_KARMA_WORST(self, trigger):
+		self.dbQuery(trigger, self.__Karma_Worst, WORST_QUERY, self.Options['num_worst'])
+	
 	#------------------------------------------------------------------------
 	# Does karma lookups
 	def __Karma_Lookup(self, trigger, result):
@@ -171,7 +197,7 @@ class Karma(Plugin):
 		
 		self.sendReply(trigger, replytext)
 	
-	# Does ++ stuff
+	# Increments a key, or inserts it as 1 if it's not there.
 	def __Karma_Plus(self, trigger, result):
 		name = self.__Sane_Name(trigger)
 		
@@ -184,7 +210,7 @@ class Karma(Plugin):
 		else:
 			self.dbQuery(trigger, self.__Karma_Mod, UPDATE_QUERY, 1, name)
 	
-	# Does -- stuff
+	# Decrements a key, or inserts it as -1 if it's not there.
 	def __Karma_Minus(self, trigger, result):
 		name = self.__Sane_Name(trigger)
 		
@@ -197,9 +223,43 @@ class Karma(Plugin):
 		else:
 			self.dbQuery(trigger, self.__Karma_Mod, UPDATE_QUERY, -1, name)
 	
-	# Does nothing
+	# Does nothing except warn if a query failed.
 	def __Karma_Mod(self, trigger, result):
 		if result is None:
 			self.sendReply(trigger, 'A database error occurred, eek!')
+	
+	# Spits out a list of the best karma keys.
+	def __Karma_Best(self, trigger, result):
+		if result is None:
+			self.sendReply(trigger, 'A database error occurred, eek!')
+		
+		elif result == ():
+			self.sendReply(trigger, 'Nothing has karma yet!')
+		
+		else:
+			bits = []
+			for row in result:
+				bit = '%s = %s' % (row['name'], row['value'])
+				bits.append(bit)
+			
+			replytext = 'Best \x02%d\x02 karma values: %s' % (self.Options['num_best'], ', '.join(bits))
+			self.sendReply(trigger, replytext)
+	
+	# Spits out a list of the worst karma keys.
+	def __Karma_Worst(self, trigger, result):
+		if result is None:
+			self.sendReply(trigger, 'A database error occurred, eek!')
+		
+		elif result == ():
+			self.sendReply(trigger, 'Nothing has karma yet!')
+		
+		else:
+			bits = []
+			for row in result:
+				bit = '%s = %s' % (row['name'], row['value'])
+				bits.append(bit)
+			
+			replytext = 'Worst \x02%d\x02 karma values: %s' % (self.Options['num_worst'], ', '.join(bits))
+			self.sendReply(trigger, replytext)
 	
 #----------------------------------------------------------------------------
