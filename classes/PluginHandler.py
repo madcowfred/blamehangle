@@ -66,6 +66,15 @@ class PluginHandler(Child):
 
 	#------------------------------------------------------------------------
 
+	# Postman has asked us to rehash our config.
+	# For PluginHandler, this involves clearing out all our plugin triggers,
+	# and sending out a PLUGIN_REGISTER message again.
+	def _message_REQ_REHASH(self, message):
+		self.setup()
+		self.run_once()
+	
+	# -----------------------------------------------------------------------
+
 	# A plugin has responded
 	def _message_PLUGIN_REGISTER(self, message):
 		events = message.data

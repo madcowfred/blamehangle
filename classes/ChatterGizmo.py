@@ -16,6 +16,7 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Userlist import Userlist
 from classes.WrapConn import *
+from classes.Users import *
 
 # ---------------------------------------------------------------------------
 
@@ -43,6 +44,8 @@ class ChatterGizmo(Child):
 		self.stopping = 0
 		
 		self.__Rejoins = []
+
+		self.__users = HangleUserList(self, 'GlobalUsers')
 	
 	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
@@ -312,6 +315,9 @@ class ChatterGizmo(Child):
 	def _handle_pubmsg(self, conn, event):
 		chan = event.target().lower()
 		userinfo = UserInfo(event.source())
+
+		if self.__users.check_user_flags(userinfo, 'ignore'):
+			return
 		
 		# Strip any codes from the text
 		text = STRIP_CODES.sub('', event.arguments()[0])
@@ -353,6 +359,9 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_privmsg(self, conn, event):
 		userinfo = UserInfo(event.source())
+
+		if self.__users.check_user_flags(userinfo, 'ignore'):
+			return
 		
 		# Strip any codes from the text
 		text = STRIP_CODES.sub('', event.arguments()[0])
@@ -376,6 +385,9 @@ class ChatterGizmo(Child):
 		
 		
 		userinfo = UserInfo(event.source())
+
+		if self.__users.check_user_flags(userinfo, 'ignore'):
+			return
 		
 		# Ignore them if they're not on any of our channels
 		#if self.__Nice_Person_Check(userinfo):
@@ -401,6 +413,10 @@ class ChatterGizmo(Child):
 		
 		elif first == 'CLIENTINFO':
 			self.Conns[conn].ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
+
+		elif first == 'REHASH':
+			if self.__users.check_user_flags(userinfo, 'admin'):
+				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
 		
 		else:
 			data = [conn, IRCT_CTCP, userinfo, None, first + rest]

@@ -95,7 +95,7 @@ class Postman:
 							self.__Load_Configs()
 							
 							self.sendMessage(None, REQ_REHASH, None)
-							self.sendMessage('HeadHoncho', REPLY_LOAD_CONFIG, message.data)
+							#self.sendMessage('HeadHoncho', REPLY_LOAD_CONFIG, message.data)
 							
 							#mess = Message('Postman', None, REQ_REHASH, [])
 							#for child in self.__Children.values():
@@ -321,7 +321,7 @@ class Postman:
 		config_dir = self.Config.get('plugin', 'config_dir')
 		if os.path.exists(config_dir):
 			for config_file in os.listdir(config_dir):
-				if config_file[-5:] == ".conf":
-					self.Config.read(config_dir + config_file)
+				if config_file.endswith(".conf"):
+					self.Config.read(os.path.join(config_dir, config_file))
 					
 # ---------------------------------------------------------------------------

@@ -57,6 +57,9 @@ class Airline(Plugin):
 				tolog = "loaded %d carriers from %saircodes.data" % (len(self.Airlines), config_dir)
 				self.putlog(LOG_DEBUG, tolog)
 	
+	def _message_REQ_REHASH(self, message):
+		self.setup()
+	
 	# --------------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):

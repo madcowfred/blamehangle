@@ -4,7 +4,7 @@
 # This file contains the 'constants' for various parts of Blamehangle.
 # ---------------------------------------------------------------------------
 
-BH_VERSION = '0.0.0-CVS'
+BH_VERSION = '0.1.0-CVS'
 
 # ---------------------------------------------------------------------------
 # Log constants
@@ -47,6 +47,9 @@ REQ_PRIVMSG = 'REQ_PRIVMSG'
 REQ_QUERY = 'REQ_QUERY'
 REQ_SHUTDOWN = 'REQ_SHUTDOWN'
 REQ_URL = 'REQ_URL'
+
+REQ_LOAD_CONFIG = 'REQ_LOAD_CONFIG'
+REQ_REHASH = 'REQ_REHASH'
 
 # ---------------------------------------------------------------------------
 # Reply constants

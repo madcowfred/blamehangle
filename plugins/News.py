@@ -73,6 +73,9 @@ class News(Plugin):
 		
 		self.__rand_gen = Random(time.time())
 		
+		self.__setup_config()
+	
+	def __setup_config(self):
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
 		
 		self.__old_days = self.Config.getint('News', 'old_threshold')
@@ -170,6 +173,9 @@ class News(Plugin):
 			self.RSS_Feeds[name] = feed
 	
 	# -----------------------------------------------------------------------
+
+	def _message_REQ_REHASH(self, message):
+		self.__setup_config()
 	
 	# Register all our news pages that we want to check
 	def _message_PLUGIN_REGISTER(self, message):
