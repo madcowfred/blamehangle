@@ -25,6 +25,7 @@ class PluginHandler(Child):
 	def setup(self):
 		self.__Plugins = self.pluginList()
 		self.__PUBLIC_Events = {}
+		self.__PUBLIC_D_Events = {}
 		self.__MSG_Events = {}
 		self.__NOTICE_Events = {}
 		self.__CTCP_Events = {}
@@ -150,6 +151,8 @@ class PluginHandler(Child):
 	def __getRelevantStore(self, type):
 		if type == IRCT_PUBLIC:
 			return self.__PUBLIC_Events
+		elif type == IRCT_PUBLIC_D:
+			return self.__PUBLIC_D_Events
 		elif type == IRCT_MSG:
 			return self.__MSG_Events
 		elif type == IRCT_NOTICE:

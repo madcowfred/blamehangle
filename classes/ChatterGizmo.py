@@ -193,7 +193,7 @@ class ChatterGizmo(Child):
 	# Someone just said something in a channel we're in
 	# -----------------------------------------------------------------------
 	def _handle_pubmsg(self, conn, event):
-		chan = event.target().lower
+		chan = event.target().lower()
 		userinfo = UserInfo(event.source())
 		
 		# Strip any codes from the text
