@@ -412,7 +412,7 @@ class Postman:
 		
 		except Exception, msg:
 			print "Failed to open our log file: %s" % (msg)
-			sys.exit(-1)
+			sys.exit(1)
 		
 		else:
 			if self.__logfile.tell() > 0:
@@ -566,7 +566,7 @@ class Postman:
 		# We crashed during shutdown? Not Good.
 		if self.__Stopping == 1:
 			self.__Log(LOG_ALWAYS, "Exception during shutdown, I'm outta here.")
-			sys.exit(-1)
+			sys.exit(1)
 		
 		else:
 			# Was it a plugin? If so, we can try shutting it down
