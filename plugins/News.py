@@ -591,8 +591,11 @@ class Google(HTMLParser):
 					# We have found a main headline
 					self.__found_a = 1
 				if self.__found_a and attr == 'href':
-					if value.startswith('/url?ntc='):
-						self.__temp_href = value[9:]
+					# I'll just assume that q is always the last parameter for
+					# now :p
+					n = value.find('q=')
+					if n >= 0:
+						self.__temp_href = value[n+2:]
 					else:
 						self.__temp_href = value
 					
