@@ -212,12 +212,11 @@ class IRC:
 		incoming data, if there are any.  If that seems boring, look
 		at the process_forever method.
 		"""
-		#sockets = map(lambda x: x._get_socket(), self.connections)
-		#sockets = filter(lambda x: x != None, sockets)
-		sock = self.connections[0]._get_socket()
+		sockets = map(lambda x: x._get_socket(), self.connections)
+		sockets = filter(lambda x: x != None, sockets)
 		
 		if sock:
-			(i, o, e) = select.select([sock], [], [], timeout)
+			(i, o, e) = select.select(sockets, [], [], timeout)
 			if i:
 				self.connections[0].process_data()
 		
