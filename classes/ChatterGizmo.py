@@ -411,6 +411,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_privmsg(self, conn, event):
 		userinfo = UserInfo(event.source())
+		wrap = self.Conns[conn]
 		
 		# Stoned check
 		if userinfo.nick == conn.real_nickname:
@@ -426,7 +427,7 @@ class ChatterGizmo(Child):
 			text = text.strip()
 			
 			if text != '':
-				data = [self.Conns[conn], IRCT_MSG, userinfo, None, text]
+				data = [wrap, IRCT_MSG, userinfo, None, text]
 				self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
