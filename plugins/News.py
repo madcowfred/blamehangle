@@ -363,15 +363,15 @@ class News(Plugin):
 	def _message_REPLY_URL(self, message):
 		event, page_text = message.data
 		
+		# Remove annoying quoted bits
+		page_text = UnquoteHTML(page_text)
+		
 		# RSS feed
 		if type(event) == types.TupleType:
 			event, name = event
 			self.__do_rss(page_text, event, name)
 		
 		else:
-			# Remove annoying quoted bits
-			page_text = UnquoteHTML(page_text)
-			
 			if event.name in (NEWS_GOOGLE_WORLD, NEWS_GOOGLE_SCI, NEWS_GOOGLE_HEALTH,
 				NEWS_GOOGLE_BIZ):
 				
