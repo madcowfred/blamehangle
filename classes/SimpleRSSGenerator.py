@@ -44,11 +44,11 @@ def SimpleRSSGenerator(filename, feedinfo, items, putlog=None):
 		line = '<title>%s</title>' % (item['title'])
 		lines.append(line)
 		
-		if 'link' in item:
+		if item.get('link', None) is not None:
 			line = '<link>%s</link>' % (item['link'])
 			lines.append(line)
 		
-		if 'pubdate' in item:
+		if item.get('pubdate', None) is not None:
 			line = '<pubDate>%s</pubDate>' % (ISODate(item['pubdate']))
 			lines.append(line)
 		
