@@ -85,8 +85,7 @@ class News(Plugin):
 	
 	# Make extra sure our news queue is saved
 	def shutdown(self, message):
-		if self.__outgoing:
-			self.__pickle(self.__outgoing, '.news.out_pickle')
+		self.__pickle(self.__outgoing, '.news.out_pickle')
 	
 	def __setup_config(self):
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
@@ -107,9 +106,8 @@ class News(Plugin):
 		else:
 			tolog = "Using brief mode for news"
 			self.__verbose = 0
-			
 		self.putlog(LOG_DEBUG, tolog)
-
+		
 		self.__google = Google()
 		self.__ananova = Ananova()
 		
