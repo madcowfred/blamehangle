@@ -68,6 +68,9 @@ class News(Plugin):
 	
 	def setup(self):
 		self.__outgoing = self.__unpickle('.news.out_pickle') or []
+		if self.__outgoing:
+			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
+			self.putlog(LOG_DEBUG, tolog)
 		
 		self.__Last_Spam_Time = time.time()
 		self.__Last_Clearout_Time = time.time()
@@ -75,6 +78,10 @@ class News(Plugin):
 		self.__rand_gen = Random(time.time())
 		
 		self.__setup_config()
+	
+	# Make extra sure our news queue is saved
+	def shutdown(self, message):
+		self.__pickle(self.__outgoing, '.news.out_pickle')
 	
 	def __setup_config(self):
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
@@ -107,7 +114,8 @@ class News(Plugin):
 		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')* 60
 		
 		# Do RSS feed setup
-		self.__rss_interval = self.Config.getint('RSS', 'interval') * 60
+		self.__rss_default_interval = self.Config.getint('RSS', 'default_interval') * 60
+		self.__rss_ignore_no_link = self.Config.getboolean('RSS', 'ignore_no_link')
 		
 		self.__Setup_RSS_Feeds()
 	
@@ -165,8 +173,8 @@ class News(Plugin):
 			if self.Config.has_option(section, 'interval'):
 				feed['interval'] = self.Config.getint(section, 'interval') * 60
 			else:
-				feed['interval'] = self.__rss_interval
-
+				feed['interval'] = self.__rss_default_interval
+			
 			self.__setup_rss_target(section, feed)
 			
 			feed['url'] = self.Config.get(section, 'url')
@@ -174,7 +182,7 @@ class News(Plugin):
 			self.RSS_Feeds[name] = feed
 	
 	# -----------------------------------------------------------------------
-
+	
 	def _message_REQ_REHASH(self, message):
 		self.__setup_config()
 	
@@ -185,7 +193,7 @@ class News(Plugin):
 		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
 		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
 		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
-
+		
 		ns_dir = PluginTextEvent(NEWS_SEARCH, IRCT_PUBLIC_D, NEWS_SEARCH_RE)
 		ns_msg = PluginTextEvent(NEWS_SEARCH, IRCT_MSG, NEWS_SEARCH_RE)
 		
@@ -351,19 +359,23 @@ class News(Plugin):
 		if feed['title']:
 			feed_title = feed['title']
 		else:
-			feed_title = r.channel['title']
+			feed_title = r.channel.get('title', name)
 		
 		articles = []
 		queries = []
 		for item in r.items:
 			title = '%s: %s' % (feed_title, item['title'])
-			#self.__to_process[title] = item['link']
 			
-			#titles.append(title)
-			#query = (NEWS_QUERY, title)
-			#queries.append(query)
-
-			articles.append((title, item['link']))
+			if self.__rss_ignore_no_link:
+				if not item.has_key('link'):
+					tolog = "RSS item '%s' has no link!" % title
+					self.putlog(LOG_DEBUG, tolog)
+					continue
+				link = item['link']
+			else:
+				link = item.get('link', '<no link>')
+			
+			articles.append((title, link))
 			query = (NEWS_QUERY, title)
 			queries.append(query)
 		
@@ -386,7 +398,7 @@ class News(Plugin):
 			for i in range(len(articles)):
 				title, url = articles[i]
 				result = results[i]
-
+				
 				
 				# the title was in the news db, don't add it again
 				if result:
@@ -394,7 +406,7 @@ class News(Plugin):
 				
 				#replytext = "%s - %s" % (title, self.__to_process[title])
 				#del self.__to_process[title]
-
+				
 				replytext = "%s - %s" % (title, url)
 				
 				reply = PluginReply(event, replytext)
