@@ -1,13 +1,11 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file implements the url retriever for blamehangle. Plugins can send
-# a message to the class defined here asking for the contents of a page
-# defined by the given url, and a new dispatcher will be spawned eventually
-# to fetch the URL.
-#
-# This is done so that url requests will not cause the bot to hang if the
-# remote server responds slowly.
+
+"""
+An asynchronous URL retriever. Plugins can send a URL request to HTTPMonster
+and they will receive a response message at a later time.
+"""
 
 import asyncore
 import gzip
@@ -21,7 +19,6 @@ import urlparse
 from cStringIO import StringIO
 
 from classes.async_buffered import buffered_dispatcher
-
 from classes.Children import Child
 from classes.Constants import *
 
@@ -30,9 +27,6 @@ from classes.Constants import *
 dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
 line_re = re.compile('(?:\r\n|\r|\n)')
-
-HTTP_TIMEOUT = 20
-REDIRECT_LIMIT = 3
 
 # ---------------------------------------------------------------------------
 
@@ -51,8 +45,12 @@ class HTTPMonster(Child):
 		self.rehash()
 	
 	def rehash(self):
-		self.max_conns = max(1, min(10, self.Config.getint('HTTP', 'connections')))
-		self.user_agent = self.Config.get('HTTP', 'useragent')
+		options = self.OptionsDict('HTTP')
+		
+		self.max_conns = max(1, min(10, options.get('connections', 4)))
+		self.redirect_limit = max(1, min(10, options.get('redirect_limit', 3)))
+		self.connect_timeout = max(1, min(60, options.get('connect_timeout', 20)))
+		self.user_agent = options['useragent']
 		
 		self.use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
 		self.dns_order = self.Config.get('DNS', 'http_order').strip().split()
@@ -293,7 +291,7 @@ class async_http(buffered_dispatcher):
 							self.failed('Redirection loop encountered!')
 						else:
 							self.seen[self.url] = 1
-							if len(self.seen) > REDIRECT_LIMIT:
+							if len(self.seen) > self.parent.redirect_limit:
 								self.failed('Redirection limit reached!')
 							else:
 								self.message.data[2] = newurl
@@ -394,7 +392,7 @@ class async_http(buffered_dispatcher):
 	
 	# See if we've timed out
 	def timeout_check(self, currtime):
-		if currtime - self.last_activity > HTTP_TIMEOUT:
+		if currtime - self.last_activity > self.parent.connect_timeout:
 			self.failed('Connection timed out')
 	
 	# Failed!
