@@ -170,7 +170,9 @@ class async_http(buffered_dispatcher):
 		# Work out our port from the host field
 		try:
 			host, port = host.split(":", 1)
-			if not port.isdigit():
+			if port.isdigit():
+				port = int(port)
+			else:
 				port = 80
 		except (TypeError, ValueError):
 			port = 80
