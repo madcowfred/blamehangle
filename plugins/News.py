@@ -68,8 +68,6 @@ class News(Plugin):
 	Quirkies (!), and reply with the title of and link to any that it finds.
 	"""
 	
-	RSS_Feeds = {}
-	
 	def setup(self):
 		self.__outgoing = self.__unpickle('.news.out_pickle') or []
 		if self.__outgoing:
@@ -162,6 +160,8 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	# Do stuff
 	def __Setup_RSS_Feeds(self):
+		self.RSS_Feeds = {}
+		
 		for section in self.Config.sections():
 			if not section.startswith('RSS.'):
 				continue
@@ -276,6 +276,7 @@ class News(Plugin):
 		elif event.name == RSS_LIST:
 			names = self.RSS_Feeds.keys()
 			if names:
+				names.sort()
 				replytext = 'I currently check \x02%d\x02 RSS feeds: %s' % (len(names), ', '.join(names))
 			else:
 				replytext = 'Sorry, I have no RSS feeds configured.'
