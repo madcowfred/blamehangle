@@ -81,6 +81,8 @@ class Calculator(Plugin):
 		except OverflowError, err:
 			code, msg = err
 			self.sendReply(trigger, msg)
+		except ValueError, errtext:
+			self.sendReply(trigger, errtext)
 		except Exception:
 			replytext = "not a valid mathematical expression"
 			self.sendReply(trigger, replytext)
