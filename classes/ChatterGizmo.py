@@ -348,13 +348,12 @@ class ChatterGizmo(Child):
 		before = event.userinfo.nick
 		after = event.target
 		
-		# If it wasn't us
-		if after != conn.getnick():
-			self.Conns[connid].users.nick(before, after)
-			
-			# If it was our primary nickname, try and regain it
-			if before == self.Conns[connid].nicks[0]:
-				conn.nick(before)
+		# Update the userlist
+		self.Conns[connid].users.nick(before, after)
+		
+		# If it was our primary nickname, try and regain it
+		if after != conn.getnick() and before == self.Conns[connid].nicks[0]:
+			conn.nick(before)
 	
 	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
