@@ -89,7 +89,7 @@ REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
-MAX_SEARCH_RESULTS = 15
+MAX_FACT_SEARCH_RESULTS = 15
 
 #----------------------------------------------------------------------------
 
@@ -900,8 +900,8 @@ class SmartyPants(Plugin):
 		else:
 			# check how many items we found
 			results = results[0]
-			if len(results) > MAX_SEARCH_RESULTS:
-				replytext = "Factoid search of '\02%s\02' by %s yeilded too many results. Please refine your search." % (search, what)
+			if len(results) > MAX_FACT_SEARCH_RESULTS:
+				replytext = "Factoid search of '\02%s\02' by %s yielded too many results. Please refine your query." % (search, what)
 				self.sendReply(trigger, replytext)
 			else:
 				# We found some items, but less than our max threshold, so

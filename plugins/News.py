@@ -5,6 +5,13 @@
 # news, and reports it.
 # exciting stuff.
 
+#CREATE TABLE news (
+#	title varchar(255) NOT NULL default '',
+#	url varchar(255) default NULL,
+#	time bigint UNSIGNED default NULL,
+#	PRIMARY KEY (title)
+#	) TYPE=MyISAM;
+
 from random import Random
 import cPickle
 import re
@@ -19,7 +26,7 @@ from classes.HTMLParser import HTMLParser, HTMLParseError
 
 # ---------------------------------------------------------------------------
 
-NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
+NEWS_GOOGLE_WORLD = "NEWS_GOOGLE_WORLD"
 NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
 NEWS_GOOGLE_HEALTH = "NEWS_GOOGLE_HEALTH"
 NEWS_GOOGLE_BIZ = "NEWS_GOOGLE_BIZ"
@@ -27,28 +34,18 @@ NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
 
 NEWS_RSS = "NEWS_RSS"
 
-TITLE_INSERT = "TITLE_INSERT"
+NEWS_INSERT = "NEWS_INSERT"
 TIME_CHECK = "TIME_CHECK"
 
-# I tried using "datetime" as the type for the time column, but it created
-# interesting things like the following:
-#+-------+---------------------+
-#| title | time                |
-#+-------+---------------------+
-#| hello | 2000-10-47 63:46:97 |
-#+-------+---------------------+
-# so I for the following
-#CREATE TABLE news (
-#	title varchar(255) NOT NULL default '',
-#	time bigint UNSIGNED default NULL,
-#	PRIMARY KEY (title)
-#	) TYPE=MyISAM;
+NEWS_SEARCH = "NEWS_SEARCH"
+MAX_NEWS_SEARCH_RESULTS = 5
 
-
-TITLE_QUERY = "SELECT title FROM news WHERE title = %s"
-INSERT_QUERY = "INSERT INTO news (title, time) VALUES (%s,%s)"
+NEWS_QUERY = "SELECT title, url FROM news WHERE title = %s"
+INSERT_QUERY = "INSERT INTO news (title, url, time) VALUES (%s,%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE time < %s"
+SEARCH_QUERY = 'SELECT title, url FROM news WHERE title like "%%%s%%"'
 
+NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
 
 GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
 GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
@@ -183,6 +180,9 @@ class News(Plugin):
 		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
 		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
 		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
+
+		ns_dir = PluginTextEvent(NEWS_SEARCH, IRCT_PUBLIC_D, NEWS_SEARCH_RE)
+		ns_msg = PluginTextEvent(NEWS_SEARCH, IRCT_MSG, NEWS_SEARCH_RE)
 		
 		if self.__gwn_interval:
 			self.register(gwn)
@@ -194,6 +194,8 @@ class News(Plugin):
 			self.register(gbiz)
 		if self.__anaq_interval:
 			self.register(anaq)
+		
+		self.register(ns_dir, ns_msg)
 		
 		for name in self.RSS_Feeds:
 			feed = self.RSS_Feeds[name]
@@ -219,6 +221,15 @@ class News(Plugin):
 			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_BIZ, event])
 		elif event.name == NEWS_ANANOVA:
 			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, event])
+		
+		elif event.name == NEWS_SEARCH:
+			search_text = event.match.group('search_text')
+			search_text = search_text.replace("%", "\%")
+			search_text = search_text.replace('"', '\\\"')
+			search_text = search_text.replace("'", "\\\'")
+			query = (SEARCH_QUERY % search_text, )
+			self.dbQuery(event, query)
+			
 		elif event.name == NEWS_RSS:
 			name = event.args[0]
 			feed = self.RSS_Feeds[name]
@@ -264,7 +275,7 @@ class News(Plugin):
 			self.dbQuery(TIME_CHECK, query)
 	
 	# -----------------------------------------------------------------------
-	
+
 	def _message_REPLY_URL(self, message):
 		page_text, event = message.data
 		
@@ -302,17 +313,21 @@ class News(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 		
 		else:
-			titles = []
+			articles = []
 			queries = []
 			for title in parser.news:
-				self.__to_process[title] = parser.news[title]
+				#self.__to_process[title] = parser.news[title]
 				
-				titles.append(title)
-				query = (TITLE_QUERY, title)
+				#titles.append(title)
+				#query = (NEWS_QUERY, title)
+				#queries.append(query)
+				
+				articles.append((title, parser.news[title]))
+				query = (NEWS_QUERY, title)
 				queries.append(query)
 			
 			if queries:
-				returnme = (event, titles)
+				returnme = (event, articles)
 				self.dbQuery(returnme, *queries)
 	
 	def __do_rss(self, page_text, event, name):
@@ -326,18 +341,22 @@ class News(Plugin):
 		else:
 			feed_title = r.channel['title']
 		
-		titles = []
+		articles = []
 		queries = []
 		for item in r.items:
 			title = '%s: %s' % (feed_title, item['title'])
-			self.__to_process[title] = item['link']
+			#self.__to_process[title] = item['link']
 			
-			titles.append(title)
-			query = (TITLE_QUERY, title)
+			#titles.append(title)
+			#query = (NEWS_QUERY, title)
+			#queries.append(query)
+
+			articles.append((title, item['link']))
+			query = (NEWS_QUERY, title)
 			queries.append(query)
 		
 		if queries:
-			returnme = (event, titles)
+			returnme = (event, articles)
 			self.dbQuery(returnme, *queries)
 	
 	# -----------------------------------------------------------------------
@@ -345,38 +364,45 @@ class News(Plugin):
 	def _message_REPLY_QUERY(self, message):
 		event, results = message.data
 		if type(event) in (types.ListType, types.TupleType):
-			event, titles = event
+			event, articles = event
 		
 		if isinstance(event, PluginTimedEvent):
 			# this wasn't a modification request
 			currtime = time.time()
 			queries = []
 			
-			for i in range(len(titles)):
-				title = titles[i]
+			for i in range(len(articles)):
+				title, url = articles[i]
 				result = results[i]
+
 				
 				# the title was in the news db, don't add it again
 				if result:
 					continue
 				
-				replytext = "%s - %s" % (title, self.__to_process[title])
-				del self.__to_process[title]
+				#replytext = "%s - %s" % (title, self.__to_process[title])
+				#del self.__to_process[title]
+
+				replytext = "%s - %s" % (title, url)
 				
 				reply = PluginReply(event, replytext)
 				self.__outgoing.append(reply)
 				
 				# add it to the db!
-				query = (INSERT_QUERY, title, currtime)
+				query = (INSERT_QUERY, title, url, currtime)
 				queries.append(query)
 			
 			if queries:
-				self.dbQuery(TITLE_INSERT, *queries)
+				self.dbQuery(NEWS_INSERT, *queries)
 				
 				tolog = '%s: added %d items to outgoing queue' % (event.name, len(queries))
 				self.putlog(LOG_DEBUG, tolog)
 		
-		elif event == TITLE_INSERT:
+		elif isinstance(event, PluginTextTrigger):
+			if event.name == NEWS_SEARCH:
+				self.__news_search(event, results)
+			
+		elif event == NEWS_INSERT:
 			# we just added some new items to our db
 			pass
 		
@@ -388,6 +414,40 @@ class News(Plugin):
 			errtext = "Unknown event: %s" % event
 			raise ValueError, errtext
 	
+	# -----------------------------------------------------------------------
+	
+	# Search for a news article in our news db that matches the partial title
+	# we were given by a user on irc
+	def __news_search(self, trigger, results):
+		search_text = trigger.match.group('search_text')
+		if results == [()]:
+			# the search failed
+			replytext = "No headlines in the last two days found matching '\02%s\02'" % search_text
+			self.sendReply(trigger, replytext)
+		else:
+			# check how many items we found
+			results = results[0]
+			if len(results) > MAX_NEWS_SEARCH_RESULTS:
+				replytext = "Search for '\02%s\02' yielded too many results. Please refine your query." % search_text
+				self.sendReply(trigger, replytext)
+				
+			elif len(results) > 1:
+				# We found more than one and less than the max number of items
+				replytext = "\02%d\02 Headlines found: " % len(results)
+				while results:
+					# can't use string.join() here :(
+					replytext += "%s" % results[0]['title']
+					results = results[1:]
+					if results:
+						replytext += " \02;;\02 "
+				self.sendReply(trigger, replytext)
+			
+			else:
+				# We found exactly one item, so reply with the headline and
+				# url
+				replytext = "%s - %s" % (results[0]['title'], results[0]['url'])
+				self.sendReply(trigger, replytext)
+
 	# -----------------------------------------------------------------------
 	
 	# Pickle an object into the given file
@@ -434,6 +494,7 @@ class GoogleBrief(HTMLParser):
 		self.news = {}
 		self.__temp_href = None
 		self.__found = 0
+		self.reset()
 	
 	# Scan through the HTML, looking for a tag of the form <a class=y ..>
 	def handle_starttag(self, tag, attributes):
@@ -469,6 +530,7 @@ class GoogleVerbose(HTMLParser):
 		self.__found_a = 0
 		self.__found_br1 = 0
 		self.__found_br2 = 0
+		self.reset()
 		
 	# -----------------------------------------------------------------------
 	
@@ -515,6 +577,7 @@ class AnanovaBrief(HTMLParser):
 
 	def reset_news(self):
 		self.news = {}
+		self.reset()
 	
 	def handle_starttag(self, tag, attributes):
 		if tag == 'a':
@@ -544,6 +607,7 @@ class AnanovaVerbose(HTMLParser):
 		self.__found_small = 0
 		self.__temp_href = None
 		self.__temp_title = None
+		self.reset()
 	
 	def handle_starttag(self, tag, attributes):
 		if tag == 'a':
