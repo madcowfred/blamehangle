@@ -202,6 +202,7 @@ class Postman:
 								# If it's really being reloaded, do that
 								if self.__reloadme.has_key(child):
 									self.__Plugin_Load(child, runonce=1)
+									self.sendMessage(child, PLUGIN_REGISTER, None)
 									del self.__reloadme[child]
 					
 					else:
