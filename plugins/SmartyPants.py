@@ -54,6 +54,7 @@ FACT_UPDATEDB = "FACT_MOD"
 
 GET_QUERY = "SELECT name, value FROM factoids WHERE name = %s"
 SET_QUERY = "INSERT INTO factoids (name, value, author_nick, author_host, created_time) VALUES (%s, %s, %s, %s, %s)"
+DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
 INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
 REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, requester_nick = %s, requester_host = %s WHERE name = %s"
@@ -66,6 +67,12 @@ INFO_RE = re.compile("^factinfo (?P<name>.+)\??$")
 #STATUS_RE = re.compile("^status$")
 
 #----------------------------------------------------------------------------
+
+OK = [
+	"OK",
+	"you got it",
+	"done"
+]
 
 DUNNO = [
 	"no idea",
@@ -124,6 +131,13 @@ class SmartyPants(Plugin):
 			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
+		# Someone wants do delete a factoid
+		elif trigger.name == FACT_DEL:
+			name = trigger.match.group('name')
+			data = [trigger, (GET_QUERY, [name])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
+		
+		# Someone wants information on a factoid
 		elif trigger.name == FACT_INFO:
 			name = trigger.match.group('name')
 			data = [trigger, (INFO_QUERY, [name])]
@@ -140,6 +154,9 @@ class SmartyPants(Plugin):
 		elif trigger.name == FACT_SET:
 			self.__Fact_Set(trigger, results)
 		
+		elif trigger.name == FACT_DEL:
+			self.__Fact_Del(trigger, results)
+		
 		elif trigger.name == FACT_INFO:
 			self.__Fact_Info(trigger, results)
 		
@@ -152,6 +169,13 @@ class SmartyPants(Plugin):
 			# We got a wrong message, what the fuck?
 			errtext = "Database sent SmartyPants an erroneous %s" % trigger
 			raise ValueError, errtext
+	
+	# -----------------------------------------------------------------------
+	# Return a random OK string
+	# -----------------------------------------------------------------------
+	def __Random_OK(self):
+		a = random.randint(0, len(OK)-1)
+		return OK[a]
 	
 	# -----------------------------------------------------------------------
 	# Return a random dunno string
@@ -196,8 +220,8 @@ class SmartyPants(Plugin):
 		if typ == types.TupleType:
 			if results == [()]:
 				# The factoid wasn't in our database, so insert it
+				#
 				#INSERT INTO factoids (name, value, author_nick, author_host, created_time)
-				trigger.name = FACT_UPDATEDB
 				
 				name = trigger.match.group('name')
 				value = trigger.match.group('value')
@@ -220,25 +244,40 @@ class SmartyPants(Plugin):
 			if result == 0:
 				replytext = 'factoid insertion failed, warning, warning!'
 			elif result == 1:
-				replytext = 'OK'
+				replytext = self.__Random_OK()
 			self.sendReply(trigger, replytext)
 	
-	#------------------------------------------------------------------------
-	
+	# -----------------------------------------------------------------------
 	# Someone asked to delete a factoid.
-	# XXX: This should be expanded to include user permission stuff, so not just
-	# anyone can delete factoids. It's nearly 5am and I'm tired, though.
-	#def __fact_del(self, text, result, conn, IRCtype, target, userinfo):
-	#	key = text[0]
-	#	
-	#	if result == []:
-	#		# Factoid wasn't there to delete
-	#		replytext = "I don't have anything called '\b%s\b'" % key
-	#		reply = [replytext, conn, IRCtype, target, userinfo]
-	#		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
-	#	else:
-	#		queryObj = whatever(__DEL_QUERY, key, [text, FACT_UPDATE, conn, IRCtype, target, userinfo])
-	#		self.sendMessage('TheDatabase', DB_REQ, queryObj)
+	#
+	# This should be expanded to include user permission stuff, so not just
+	# anyone can delete factoids.
+	# -----------------------------------------------------------------------
+	def __Fact_Del(self, trigger, results):
+		typ = type(results[0])
+		
+		# SELECT reply
+		if typ == types.TupleType:
+			name = trigger.match.group('name')
+			
+			if results == [()]:
+				# The factoid wasn't in our database, tell whoever cares
+				replytext = "no such factoid: '%s'" % name
+				self.sendReply(trigger, replytext)
+			
+			else:
+				# It was in our database, delete it!
+				data = [trigger, (DEL_QUERY, [name])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
+		
+		# DELETE reply
+		elif typ == types.LongType:
+			result = results[0]
+			if result == 0:
+				replytext = 'factoid deletion failed, warning, warning!'
+			elif result == 1:
+				replytext = self.__Random_OK()
+			self.sendReply(trigger, replytext)
 	
 	#------------------------------------------------------------------------
 	# Someone asked for some info on a factoid.
