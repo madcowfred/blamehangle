@@ -39,7 +39,7 @@ class ChatterGizmo(Child):
 		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
 		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
 		for event in [ 'welcome', 'namreply', 'join', 'part', 'kick', 'quit',
-			'pubmsg', 'privmsg' ]:
+			'pubmsg', 'privmsg', 'ctcp' ]:
 			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
 		
 		self.connect()
@@ -238,3 +238,41 @@ class ChatterGizmo(Child):
 		
 		data = [conn, IRCT_MSG, userinfo, None, text]
 		self.sendMessage('PluginHandler', IRC_EVENT, data)
+	
+	# -----------------------------------------------------------------------
+	# Someone is sending us a CTCP
+	# -----------------------------------------------------------------------
+	def _handle_ctcp(self, conn, event):
+		# Ignore channel CTCPs
+		if event.target()[0] == '#':
+			return
+		
+		
+		userinfo = UserInfo(event.source())
+		
+		# Ignore them if they're not on any of our channels
+		#if self.__Nice_Person_Check(userinfo):
+		#	return
+		
+		
+		first = event.arguments()[0]
+		
+		# Capitalise the arguments if there are any
+		if len(event.arguments()) == 2:
+			rest = event.arguments()[1]
+		else:
+			rest = ''
+		
+		
+		if first == 'VERSION':
+			conn.ctcp_reply(userinfo.nick, "VERSION blamehangle v" + BH_VERSION)
+		
+		elif first == 'PING' and len(rest) > 0:
+			conn.ctcp_reply(userinfo.nick, "PING " + rest)
+		
+		elif first == 'CLIENTINFO':
+			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
+		
+		else:
+			data = [conn, IRCT_CTCP, userinfo, None, text]
+			self.sendMessage('PluginHandler', IRC_EVENT, data)
