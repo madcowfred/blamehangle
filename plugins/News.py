@@ -6,9 +6,28 @@
 # exciting stuff.
 
 from classes.Plugin import Plugin
-from classes.Constans import *
+from classes.Constants import *
 
 from HTMLParser import HTMLParser
+import cPickle, time
+
+NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
+NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
+NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
+
+# All this crap should be moved into the config, and then dealt with during
+# setup()
+GOOGLE_WORLD_TARGETS = {
+						'GoonNET' : ['#grax,#myoffice']
+				 		}
+GOOGLE_SCI_TARGETS = {
+						'GoonNET' : ['#grax,#myoffice']
+						}
+						
+ANANOVA_TARGETS = {'GoonNET' : ['#grax']}
+GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
+GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
+
 
 class News(Plugin):
 	"""
@@ -18,43 +37,28 @@ class News(Plugin):
 	Quirkies (!), and reply with the title of and link to any that it finds.
 	"""
 
-	NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
-	NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
-	NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
-
-	# All this crap should be moved into the config, and then dealt with during
-	# setup()
-	GOOGLE_WORLD_TARGETS = {
-							'Goon' : ['#grax', 'zharradan'],
-					 		'EFnet' : ['#sausages']
-					 		}
-	GOOGLE_SCI_TARGETS = {
-							'Goon' : ['#grax', 'zharradan'],
-							'EFnet' : ['#saussages']
-							}
-							
-	ANANOVA_TARGETS = {'Goon' : ['#grax']}
-
-	GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
-	GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
-
 	def setup(self):
-		self.__google_world_news = {}
-		self.__google_sci_news = {}
-		self.__ananova_news = {}
+		# The pickle dir should probably come from the config, also
+		self.pickle_dir = '.pickles/'
 		
-		# a list of all the news items we have found and want to send out to
-		# irc
-		self.__outgoing = []
+		self.__google_world_news = self.__unpickle('.news.gwn_pickle') or {}
+		self.__google_sci_news = self.__unpickle('.news.gsci_pickle') or {}
+		self.__ananova_news = self.__unpickle('.news.ana_pickle') or {}
+		self.__outgoing = self.__unpickle('.news.out_pickle') or []
 		
-	# -----------------------------------------------------------------------
+		self.__Last_Spam_Time = time.time()
+		self.__Last_Clearout_Time = time.time()
+		
 	
-	# Check google news every 4 minutes, and ananova every 6 hours
+	# -----------------------------------------------------------------------
+
+	# Check google news every 5 minutes, and ananova every 6 hours
 	def _message_PLUGIN_REGISTER(self, message):
+		# 2400, 2400, 18000
 		reply = [
-		(IRCT_TIMED, 2400, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
-		(IRCT_TIMED, 2400, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
-		(IRCT_TIMED, 18000, ANANOVA_TARGETS, NEWS_ANANOVA)
+		(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
+		(IRCT_TIMED, 300, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
+		(IRCT_TIMED, 21600, ANANOVA_TARGETS, NEWS_ANANOVA)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
@@ -64,9 +68,9 @@ class News(Plugin):
 		targets, token, _, IRCtype, _, _ = message.data
 
 		if token == NEWS_GOOGLE_WORLD:
-			self.sendMessage('HTTPMonster', URL_REQ, [GOOGLE_WORLD, NEWS_GOOGLE_WORLD]
+			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_WORLD, [targets, token, IRCtype]])
 		elif token == NEWS_GOOGLE_SCI:
-			self.sendMessage('HTTPMonster', URL_REQ, [GOOGLE_SCI, NEWS_GOOGLE_SCI]
+			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_SCI, [targets, token, IRCtype]])
 		elif token == NEWS_ANANOVA:
 			pass
 		else:
@@ -75,16 +79,35 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 
-	# Periodically check if we need to send some text out to IRC
-	def run_sometimes(self):
-		if self.__outgoing:
-			reply = self.__outgoing[0]
-			self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
-			del self.__outgoing[0]
+	def run_sometimes(self, currtime):
+		# Periodically check if we need to send some text out to IRC
+		if currtime - self.__Last_Spam_Time > 30:
+			if self.__outgoing:
+				reply = self.__outgoing[0]
+				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
+				del self.__outgoing[0]
+				self.__Last_Spam_Time = currtime
+
+			# This is also an appropriate place to check to see if any news
+			# items in our various stores are old and need to be purged
+			# (we purge old items so that these data structures do not
+			# bloat into crazy oblivion)
+			for store in [
+				self.__google_world_news,
+				self.__google_sci_news,
+				self.__ananova_news
+				]:
+
+				for title in store:
+					url, post_time = store[title]
+					# 60 sec * 60 min * 24 hour * 2 day = 86400
+					if currtime - post_time > 172800:
+						del store[title]
+
 
 	# -----------------------------------------------------------------------
 
-	def _message_URL_REPLY(self, message):
+	def _message_REPLY_URL(self, message):
 		page_text, [targets, token, IRCtype] = message.data
 
 		if token == NEWS_GOOGLE_WORLD:
@@ -106,7 +129,7 @@ class News(Plugin):
 		for title in parser.news:
 			if not title in store:
 				# this is a new item!
-				store[title] = parser.news[title]
+				store[title] = (parser.news[title], time.time())
 				replytext = "%s - %s" % (title, parser.news[title])
 				reply = [replytext, None, IRCtype, targets, None]
 				self.__outgoing.append(reply)
@@ -116,7 +139,58 @@ class News(Plugin):
 	# haven't looked at ananova yet
 	def __do_ananova(self, page_text, targets, token, IRCtype):
 		pass
+	
+	# -----------------------------------------------------------------------
 
+	# Upon shutdown, we need to save the news items we have seen, otherwise
+	# the bot will spam every news story it sees when it is reloaded
+	def _message_REQ_SHUTDOWN(self, message):
+		Plugin._message_REQ_SHUTDOWN(self, message)
+
+		self.__pickle(self.__google_world_news, '.news.gwn_pickle')
+		self.__pickle(self.__google_sci_news, '.news.gsci_pickle')
+		self.__pickle(self.__ananova_news, '.news.ana_pickle')
+		self.__pickle(self.__outgoing, '.news.out_pickle')
+
+	# -----------------------------------------------------------------------
+	
+	# Cache all the news we have discovered and the list of news yet to
+	# announce on IRC, so that when the bot is restarted we can remember
+	# all these values
+	def __pickle(self, obj, pickle):
+		filename = self.pickle_dir + pickle
+		if obj:
+			try:
+				f = open(filename, "wb")
+			except:
+				# We couldn't open our file :(
+				tolog = "Unable to open %s for writing" % filename
+				self.putlog(LOG_WARNING, tolog)
+			else:
+				# the 1 turns on binary-mode pickling
+				cPickle.dump(obj, f, 1)
+				f.flush()
+				f.close()
+	
+	# -----------------------------------------------------------------------
+
+	# Restore our cache of news titles we have found
+	def __unpickle(self, pickle):
+		filename = self.pickle_dir + pickle
+		try:
+			f = open(filename, "rb")
+		except:
+			# Couldn't open the pickle file, so don't try to unpickle
+			pass
+		else:
+			# We have a pickle!
+			tolog = "trying to read pickle from %s" % filename
+			self.putlog(LOG_DEBUG, tolog)
+			obj = cPickle.load(f)
+			f.close()
+			return obj
+				
+				
 # ---------------------------------------------------------------------------
 
 # A parser for google's news pages. Looks for the main story titles.

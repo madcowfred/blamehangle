@@ -91,7 +91,7 @@ class SamplePlugin(Plugin):
 		reply = [
 			(IRCT_MSG, self.SAMPLE_RE1, [0], self.SAMPLE_TOKEN1),
 			(IRCT_PUBLIC, self.SAMPLE_RE2, ['some_name'], self.SAMPLE_TOKEN2),
-			(IRCT_TIMED, 15, self.SAMPLE_TOKEN3_TARGETS, self.SAMPLE_TOKEN3)
+			(IRCT_TIMED, 900, self.SAMPLE_TOKEN3_TARGETS, self.SAMPLE_TOKEN3)
 			]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
@@ -179,7 +179,7 @@ class SamplePlugin(Plugin):
 
 	# Handle a SAMPLE_TOKEN3 event, which is a time-delayd trigger
 	def __do_event3(self, targets, token, IRCtype):
-		replytext = "Wow, 15 seconds have passed"
+		replytext = "Wow, 900 seconds have passed"
 		reply = [replytext, None, IRCtype, targets, None]
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 

@@ -149,9 +149,10 @@ class PluginHandler(Child):
 	#------------------------------------------------------------------------		
 	def _message_REPLY_CONN(self, message):
 		conn, [name, targets, text] = message.data
-
-		for target in targets[name]:
-			self.privmsg(conn, target, text)
+		
+		if conn:
+			for target in targets[name]:
+				self.privmsg(conn, target, text)
 	
 	# -----------------------------------------------------------------------
 
