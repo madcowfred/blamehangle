@@ -96,7 +96,10 @@ class TorrentScraper(Plugin):
 			return
 		
 		# Remember the Last-Modified header if it was sent
-		self.URLs[resp.url]['last-modified'] = resp.headers.get('Last-Modified', None)
+		try:
+			self.URLs[resp.url]['last-modified'] = resp.headers.get('Last-Modified', None)
+		except KeyError:
+			pass
 		
 		items = {}
 		
