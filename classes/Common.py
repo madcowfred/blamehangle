@@ -189,7 +189,7 @@ def UnquoteHTML(text):
 		thing = m.group(1).lower()
 		if thing.startswith('#'):
 			try:
-				c = chr(int(thing[1:]))
+				return chr(int(thing[1:]))
 			except ValueError:
 				return whole
 		else:
