@@ -117,25 +117,22 @@ class PluginHandler(Child):
 		
 		eventStore = self.__getRelevantStore(IRCtype)
 		
-		normal = []
-		exclusive = []
+		triggered = {}
 		
 		for name in eventStore:
 			event, plugin = eventStore[name]
 			m = event.regexp.match(text)
 			if m:
 				trigger = PluginTextTrigger(event, m, conn, target, userinfo)
-				if event.exclusive:
-					exclusive.append([plugin, trigger])
-				else:
-					normal.append([plugin, trigger])
+				triggered.setdefault(event.priority, []).append([plugin, trigger])
 		
-		if normal:
-			for plugin, trigger in normal:
-				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
-		
-		elif exclusive:
-			for plugin, trigger in exclusive:
+		# Sort out the events, and only trigger the highest priority one(s)
+		if triggered:
+			print triggered
+			
+			priorities = triggered.keys()
+			priorities.sort()
+			for plugin, trigger in triggered[priorities[-1]]:
 				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
 	#------------------------------------------------------------------------		
