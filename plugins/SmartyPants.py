@@ -55,8 +55,8 @@ INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
-LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%' ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
-LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE '%%%s%%' ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
+LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
+LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -340,26 +340,24 @@ class SmartyPants(Plugin):
 		self.dbQuery(trigger, self.__Fact_Status, STATUS_QUERY)
 	
 	# -----------------------------------------------------------------------
-	# Someone asked to search by key
-	def __Query_List_Keys(self, trigger):
-		name = self.__Sane_Name(trigger)
-		name = name.replace('%', '\%')
-		name = name.replace('*', '\*')
-		name = name.replace('"', '\\\"')
-		name = name.replace("'", "\\\'")
-		query =  LISTKEYS_QUERY % name
-		self.dbQuery(trigger, self.__Fact_Search, query)
+	# Someone wants to search for something
+	def __Query_Search(self, trigger):
+		# Clean up the search string a bit
+		findme = self.__Sane_Name(trigger)
+		for char in ('%', '*'):
+			findme = findme.replace(char, '\\%s' % char)
+		
+		if trigger.name == '__Query_List_Keys':
+			query = LISTKEYS_QUERY
+		elif trigger.name == '__Query_List_Values':
+			query = LISTVALUES_QUERY
+		
+		self.dbQuery(query, self.__Fact_Search, query, findme)
 	
-	# -----------------------------------------------------------------------
-	# Someone asked to search by value
+	def __Query_List_Keys(self, trigger):
+		self.__Query_Search(trigger)
 	def __Query_List_Values(self, trigger):
-		name = self.__Sane_Name(trigger)
-		name = name.replace('%', '\%')
-		name = name.replace('*', '\*')
-		name = name.replace('"', '\\\"')
-		name = name.replace("'", "\\\'")
-		query =  LISTVALUES_QUERY % name
-		self.dbQuery(trigger, self.__Fact_Search, query)
+		self.__Query_Search(trigger)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to tell someone else about a factoid

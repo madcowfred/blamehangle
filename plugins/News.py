@@ -623,7 +623,7 @@ class News(Plugin):
 				row = result[0]
 				
 				replytext = '\x02[\x02%s ago\x02]\x02 %s - %s' % (
-					NiceTime(row['added'], row['title'], row['url'])
+					NiceTime(row['added']), row['title'], row['url'])
 				
 				if row['description']:
 					replytext = '%s : %s' % (replytext, row['description'])
