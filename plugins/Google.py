@@ -13,8 +13,8 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 GOOGLE_GOOGLE = 'GOOGLE_GOOGLE'
-GOOGLE_RE = re.compile(r'^google (?P<findme>.+)$')
 GOOGLE_HELP = '\02google\02 <search term> : Search via Google!'
+GOOGLE_RE = re.compile(r'^google (?P<findme>.+)$')
 GOOGLE_URL = 'http://www.google.com/search?q=%s&num=5'
 
 RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
@@ -62,7 +62,7 @@ class Google(Plugin):
 	
 	def _trigger_GOOGLE_GOOGLE(self, trigger):
 		url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
-		self.urlRequest(trigger, url)
+		self.urlRequest(trigger, self.__Google, url)
 	
 	def _trigger_GOOGLE_TRANSLATE(self, trigger):
 		_from = trigger.match.group('from').lower()
@@ -88,7 +88,7 @@ class Google(Plugin):
 		
 		# Otherwise, build the URL and send it off
 		url = TRANSLATE_URL % (_from, _to, quote(_text))
-		self.urlRequest(trigger, url)
+		self.urlRequest(trigger, self.__Translate, url)
 		
 	def _trigger_GOOGLE_TRANSMANGLE(self, trigger):
 		_lang = trigger.match.group('lang').lower()
@@ -113,21 +113,7 @@ class Google(Plugin):
 		trigger.done = 0
 		
 		url = TRANSLATE_URL % ('en', _lang, quote(_text))
-		self.urlRequest(trigger, url)
-	
-	# -----------------------------------------------------------------------
-	
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		
-		if trigger.name == GOOGLE_GOOGLE:
-			self.__Google(trigger, page_text)
-		
-		elif trigger.name == GOOGLE_TRANSLATE:
-			self.__Translate(trigger, page_text)
-		
-		elif trigger.name == GOOGLE_TRANSMANGLE:
-			self.__Transmangle(trigger, page_text)
+		self.urlRequest(trigger, self.__Transmangle, url)
 	
 	# -----------------------------------------------------------------------
 	
@@ -240,7 +226,7 @@ class Google(Plugin):
 					_text = trigger.match.group('text')
 					
 					url = TRANSLATE_URL % (_lang, 'en', quote(chunk))
-					self.urlRequest(trigger, url)
+					self.urlRequest(trigger, self.__Transmangle, url)
 				
 				# Now we're done
 				else:

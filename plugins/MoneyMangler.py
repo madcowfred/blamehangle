@@ -2,7 +2,6 @@
 # $Id$
 #----------------------------------------------------------------------------
 
-import cPickle
 import os
 import re
 
@@ -39,24 +38,11 @@ class MoneyMangler(Plugin):
 	"""
 	
 	def setup(self):
-		config_dir = self.Config.get('plugin', 'config_dir')
-		config_file = os.path.join(config_dir, 'currency.data')
-		try:
-			f = file(config_file, 'rb')
-		except:
-			tolog = "couldn't open %s, MoneyMangler plugin will not work as intended!" % config_file
+		self.Currencies = self.loadPickle('currency.data')
+		if self.Currencies is None:
+			self.Currencies = {}
+			tolog = "Error loading data from currency.data, MoneyMangler will not work!"
 			self.putlog(LOG_WARNING, tolog)
-		else:
-			try:
-				self.Currencies = cPickle.load(f)
-			except:
-				self.Currencies = {}
-				tolog = "error loading data from %s, MoneyMangler plugin will not work as intended!" % config_fie
-				self.putlog(LOG_WARNING, tolog)
-			else:
-				f.close()
-				tolog = 'loaded %d currencies from %s' % (len(self.Currencies), config_file)
-				self.putlog(LOG_DEBUG, tolog)
 	
 	def rehash(self):
 		self.setup()
@@ -76,95 +62,10 @@ class MoneyMangler(Plugin):
 		self.setHelp('money', 'symbol', SYMBOL_HELP)
 		self.registerHelp()
 	
-	# -----------------------------------------------------------------------
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		# Someone wants to look for a currency
-		if trigger.name == MONEY_CURRENCY:
-			self.__Search(trigger)
-		
-		# Someone wants to do a money conversion
-		elif trigger.name == MONEY_EXCHANGE:
-			replytext = None
-			
-			data = {}
-			data['amt'] = '%.2f' % float(trigger.match.group('amt'))
-			data['from'] = trigger.match.group('from').upper()
-			data['to'] = trigger.match.group('to').upper()
-			
-			if data['from'] not in self.Currencies:
-				replytext = '%(from)s is not a valid currency code' % data
-			elif data['to'] not in self.Currencies:
-				replytext = '%(to)s is not a valid currency code' % data
-			elif 'e' in data['amt']:
-				replytext = '%(amt)s is beyond the range of convertable values' % data
-			else:
-				url = EXCHANGE_URL % data
-				returnme = (trigger, data)
-				self.urlRequest(returnme, url)
-			
-			if replytext is not None:
-				self.sendReply(trigger, replytext)
-		
-		# Someone wants to look up a stock price
-		elif trigger.name == MONEY_QUOTE:
-			symbol = trigger.match.group('symbol').upper()
-			returnme = (trigger, symbol)
-			fetchme = QUOTE_URL % symbol
-			self.urlRequest(returnme, fetchme)
-		
-		# Someone wants to look up a ticker symbol
-		elif trigger.name == MONEY_SYMBOL:
-			findme = trigger.match.group('findme').upper()
-			returnme = (trigger, findme)
-			fetchme = SYMBOL_URL % findme
-			self.urlRequest(returnme, fetchme)
 	
 	# -----------------------------------------------------------------------
-	
-	def _message_REPLY_URL(self, message):
-		(trigger, data), page_text = message.data
-		
-		# Money has been exchanged
-		if trigger.name == MONEY_EXCHANGE:
-			self.__Exchange(trigger, page_text, data)
-		
-		# Stock quote has returned
-		elif trigger.name == MONEY_QUOTE:
-			self.__Quote(trigger, page_text, data)
-		
-		# The symbol is known
-		elif trigger.name == MONEY_SYMBOL:
-			self.__Symbol(trigger, page_text, data)
-	
-	# -----------------------------------------------------------------------
-	# Parse the exchange page and spit out a result
-	def __Exchange(self, trigger, page_text, data):
-		page_text = page_text.replace('&amp;', ' and ')
-		
-		# Find the table chunk
-		chunk = FindChunk(page_text, '<table border=1', '</table>')
-		
-		# Put each tag on a new line
-		chunk = chunk.replace('>', '>\n')
-		
-		# Split it into lines
-		lines = StripHTML(chunk)
-		
-		# If it's the right data, we have a winner
-		if lines[0] == 'Symbol' and lines[2] == 'Exchange Rate':
-			replytext = '%s %s == %s %s' % (lines[8], data['from'], lines[11], data['to'])
-		# If it's not, we failed miserably
-		else:
-			replytext = 'Page parsing failed.'
-		
-		self.sendReply(trigger, replytext)
-	
-	# -----------------------------------------------------------------------
-	# Find a matching currency!
-	def __Currency(self, trigger):
+	# Someone wants to find a currency
+	def _trigger_MONEY_CURRENCY(self, trigger):
 		curr = trigger.match.group('curr').lower()
 		
 		# Possible currency code?
@@ -197,11 +98,75 @@ class MoneyMangler(Plugin):
 		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
+	# Someone wants to do a money conversion
+	def _trigger_MONEY_EXCHANGE(self, trigger):
+		replytext = None
+		
+		data = {}
+		data['amt'] = '%.2f' % float(trigger.match.group('amt'))
+		data['from'] = trigger.match.group('from').upper()
+		data['to'] = trigger.match.group('to').upper()
+		
+		if data['from'] not in self.Currencies:
+			replytext = '%(from)s is not a valid currency code' % data
+		elif data['to'] not in self.Currencies:
+			replytext = '%(to)s is not a valid currency code' % data
+		elif 'e' in data['amt']:
+			replytext = '%(amt)s is beyond the range of convertable values' % data
+		else:
+			url = EXCHANGE_URL % data
+			trigger.data = data
+			self.urlRequest(trigger, self.__Exchange, url)
+		
+		if replytext is not None:
+			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Someone wants to look up a stock price
+	def _trigger_MONEY_QUOTE(self, trigger):
+		symbol = trigger.match.group('symbol').upper()
+		url = QUOTE_URL % symbol
+		self.urlRequest(trigger, self.__Quote, url)
+		
+	# -----------------------------------------------------------------------
+	# Someone wants to look up a ticker symbol
+	def _trigger_MONEY_SYMBOL(self, trigger):
+		findme = trigger.match.group('findme').upper()
+		url = SYMBOL_URL % findme
+		self.urlRequest(trigger, self.__Symbol, url)
+	
+	# -----------------------------------------------------------------------
+	# Parse the exchange page and spit out a result
+	def __Exchange(self, trigger, page_text):
+		data = trigger.data
+		page_text = page_text.replace('&amp;', ' and ')
+		
+		# Find the table chunk
+		chunk = FindChunk(page_text, '<table border=1', '</table>')
+		
+		# Put each tag on a new line
+		chunk = chunk.replace('>', '>\n')
+		
+		# Split it into lines
+		lines = StripHTML(chunk)
+		
+		# If it's the right data, we have a winner
+		if len(lines) >= 3 and lines[0] == 'Symbol' and lines[2] == 'Exchange Rate':
+			replytext = '%s %s == %s %s' % (lines[8], data['from'], lines[11], data['to'])
+		# If it's not, we failed miserably
+		else:
+			replytext = 'Page parsing failed.'
+		
+		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
 	# Parse the stock quote page and spit out a result
-	def __Quote(self, trigger, page_text, data):
+	def __Quote(self, trigger, page_text):
+		symbol = trigger.match.group('symbol').upper()
+		
 		# Invalid symbol, sorry
 		if page_text.find('is not a valid ticker symbol') >= 0:
-			replytext = '"%s" is not a valid ticker symbol!' % data
+			replytext = '"%s" is not a valid ticker symbol!' % symbol
 		
 		else:
 			# Find the data we need
@@ -219,7 +184,7 @@ class MoneyMangler(Plugin):
 			lines = StripHTML(chunk)
 			
 			# Sort out the stock info
-			info = {'Symbol': data}
+			info = {'Symbol': symbol}
 			for line in lines:
 				parts = re.split(r'\s*:\s*', line, 1)
 				if len(parts) == 2 and parts[1] != 'N/A':
@@ -241,10 +206,12 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock symbol page and spit out a result
-	def __Symbol(self, trigger, page_text, data):
+	def __Symbol(self, trigger, page_text):
+		findme = trigger.match.group('findme').upper()
+		
 		# No matches, sorry
 		if page_text.find('returned no Stocks matches') >= 0:
-			replytext = 'No symbols found matching "%s"' % data
+			replytext = 'No symbols found matching "%s"' % findme
 			self.sendReply(trigger, replytext)
 		
 		else:

@@ -12,13 +12,13 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 IMDB_IMDB = 'IMDB_IMDB'
-IMDB_RE = re.compile(r'^imdb (.+)$')
 IMDB_HELP = '\02imdb\02 <search term> : Search for a movie on IMDb.'
+IMDB_RE = re.compile(r'^imdb (.+)$')
 IMDB_URL = "http://us.imdb.com/find?q=%s&type=fuzzy&tv=off&sort=smart;tt=1"
 
 IMDB_TITLE = 'IMDB_TITLE'
-TITLE_RE = re.compile(r'^imdbtitle (\d{1,7})$')
 TITLE_HELP = '\02imdb\02 <number> : Show information on a specific title number on IMDb.'
+TITLE_RE = re.compile(r'^imdbtitle (\d{1,7})$')
 TITLE_URL = "http://us.imdb.com/title/tt%07d/"
 
 EXACT_RE = re.compile(r'href="/title/tt(\d+)/">')
@@ -38,20 +38,11 @@ class IMDb(Plugin):
 	
 	def _trigger_IMDB_IMDB(self, trigger):
 		url = IMDB_URL % QuoteURL(trigger.match.group(1))
-		self.urlRequest(trigger, url)
-		
-	def _trigger_IMDB_TITLE(self, trigger):
-			url = TITLE_URL % int(trigger.match.group(1))
-			self.urlRequest(trigger, url)
+		self.urlRequest(trigger, self.__IMDb, url)
 	
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		
-		if trigger.name == IMDB_IMDB:
-			self.__IMDb(trigger, page_text)
-		
-		elif trigger.name == IMDB_TITLE:
-			self.__Title(trigger, page_text)
+	def _trigger_IMDB_TITLE(self, trigger):
+		url = TITLE_URL % int(trigger.match.group(1))
+		self.urlRequest(trigger, self.__Title, url)
 	
 	# ---------------------------------------------------------------------------
 	
@@ -87,11 +78,9 @@ class IMDb(Plugin):
 				self.sendReply(trigger, replytext)
 				return
 			
-			trigger.name = IMDB_TITLE
-			
 			title = m.group(1)
 			url = TITLE_URL % int(title)
-			self.urlRequest(trigger, url)
+			self.urlRequest(trigger, self.__Title, url)
 		
 		# Some approximate matches.. use the first 5 results
 		elif page_text.find('<b>Approximate Matches</b>') >= 0:
@@ -199,3 +188,5 @@ class IMDb(Plugin):
 			
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------

@@ -4,7 +4,6 @@
 # ---------------------------------------------------------------------------
 # Plugin to parse the Australian Bureau of Meteorology current observations.
 
-import cPickle
 import re
 import time
 
@@ -64,13 +63,15 @@ AUSBOM_UPDATE = 'AUSBOM_UPDATE'
 
 class AusBOM(Plugin):
 	def setup(self):
+		self.__updating = 0
+		
 		self.rehash()
 	
 	def rehash(self):
 		# Load our location data from the pickle.
-		self.__Locations = self.__Unpickle('ausbom.data')
+		self.__Locations = self.loadPickle('.ausbom.locations')
 		# If there isn't any, trigger an update.
- 		if self.__Locations is None:
+ 		if self.__Locations is None and not self.__updating:
 			self.__Update_Locations()
 		# If there is, and it's more than a month old, update
 		elif time.time() - self.__Locations['_updated_'] > MONTH:
@@ -79,47 +80,40 @@ class AusBOM(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		# Register our normal stuff first
-		ausbom_dir = PluginTextEvent(AUSBOM_AUSBOM, IRCT_PUBLIC_D, AUSBOM_RE)
-		ausbom_msg = PluginTextEvent(AUSBOM_AUSBOM, IRCT_MSG, AUSBOM_RE)
-		self.register(ausbom_dir, ausbom_msg)
+		# Register our normal command
+		self.setTextEvent(AUSBOM_AUSBOM, AUSBOM_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		# Register our public commands if there are any
+		pubs = [o[7:] for o in self.Config.options('AusBOM') if o.startswith('public.')]
+		if pubs:
+			# Make the event
+			regexp = '^(%s)$' % '|'.join(pubs)
+			r = re.compile(regexp)
+			self.setTextEvent(AUSBOM_PUBLIC, r, IRCT_PUBLIC)
+		# And done
+		self.registerEvents()
 		
 		self.setHelp('weather', 'ausbom', AUSBOM_HELP)
 		self.registerHelp()
-		
-		# Now register our public commands
-		events = []
-		pubs = [o for o in self.Config.options('AusBOM') if o.startswith('public.')]
-		for pub in pubs:
-			# Make the event
-			r = re.compile('^%s$' % pub[7:])
-			trigname = '%s.%s' % (AUSBOM_PUBLIC, pub[7:])
-			event = PluginTextEvent(trigname, IRCT_PUBLIC, r)
-			# Stick the location on it so we know what to look for
-			event.location = self.Config.get('AusBOM', pub)
-			
-			events.append(event)
-		
-		# If we have any more events, register them
-		if events:
-			self.register(*events)
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == AUSBOM_AUSBOM:
-			product = self.__Find_Product(trigger, trigger.match.group('location'))
-			if product:
-				url = AUSBOM_URL % (product)
-				self.urlRequest(trigger, url)
-		
-		elif trigger.name.startswith(AUSBOM_PUBLIC):
-			product = self.__Find_Product(trigger, trigger.event.location)
-			if product:
-				url = AUSBOM_URL % (product)
-				self.urlRequest(trigger, url)
+	# -----------------------------------------------------------------------
+	# Someone wants some info on a location
+	def _trigger_AUSBOM_AUSBOM(self, trigger):
+		product = self.__Find_Product(trigger, trigger.match.group('location'))
+		if product:
+			url = AUSBOM_URL % (product)
+			self.urlRequest(trigger, self.__Parse_Current, url)
 	
-	def _message_REPLY_URL(self, message):
+	# Someone wants some info on a location in public
+	def _trigger_AUSBOM_PUBLIC(self, trigger):
+		option = 'public.%s' % trigger.match.group(1)
+		location = self.Config.get('AusBOM', option)
+		
+		product = self.__Find_Product(trigger, location)
+		if product:
+			url = AUSBOM_URL % (product)
+			self.urlRequest(trigger, self.__Parse_Current, url)
+	
+	def asdf_message_REPLY_URL(self, message):
 		trigger, page_text = message.data
 		
 		if trigger.name == AUSBOM_UPDATE:
@@ -145,79 +139,20 @@ class AusBOM(Plugin):
 		
 		# Go to get the first one
 		url = AUSBOM_URL % PRODUCTS[0][1]
-		self.urlRequest(trigger, url)
+		self.urlRequest(trigger, self.__Parse_Current, url)
 	
 	# -----------------------------------------------------------------------
-	# Find the right 'product' for a location
-	def __Find_Product(self, trigger, location):
-		exacts = []
-		partials = {}
+	# Parse a Current Observations page.
+	def __Parse_Current(self, trigger, page_text):
+		# Work out what our location should be
+		if trigger.name == AUSBOM_AUSBOM:
+			location = self.__Find_Product(trigger, trigger.match.group('location'))
+		elif trigger.name == AUSBOM_PUBLIC:
+			option = 'public.%s' % trigger.match.group(1)
+			location = self.Config.get('AusBOM', option)
+		elif trigger.name == AUSBOM_UPDATE:
+			location = None
 		
-		for area, product, priority in PRODUCTS:
-			if area not in self.__Locations:
-				tolog = 'AusBOM: %s not in area data?!' % area
-				self.putlog(LOG_WARNING, tolog)
-				continue
-			
-			# Exact match, don't need dodgy matching
-			if location in self.__Locations[area]:
-				exact = (priority, product)
-				exacts.append(exact)
-				continue
-			
-			# Look for other matches
-			else:
-				lowloc = location.lower()
-				
-				# Wrong case
-				blurf = [l for l in self.__Locations[area] if l.lower() == lowloc]
-				if blurf:
-					exact = (priority, product)
-					exacts.append(exact)
-					continue
-				
-				# Partial matches
-				for l in self.__Locations[area]:
-					if l.lower().find(lowloc) >= 0:
-						partials[l] = 1
-		
-		# If we had any exact matches, return the highest priority one
-		if exacts:
-			exacts.sort()
-			return exacts[0][1]
-		
-		# If we had any partials, maybe spit those out
-		elif partials:
-			# We only want the first 10
-			pks = partials.keys()
-			pks.sort()
-			partials = pks[:10]
-			
-			parts = []
-			
-			part = "No exact matches, \02%d\02 partial(s) for '%s' ::" % (len(partials), location)
-			parts.append(part)
-			
-			for partial in partials:
-				part = '\02[\02%s\02]\02' % partial
-				parts.append(part)
-			
-			# Spit it out
-			replytext = ' '.join(parts)
-		
-		# None at all? Bah!
-		else:
-			replytext = "No matching locations found for '%s'" % (location)
-		
-		# Send reply!
-		self.sendReply(trigger, replytext)
-		
-		return None
-	
-	# -----------------------------------------------------------------------
-	# Parse a Current Observations page. If location is specified we find the
-	# data for that location, otherwise we find a list of locations.
-	def __Parse_Current(self, trigger, page_text, location=None):
 		# Find the damn title
 		m = TITLE_RE.search(page_text)
 		if not m:
@@ -329,12 +264,14 @@ class AusBOM(Plugin):
 				self.putlog(LOG_ALWAYS, 'AusBOM: Finished updating location data.')
 				
 				self.__Locations['_updated_'] = time.time()
-				self.__Pickle('ausbom.data', self.__Locations)
+				self.savePickle('.ausbom.locations', self.__Locations)
+				
+				self.__updating = 0
 			
 			# Otherwise, go get the next one
 			else:
 				url = AUSBOM_URL % PRODUCTS[trigger.count][1]
-				self.urlRequest(trigger, url)
+				self.urlRequest(trigger, self.__Parse_Current, url)
 		
 		# If we're not updating, maybe spit out something
 		else:
@@ -345,42 +282,70 @@ class AusBOM(Plugin):
 			self.sendReply(trigger, replytext, process=0)
 	
 	# -----------------------------------------------------------------------
-	# Pickle an object into the given file
-	def __Pickle(self, filename, obj):
-		config_dir = self.Config.get('plugin', 'config_dir')
-		filename = os.path.join(config_dir, filename)
+	# Find the right 'product' for a location
+	def __Find_Product(self, trigger, location):
+		exacts = []
+		partials = {}
 		
-		try:
-			f = open(filename, "wb")
-		except:
-			# We couldn't open our file :(
-			tolog = "Unable to open %s for writing" % filename
-			self.putlog(LOG_WARNING, tolog)
-		else:
-			tolog = "Saving pickle to %s" % filename
-			self.putlog(LOG_DEBUG, tolog)
-			# the 1 turns on binary-mode pickling
-			cPickle.dump(obj, f, 1)
-			f.flush()
-			f.close()
-	
-	# -----------------------------------------------------------------------
-	# Unpickle an object from the given file
-	def __Unpickle(self, filename):
-		config_dir = self.Config.get('plugin', 'config_dir')
-		filename = os.path.join(config_dir, filename)
+		for area, product, priority in PRODUCTS:
+			if area not in self.__Locations:
+				tolog = 'AusBOM: %s not in area data?!' % area
+				self.putlog(LOG_WARNING, tolog)
+				continue
+			
+			# Exact match, don't need dodgy matching
+			if location in self.__Locations[area]:
+				exact = (priority, product)
+				exacts.append(exact)
+				continue
+			
+			# Look for other matches
+			else:
+				lowloc = location.lower()
+				
+				# Wrong case
+				blurf = [l for l in self.__Locations[area] if l.lower() == lowloc]
+				if blurf:
+					exact = (priority, product)
+					exacts.append(exact)
+					continue
+				
+				# Partial matches
+				for l in self.__Locations[area]:
+					if l.lower().find(lowloc) >= 0:
+						partials[l] = 1
 		
-		try:
-			f = open(filename, "rb")
-		except:
-			# Couldn't open the pickle file, so don't try to unpickle
-			return None
+		# If we had any exact matches, return the highest priority one
+		if exacts:
+			exacts.sort()
+			return exacts[0][1]
+		
+		# If we had any partials, maybe spit those out
+		elif partials:
+			# We only want the first 10
+			pks = partials.keys()
+			pks.sort()
+			partials = pks[:10]
+			
+			parts = []
+			
+			part = "No exact matches, \02%d\02 partial(s) for '%s' ::" % (len(partials), location)
+			parts.append(part)
+			
+			for partial in partials:
+				part = '\02[\02%s\02]\02' % partial
+				parts.append(part)
+			
+			# Spit it out
+			replytext = ' '.join(parts)
+		
+		# None at all? Bah!
 		else:
-			# We have a pickle!
-			tolog = "Loading pickle from %s" % filename
-			self.putlog(LOG_DEBUG, tolog)
-			obj = cPickle.load(f)
-			f.close()
-			return obj
+			replytext = "No matching locations found for '%s'" % (location)
+		
+		# Send reply!
+		self.sendReply(trigger, replytext)
+		
+		return None
 
 # ---------------------------------------------------------------------------

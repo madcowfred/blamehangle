@@ -100,51 +100,41 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
+	def _trigger_WORD_ANTONYM(self, trigger):
 		word = quote(trigger.match.group('word').lower())
-		
-		if trigger.name == WORD_ANTONYM:
-			url = ANTONYM_URL % word
-			self.urlRequest(trigger, url)
-		
-		elif trigger.name == WORD_RHYME:
-			url = RHYME_URL % word
-			self.urlRequest(trigger, url)
-		
-		elif trigger.name == WORD_SYNONYM:
-			url = SYNONYM_URL % word
-			self.urlRequest(trigger, url)
-		
-		elif trigger.name == WORD_DICT:
-			word = trigger.match.group('word').lower()
-			if len(word) > 30:
-				tolog = 'Dictionary: %s asked me to look up a very long word!' % (trigger.userinfo.nick)
-				
-				self.sendReply(trigger, "That's too long!")
-			
-			else:
-				tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, word)
-				
-				async_dict(self, trigger)
-			
-			self.putlog(LOG_ALWAYS, tolog)
-		
-		elif trigger.name == WORD_SPELL:
-			if self.__spell_bin:
-				self.__Spell(trigger)
-			else:
-				self.sendReply(trigger, 'spell is broken until my owner fixes it.')
-				return
+		url = ANTONYM_URL % word
+		self.urlRequest(trigger, self.__RhymeZone, url)
 	
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
+	def _trigger_WORD_RHYME(self, trigger):
+		word = quote(trigger.match.group('word').lower())
+		url = RHYME_URL % word
+		self.urlRequest(trigger, self.__RhymeZone, url)
+	
+	def _trigger_WORD_SYNONYM(self, trigger):
+		word = quote(trigger.match.group('word').lower())
+		url = SYNONYM_URL % word
+		self.urlRequest(trigger, self.__RhymeZone, url)
+	
+	def _trigger_WORD_DICT(self, trigger):
+		word = trigger.match.group('word').lower()
+		if len(word) > 30:
+			tolog = 'Dictionary: %s asked me to look up a very long word!' % (trigger.userinfo.nick)
+			self.sendReply(trigger, "That's too long!")
 		
-		if trigger.name in (WORD_ANTONYM, WORD_RHYME, WORD_SYNONYM):
-			self.__RhymeZone(trigger, page_text)
+		else:
+			tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, word)
+			async_dict(self, trigger)
+		
+		self.putlog(LOG_ALWAYS, tolog)
+		
+	def _trigger_WORD_SPELL(self, trigger):
+		if self.__spell_bin:
+			self.__Spell(trigger)
+		else:
+			self.sendReply(trigger, 'spell is broken until my owner fixes it.')
 	
 	# -----------------------------------------------------------------------
-	
+	# Parse the output of a RhymeZone page
 	def __RhymeZone(self, trigger, page_text):
 		word = trigger.match.group('word').lower()
 		
@@ -207,9 +197,9 @@ class WordStuff(Plugin):
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
-	
+	# Look up the spelling of a word using ispell or (preferably) aspell
 	def __Spell(self, trigger):
-		word = trigger.match.group('word')
+		word = trigger.match.group('word').lower()
 		
 		# Returns 
 		p_in, p_out = os.popen2(self.__spell_bin)
@@ -257,7 +247,6 @@ class WordStuff(Plugin):
 _linesep_regexp = re.compile('\r?\n')
 
 class async_dict(asyncore.dispatcher_with_send):
-	
 	def __init__(self, parent, trigger):
 		asyncore.dispatcher_with_send.__init__(self)
 		

@@ -4,10 +4,9 @@
 # This is the news-gatherer plugin for Blamehangle. It scours the web for
 # news, and reports it. Exciting stuff.
 
-import cPickle
 import re
 import time
-import types
+
 from random import Random
 from sgmllib import SGMLParseError
 
@@ -18,40 +17,57 @@ from classes.Constants import *
 from classes.Plugin import *
 
 from classes.feedparser import FeedParser
-from classes.HTMLParser import HTMLParser, HTMLParseError
 
 # ---------------------------------------------------------------------------
 
-NEWS_GOOGLE_WORLD = "NEWS_GOOGLE_WORLD"
-NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
-NEWS_GOOGLE_HEALTH = "NEWS_GOOGLE_HEALTH"
-NEWS_GOOGLE_BIZ = "NEWS_GOOGLE_BIZ"
-NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
+NEWS_ANANOVA_QUIRKIES = 'NEWS_ANANOVA_QUIRKIES'
+NEWS_GOOGLE_BIZ = 'NEWS_GOOGLE_BIZ'
+NEWS_GOOGLE_HEALTH = 'NEWS_GOOGLE_HEALTH'
+NEWS_GOOGLE_SCI = 'NEWS_GOOGLE_SCI'
+NEWS_GOOGLE_WORLD = 'NEWS_GOOGLE_WORLD'
+NEWS_RSS = 'NEWS_RSS'
 
-NEWS_RSS = "NEWS_RSS"
-RSS_LIST = 'RSS_LIST'
-RSS_SHOW = 'RSS_SHOW'
+NEWS_CLEANUP = 'NEWS_CLEANUP'
+NEWS_SPAM = 'NEWS_SPAM'
 
-NEWS_INSERT = "NEWS_INSERT"
-TIME_CHECK = "TIME_CHECK"
+# ---------------------------------------------------------------------------
 
 NEWS_SEARCH = "NEWS_SEARCH"
-MAX_NEWS_SEARCH_RESULTS = 6
+NEWS_SEARCH_HELP = "'\02news\02 <partial headline>' : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given"
+NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
+
+NEWS_SEARCH_MAX_RESULTS = 6
+
+RSS_LIST = 'RSS_LIST'
+RSS_LIST_HELP = "'\x02listfeeds\x02' : List the RSS feeds currently configured"
+RSS_LIST_RE = re.compile(r'^listfeeds$')
+
+RSS_SHOW = 'RSS_SHOW'
+RSS_SHOW_HELP = "'\x02showfeed\x02 <feed name>' : Show some information about an RSS feed"
+RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
+
+# ---------------------------------------------------------------------------
 
 NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
 INSERT_QUERY = "INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE added < %s"
 SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 
-NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
-RSS_LIST_RE = re.compile(r'^listfeeds$')
-RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
+# ---------------------------------------------------------------------------
 
-GOOGLE_WORLD = 'http://news.google.com/news/en/us/world.html'
-GOOGLE_SCI = 'http://news.google.com/news/en/us/technology.html'
-GOOGLE_HEALTH = 'http://news.google.com/news/en/us/health.html'
-GOOGLE_BIZ = 'http://news.google.com/news/en/us/business.html'
-ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
+ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
+GOOGLE_BIZ_URL = 'http://news.google.com/news/en/us/business.html'
+GOOGLE_HEALTH_URL = 'http://news.google.com/news/en/us/health.html'
+GOOGLE_SCI_URL = 'http://news.google.com/news/en/us/technology.html'
+GOOGLE_WORLD_URL = 'http://news.google.com/news/en/us/world.html'
+
+# ---------------------------------------------------------------------------
+
+ANANOVA_STORY_TITLE_RE = re.compile(r'^(story.*?)\?menu=" title="(.*?)">')
+ANANOVA_STORY_TEXT_RE = re.compile(r'<small>(.*?)</small>')
+
+GOOGLE_STORY_TITLE_RE = re.compile(r'<a class=y href="/url\?ntc=\S+&q=(.*?)">(.*?)</a>')
+GOOGLE_STORY_TEXT_RE = re.compile(r'</b><br>(.*?)<br>')
 
 # ---------------------------------------------------------------------------
 
@@ -64,49 +80,46 @@ class News(Plugin):
 	"""
 	
 	def setup(self):
-		self.__outgoing = self.__unpickle('.news.out_pickle') or []
+		self.__outgoing = self.loadPickle('.news.outgoing') or []
 		if self.__outgoing:
 			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
-			self.putlog(LOG_DEBUG, tolog)
+			self.putlog(LOG_ALWAYS, tolog)
 		
 		currtime = time.time()
-		
-		self.__Last_Spam_Time = currtime
 		self.__Last_Clearout_Time = currtime
 		
 		self.__rand_gen = Random(currtime)
 		
-		self.__setup_config()
+		self.__Setup_Config()
+	
+	def rehash(self):
+		self.__Setup_Config()
 	
 	# Make extra sure our news queue is saved
 	def shutdown(self, message):
-		self.__pickle(self.__outgoing, '.news.out_pickle')
+		self.savePickle('.news.outgoing', self.__outgoing)
 	
-	def __setup_config(self):
+	def __Setup_Config(self):
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
 		self.__spam_prefix = self.Config.get('News', 'spam_prefix')
 		
 		self.__old_days = self.Config.getint('News', 'old_threshold')
 		self.__old_threshold = self.__old_days * 86400
 		
-		self.__gwn_targets = {}
-		self.__gsci_targets = {}
-		self.__gh_targets = {}
-		self.__gbiz_targets = {}
 		self.__anaq_targets = {}
+		self.__gbiz_targets = {}
+		self.__gh_targets = {}
+		self.__gsci_targets = {}
+		self.__gwn_targets = {}
 		self.__setup_news_targets()
 		
 		if self.Config.getboolean('News', 'verbose'):
-			tolog = "Using verbose mode for news"
+			tolog = 'Using verbose mode for news'
 			self.__verbose = 1
 		else:
-			tolog = "Using brief mode for news"
+			tolog = 'Using brief mode for news'
 			self.__verbose = 0
 		self.putlog(LOG_DEBUG, tolog)
-		
-		self.__google = Google()
-		self.__ananova = Ananova()
-		
 		
 		self.__gwn_interval = self.Config.getint('News', 'google_world_interval') * 60
 		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval') * 60
@@ -117,7 +130,7 @@ class News(Plugin):
 		# Do RSS feed setup
 		self.__rss_default_interval = self.Config.getint('RSS', 'default_interval') * 60
 		self.__rss_ignore_no_link = self.Config.getboolean('RSS', 'ignore_no_link')
-		self.__rss_maximum_new = min(1, self.Config.getint('RSS', 'maximum_new'))
+		self.__rss_maximum_new = max(1, self.Config.getint('RSS', 'maximum_new'))
 		
 		self.__Setup_RSS_Feeds()
 	
@@ -189,247 +202,258 @@ class News(Plugin):
 					self.__setup_target(feed['targets'], 'RSS', option)
 	
 	# -----------------------------------------------------------------------
-	
-	def rehash(self):
-		self.__setup_config()
-	
 	# Register all our news pages that we want to check
 	def _message_PLUGIN_REGISTER(self, message):
-		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
-		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
-		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
-		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
-		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
-		
-		if self.__gwn_interval:
-			self.register(gwn)
-		if self.__gsci_interval:
-			self.register(gsci)
-		if self.__gh_interval:
-			self.register(gh)
-		if self.__gbiz_interval:
-			self.register(gbiz)
+		# Various timed news checks
 		if self.__anaq_interval:
-			self.register(anaq)
-		
-		ns_dir = PluginTextEvent(NEWS_SEARCH, IRCT_PUBLIC_D, NEWS_SEARCH_RE)
-		ns_msg = PluginTextEvent(NEWS_SEARCH, IRCT_MSG, NEWS_SEARCH_RE)
-		
-		self.register(ns_dir, ns_msg)
-		
+			self.setTimedEvent(NEWS_ANANOVA_QUIRKIES, self.__anaq_interval, self.__anaq_targets)
+		if self.__gbiz_interval:
+			self.setTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
+		if self.__gh_interval:
+			self.setTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
+		if self.__gsci_interval:
+			self.setTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
+		if self.__gwn_interval:
+			self.setTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
+		# News search
+		self.setTextEvent(NEWS_SEARCH, NEWS_SEARCH_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		# RSS feed commands
+		self.setTextEvent(RSS_LIST, RSS_LIST_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(RSS_SHOW, RSS_SHOW_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# RSS feeds
-		list_pub = PluginTextEvent(RSS_LIST, IRCT_PUBLIC_D, RSS_LIST_RE)
-		list_msg = PluginTextEvent(RSS_LIST, IRCT_MSG, RSS_LIST_RE)
-		show_pub = PluginTextEvent(RSS_SHOW, IRCT_PUBLIC_D, RSS_SHOW_RE)
-		show_msg = PluginTextEvent(RSS_SHOW, IRCT_MSG, RSS_SHOW_RE)
-		self.register(list_pub, list_msg, show_pub, show_msg)
-		
-		feedevents = []
 		feednames = self.RSS_Feeds.keys()
-		feednames.sort()
-		for name in feednames:
-			feed = self.RSS_Feeds[name]
+		if feednames:
+			feednames.sort()
+			# Add a timed event for each feed
+			for name in feednames:
+				feed = self.RSS_Feeds[name]
+				self.setTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
+				
+				tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
+				self.putlog(LOG_DEBUG, tolog)
 			
-			tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
-			self.putlog(LOG_DEBUG, tolog)
-			
-			event = PluginTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
-			feedevents.append(event)
-		
-		self.register(*feedevents)
-		
-		if feedevents:
-			tolog = "Registered %d RSS feeds" % len(feedevents)
+			tolog = "Registered %d RSS feeds" % len(feednames)
 			self.putlog(LOG_ALWAYS, tolog)
 		
-		self.__setup_help_msgs()
-	
-	def __setup_help_msgs(self):
-		NEWS_HELP = "'\02news\02 <partial headline>' : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given"
+		# Timed event for cleaning up the database once an hour
+		self.setTimedEvent(NEWS_CLEANUP, 3600, {})
+		# Timed event for spitting out news
+		self.setTimedEvent(NEWS_SPAM, self.__spam_delay, {})
 		
-		RSS_LIST_HELP = "'\x02listfeeds\x02' : List the RSS feeds currently configured"
-		RSS_SHOW_HELP = "'\x02showfeed\x02 <feed name>' : Show some information about an RSS feed"
+		# Register all these events
+		self.registerEvents()
 		
-		self.setHelp('news', 'news', NEWS_HELP)
+		# Help meeee
+		self.setHelp('news', 'news', NEWS_SEARCH_HELP)
 		self.setHelp('news', 'listfeeds', RSS_LIST_HELP)
 		self.setHelp('news', 'showfeed', RSS_SHOW_HELP)
-		
 		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
+	# Cleanup old news
+	def _trigger_NEWS_CLEANUP(self, trigger):
+		self.putlog(LOG_DEBUG, 'Purging old news')
+		
+		now = time.time()
+		old = now - self.__old_threshold
+		self.__Last_Clearout_Time = now
+		
+		self.dbQuery(trigger, None, TIME_QUERY, old)
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		event = message.data
-		
-		if event.name == NEWS_GOOGLE_WORLD:
-			self.urlRequest(event, GOOGLE_WORLD)
-		elif event.name == NEWS_GOOGLE_SCI:
-			self.urlRequest(event, GOOGLE_SCI)
-		elif event.name == NEWS_GOOGLE_HEALTH:
-			self.urlRequest(event, GOOGLE_HEALTH)
-		elif event.name == NEWS_GOOGLE_BIZ:
-			self.urlRequest(event, GOOGLE_BIZ)
-		elif event.name == NEWS_ANANOVA:
-			self.urlRequest(event, ANANOVA_QUIRK)
-		
-		elif event.name == NEWS_SEARCH:
-			search_text = event.match.group('search_text')
-			if len(search_text) < 5:
-				self.sendReply(event, 'Search query is too short!')
-			elif len(search_text) > 50:
-				self.sendReply(event, 'Search query is too long!')
-			else:
-				search_text = search_text.replace("%", "\%")
-				search_text = search_text.replace('"', '\\\"')
-				search_text = search_text.replace("'", "\\\'")
-				
-				words = search_text.split()
-				
-				if len(words) > 8:
-					self.sendReply(event, 'Search query contains too many words!')
-				else:
-					crits = []
-					for word in words:
-						crit = 'title like "%%%s%%"' % word
-						crits.append(crit)
-					critstr = ' and '.join(crits)
-					
-					query = (SEARCH_QUERY % critstr, )
-					self.dbQuery(event, query)
-		
-		elif event.name == NEWS_RSS:
-			name = event.args[0]
-			feed = self.RSS_Feeds[name]
-			returnme = (event, name)
-			self.urlRequest(returnme, feed['url'])
-		
-		elif event.name == RSS_LIST:
-			names = self.RSS_Feeds.keys()
-			if names:
-				names.sort()
-				replytext = 'I currently check \x02%d\x02 RSS feeds: %s' % (len(names), ', '.join(names))
-			else:
-				replytext = 'Sorry, I have no RSS feeds configured.'
-			self.sendReply(event, replytext)
-		
-		elif event.name == RSS_SHOW:
-			findme = event.match.group('feed').lower()
-			matches = [name for name in self.RSS_Feeds.keys() if name.lower() == findme]
-			if matches:
-				feed = self.RSS_Feeds[matches[0]]
-				replytext = "'%s' is %s every %d minutes" % (matches[0], feed['url'], feed['interval'] / 60)
-			else:
-				replytext = 'Sorry, no feed by that name.'
-			self.sendReply(event, replytext)
-		
+	# Search for some news
+	def _trigger_NEWS_SEARCH(self, trigger):
+		search_text = trigger.match.group('search_text')
+		if len(search_text) < 5:
+			self.sendReply(event, 'Search query is too short!')
+		elif len(search_text) > 50:
+			self.sendReply(event, 'Search query is too long!')
 		else:
-			errstring = "News has no event: %s" % event.name
-			raise ValueError, errstring
+			search_text = search_text.replace("%", "\%")
+			search_text = search_text.replace('"', '\\\"')
+			search_text = search_text.replace("'", "\\\'")
+			
+			words = search_text.split()
+			
+			if len(words) > 8:
+				self.sendReply(event, 'Search query contains too many words!')
+			else:
+				crits = []
+				for word in words:
+					crit = 'title like "%%%s%%"' % word
+					crits.append(crit)
+				critstr = ' and '.join(crits)
+				
+				query = SEARCH_QUERY % critstr
+				self.dbQuery(trigger, self.__News_Searched, query)
+	
+	# Spam some news
+	def _trigger_NEWS_SPAM(self, trigger):
+		if not self.__outgoing:
+			return
+		
+		# We pull out a random item from our outgoing list so that we
+		# don't end up posting slabs of stories from the same site.
+		index = self.__rand_gen.randint(0, len(self.__outgoing) - 1)
+		reply = self.__outgoing.pop(index)
+		
+		# Spit it out
+		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
+		
+		tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
+		self.putlog(LOG_DEBUG, tolog)
+	
+	# -----------------------------------------------------------------------
+	# List of feeds
+	def _trigger_RSS_LIST(self, trigger):
+		names = self.RSS_Feeds.keys()
+		if names:
+			names.sort()
+			replytext = 'I currently check \x02%d\x02 RSS feeds: %s' % (len(names), ', '.join(names))
+		else:
+			replytext = 'Sorry, I have no RSS feeds configured.'
+		self.sendReply(trigger, replytext)
+	
+	# Show info about an RSS feed
+	def _trigger_RSS_SHOW(self, trigger):
+		findme = trigger.match.group('feed').lower()
+		matches = [name for name in self.RSS_Feeds.keys() if name.lower() == findme]
+		if matches:
+			feed = self.RSS_Feeds[matches[0]]
+			replytext = "'%s' is %s every %d minutes" % (matches[0], feed['url'], feed['interval'] / 60)
+		else:
+			replytext = 'Sorry, no feed by that name.'
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	
-	def run_sometimes(self, currtime):
-		# Periodically check if we need to send some text out to IRC
-		if self.__outgoing:
-			if (currtime - self.__Last_Spam_Time) >= self.__spam_delay:
-				self.__Last_Spam_Time = currtime
-				
-				# We pull out a random item from our outgoing list so that
-				# we don't end up posting slabs of stories from the same
-				# site in a row
-				index = self.__rand_gen.randint(0, len(self.__outgoing) - 1)
-				reply = self.__outgoing.pop(index)
-				
-				# spit it out
-				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
-				
-				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
-				self.putlog(LOG_DEBUG, tolog)
-		
-		# Once an hour, go and check for old news and purge it from the
-		# db
-		if currtime - self.__Last_Clearout_Time >= 3600:
-			tolog = "Purging old news"
-			self.putlog(LOG_DEBUG, tolog)
-			
-			self.__Last_Clearout_Time = currtime
-			old_time = currtime - self.__old_threshold
-			
-			query = (TIME_QUERY, old_time)
-			self.dbQuery(TIME_CHECK, query)
+	def _trigger_NEWS_ANANOVA_QUIRKIES(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Ananova, ANANOVA_QUIRKIES_URL)
+	
+	def _trigger_NEWS_GOOGLE_BIZ(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_BIZ_URL)
+	
+	def _trigger_NEWS_GOOGLE_HEALTH(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_HEALTH_URL)
+	
+	def _trigger_NEWS_GOOGLE_SCI(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SCI_URL)
+	
+	def _trigger_NEWS_GOOGLE_WORLD(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
+	
+	def _trigger_NEWS_RSS(self, trigger):
+		name = trigger.args[0]
+		if name in self.RSS_Feeds:
+			feed = self.RSS_Feeds[name]
+			self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
 	
 	# -----------------------------------------------------------------------
-	
-	def _message_REPLY_URL(self, message):
-		event, page_text = message.data
-		
-		# Remove annoying quoted bits
+	# Parse Ananova News!
+	def __Parse_Ananova(self, trigger, page_text):
 		page_text = UnquoteHTML(page_text)
 		
-		# RSS feed
-		if type(event) == types.TupleType:
-			event, name = event
-			self.__do_rss(page_text, event, name)
+		# Find some articles
+		chunks = FindChunks(page_text, '<a href="./', '</p>')
+		if not chunks:
+			self.putlog(LOG_WARNING, 'Ananova Quirkies parsing failed')
+			return
 		
-		else:
-			if event.name in (NEWS_GOOGLE_WORLD, NEWS_GOOGLE_SCI, NEWS_GOOGLE_HEALTH,
-				NEWS_GOOGLE_BIZ):
-				
-				parser = self.__google
+		# See if any of them will match
+		articles = []
+		
+		for chunk in chunks:
+			# Look for the URL and story title
+			m = ANANOVA_STORY_TITLE_RE.search(chunk)
+			if not m:
+				print chunk
+				print '^^STORY_TITLE^^'
+				continue
 			
-			elif event.name == NEWS_ANANOVA:
-				parser = self.__ananova
+			url = '%s/%s' % ('http://www.ananova.com/news', m.group(1))
+			title = m.group(2)
 			
+			# Look for the description
+			m = ANANOVA_STORY_TEXT_RE.search(chunk)
+			if not m:
+				print chunk
+				print '^^STORY_TEXT^^'
+				description = ''
 			else:
-				errtext = "Unknown: %s" % event.name
-				raise ValueError, errtext
+				description = m.group(1).strip()
 			
-			parser.reset_news()
-			self.__do_news(page_text, parser, event)
+			data = [title, url, description, time.time()]
+			articles.append(data)
+		
+		# Go for it!
+		self.__News_New(trigger, articles)
 	
 	# -----------------------------------------------------------------------
-	
-	def __do_news(self, page_text, parser, event):
-		try:
-			parser.feed(page_text)
-			parser.close()
+	# Parse Google News!
+	def __Parse_Google(self, trigger, page_text):
+		page_text = UnquoteHTML(page_text)
 		
-		except HTMLParseError, e:
-			# something fucked up
-			tolog = "Error parsing news (%s) - %s" % (event.name, e)
-			self.putlog(LOG_WARNING, tolog)
+		# Find some tables
+		tables = FindChunks(page_text, '<table', '</table>')
+		if not tables:
+			self.putlog(LOG_WARNING, 'Google News parsing failed')
+			return
 		
-		else:
-			articles = []
-			queries = []
-			for title, data in parser.news.items():
-				articles.append((title, data))
-				query = (NEWS_QUERY, title)
-				queries.append(query)
-			
-			if queries:
-				returnme = (event, articles)
-				self.dbQuery(returnme, *queries)
+		# See if any of them have articles
+		articles = []
+		
+		for table in tables:
+			if table.find('<a class=y') >= 0:
+				# Look for the URL and story title
+				m = GOOGLE_STORY_TITLE_RE.search(table)
+				if not m:
+					print table
+					print '^^STORY_TITLE^^'
+					continue
+				
+				url, title = m.groups()
+				
+				# Look for the story text
+				m = GOOGLE_STORY_TEXT_RE.search(table)
+				if not m:
+					print table
+					print '^^STORY_TEXT^^'
+					description = ''
+				else:
+					description = n.group(1).strip()
+				
+				data = [title, url, description, time.time()]
+				articles.append(data)
+		
+		# Go for it!
+		self.__News_New(trigger, articles)
 	
-	def __do_rss(self, page_text, event, name):
+	# -----------------------------------------------------------------------
+	# Parse an RSS feed!
+	def __Parse_RSS(self, trigger, page_text):
+		page_text = UnquoteHTML(page_text)
+		
+		name = trigger.args[0]
 		feed = self.RSS_Feeds[name]
 		
 		r = FeedParser()
 		# Catch any weird errors when feeding the text in
 		try:
 			r.feed(page_text)
+		
 		except SGMLParseError, msg:
 			tolog = "Error parsing feed '%s': %s" % (feed, msg)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
+		# Work out the feed title
 		if feed['title']:
 			feed_title = feed['title']
 		else:
 			feed_title = r.channel.get('title', name)
 		
+		# Get any articles out of the feed
 		articles = []
-		queries = []
+		
 		for item in r.items[:feed['maximum_new']]:
 			item_title = '%s: %s' % (feed_title, item.get('title', '<No Title>'))
 			
@@ -442,95 +466,119 @@ class News(Plugin):
 			else:
 				link = item.get('link', '<no link>')
 			
-			desc = item.get('description', '')
+			description = item.get('description', '')
 			
-			article = (item_title, (link, desc))
-			articles.append(article)
-			query = (NEWS_QUERY, item_title)
-			queries.append(query)
+			data = [item_title, link, description, time.time()]
+			articles.append(data)
 		
-		if queries:
-			returnme = (event, articles)
-			self.dbQuery(returnme, *queries)
+		# Go for it!
+		self.__News_New(trigger, articles)
 	
 	# -----------------------------------------------------------------------
-	
-	def _message_REPLY_QUERY(self, message):
-		event, results = message.data
-		if type(event) in (types.ListType, types.TupleType):
-			event, articles = event
+	# We have some new stories, see if they're in the DB
+	def __News_New(self, trigger, articles):
+		# If we have no articles, we can go home now
+		if len(articles) == 0:
+			return
 		
-		if isinstance(event, PluginTimedEvent):
-			# this wasn't a modification request
-			currtime = time.time()
-			queries = []
-			
-			for i in range(len(articles)):
-				title, (url, description) = articles[i]
-				result = results[i]
-				
-				# the title was in the news db, don't add it again
-				if result:
-					continue
-				
-				if self.__verbose and description:
-					replytext = "%s - %s : %s" % (title, url, description)
-				else:
-					replytext = "%s - %s" % (title, url)
-				
-				# attach the prefix if we have to
-				if self.__spam_prefix:
-					replytext = '%s %s' % (self.__spam_prefix, replytext)
-				
-				# stick it in the outgoing queue
-				reply = PluginReply(event, replytext)
-				self.__outgoing.append(reply)
-				
-				# add it to the db!
-				query = (INSERT_QUERY, title, url, description, currtime)
-				queries.append(query)
-			
-			if queries:
-				self.dbQuery(NEWS_INSERT, *queries)
-				
-				tolog = '%s: added %d items to outgoing queue' % (event.name, len(queries))
-				self.putlog(LOG_DEBUG, tolog)
+		trigger.articles = articles
 		
-		elif isinstance(event, PluginTextTrigger):
-			if event.name == NEWS_SEARCH:
-				self.__news_search(event, results)
+		# If we just have one article, we can go the easy way
+		#
+		if len(trigger.articles) == 1:
+			self.dbQuery(trigger, self.__News_New, NEWS_QUERY, trigger.articles[0][0])
 		
-		elif event == NEWS_INSERT:
-			# we just added some new items to our db
-			pass
-		
-		elif event == TIME_CHECK:
-			# we just did an hourly check for old news
-			pass
-		
+		# If we have more, construct a monster query
 		else:
-			errtext = "Unknown event: %s" % event
-			raise ValueError, errtext
+			query = NEWS_QUERY
+			args = [trigger.articles[0][0]]
+			
+			for article in trigger.articles[1:]:
+				query = query + ' OR title = %s'
+				args.append(article[0])
+			
+			self.dbQuery(trigger, self.__News_Reply, query, *args)
 	
 	# -----------------------------------------------------------------------
+	# We have a reply from the database, maybe insert some stuff now
+	def __News_Reply(self, trigger, result):
+		# Error!
+		if result is None:
+			self.putlog(LOG_WARNING, '__News_Reply: A DB error occurred!')
+			return
+		
+		articles = trigger.articles
+		del trigger.articles
+		
+		# We don't need to add any that are already in the database
+		for row in result:
+			eatme = [a for a in articles if a[0] == row['title']]
+			articles.remove(eatme[0])
+		
+		# If we don't have any new articles, go home now
+		if len(articles) == 0:
+			return
+		
+		# Add the new articles to our outgoing queue, then start adding them
+		# to the database.
+		for title, url, description, ctime in articles:
+			if self.__verbose and description:
+				replytext = '%s - %s : %s' % (title, url, description)
+			else:
+				replytext = '%s - %s' % (title, url)
+			
+			# Attach the spam prefix if we have ot
+			if self.__spam_prefix:
+				replytext = '%s %s' % (self.__spam_prefix, replytext)
+			
+			# stick it in the outgoing queue
+			reply = PluginReply(trigger, replytext)
+			self.__outgoing.append(reply)
+		
+		# Start the DB fun
+		article = articles.pop(0)
+		trigger.insertme = articles
+		self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
 	
+	# A news item has been inserted, try the next one if we have to
+	def __News_Inserted(self, trigger, result):
+		# Error!
+		if result is None:
+			self.putlog(LOG_WARNING, '__News_Inserted: A DB error occurred!')
+			return
+		
+		# If we have no more articles, go home now
+		if len(trigger.insertme) == 0:
+			return
+		
+		# Do the next one
+		article = trigger.insertme.pop(0)
+		self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
+	
+	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title
 	# we were given by a user on irc
-	def __news_search(self, trigger, results):
+	def __News_Searched(self, trigger, result):
 		search_text = trigger.match.group('search_text')
-		if results == [()]:
-			# the search failed
+		
+		# Error!
+		if result is None:
+			replytext = 'An unknown database error occurred.'
+			self.putlog(LOG_WARNING, '__News_Searched: A DB error occurred!')
+		
+		# No matches
+		elif result == ():
 			replytext = "No headlines in the last %d days found matching '\02%s\02'" % (self.__old_days, search_text)
 			self.sendReply(trigger, replytext)
+		
+		# Some matches
 		else:
-			# check how many items we found
-			results = results[0]
-			if len(results) > MAX_NEWS_SEARCH_RESULTS:
+			# Too many matches
+			if len(result) > NEWS_SEARCH_MAX_RESULTS:
 				replytext = "Search for '\02%s\02' yielded too many results. Please refine your query." % search_text
-				self.sendReply(trigger, replytext)
 			
-			elif len(results) > 1:
-				# We found more than one and less than the max number of items
+			# We found more than one and less than the max number of items
+			elif len(result) > 1:
 				replytext = "\02%d\02 Headlines found: " % len(results)
 				while results:
 					# can't use string.join() here :(
@@ -538,159 +586,12 @@ class News(Plugin):
 					results = results[1:]
 					if results:
 						replytext += " \02;;\02 "
-				self.sendReply(trigger, replytext)
 			
+			# We found exactly one item
 			else:
-				# We found exactly one item, so reply with the headline and
-				# url
-				replytext = '%(title)s - %(url)s : %(description)s' % results[0]
-				self.sendReply(trigger, replytext)
-	
-	# -----------------------------------------------------------------------
-	
-	# Pickle an object into the given file
-	def __pickle(self, obj, filename):
-		try:
-			f = open(filename, "wb")
-		except:
-			# We couldn't open our file :(
-			tolog = "Unable to open %s for writing" % filename
-			self.putlog(LOG_WARNING, tolog)
-		else:
-			tolog = "saving pickle to %s" % filename
-			self.putlog(LOG_DEBUG, tolog)
-			# the 1 turns on binary-mode pickling
-			cPickle.dump(obj, f, 1)
-			f.flush()
-			f.close()
-	
-	# -----------------------------------------------------------------------
-	
-	# Unpickle an object from the given file
-	def __unpickle(self, filename):
-		try:
-			f = open(filename, "rb")
-		except:
-			# Couldn't open the pickle file, so don't try to unpickle
-			pass
-		else:
-			# We have a pickle!
-			tolog = "loading pickle from %s" % filename
-			self.putlog(LOG_DEBUG, tolog)
-			obj = cPickle.load(f)
-			f.close()
-			return obj
+				replytext = '%(title)s - %(url)s : %(description)s' % result[0]
+		
+		# Spit out a reply
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
-
-# A parser for google's news pages. Looks for the main story titles.
-class Google(HTMLParser):
-	def __init__(self):
-		HTMLParser.__init__(self)
-		self.reset_news()
-	
-	def reset_news(self):
-		self.news = {}
-		self.__temp_href = None
-		self.__temp_title = None
-		self.__found_a = 0
-		self.__found_br1 = 0
-		self.__found_br2 = 0
-		self.reset()
-	
-	# -----------------------------------------------------------------------
-	
-	# Scan through the HTML, looking for a tag of the form <a class=y ..>
-	def handle_starttag(self, tag, attributes):
-		if tag == 'a':
-			attributes.sort()
-			for attr, value in attributes:
-				if attr == 'class' and value == 'y':
-					# We have found a main headline
-					self.__found_a = 1
-				if self.__found_a and attr == 'href':
-					# I'll just assume that q is always the last parameter for
-					# now :p
-					n = value.find('q=')
-					if n >= 0:
-						self.__temp_href = value[n+2:]
-					else:
-						self.__temp_href = value
-					
-					# fix up google's mangling of the url. this seems to be
-					# causing breakage when following the links to some sites
-					self.__temp_href = self.__temp_href.replace('%3F', '?')
-					self.__temp_href = self.__temp_href.replace('%3D', '=')
-					self.__temp_href = self.__temp_href.replace('%26', '&')
-					self.__temp_href = self.__temp_href.replace('%25', '%')
-		
-		if self.__found_a and tag == 'br':
-			if self.__found_br1:
-				self.__found_br2 = 1
-			else:
-				self.__found_br1 = 1
-	
-	# -----------------------------------------------------------------------
-	
-	# Check to see if we have found a new headline, and if so, the data
-	# between the <a ..> </a> tags is what we want to grab as the title.
-	# Also, if we have found a headline, we check to see if we have found
-	# two <br> tags, if so, the data between the second <br> and </br> is
-	# our one-line summary of this article.
-	def handle_data(self, data):
-		if self.__found_a and not self.__found_br1:
-			self.__temp_title = data
-		elif self.__found_a and self.__found_br2:
-			# Eat CR/LF, squish spaces
-			newdata = data.replace('\r', ' ')
-			newdata = newdata.replace('\n', ' ')
-			newdata = re.sub('\s+', ' ', newdata)
-			
-			self.news[self.__temp_title] = (self.__temp_href, newdata)
-			
-			self.__found_a = 0
-			self.__found_br1 = 0
-			self.__found_br2 = 0
-
-# ---------------------------------------------------------------------------
-
-# A parser for ananov'a news pages. Looks for story titles?
-class Ananova(HTMLParser):
-	def __init__(self):
-		HTMLParser.__init__(self)
-		self.reset_news()
-	
-	def reset_news(self):
-		self.news = {}
-		self.__found_a = 0
-		self.__found_small = 0
-		self.__temp_href = None
-		self.__temp_title = None
-		self.reset()
-	
-	def handle_starttag(self, tag, attributes):
-		if tag == 'a':
-			href = None
-			title = None
-			for attr, value in attributes:
-				if attr == 'href' and value.startswith('./story'):
-					# chop off the starting . and the ending ?menu=
-					realvalue = value[1:-6]
-					href = 'http://www.ananova.com/news' + realvalue
-				elif attr == 'title':
-					title = value
-			
-			if href and title:
-				self.__temp_href = href
-				self.__temp_title = title
-				self.__found_a = 1
-		
-		elif self.__found_a and tag == 'small':
-			self.__found_small = 1
-	
-	def handle_data(self, data):
-		if self.__found_small:
-			self.news[self.__temp_title] = (self.__temp_href, data)
-			
-			self.__found_a = 0
-			self.__found_small = 0

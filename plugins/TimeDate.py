@@ -13,8 +13,8 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 TIME_DATE = 'TIME_DATE'
-DATE_RE = re.compile('^date (?P<city>\w+)$')
 DATE_HELP = '\02date\02 <city> : Do something.'
+DATE_RE = re.compile('^date (?P<city>\w+)$')
 
 # ---------------------------------------------------------------------------
 

@@ -18,16 +18,16 @@ from classes import pymetar
 WEATHER_URL = 'http://search.weather.yahoo.com/search/weather2?p=%s'
 
 WEATHER_SHORT = 'WEATHER_SHORT'
-SHORT_RE = re.compile('^weather\s+(?P<location>.+)$')
 SHORT_HELP = '\02weather\02 <location> : Retrieve weather information for location (short format)'
+SHORT_RE = re.compile('^weather\s+(?P<location>.+)$')
 
 WEATHER_LONG = 'WEATHER_LONG'
-LONG_RE = re.compile('^weatherlong\s+(?P<location>.+)$')
 LONG_HELP = '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'
+LONG_RE = re.compile('^weatherlong\s+(?P<location>.+)$')
 
 WEATHER_FORECAST = 'WEATHER_FORECAST'
-FORECAST_RE = re.compile('^forecast\s+(?P<location>.+)$')
 FORECAST_HELP = '\02forecast\02 <location> : Retrieve weather forecast for location'
+FORECAST_RE = re.compile('^forecast\s+(?P<location>.+)$')
 
 # ---------------------------------------------------------------------------
 
@@ -100,35 +100,31 @@ class WeatherMan(Plugin):
 		self.setHelp('weather', 'taf', TAF_HELP)
 		self.registerHelp()
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
-			url = WEATHER_URL % quote(trigger.match.group('location'))
-			self.urlRequest(trigger, url)
-		
-		elif trigger.name in (WEATHER_METAR, WEATHER_METARD):
-			url = METAR_URL % trigger.match.group('station').upper()
-			self.urlRequest(trigger, url)
-		
-		elif trigger.name == WEATHER_TAF:
-			url = TAF_URL % trigger.match.group('station').upper()
-			self.urlRequest(trigger, url)
+	# -----------------------------------------------------------------------
+	# Someone wants some weather information
+	def _trigger_WEATHER_SHORT(self, trigger):
+		url = WEATHER_URL % quote(trigger.match.group('location'))
+		self.urlRequest(trigger, self.__Parse_Weather, url)
 	
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		
-		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
-			self.__Parse_Weather(trigger, page_text)
-		
-		elif trigger.name in (WEATHER_METAR, WEATHER_METARD):
-			self.__Parse_METAR(trigger, page_text)
-		
-		elif trigger.name == WEATHER_TAF:
-			self.__Parse_TAF(trigger, page_text)
+	_trigger_WEATHER_LONG = _trigger_WEATHER_SHORT
+	_trigger_WEATHER_FORECAST = _trigger_WEATHER_SHORT
 	
 	# -----------------------------------------------------------------------
+	# Someone wants METAR data, possibly decoded
+	def _trigger_WEATHER_METAR(self, trigger):
+		url = METAR_URL % trigger.match.group('station').upper()
+		self.urlRequest(trigger, self.__Parse_METAR, url)
 	
+	_trigger_WEATHER_METARD = _trigger_WEATHER_METAR
+	
+	# -----------------------------------------------------------------------
+	# Someone wants TAF data, the nutter
+	def _trigger_WEATHER_TAF(self, trigger):
+		url = TAF_URL % trigger.match.group('station').upper()
+		self.urlRequest(trigger, self.__Parse_TAF, url)
+	
+	# -----------------------------------------------------------------------
+	# Parse a Yahoo Weather page
 	def __Parse_Weather(self, trigger, page_text):
 		# No results
 		if page_text.find('No match found') >= 0:
@@ -268,7 +264,7 @@ class WeatherMan(Plugin):
 				self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
-	
+	# Parse a semi-decoded METAR file
 	def __Parse_METAR(self, trigger, page_text):
 		stationid = trigger.match.group('station').upper()
 		
@@ -355,7 +351,7 @@ class WeatherMan(Plugin):
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
-	
+	# Parse scary TAF info
 	def __Parse_TAF(self, trigger, page_text):
 		stationid = trigger.match.group('station').upper()
 		
@@ -435,3 +431,5 @@ def ToKilometers(val):
 		return '%d' % round(int(val) * 1.60934)
 	except ValueError:
 		return '0'
+
+# ---------------------------------------------------------------------------

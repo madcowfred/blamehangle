@@ -7,8 +7,6 @@ import asyncore
 import re
 import socket
 
-from urllib import quote
-
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
@@ -76,24 +74,18 @@ class Anime(Plugin):
 		self.setHelp('anime', 'animenfo', ANIMENFO_HELP)
 		self.registerHelp()
 	
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		
-		if trigger.name == ANIME_ANIDB:
-			self.Parse_AniDB(trigger, page_text)
-	
 	# ---------------------------------------------------------------------------
 	
 	def _trigger_ANIME_ANIDB(self, trigger):
-		url = ANIDB_URL % quote(trigger.match.group('findme').lower())
-		self.urlRequest(trigger, url)
+		url = ANIDB_URL % QuoteURL(trigger.match.group('findme').lower())
+		self.urlRequest(trigger, self.__Parse_AniDB, url)
 	
 	def _trigger_ANIME_ANIMENFO(self, trigger):
 		async_animenfo(self, trigger)
 	
 	# ---------------------------------------------------------------------------
 	# Parse an AniDB page
-	def Parse_AniDB(self, trigger, page_text):
+	def __Parse_AniDB(self, trigger, page_text):
 		findme = trigger.match.group('findme').lower()
 		
 		# If it's search results, parse them and spit them out
