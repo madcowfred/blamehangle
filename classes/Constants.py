@@ -28,6 +28,7 @@ PLUGIN_REPLY = 'PLUGIN_REPLY'
 # ---------------------------------------------------------------------------
 # IRCtype constants
 # ---------------------------------------------------------------------------
+IRC_EVENT = 'IRC_EVENT'
 
 IRCT_PUBLIC = 'IRCT_PUBLIC'
 IRCT_PUBLIC_D = 'IRCT_PUBLIC_D' # public lines directed to the bot, "Blamhangle: blah"
