@@ -114,11 +114,6 @@ class SmartyPants(Plugin):
 		self.__modifys = 0
 		self.__dels = 0
 		
-		# build our translation string
-		self.__trans = '\x00' * 32
-		for i in range(32, 256):
-			self.__trans += chr(i)
-		
 		self.rehash()
 	
 	def rehash(self):
@@ -128,6 +123,17 @@ class SmartyPants(Plugin):
 			self.Options.get('max_fact_name_length', DEF_FACT_NAME_LENGTH)))
 		self.Options['max_fact_value_length'] = max(MIN_FACT_VALUE_LENGTH, min(MAX_FACT_VALUE_LENGTH,
 			self.Options.get('max_fact_value_length', DEF_FACT_VALUE_LENGTH)))
+		
+		# Build our translation table
+		self.__trans = '\x00' * 32
+		if self.Options['allow_high_ascii']:
+			for i in range(32, 256):
+				self.__trans += chr(i)
+		else:
+			for i in range(32, 128):
+				self.__trans += chr(i)
+			for i in range(128, 256):
+				self.__trans += '\x00'
 	
 	# -----------------------------------------------------------------------
 	
