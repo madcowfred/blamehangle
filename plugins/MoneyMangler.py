@@ -5,7 +5,6 @@
 import cPickle
 import os
 import re
-from HTMLParser import HTMLParser
 
 from classes.Common import *
 from classes.Constants import *
@@ -73,14 +72,12 @@ class MoneyMangler(Plugin):
 		quote_msg = PluginTextEvent(MONEY_QUOTE, IRCT_MSG, QUOTE_RE)
 		symbol_dir = PluginTextEvent(MONEY_SYMBOL, IRCT_PUBLIC_D, SYMBOL_RE)
 		symbol_msg = PluginTextEvent(MONEY_SYMBOL, IRCT_MSG, SYMBOL_RE)
-		
 		self.register(conv_dir, conv_msg, curr_dir, curr_msg, quote_dir, quote_msg, symbol_dir, symbol_msg)
 		
 		self.setHelp('money', 'currency', CURRENCY_HELP)
 		self.setHelp('money', 'exchange', EXCHANGE_HELP)
 		self.setHelp('money', 'quote', QUOTE_HELP)
 		self.setHelp('money', 'symbol', SYMBOL_HELP)
-		
 		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
@@ -90,11 +87,30 @@ class MoneyMangler(Plugin):
 		
 		# Someone wants to look for a currency
 		if trigger.name == MONEY_CURRENCY:
-			self.__Currency_Search(trigger)
+			self.__Search(trigger)
 		
 		# Someone wants to do a money conversion
 		elif trigger.name == MONEY_EXCHANGE:
-			self.__Currency_Exchange(trigger)
+			replytext = None
+			
+			data = {}
+			data['amt'] = '%.2f' % float(trigger.match.group('amt'))
+			data['from'] = trigger.match.group('from').upper()
+			data['to'] = trigger.match.group('to').upper()
+			
+			if data['from'] not in self.Currencies:
+				replytext = '%(from)s is not a valid currency code' % data
+			elif data['to'] not in self.Currencies:
+				replytext = '%(to)s is not a valid currency code' % data
+			elif 'e' in data['amt']:
+				replytext = '%(amt)s is beyond the range of convertable values' % data
+			else:
+				url = EXCHANGE_URL % data
+				returnme = (trigger, data)
+				self.urlRequest(returnme, url)
+			
+			if replytext is not None:
+				self.sendReply(trigger, replytext)
 		
 		# Someone wants to look up a stock price
 		elif trigger.name == MONEY_QUOTE:
@@ -117,134 +133,42 @@ class MoneyMangler(Plugin):
 		
 		# Money has been exchanged
 		if trigger.name == MONEY_EXCHANGE:
-			page_text = page_text.replace('&amp;', ' and ')
-			
-			parser = YahooParser()
-			
-			try:
-				parser.feed(page_text)
-				parser.close()
-			except:
-				replytext = "Error parsing the html"
-				self.sendReply(trigger, replytext)
-			else:
-				#currencies = {}
-				#for curr in parser.currs:
-				#	name = curr[:-6]
-				#	code = curr[-4:-1]
-				#	currencies[code] = name
-				#cPickle.dump(currencies, open('configs/currency.data', 'wb'), 1)
-				
-				if parser.result:
-					replytext = '%s %s == %s %s' % (data['amt'], data['from'], parser.result, data['to'])
-				else:
-					replytext = 'No result returned.'
-				self.sendReply(trigger, replytext)
+			self.__Exchange(trigger, page_text, data)
 		
 		# Stock quote has returned
 		elif trigger.name == MONEY_QUOTE:
-			# Invalid symbol, sorry
-			if page_text.find('is not a valid ticker symbol') >= 0:
-				replytext = '"%s" is not a valid ticker symbol!' % data
-			
-			else:
-				# Find the data we need
-				chunk = FindChunk(page_text, '<table class="yfnc_datamodoutline1"', '</table>')
-				if chunk is None:
-					self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
-					self.sendReply(trigger, 'Failed to parse page properly')
-					return
-				
-				# Replace the up/down graphics with +/-
-				chunk = re.sub(r'alt="Down">\s*', '>-', chunk)
-				chunk = re.sub(r'alt="Up">\s*', '>+', chunk)
-				
-				# Strip the evil HTML!
-				lines = StripHTML(chunk)
-				
-				# Sort out the stock info
-				info = {'Symbol': data}
-				for line in lines:
-					parts = re.split(r'\s*:\s*', line, 1)
-					if len(parts) == 2 and parts[1] != 'N/A':
-						if parts[0] in ('Last Trade', 'Index Value'):
-							info['Value'] = parts[1]
-						else:
-							info[parts[0]] = parts[1]
-				
-				# Output something now :)
-				if info:
-					try:
-						replytext = '[%(Trade Time)s] %(Symbol)s: %(Value)s %(Change)s' % info
-					except KeyError:
-						replytext = 'Some stock data missing, not good!'
-				else:
-					replytext = 'No stock data found? WTF?'
-			
-			self.sendReply(trigger, replytext)
+			self.__Quote(trigger, page_text, data)
 		
 		# The symbol is known
 		elif trigger.name == MONEY_SYMBOL:
-			#aa <TR bgcolor=#ffffff><TD><font face=arial size=-1><a href="/q?s=MKO&d=t">MKO</a></font></TD><TD><font face=arial size=-1>Merrill Lynch & Co Inc Dow Jones Industrial Average Mkt Index Trgt Trm Sec</font></TD><TD><font face=arial size=-1>AMEX</font></TD><TD><font face=arial size=-1>N/A</font></TD><TD><font face=arial size=-1><a href="http://rd.yahoo.com/addtomy/*http://edit.finance.dcn.yahoo.com/ec?.intl=us&.src=quote&.portfover=1&.done=http://finance.yahoo.com&.cancelPage=http://finance.yahoo.com/l?s%3ddow%26t%3d%26m%3d&.sym=MKO&.nm=MKO"><center>Add</center></a></font></TD></TR>
-			#aa <TR bgcolor=#ffffff><TD><font face=arial size=-1><a href="/q?s=MTDB&d=t">MTDB</a></font></TD><TD><font face=arial size=-1>Merrill Lynch & Co Inc Dow Jones Industrial Average Mkt Index Trgt Trm Sec</font></TD><TD><font face=arial size=-1>NasdaqNM</font></TD><TD><font face=arial size=-1>N/A</font></TD><TD><font face=arial size=-1><a href="http://rd.yahoo.com/addtomy/*http://edit.finance.dcn.yahoo.com/ec?.intl=us&.src=quote&.portfover=1&.done=http://finance.yahoo.com&.cancelPage=http://finance.yahoo.com/l?s%3ddow%26t%3d%26m%3d&.sym=MTDB&.nm=MTDB"><center>Add</center></a></font></TD></TR>
-			# No matches, sorry
-			if page_text.find('returned no Stocks matches') >= 0:
-				replytext = 'No symbols found matching "%s"' % data
-			
-			else:
-				# Find the chunk of data we need
-				chunk = FindChunk(page_text, 'Add to My Portfolio', 'Quotes for All Above Symbols')
-				if chunk is None:
-					self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
-					self.sendReply(trigger, 'Failed to parse page properly')
-					return
-				
-				# Horrible HTML parsing... forgive me :\
-				bits = []
-				for line in chunk.splitlines():
-					piece = None
-					for part in re.split(r'(?i)</?td>', line):
-						part = re.sub('<.*?>', '', part).strip()
-						if not part:
-							continue
-						
-						if not piece:
-							piece = part
-						else:
-							bit = '%s::%s' % (piece, part)
-							bits.append(bit)
-							break
-					
-					if len(bits) == 10:
-						break
-				
-				# Spit something out
-				replytext = ', '.join(bits)
-				self.sendReply(trigger, replytext)
+			self.__Symbol(trigger, page_text, data)
 	
 	# -----------------------------------------------------------------------
-	
-	def __Currency_Exchange(self, trigger):
-		data = {}
-		data['amt'] = '%.2f' % float(trigger.match.group('amt'))
-		data['from'] = trigger.match.group('from').upper()
-		data['to'] = trigger.match.group('to').upper()
+	# Parse the exchange page and spit out a result
+	def __Exchange(self, trigger, page_text, data):
+		page_text = page_text.replace('&amp;', ' and ')
 		
-		if data['from'] not in self.Currencies:
-			replytext = '%(from)s is not a valid currency code' % data
-			self.sendReply(trigger, replytext)
-		elif data['to'] not in self.Currencies:
-			replytext = '%(to)s is not a valid currency code' % data
-			self.sendReply(trigger, replytext)
-		elif 'e' in data['amt']:
-			replytext = '%(amt)s is beyond the range of convertable values' % data
-			self.sendReply(trigger, replytext)
+		# Find the table chunk
+		chunk = FindChunk(page_text, '<table border=1', '</table>')
+		
+		# Put each tag on a new line
+		chunk = chunk.replace('>', '>\n')
+		
+		# Split it into lines
+		lines = StripHTML(chunk)
+		
+		# If it's the right data, we have a winner
+		if lines[0] == 'Symbol' and lines[2] == 'Exchange Rate':
+			replytext = '%s %s == %s %s' % (lines[8], data['from'], lines[11], data['to'])
+		# If it's not, we failed miserably
 		else:
-			fetchme = EXCHANGE_URL % data
-			returnme = (trigger, data)
-			self.urlRequest(returnme, fetchme)
+			replytext = 'Page parsing failed.'
+		
+		self.sendReply(trigger, replytext)
 	
-	def __Currency_Search(self, trigger):
+	# -----------------------------------------------------------------------
+	# Find a matching currency!
+	def __Currency(self, trigger):
 		curr = trigger.match.group('curr').lower()
 		
 		# Possible currency code?
@@ -275,49 +199,98 @@ class MoneyMangler(Plugin):
 			replytext += ': No matches found.'
 		
 		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Parse the stock quote page and spit out a result
+	def __Quote(self, trigger, page_text, data):
+		# Invalid symbol, sorry
+		if page_text.find('is not a valid ticker symbol') >= 0:
+			replytext = '"%s" is not a valid ticker symbol!' % data
+		
+		else:
+			# Find the data we need
+			chunk = FindChunk(page_text, '<table class="yfnc_datamodoutline1"', '</table>')
+			if chunk is None:
+				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
+				self.sendReply(trigger, 'Failed to parse page properly')
+				return
+			
+			# Replace the up/down graphics with +/-
+			chunk = re.sub(r'alt="Down">\s*', '>-', chunk)
+			chunk = re.sub(r'alt="Up">\s*', '>+', chunk)
+			
+			# Strip the evil HTML!
+			lines = StripHTML(chunk)
+			
+			# Sort out the stock info
+			info = {'Symbol': data}
+			for line in lines:
+				parts = re.split(r'\s*:\s*', line, 1)
+				if len(parts) == 2 and parts[1] != 'N/A':
+					if parts[0] in ('Last Trade', 'Index Value'):
+						info['Value'] = parts[1]
+					else:
+						info[parts[0]] = parts[1]
+			
+			# Output something now :)
+			if info:
+				try:
+					replytext = '[%(Trade Time)s] %(Symbol)s: %(Value)s %(Change)s' % info
+				except KeyError:
+					replytext = 'Some stock data missing, not good!'
+			else:
+				replytext = 'No stock data found? WTF?'
+		
+		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Parse the stock symbol page and spit out a result
+	def __Symbol(self, trigger, page_text, data):
+		# No matches, sorry
+		if page_text.find('returned no Stocks matches') >= 0:
+			replytext = 'No symbols found matching "%s"' % data
+			self.sendReply(trigger, replytext)
+		
+		else:
+			# Find the chunk of data we need
+			chunk = FindChunk(page_text, 'Add to My Portfolio', 'View Quotes for All Above Symbols')
+			if chunk is None:
+				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
+				self.sendReply(trigger, 'Page parsing failed.')
+				return
+			
+			# Put each tag on a new line
+			chunk = chunk.replace('>', '>\n')
+			
+			# Split it into lines
+			lines = StripHTML(chunk)
+			
+			# Parse it
+			bit = 0
+			symbol = ''
+			parts = []
+			
+			for line in lines:
+				if bit == 0:
+					bit = 1
+					symbol = line
+				
+				elif bit == 1:
+					bit = 2
+					
+					part = '\02[\02%s: %s\02]\02' % (symbol, line)
+					print part
+					parts.append(part)
+					
+					if len(parts) == 10:
+						break
+				
+				elif bit == 2 and line == 'Add':
+					bit = 0
+					symbol = ''
+			
+			# Spit something out
+			replytext = ' '.join(parts)
+			self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
-# A parser for the Yahoo Finance currency conversion page
-class YahooParser(HTMLParser):
-	def __init__(self):
-		HTMLParser.__init__(self)
-		
-		#self.__in_select = 0
-		#self.__in_option = 0
-		#self.currs = []
-		
-		self.__in_th = 0
-		self.__now = 0
-		self.result = ''
-	
-	def handle_starttag(self, tag, attrs):
-		#if tag == 'select' and attrs[0][1] == 's':
-		#	self.__in_select = 1
-		#if tag == 'option' and self.__in_select:
-		#	self.__in_option = 1
-		
-		if tag == 'th':
-			self.__in_th = 1
-	
-	def handle_endtag(self, tag):
-		#if tag == 'select':
-		#	self.__in_select = 0
-		#if tag == 'option' and self.__in_select:
-		#	self.__in_option = 0
-		
-		if tag == 'th':
-			self.__in_th = 0
-	
-	def handle_data(self, data):
-		#if self.__in_select and self.__in_option:
-		#	self.currs.append(data)
-		
-		if self.__in_th:
-			if data == 'Historical Charts':
-				self.__now = 2
-		
-		elif self.__now:
-			self.__now -= 1
-			
-			if self.__now == 0:
-				self.result = data
