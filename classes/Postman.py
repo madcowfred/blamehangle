@@ -77,8 +77,13 @@ class Postman:
 		self.__Log_Rotate()
 		
 		
-		# Create a poll object for async bits to use
-		asyncore.poller = select.poll()
+		# Create a poll object for async bits to use. If the user doesn't have
+		# poll, we're going to have to fake it.
+		try:
+			asyncore.poller = select.poll()
+		except AttributeError:
+			from classes.FakePoll import FakePoll
+			asyncore.poller = FakePoll()
 		
 		# Create our children
 		self.__Children = {}
