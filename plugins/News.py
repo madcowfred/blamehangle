@@ -316,27 +316,27 @@ class News(Plugin):
 	
 	def __Fetch_Google_Business(self, trigger):
 		trigger.source = 'google_business'
-		url = GOOGLE_BUSINESS_URL % (self.Options['google_news_country'])
+		url = GOOGLE_BUSINESS_URL % (self.News_Options['google_news_country'])
 		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_Health(self, trigger):
 		trigger.source = 'google_health'
-		url = GOOGLE_HEALTH_URL % (self.Options['google_news_country'])
+		url = GOOGLE_HEALTH_URL % (self.News_Options['google_news_country'])
 		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_Science(self, trigger):
 		trigger.source = 'google_science'
-		url = GOOGLE_SCIENCE_URL % (self.Options['google_news_country'])
+		url = GOOGLE_SCIENCE_URL % (self.News_Options['google_news_country'])
 		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_Sport(self, trigger):
 		trigger.source = 'google_sport'
-		url = GOOGLE_SPORT_URL % (self.Options['google_news_country'])
+		url = GOOGLE_SPORT_URL % (self.News_Options['google_news_country'])
 		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_World(self, trigger):
 		trigger.source = 'google_world'
-		url = GOOGLE_WORLD_URL % (self.Options['google_news_country'])
+		url = GOOGLE_WORLD_URL % (self.News_Options['google_news_country'])
 		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	# See if any feeds should be triggering around about now
