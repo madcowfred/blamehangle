@@ -43,8 +43,8 @@ IRCT_TIMED = 'IRCT_TIMED'
 
 IRCT_ALL = [IRCT_CTCP, IRCT_CTCP_REPLY, IRCT_PUBLIC, IRCT_PUBLIC_D, IRCT_MSG, IRCT_NOTICE, IRCT_TIMED]
 
-# used to get the raw events, ugh
-REQ_ALL_IRC_EVENTS = 'REQ_ALL_IRC_EVENTS'
+# used by plugins to get raw events, ugh
+REQ_IRC_EVENTS = 'REQ_IRC_EVENTS'
 
 # ---------------------------------------------------------------------------
 # Request constants

@@ -144,8 +144,9 @@ class ChatterGizmo(Child):
 		if method is not None:
 			method(connid, self.Conns[connid].conn, event)
 		
-		for name in self.__Handlers.keys():
-			self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
+		for name, events in self.__Handlers.items():
+			if event.command in events or 'ALL' in events:
+				self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
 	
 	# -----------------------------------------------------------------------
 	# Raw 376 - End of MOTD (and 422 - No MOTD)
@@ -563,8 +564,8 @@ class ChatterGizmo(Child):
 	
 	# -----------------------------------------------------------------------
 	# Something wants to receive all IRC events, crazy
-	def _message_REQ_ALL_IRC_EVENTS(self, message):
-		self.__Handlers[message.source] = 1
+	def _message_REQ_IRC_EVENTS(self, message):
+		self.__Handlers[message.source] = message.data
 	
 	# Something wants to send a privmsg
 	def _message_REQ_PRIVMSG(self, message):

@@ -62,5 +62,12 @@ class ChanUsers:
 			if nick1 in nicks and nick2 in nicks:
 				return True
 		return False
+	
+	def get_chans(self, nick):
+		chans = []
+		for chan, nicks in self.__u.items():
+			if nick in nicks:
+				chans.append(chan)
+		return chans
 
 # ---------------------------------------------------------------------------
