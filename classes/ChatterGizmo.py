@@ -88,18 +88,19 @@ class ChatterGizmo(Child):
 				self.Conns[conn].channels = new_chans
 				self.Conns[conn].join_channels()
 			
+			# Quit and remove any gone networks
 			else:
-				# this network has been removed from our config
-				# FIXME: work out how the fuck to handle this?
-				pass
-				#for wrap in self.Conns.values():
-				#	if self.Conns[conn] == wrap and wrap.status == STATUS_CONNECTED:
-				#		wrap.conn.quit('bye')
-				#		wrap.requested_quit = 1
+				self.Conns[conn].requested_quit = 1
+				
+				if self.Conns[conn].conn.status != STATUS_DISCONNECTED:
+					self.Conns[conn].conn.quit('So long, and thanks for all the fish.')
+				
+				else:
+					self._handle_disconnect(conn, None)
 		
+		# Connect to any newly added networks
 		for section in new_nets:
 			if not [network for conn, network in old_nets if network == section]:
-				# this is a new network that has been added to our config
 				self.connect(section=section)
 	
 	# -----------------------------------------------------------------------
@@ -235,6 +236,9 @@ class ChatterGizmo(Child):
 		
 		if not self.stopping:
 			if self.Conns[conn].requested_quit:
+				tolog = 'Removing network!'
+				self.connlog(conn, LOG_ALWAYS, tolog)
+				
 				del self.Conns[conn]
 				del conn
 	

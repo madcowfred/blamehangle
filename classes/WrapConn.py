@@ -39,6 +39,7 @@ class WrapConn:
 		self.conn = conn
 		self.options = options
 		
+		# We increment this to keep track of things like channel rejoin attempts
 		self.connect_id = 0
 		
 		# has ChatterGizmo asked us to close this connection?
@@ -103,9 +104,6 @@ class WrapConn:
 			
 			self.conn.status = STATUS_DISCONNECTED
 		
-		#else:
-		#	self.status = STATUS_CONNECTING
-		
 		self.last_connect = time.time()
 	
 	def jump_server(self):
@@ -119,7 +117,6 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	# Reset ourselves to the disconnected state
 	def disconnected(self):
-		#self.status = STATUS_DISCONNECTED
 		self.stoned = 0
 		self.trynick = 0
 		
@@ -167,6 +164,7 @@ class WrapConn:
 		for chan in self.channels:
 			self.conn.join(chan)
 	
+	# -----------------------------------------------------------------------
 	# Stuff outgoing data into our queues
 	def privmsg(self, target, text):
 		lines = self.__Split_Text(text)
@@ -181,6 +179,7 @@ class WrapConn:
 	def ctcp_reply(self, target, text):
 		self.__ctcp_reply.append([target, text])
 	
+	# -----------------------------------------------------------------------
 	# Split text into lines if it's too long
 	def __Split_Text(self, text):
 		# If it's not too long, give it back
