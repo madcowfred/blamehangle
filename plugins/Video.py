@@ -203,6 +203,8 @@ class Video(Plugin):
 	# ---------------------------------------------------------------------------
 	# Parse a TVTome search results page
 	def __TVTome(self, trigger, page_text):
+		findme = trigger.match.group(1).lower()
+		
 		# It's not a search result
 		if page_text.find('Show search for:') < 0:
 			self.__TVTome_Show(trigger, page_text)
@@ -216,23 +218,42 @@ class Video(Plugin):
 				return
 			
 			# Find the shows
-			shows = FindChunks(chunk, '">', '</a>')
+			shows = FindChunks(chunk, '<a href="', '</a>')
 			if shows:
+				exact = None
 				parts = []
+				
 				for show in shows:
+					try:
+						path, show = show.split('">')
+					except ValueError:
+						continue
+					
 					part = '\02[\02%s\02]\02' % (show)
 					parts.append(part)
+					
+					if show.lower() == findme:
+						exact = (path, show)
 				
 				if len(parts) > 10:
 					replytext = 'Found \02%d\02 results, first 10: %s' % (len(parts), ' '.join(parts[:10]))
 				else:
 					replytext = 'Found \02%d\02 results: %s' % (len(parts), ' '.join(parts))
+				
+				# If we found an exact match, go fetch it now
+				if exact is not None:
+					replytext += " :: Using '%s'" % (exact[1])
+					
+					url = 'http://www.tvtome.com' + exact[0]
+					self.urlRequest(trigger, self.__TVTome_Show, url)
 			
 			else:
 				replytext = 'No results found.'
 			
 			self.sendReply(trigger, replytext)
 	
+	# ---------------------------------------------------------------------------
+	# Parse a TVTome show info page
 	def __TVTome_Show(self, trigger, page_text):
 		# Find the show title
 		show_title = FindChunk(page_text, '<h1>', '</h1>')
