@@ -17,6 +17,13 @@ import socket
 _command_regexp = re.compile(r'^(:(?P<prefix>[^ ]+) +)?(?P<command>[^ ]+)( *(?P<argument> .+))?')
 # Some IRC servers suck, and can't follow the RFCs. We get to deal with it.
 _linesep_regexp = re.compile(r'\r?\n')
+# Status stuff
+
+# ---------------------------------------------------------------------------
+# Some basic status constants
+STATUS_DISCONNECTED = 'Disconnected'
+STATUS_CONNECTING = 'Connecting'
+STATUS_CONNECTED = 'Connected'
 
 # ---------------------------------------------------------------------------
 # Shiny way to look at an event
@@ -52,6 +59,8 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	def __init__(self):
 		asyncore.dispatcher_with_send.__init__(self)
 		
+		self.status = STATUS_DISCONNECTED
+		
 		# stuff we need to keep track of
 		self.__handlers = []
 		self.__read_buf = ''
@@ -79,7 +88,11 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	# -----------------------------------------------------------------------
 	# We've managed to connect
 	def handle_connect(self):
-		# on connect stuff here
+		self.status = STATUS_CONNECTED
+		
+		# Log on...
+		self.nick(self.nickname)
+		self.user(self.username, self.localhost, self.server, self.ircname)
 	
 	# The connection got closed somehow
 	def handle_close(self):
@@ -176,6 +189,11 @@ class asyncIRC(asyncore.dispatcher_with_send):
 			self.connect((host, port))
 		except socket.gaierror, msg:
 			self.failed(msg)
+		else:
+			self.status = STATUS_CONNECTING
+	
+	def disconnect(self):
+		# FIXME - do stuff here
 	
 	def join(self, channel, key=''):
 		if key:
