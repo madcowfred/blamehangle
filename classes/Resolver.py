@@ -26,7 +26,9 @@ IPV4_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 
 class Resolver(Child):
 	def setup(self):
-		self.DNSCache = SimpleCacheDict(1)
+		self.DNSCache = self.loadPickle('.resolver_cache')
+		if self.DNSCache is None:
+			self.DNSCache = SimpleCacheDict(1)
 		self.Requests = Queue(0)
 		self.Threads = []
 		
@@ -38,9 +40,11 @@ class Resolver(Child):
 		self.DNSCache.cachesecs = self.Options['cache_time'] * 60
 		self.DNSCache.expire()
 	
-	# Make sure we stop our threads at shutdown time
 	def shutdown(self, message):
 		self.__Stop_Threads()
+		
+		self.DNSCache.expire()
+		self.savePickle('.resolver_cache', self.DNSCache)
 	
 	# We start our threads here to allow useful early shutdown
 	def run_once(self):
