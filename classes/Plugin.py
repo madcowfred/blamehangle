@@ -18,13 +18,23 @@ class Plugin(Child):
 	def __init__(self, *args, **kwargs):
 		Child.__init__(self, *args, **kwargs)
 		
+		self.__Events = {}
 		self.__Help = {}
 	
 	def _message_PLUGIN_REGISTER(self, message):
 		raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self.__name
 	
+	# Default trigger handler, looks for _trigger_EVENT_NAME
 	def _message_PLUGIN_TRIGGER(self, message):
-		raise Exception, 'need to overwrite PLUGIN_TRIGGER message handler in %s' % self.__name
+		trigger = message.data
+		method_name = '_trigger_%s' % trigger.name
+		
+		if hasattr(self, method_name):
+			getattr(self, method_name)(trigger)
+		else:
+			raise Exception, 'either make %s or overwrite _message_PLUGIN_TRIGGER' % method_name
+		
+		#raise Exception, 'need to overwrite PLUGIN_TRIGGER message handler in %s' % self.__name
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
@@ -42,8 +52,22 @@ class Plugin(Child):
 		reply = PluginReply(trigger, replytext, process)
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
-	# -----------------------------------------------------------------------
+	def register(self, *events):
+		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)
 	
+	# -----------------------------------------------------------------------
+	# Event stuff
+	def setTextEvent(self, name, regexp, *IRCTypes):
+		for IRCType in IRCTypes:
+			event = PluginTextEvent(name, IRCType, regexp)
+			ident = '__%s__%s__' % (name, IRCType)
+			self.__Events[ident] = event
+	
+	def registerEvents(self):
+		self.sendMessage('PluginHandler', PLUGIN_REGISTER, self.__Events.values())
+	
+	# -----------------------------------------------------------------------
+	# Help stuff
 	def setHelp(self, topic, command, help_text):
 		self.__Help.setdefault(topic, {})[command] = help_text
 	
@@ -52,9 +76,6 @@ class Plugin(Child):
 	
 	def unregisterHelp(self):
 		self.sendMessage('Helper', UNSET_HELP, self.__Help)
-	
-	def register(self, *events):
-		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)
 
 # ---------------------------------------------------------------------------
 
