@@ -118,17 +118,17 @@ class SmartyPants(Plugin):
 	"""
 	
 	#------------------------------------------------------------------------
-
+	
 	def setup(self):
 		self.__users = FactoidUserList()
 		self.__Setup_Users()
-
+		
 		self.__start_time = time.asctime()
 		self.__requests = 0
 		self.__dunnos = 0
 		self.__sets = 0
 		self.__modifys = 0
-
+	
 	def _message_PLUGIN_REGISTER(self, message):
 		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE, exclusive=1)
 		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_RE, exclusive=1)
@@ -176,7 +176,7 @@ class SmartyPants(Plugin):
 			else:
 				data = [trigger, (GET_QUERY, [name])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone wants to add to the definition of a factoid
 		elif trigger.name == FACT_ALSO:
 			name = trigger.match.group('name')
@@ -192,19 +192,19 @@ class SmartyPants(Plugin):
 			name = trigger.match.group('name')
 			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone wants to do a search/replace on a factoid
 		elif trigger.name == FACT_REPLACE:
 			name = trigger.match.group('name')
 			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone wants to lock a factoid
 		elif trigger.name == FACT_LOCK:
 			name = trigger.match.group('name')
 			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone wants to unlock a factoid
 		elif trigger.name == FACT_UNLOCK:
 			name = trigger.match.group('name')
@@ -216,18 +216,18 @@ class SmartyPants(Plugin):
 			name = trigger.match.group('name')
 			data = [trigger, (INFO_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone asked for our runtime status
 		elif trigger.name == FACT_STATUS:
 			data = [trigger, (STATUS_QUERY, [])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone asked to search by key
 		elif trigger.name == FACT_LISTKEYS:
 			name = trigger.match.group('name')
 			data = [trigger, (LISTKEYS_QUERY % name, [])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+		
 		# Someone asked to search by value
 		elif trigger.name == FACT_LISTVALUES:
 			name = trigger.match.group('name')
