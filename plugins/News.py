@@ -469,7 +469,7 @@ class News(Plugin):
 			description = item.get('description', '')
 			
 			article_title = '%s: %s' % (feed_title, item_title)
-			data = [item_title, link, description, time.time()]
+			data = [article_title, link, description, time.time()]
 			articles.append(data)
 		
 		# Go for it!
