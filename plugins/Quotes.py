@@ -27,17 +27,15 @@ class Quotes(Plugin):
 		self.__to = self.Config.get('Quotes', 'mail_to')
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		addquote_dir = PluginTextEvent(QUOTES_ADDQUOTE, IRCT_PUBLIC_D, ADDQUOTE_RE)
-		addquote_msg = PluginTextEvent(QUOTES_ADDQUOTE, IRCT_MSG, ADDQUOTE_RE)
-		self.register(addquote_dir, addquote_msg)
+		self.setTextEvent(QUOTES_ADDQUOTE, ADDQUOTE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('quotes', 'addquote', ADDQUOTE_HELP)
 		self.registerHelp()
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == QUOTES_ADDQUOTE:
+	# -----------------------------------------------------------------------
+	
+	def _trigger_QUOTES_ADDQUOTE(self, trigger):
 			# Build the message
 			lines = []
 			
@@ -71,3 +69,5 @@ class Quotes(Plugin):
 				replytext = 'Mail sent successfully'
 			
 			self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------
