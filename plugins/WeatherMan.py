@@ -175,6 +175,10 @@ class WeatherMan(Plugin):
 					
 					data['forecast'] = ' - '.join(fcs)
 				
+				# Eat the degrees
+				for key in data.keys():
+					data[key] = data[key].replace('°', '')
+				
 				
 				chunks = []
 				
@@ -199,18 +203,6 @@ class WeatherMan(Plugin):
 					self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
-
-def StripHTML(text):
-	# Remove all HTML tags
-	mangled = re.sub(r'(?s)<.*?>', '', text)
-	# Eat escaped bits and pieces
-	mangled = re.sub(r'\&.*?\;', '', mangled)
-	# Eat annoying degrees!
-	mangled = re.sub('°', '', mangled)
-	# Split into lines that aren't empty
-	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
-	# Return!
-	return lines
 
 def CandF(f_val):
 	return '%s°C (%s°F)' % (ToCelsius(f_val), f_val)

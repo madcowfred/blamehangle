@@ -9,6 +9,11 @@ import os, re, time, types
 from classes.Constants import REPLY_URL
 
 # ---------------------------------------------------------------------------
+# An empty class!
+class EmptyClass:
+	pass
+
+# ---------------------------------------------------------------------------
 # Generic Message object that gets passed around the queues.
 # ---------------------------------------------------------------------------
 class Message:
@@ -147,3 +152,16 @@ def FindChunk(text, start, end):
 	
 	# Return!
 	return chunk
+
+# Strip HTML tags from text and split it into non-empty lines
+def StripHTML(text):
+	# Remove any half tags at the start
+	mangled = re.sub(r'^[^<]+>', '', text)
+	# Remove all HTML tags
+	mangled = re.sub(r'(?s)<.*?>', '', mangled)
+	# Eat escaped bits and pieces
+	mangled = re.sub(r'\&.*?\;', '', mangled)
+	# Split into lines that aren't empty
+	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
+	# Return!
+	return lines
