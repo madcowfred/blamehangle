@@ -181,11 +181,12 @@ class SmartyPants(Plugin):
 				IRCTypes = (IRCT_PUBLIC,),
 				help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic.'),
 			)
-		# And the rest are normalish
 		self.addTextEvent(
 			method = self.__Query_Also,
+			priority = 2,
 			regexp = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$'),
 		)
+		# And the rest are normalish
 		self.addTextEvent(
 			method = self.__Query_Raw,
 			regexp = re.compile(r'^rawfactoid (?P<name>.+?)$'),
