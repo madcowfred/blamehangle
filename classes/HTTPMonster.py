@@ -250,9 +250,7 @@ class async_http(buffered_dispatcher):
 							chunks = line.split(None, 1)
 							if len(chunks) != 2:
 								break
-							newurl = chunks[1]
-							if not newurl.startswith('http://'):
-								newurl = 'http://%s:%s%s' % (self.host, self.port, newurl)
+							newurl = urlparse.urljoin(self.url, chunks[1])
 							
 							if newurl in self.seen:
 								self.failed('Redirection loop encountered!')
