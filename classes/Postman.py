@@ -134,6 +134,7 @@ class Postman:
 		except ImportError, msg:
 			tolog = "Error while importing plugin '%s': %s" % (name, msg)
 			self.__Log(LOG_WARNING, tolog)
+			self.__Plugin_Unload(name)
 		
 		except:
 			self.__Log_Exception(dontcrash=1)
