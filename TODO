@@ -1,18 +1,9 @@
 critical:
-	* Testing to make sure the new threading code for HTTPMonster and
-	  DataMonkey actually works
 
 important:
 	* convert db.dump once the bot is ready for it, and we have a newer dump
 	  (both + dene) -- do we really need a newer dump? it's not like people
 	  have been setting new stuff on efnet
-	* Add a description/summary column to the News table, and change things so
-	  that the verbose parsers are always used. The verbose option should then
-	  just toggle displaying the contents of this column. News search should
-	  always display the summary with the URL if a single match is found. This
-	  will also fix the lame behaviour of storing the description/summary in
-	  the url column like we do currently.. and it gets chopped at 255
-	  characters. (zhar)
 
 not important but more than whatever:
 	* stuff from sey's emails (anyone)
@@ -20,13 +11,10 @@ not important but more than whatever:
 	* make Children.urlQuery(), much like Children.dbQuery() .. and go through
 	  everything and change all the sendMessage('HTTPMonster, blahblah) things
 	  to use urlQuery() (anyone)
-	* Do something about a <reply> or <action> in the middle of a factoid,
-	  maybe? (anyone)
 	* dict plugin (anyone)
+	* <null> as a factoid definition to make the bot ignore that factoid
 
 whatever:
-	* other plugins from Pinky that we care about (stuff like the quotes can
-	  fuck off) (anyone)
 	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
 	* Speaking of random text spammer, random factoid spam? (anyone)
 	* testing! :) (anyone)
