@@ -88,9 +88,6 @@ class SamplePlugin(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
 		# the message from PluginHandler -> our plugin does not contain any
 		# data, so we don't need to worry about the contents of it here.
-		#
-		# XXX: this won't work until PluginHandler can turn strings into conns.
-		# .. this will cause a blamehangle crash due to the timed event.
 		reply = [
 			(IRCT_MSG, self.SAMPLE_RE1, [0], self.SAMPLE_TOKEN1),
 			(IRCT_PUBLIC, self.SAMPLE_RE2, ['some_name'], self.SAMPLE_TOKEN2),
@@ -125,7 +122,7 @@ class SamplePlugin(Plugin):
 	#	* userinfo is a userinfo object describing the instigator of the
 	#	IRC event that we matched against. Ignored for TIMED (will be None)
 	def _message_PLUGIN_TRIGGER(self, message):
-		[text, token, conn, IRCtype, target, userinfo] = message.data
+		text, token, conn, IRCtype, target, userinfo = message.data
 
 		# Check which event this trigger came from
 		if token == self.SAMPLE_TOKEN1:

@@ -305,7 +305,8 @@ class ChatterGizmo(Child):
 	
 	# Return the conn object for <foo> network
 	def _message_REQ_CONN(self, message):
-		network = message.data.lower()
+		netname, returnme = message.data
+		network = netname.lower()
 		found = None
 		
 		for conn, wrap in self.Conns.items():
@@ -313,4 +314,4 @@ class ChatterGizmo(Child):
 				found = conn
 				break
 		
-		self.sendMessage(message.source, REPLY_CONN, found)
+		self.sendMessage(message.source, REPLY_CONN, [found, returnme])

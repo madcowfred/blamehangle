@@ -139,15 +139,22 @@ class PluginHandler(Child):
 			# We need to handle TIMED events differently, since they have a
 			# dictionary describing the intended targets for the message on
 			# each network
-			for network_name in target:
-				conn = self.__getConn(network_name)
-				for target in targets[network_name]:
-					self.privmsg(conn, target, text)
+			for name in target:
+				self.sendMessage('ChatterGizmo', REQ_CONN, [name, [name, target, text]])
+
 		else:
 			# all other types are responded to with a /msg
 			self.privmsg(conn, userinfo.nick, text)
 	
 	#------------------------------------------------------------------------		
+	def _message_REPLY_CONN(self, message):
+		conn, [name, targets, text] = message.data
+
+		for target in targets[name]:
+			self.privmsg(conn, target, text)
+	
+	# -----------------------------------------------------------------------
+
 	def __getRelevantStore(self, type):
 		if type == IRCT_PUBLIC:
 			return self.__PUBLIC_Events
