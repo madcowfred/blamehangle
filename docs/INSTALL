@@ -1,7 +1,7 @@
 ------------
 Requirements
 ------------
-* Python 2.2.x or greater
+* Python 2.3.x or greater
 * For some plugins, you will need a database of some kind. We currently support
   MySQL, Postgres and SQLite via the MySQLdb, PyGreSQL and PySQLite modules
   respectively.
@@ -22,24 +22,14 @@ Installation
  3. Copy 'sample.conf' to a new file, and open it up. There are quite a few
     important options to set here, so follow the comments and get to it :)
     Make sure you change the 'plugin/config_dir' option to the name you chose
-    for newname in the previous step.
+    for newname in the first step.
     
-    Read docs/PLUGINS to see a current list of plugins and what they can do.
+    Read docs/Plugins.html to see a current list of plugins and what they can do.
  
- 4. For each plugin you want to use, you may need to create a database table.
-    Look in the 'schemas/' directory for the CREATE commands. For MySQL, you can
-    use:
-    
-    $ mysql -u user -p database < SomePlugin.sql
-    
-    And for PostgreSQL:
-    
-    $ psql database < SomePlugin.sql
-    
-    And for SQLite:
-    
-    $ sqlite my.db < SomePlugin.sql
- 
- 5. Start the bot (preferably under screen):
+ 4. Start the bot (preferably under screen):
     
     $ ./start-blamehangle new.conf
+  
+ 5. Since the above command will restart the bot if it crashes/is shut down, you'll
+    need to create a file called "STOP.new" in the blamehangle directory (for the
+    above example), then press Ctrl-C.
