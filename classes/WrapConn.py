@@ -147,20 +147,13 @@ class WrapConn:
 			
 			# The nick we just tried is in use, ruh-roh
 			if nick == self.nicks[self.trynick]:
-				
-				# If we have some more nicks to try, do that
-				if len(self.nicks) > 1:
-					self.trynick += 1
-					if self.trynick >= len(self.nicks):
-						self.trynick = 0
-						gennick = 1
-					else:
-						newnick = self.nicks[self.trynick]
-				else:
+				self.trynick = (self.trynick + 1) % len(self.nicks)
+				if self.trynick == 0:
 					gennick = 1
-			
+				else:
+					newnick = self.nicks[self.trynick]
 			# We probably tried a made up one, try again
-			elif nick not in self.nicks:
+			else:
 				gennick = 1
 			
 			# Generate a silly new nick
@@ -168,24 +161,18 @@ class WrapConn:
 				# If it was already a generated nick, time to try a bit
 				# of randomness.
 				if nick not in self.nicks:
-					print 'baa'
-					newnick = nick[:6]
+					newnick = nick[:7]
 					
 					# 0-9 = 48-57, a-z = 97-122
-					for i in range(9 - len(newnick)):
+					for i in range(2):
 						n = random.randint(0, 1)
 						if n == 0:
 							newnick += chr(random.randint(48, 57))
 						elif n == 1:
 							newnick += chr(random.randint(97, 122))
-				
-				# Just try sticking a dash on the end (probably)
+				# Just try sticking a dash on the end
 				else:
-					newnick = self.nicks[0]
-					if len(nick) < 9:
-						newnick += '-'
-					else:
-						newnick[-1] = '-'
+					newnick = self.nicks[0][:8] + '-'
 			
 			# And off we go
 			self.last_nick = time.time()
