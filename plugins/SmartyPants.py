@@ -689,7 +689,7 @@ class SmartyPants(Plugin):
 						self.sendReply(trigger, replytext)
 						return
 					else:
-						replytext = "This factoid is locked, unlock it before deleting"
+						replytext = "The factoid '%s' is locked, unlock it before deleting" % name
 						self.sendReply(trigger, replytext)
 						return
 
