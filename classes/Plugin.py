@@ -1,11 +1,14 @@
 #----------------------------------------------------------------------------
 # $Id$
 #----------------------------------------------------------------------------
-# This contains the superclass for all plugins
-#
-# I'll make this more descriptive when there is actually something to
-# describe
-#----------------------------------------------------------------------------
+
+"""
+This file contains the main Plugin class, which all plugins are derived from.
+It tries to hide a lot of our internal message passing architecture from the
+plugin developer, and generally make life easier.
+
+It also contains the various Triggers and Events that Plugins rely on.
+"""
 
 import cPickle
 import os
@@ -117,7 +120,7 @@ class Plugin(Child):
 		# OK!
 		if methname is None:
 			return
-	
+		
 		method = self._Get_Method(methname)
 		if method is not None:
 			try:
