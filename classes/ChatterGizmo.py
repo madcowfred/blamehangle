@@ -180,7 +180,7 @@ class ChatterGizmo(Child):
 			
 			# Create the IRC connection
 			conn = asyncIRC.asyncIRC()
-			self.Conns[conn.connid] = WrapConn(self, network, conn, options)
+			self.Conns[conn.connid] = WrapConn(self, section, conn, options)
 			
 			# Register our event handler
 			conn.register(self._event_handler)
