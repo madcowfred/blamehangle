@@ -16,12 +16,6 @@ import sys
 import time
 import urlparse
 
-#from Queue import *
-#from thread import start_new_thread
-#from threading import *
-# we have our own version which doesn't mangle our User-Agent
-#from classes import urllib2
-
 from classes.Children import Child
 from classes.Constants import *
 from classes.Common import *
@@ -42,10 +36,9 @@ class HTTPMonster(Child):
 	"""
 	
 	def setup(self):
-		self.rehash()
-		
 		self.urls = []
-		#self.threads = []
+		
+		self.rehash()
 	
 	def rehash(self):
 		# Set up our connection limit
@@ -59,36 +52,6 @@ class HTTPMonster(Child):
 			self.user_agent = self.Config.get('HTTP', 'useragent')
 		else:
 			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.5) Gecko/20031015 Firebird/0.7"
-		
-		#self.__stop_threads()
-		#self.setup()
-		#self.run_once()
-	
-	def noshutdown(self, message):
-		self.__stop_threads()
-	
-	def norun_once(self):
-		for i in range(self.conns):
-			the_thread = Thread(target=URLThread, args=(self,i))
-			self.threads.append([the_thread,0])
-			the_thread.start()
-			
-			tolog = "Started URL thread: %s" % the_thread.getName()
-			self.putlog(LOG_DEBUG, tolog)
-	
-	def __stop_threads(self):
-		_sleep = time.sleep
-		for thread in self.threads:
-			thread[1] = 1
-		#for i in range(len(self.threads)):
-		#	self.threads[i][1] = 1
-		
-		# wait until all our threads have exited
-		while [t for t,s in self.threads if t.isAlive()]:
-			_sleep(0.25)
-		
-		tolog = "All URL threads stopped"
-		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	
@@ -105,8 +68,6 @@ class HTTPMonster(Child):
 			async_http(self, message, {})
 		else:
 			self.urls.append(message)
-		
-		#start_new_thread(URLThread, (self, message))
 
 # ---------------------------------------------------------------------------
 
@@ -254,102 +215,3 @@ class async_http(asyncore.dispatcher_with_send):
 		del self.parent, self.message, self.seen, self.returnme, self.url
 		
 		self.close()
-
-# ---------------------------------------------------------------------------
-
-def URLThread(parent, myindex):
-	_select = select.select
-	_sleep = time.sleep
-	_time = time.time
-	
-	while 1:
-		# check if we have been asked to die
-		if parent.threads[myindex][1]:
-			return
-		
-		# check if there is a url waiting for us to go and get
-		try:
-			message = parent.urls.get_nowait()
-		
-		# if not, take a nap
-		except Empty:
-			_sleep(0.25)
-			continue
-		
-		# we have something to do
-		returnme, url = message.data
-		
-		tolog = 'Fetching URL: %s' % url
-		parent.putlog(LOG_DEBUG, tolog)
-		
-		last_read = _time()
-		pagetext = ''
-		
-		# get the page
-		request = urllib2.Request(url)
-		request.add_header('User-Agent', parent.user_agent)
-		request.add_header('Connection', 'close')
-		# Not sure if we should use these
-		#request.add_header("If-Modified-Since", format_http_date(modified))
-		#request.add_header("Accept-encoding", "gzip")
-		
-		try:
-			the_page = urllib2.urlopen(request)
-			
-			while 1:
-				try:
-					can_read = _select([the_page], [], [], 1)[0]
-					if can_read:
-						data = the_page.read(1024)
-						if len(data) == 0:
-							break
-					
-					elif (_time() - last_read >= 15):
-						raise Exception, 'transfer timed out'
-					
-					else:
-						print "bok"
-				
-				except IOError:
-					# Ignore IOErrors, they seem to just mean we're finished
-					pass
-				
-				else:
-					pagetext += data
-					last_read = _time()
-					_sleep(0.05)
-		
-		except Exception, why:
-			# Something bad happened
-			tolog = "Error while trying to fetch url: %s - %s" % (url, why)
-			parent.putlog(LOG_ALWAYS, tolog)
-		
-		
-		# XXX This shouldn't be needed, but I suspect these are hanging
-		# around and not getting collected for whatever reason
-		try:
-			if the_page.fp:
-				the_page.close()
-			del the_page
-		except:
-			pass
-		
-		
-		# We have some data, might as well process it?
-		if len(pagetext) > 0:
-			# Dodgy HTML fix up time
-			m = dodgy_html_check(pagetext)
-			while m:
-				pre = pagetext[:m.start()]
-				post = pagetext[m.end():]
-				start, end = m.span('href')
-				fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
-				pagetext = pre + 'href=' + fixed + post
-				m = dodgy_html_check(pagetext)
-			
-			tolog = 'Finished fetching URL: %s - %d bytes' % (url, len(pagetext))
-			parent.putlog(LOG_DEBUG, tolog)
-			
-			data = [returnme, pagetext]
-			message = Message('HTTPMonster', message.source, REPLY_URL, data)
-			parent.outQueue.append(message)
