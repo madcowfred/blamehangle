@@ -171,7 +171,7 @@ class SmartyPants(Plugin):
 			method = self.__Query_Set,
 			regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
 			priority = 1,
-			help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic."'),
+			help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic.'),
 		)
 		if self.__set_pub:
 			self.addTextEvent(
@@ -179,7 +179,7 @@ class SmartyPants(Plugin):
 				regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
 				priority = 1,
 				IRCTypes = (IRCT_PUBLIC,),
-				help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic."'),
+				help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic.'),
 			)
 		# And the rest are normalish
 		self.addTextEvent(
