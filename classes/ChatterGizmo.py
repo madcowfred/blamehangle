@@ -6,10 +6,8 @@
 
 import re
 import time
-import types
 
-from classes import asyncIRC
-
+from classes.asyncIRC import asyncIRC
 from classes.Children import Child
 from classes.Constants import *
 from classes.Userlist import Userlist
@@ -32,32 +30,33 @@ class ChatterGizmo(Child):
 		self.__Handlers = {}
 		self.__Rejoins = []
 		
-		# Set up our public commands, if there are any
-		self.__Setup_Public()
+		self.rehash()
 	
-	# The bot has been rehashed.. re-load the global users info, and check if
-	# there are any changes to the servers/channels we have been requested to
-	# sit in
 	def rehash(self):
+		#self.use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
+		#self.dns_order = self.Config.get('DNS', 'irc_order').strip().split()
+		
 		# Set up our public commands, if there are any
-		self.__Setup_Public()
+		self.__Public_Exact = {}
+		self.__Public_Param = {}
 		
-		# Get a list of our old networks
-		old_nets = []
-		for conn in self.Conns.keys():
-			data = (conn, self.Conns[conn].network)
-			old_nets.append(data)
+		for option in self.Config.options('public'):
+			command, rewrite = self.Config.get('public', option).split(None, 1)
+			
+			if option.startswith('exact'):
+				self.__Public_Exact[command] = rewrite
+			elif option.startswith('param'):
+				self.__Public_Param[command] = rewrite
 		
-		# Get a list of our new networks
+		# Get a list of our old and new networks
+		old_nets = [(k, v.network) for k, v in self.Conns.items()]
 		new_nets = [s for s in self.Config.sections() if s.startswith('network.')]
 		
-		# Work out which networks are new and which are old (heh)
 		for connid, network in old_nets:
 			conn = self.Conns[connid].conn
 			
-			if [section for section in new_nets if section == network]:
-				# we are meant to stay on this network, check if we need to
-				# join or part any channels
+			# Update any maybe changed ones
+			if network in new_nets:
 				old_chans = self.Conns[connid].users.channels()
 				new_chans = self.Config.get(network, 'channels').split()
 				
@@ -73,16 +72,25 @@ class ChatterGizmo(Child):
 			else:
 				self.Conns[connid].requested_quit = 1
 				
-				if self.Conns[connid].conn.status != STATUS_DISCONNECTED:
-					self.Conns[connid].conn.quit('So long, and thanks for all the fish.')
-				
-				else:
+				if self.Conns[connid].conn.status == STATUS_DISCONNECTED:
 					self._handle_disconnect(conn, None)
+				else:
+					self.Conns[connid].conn.quit('So long, and thanks for all the fish.')
 		
 		# Connect to any newly added networks
 		for section in new_nets:
 			if not [network for conn, network in old_nets if network == section]:
-				self.connect(section=section)
+				options = self.OptionsDict(section)
+				
+				# Create the IRC connection
+				conn = asyncIRC()
+				self.Conns[conn.connid] = WrapConn(self, section, conn, options)
+				
+				# Register our event handler
+				conn.register(self._event_handler)
+				
+				# And connect
+				self.Conns[conn.connid].connect()
 	
 	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
@@ -93,30 +101,6 @@ class ChatterGizmo(Child):
 		self.stopping = 1
 	
 	# -----------------------------------------------------------------------
-	# Set up any public triggers we might have
-	def __Setup_Public(self):
-		self.__Public_Exact = {}
-		self.__Public_Param = {}
-		
-		for option in self.Config.options('public'):
-			command, rewrite = self.Config.get('public', option).split(None, 1)
-			
-			# An 'exact' command
-			if option.startswith('exact'):
-				self.__Public_Exact[command] = rewrite
-				#tolog = "Added exact rewrite '%s' --> '%s'" % (command, rewrite)
-			
-			# A 'param' command
-			elif option.startswith('param'):
-				self.__Public_Param[command] = rewrite
-				#tolog = "Added param rewrite '%s' --> '%s'" % (command, rewrite)
-			
-			#self.putlog(LOG_DEBUG, tolog)
-	
-	# -----------------------------------------------------------------------
-	
-	def run_once(self):
-		self.connect()
 	
 	def run_sometimes(self, currtime):
 		# Stop if we're all done
@@ -144,48 +128,6 @@ class ChatterGizmo(Child):
 		# Do other stuff here
 		for conn, wrap in self.Conns.items():
 			wrap.run_sometimes(currtime)
-	
-	# -----------------------------------------------------------------------
-	
-	def connect(self, section=None):
-		if section:
-			options = {}
-			for option in self.Config.options(section):
-				options[option] = self.Config.get(section, option)
-			
-			# Create the IRC connection
-			conn = asyncIRC.asyncIRC()
-			self.Conns[conn.connid] = WrapConn(self, section, conn, options)
-			
-			# Register our event handler
-			conn.register(self._event_handler)
-			
-			# And connect
-			self.Conns[conn.connid].connect()
-		
-		else:
-			networks = []
-			for section in self.Config.sections():
-				if section.startswith('network.'):
-					networks.append(section)
-			
-			if not networks:
-				raise Exception, 'No IRC networks defined in config file'
-			
-			for network in networks:
-				options = {}
-				for option in self.Config.options(network):
-					options[option] = self.Config.get(network, option)
-				
-				# Create the IRC connection
-				conn = asyncIRC.asyncIRC()
-				self.Conns[conn.connid] = WrapConn(self, network, conn, options)
-				
-				# Register our event handler
-				conn.register(self._event_handler)
-				
-				# And connect
-				self.Conns[conn.connid].connect()
 	
 	# -----------------------------------------------------------------------
 	
@@ -598,13 +540,13 @@ class ChatterGizmo(Child):
 	def _message_REQ_PRIVMSG(self, message):
 		conn, target, text = message.data
 		
-		if isinstance(conn, asyncIRC.asyncIRC):
+		if isinstance(conn, asyncIRC):
 			self.privmsg(conn.connid, target, text)
 		
 		elif isinstance(conn, WrapConn):
 			self.privmsg(conn.conn.connid, target, text)
 		
-		elif type(conn) == types.DictType:
+		elif isinstance(conn, dict):
 			for network, targets in conn.items():
 				net = network.lower()
 				for wrap in self.Conns.values():
