@@ -28,8 +28,8 @@ TIME_CHECK = "TIME_CHECK"
 #+-------+---------------------+
 # so I for the following
 #CREATE TABLE news (
-#	title char(255) NOT NULL default '',
-#	time bigint(20) default NULL,
+#	title varchar(255) NOT NULL default '',
+#	time bigint UNSIGNED default NULL,
 #	PRIMARY KEY (title)
 #	TYPE=MyISAM;
 
