@@ -4,6 +4,7 @@
 
 import re
 import time
+import urllib
 import urlparse
 
 from classes.Common import *
@@ -87,6 +88,8 @@ class TorrentScraper(Plugin):
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
 			
+			t4
+			
 			# Yuck
 			for chunk in chunks:
 				# Get the bits we need
@@ -108,6 +111,8 @@ class TorrentScraper(Plugin):
 			# Parse it with BeautifulSoup
 			soup = BeautifulSoup()
 			soup.feed(resp.data)
+			
+			t4
 			
 			# Find all of the torrent URLs
 			links = soup('a', {'href': '%.torrent%'})
@@ -131,7 +136,7 @@ class TorrentScraper(Plugin):
 				# Keep it for a bit
 				items[newurl] = (now, newurl, lines[0])
 		
-		t4 = time.time()
+		t5 = time.time()
 		
 		# If we found nothing, bug out
 		if items == {}:
@@ -143,8 +148,6 @@ class TorrentScraper(Plugin):
 		items = items.values()
 		items.sort()
 		
-		print items
-		
 		# Build our query
 		trigger.items = items
 		
@@ -153,7 +156,7 @@ class TorrentScraper(Plugin):
 		
 		query = SELECT_QUERY % (querybit, querybit)
 		
-		print 'Page parsed: %.3fs %.3fs %.3fs %.3fs' % (time.time() - t4, t4 - t3, t3 - t2, t2 - t1)
+		print 'Page parsed: %.3fs %.3fs %.3fs %.3fs %.3fs' % (time.time() - t4, t4 - t3, t3 - t2, t2 - t1)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
