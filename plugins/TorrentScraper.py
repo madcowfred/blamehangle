@@ -15,7 +15,7 @@ from classes.Plugin import *
 SCRAPE_TIMER = 'SCRAPE_TIMER'
 RSS_TIMER = 'RSS_TIMER'
 
-SELECT_QUERY = "SELECT url, description FROM torrents WHERE description IN (%s)"
+SELECT_QUERY = "SELECT url, description FROM torrents WHERE url IN (%s) OR description IN (%s)"
 RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
 
@@ -105,10 +105,10 @@ class TorrentScraper(Plugin):
 		# Build our query
 		trigger.items = items
 		
-		args = [item[2] for item in items]
-		querybit = ', '.join(['%s'] * len(args))
+		args = [item[1] for item in items] + [item[2] for item in items]
+		querybit = ', '.join(['%s'] * len(items))
 		
-		query = SELECT_QUERY % querybit
+		query = SELECT_QUERY % (querybit, querybit)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
@@ -118,7 +118,6 @@ class TorrentScraper(Plugin):
 	def __DB_Check(self, trigger, result):
 		# Error!
 		if result is None:
-			self.putlog(LOG_WARNING, '__DB_Check: A DB error occurred!')
 			return
 		
 		items = trigger.items
