@@ -6,6 +6,13 @@ important:
 	* convert db.dump once the bot is ready for it, and we have a newer dump
 	  (both + dene) -- do we really need a newer dump? it's not like people
 	  have been setting new stuff on efnet
+	* Add a description/summary column to the News table, and change things so
+	  that the verbose parsers are always used. The verbose option should then
+	  just toggle displaying the contents of this column. News search should
+	  always display the summary with the URL if a single match is found. This
+	  will also fix the lame behaviour of storing the description/summary in
+	  the url column like we do currently.. and it gets chopped at 255
+	  characters. (zhar)
 
 not important but more than whatever:
 	* stuff from sey's emails (anyone)
