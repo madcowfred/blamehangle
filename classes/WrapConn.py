@@ -14,15 +14,17 @@ from classes.Userlist import Userlist
 from classes.asyncIRC import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
 
 # ---------------------------------------------------------------------------
-
-CONNECT_TIMEOUT = 40
+# How long in seconds to wait for a connect attempt to time out
+CONNECT_TIMEOUT = 30
+# How long in seconds to wait between connect attempts 
 CONNECT_HOLDOFF = 5
-
+# How long in seconds between sending lines to the server
 OUTPUT_INTERVAL = 1
-
+# How long in seconds between 'stoned' checks
 STONED_INTERVAL = 40
+# How stoned must we be to jump server
 STONED_COUNT = 3
-
+# Maximum line length to send to the server
 MAX_LINE_LENGTH = 400
 
 # ---------------------------------------------------------------------------
