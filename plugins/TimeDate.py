@@ -14,7 +14,7 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 TIME_DATE = 'TIME_DATE'
-DATE_HELP = '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Fiji).'
+DATE_HELP = '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'
 DATE_RE = re.compile('^date (?P<city>\w+)$')
 
 # ---------------------------------------------------------------------------
