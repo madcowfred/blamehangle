@@ -64,8 +64,8 @@ class News(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
 		# 2400, 2400, 18000
 		reply = [
-		(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
-		(IRCT_TIMED, 300, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
+		#(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
+		#(IRCT_TIMED, 300, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
 		(IRCT_TIMED, 3600, ANANOVA_TARGETS, NEWS_ANANOVA)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
@@ -217,7 +217,10 @@ class News(Plugin):
 
 # A parser for google's news pages. Looks for the main story titles.
 class Google(HTMLParser):
-	news = {}
+	def __init__(self):
+		HTMLParser.__init__(self)
+		
+		self.news = {}
 	
 	# If we come across an anchor tag, check to see if it has a "title"
 	# attribute. If it does, we have found a news story.
@@ -237,7 +240,10 @@ class Google(HTMLParser):
 
 # A parser for ananov'a news pages. Looks for story titles?
 class Ananova(HTMLParser):
-	news = {}
+	def __init__(self):
+		HTMLParser.__init__(self)
+		
+		self.news = {}
 	
 	def handle_starttag(self, tag, attributes):
 		if tag == 'a':
