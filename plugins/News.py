@@ -155,7 +155,7 @@ class News(Plugin):
 			
 			feed['url'] = self.Config.get(section, 'url')
 			
-			self.RSS_Feeds[name] = (feed)
+			self.RSS_Feeds[name] = feed
 	
 	# -----------------------------------------------------------------------
 	
