@@ -111,6 +111,11 @@ class WeatherMan(Plugin):
 			replytext = "No matches found for '%s'" % trigger.match.group('location')
 			self.sendReply(trigger, replytext)
 		
+		# No useful results
+		elif resp.data.find('Browse for a Location') >= 0:
+			replytext = "No useful matches found for '%s'" % trigger.match.group('location')
+			self.sendReply(trigger, replytext)
+		
 		# More than one result... assume the first one is right
 		elif resp.data.find('location matches') >= 0:
 			m = re.search(r'<a href="(/forecast/\S+\.html)">', resp.data)
