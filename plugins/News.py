@@ -13,14 +13,11 @@ import types
 import urlparse
 
 from random import Random
-#from sgmllib import SGMLParseError
 
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 from classes.SimpleRSSParser import SimpleRSSParser
-
-#from classes.feedparser import FeedParser
 
 # ---------------------------------------------------------------------------
 
@@ -426,8 +423,7 @@ class News(Plugin):
 
 		started = time.time()
 		
-		# We need to leave the ampersands in for feedparser
-		#resp.data = UnquoteHTML(resp.data, 'amp')
+		# Unquote our HTML (not sure if this is stil required)
 		#resp.data = UnquoteHTML(resp.data)
 		
 		# Get our feed info
@@ -436,10 +432,6 @@ class News(Plugin):
 		
 		# Try to parse it
 		try:
-			#r = self.__Parser
-			#r.reset()
-			#r.feed(resp.data)
-			
 			rss = SimpleRSSParser(resp.data)
 		
 		except Exception, msg:
@@ -452,15 +444,10 @@ class News(Plugin):
 		
 		# Work out the feed title
 		feed_title = feed['title'] or rss['feed']['title']
-		#if feed['title']:
-		#	feed_title = feed['title']
-		#else:
-		#	feed_title = r.channel.get('title', name)
 		
 		# Get any articles out of the feed
 		articles = []
 		
-		#for item in r.items[:feed['maximum_new']]:
 		for item in rss['items'][:feed['maximum_new']]:
 			item_title = item.get('title', '<No Title>').strip() or '<No Title>'
 			article_title = '%s: %s' % (feed_title, item_title)
@@ -473,13 +460,7 @@ class News(Plugin):
 					continue
 				article_link = '<No Link>'
 			else:
-				# feedparser gives us weird results sometimes
-				#if type(item['link']) == types.ListType:
-				#	continue
-				#else:
 				article_link = item['link']
-			
-			description = item.get('description', '')
 			
 			# If we have to, see if we can find a real URL
 			if feed['find_real_url']:
@@ -492,12 +473,9 @@ class News(Plugin):
 							break
 			
 			# Get rid of any annoying quoted HTML and eat any tabs
-			#article_title = UnquoteHTML(article_title).replace('\t', ' ')
-			#article_link = UnquoteHTML(article_link)
-			#description = UnquoteHTML(description).replace('\t', ' ')
 			article_title = article_title.replace('\t', ' ')
 			article_link = article_link.replace('\t', ' ')
-			description = description.replace('\t', ' ')
+			description = item.get('description', '').replace('\t', ' ')
 			
 			# Keep the article for later
 			data = [article_title, article_link, description]
