@@ -1,5 +1,5 @@
 
-import classes.irclib
+from classes import irclib
 
 # ---------------------------------------------------------------------------
 
