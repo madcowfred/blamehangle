@@ -9,6 +9,7 @@ want to use.
 
 import random
 import re
+import shlex
 import time
 import types
 import urlparse
@@ -19,15 +20,17 @@ from classes.Plugin import Plugin
 from classes.SimpleRSSParser import SimpleRSSParser
 
 # ---------------------------------------------------------------------------
-
+# Chop titles that are longer than this
 MAX_TITLE_LENGTH = 200
+# Search limit
+SEARCH_LIMIT = 100
 
 # ---------------------------------------------------------------------------
 
 NEWS_QUERY = 'SELECT title, url, description FROM news WHERE title IN (%s) OR url IN (%s)'
 INSERT_QUERY = 'INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)'
 TIME_QUERY = 'DELETE FROM news WHERE added < %s'
-SEARCH_QUERY = 'SELECT title, url, description, added FROM news WHERE %s ORDER BY added DESC'
+SEARCH_QUERY = 'SELECT title, url, description, added FROM news WHERE %s ORDER BY added DESC LIMIT ' + str(SEARCH_LIMIT)
 
 # ---------------------------------------------------------------------------
 
@@ -174,8 +177,8 @@ class News(Plugin):
 		# News search
 		self.addTextEvent(
 			method = self.__Query_Search,
-			regexp = r'^news (?P<search_text>.+)$',
-			help = ('news', "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."),
+			regexp = r'^findnews (?P<findme>.+)$',
+			help = ('findnews', "\02findnews\02 <search terms> : Search through recent news headlines for any stories matching the search terms given. If exactly one story is found, the URL for it will be given."),
 		)
 		# RSS feed commands
 		self.addTextEvent(
@@ -217,34 +220,35 @@ class News(Plugin):
 	
 	# Search for some news
 	def __Query_Search(self, trigger):
-		search_text = trigger.match.group('search_text')
-		if len(search_text) < 4:
-			self.sendReply(trigger, 'Search query is too short (< 4)!')
-		elif len(search_text) > 100:
-			self.sendReply(trigger, 'Search query is too long (> 100!')
+		findme = trigger.match.group('findme')
+		
+		if len(findme) < 3:
+			self.sendReply(trigger, 'Search query is too short (< 3)!')
 		else:
-			search_text = search_text.replace("%", "\%")
+			crits, args = [], []
+			findme = findme.replace('%', '\\%')
 			
-			words = search_text.split()
-			
-			if len(words) > 10:
-				self.sendReply(trigger, 'Search query contains too many words!')
-			
-			else:
-				# We need to build a bit of a crazy query here
-				crits = []
-				args = []
-				
-				for word in words:
-					# DataMonkey will fix this for different DB drivers
+			# Parse the text and build our silly query
+			words = shlex.split(findme)
+			for word in words:
+				# Negative
+				if word.startswith('-'):
+					word = word[1:]
+					crit = 'title NOT ILIKE %s'
+					crits.append(crit)
+				# Positive
+				else:
+					if word.startswith('+'):
+						word = word[1:]
 					crit = 'title ILIKE %s'
 					crits.append(crit)
-					arg = '%%%s%%' % word
-					args.append(arg)
 				
-				# Off we go
-				query = SEARCH_QUERY % (' AND '.join(crits))
-				self.dbQuery(trigger, self.__News_Searched, query, *args)
+				arg = '%%%s%%' % (word)
+				args.append(arg)
+			
+			# Off we go
+			query = SEARCH_QUERY % (' AND '.join(crits))
+			self.dbQuery(trigger, self.__News_Searched, query, *args)
 	
 	# Spam some news
 	def __Spam_News(self, trigger):
@@ -589,7 +593,7 @@ class News(Plugin):
 	# Search for a news article in our news db that matches the partial title
 	# we were given by a user on irc
 	def __News_Searched(self, trigger, result):
-		search_text = trigger.match.group('search_text')
+		findme = trigger.match.group('findme')
 		
 		# Error!
 		if result is None:
@@ -598,21 +602,25 @@ class News(Plugin):
 		
 		# No matches
 		elif result == ():
-			replytext = "No headlines in the last %d days found matching '\02%s\02'" % (self.__old_days, search_text)
+			replytext = "No headlines in the last %d days found matching '\02%s\02'" % (self.__old_days, findme)
 		
 		else:
 			# Some matches
 			if len(result) > 1:
-				# TEMP: fix this once people update their configs
-				search_items = self.News_Options.get('search_items', 5)
+				search_results = self.News_Options.get('search_results', 25)
 				
-				if len(result) > search_items:
-					replytext = 'Found \02%d\02 headlines, first \02%d\02' % (len(result), search_items)
+				if len(result) == SEARCH_LIMIT:
+					results = '\02%d\02 (or more)' % (len(result))
 				else:
-					replytext = 'Found \02%d\02 headlines' % (len(result))
+					results = '\02%d\02' % (len(result))
+				
+				if len(result) > search_results:
+					replytext = 'Found %s headlines, first \02%d\02' % (results, search_results)
+				else:
+					replytext = 'Found %s headlines' % (results)
 				
 				titles = []
-				for row in result[:search_items]:
+				for row in result[:search_results]:
 					title = '\02[\02%s\02]\02' % row['title']
 					titles.append(title)
 				
