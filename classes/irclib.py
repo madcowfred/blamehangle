@@ -409,6 +409,7 @@ class ServerConnection(Connection):
 		self.localhost = socket.gethostname()
 		
 		if vhost is not None:
+			print 'argh'
 			try:
 				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
 				af, socktype, proto, canonname, sa = res
