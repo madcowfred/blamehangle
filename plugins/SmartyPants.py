@@ -143,7 +143,7 @@ class SmartyPants(Plugin):
 			method = self.__Query_Get,
 			regexp = re.compile(r'^(?P<name>.+?)\??$'),
 			priority = 0,
-			help = ('infobot', 'get',  '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
+			help = ('infobot', 'get', '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
 		)
 		if self.Options.get('public_request', None):
 			self.addTextEvent(
@@ -364,22 +364,32 @@ class SmartyPants(Plugin):
 		tellnick = trigger.match.group('nick').lower()
 		name = self.__Sane_Name(trigger)
 		
-		if tellnick[0] in '#&':
-			# Target is a channel we're not in.
-			if tellnick not in trigger.conn.users.channels():
-				self.sendReply(trigger, "I'm not in that channel!")
-				tolog = "%s tried to tell %s about '%s', but I'm not in that channel!" % (
-					trigger.userinfo, tellnick, name)
-				self.putlog(LOG_WARNING, tolog)
-				return
+		if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'tell'):
+			if tellnick[0] in '#&':
+				# Target is a channel we're not in.
+				if tellnick not in trigger.conn.users.channels():
+					self.sendReply(trigger, "I'm not in that channel!")
+					tolog = "%s tried to tell %s about '%s', but I'm not in that channel!" % (
+						trigger.userinfo, tellnick, name)
+					self.putlog(LOG_WARNING, tolog)
+					return
+				
+				# Target is a channel the source isn't in.
+				if not trigger.conn.users.in_chan(tellnick, trigger.userinfo.nick):
+					self.sendReply(trigger, "You're not in that channel!")
+					tolog = "%s tried to tell %s about '%s', but they're not in that channel!" % (
+						trigger.userinfo, tellnick, name)
+					self.putlog(LOG_WARNING, tolog)
+					return
 			
-			# Target is a channel the source isn't in.
-			if not trigger.conn.users.in_chan(tellnick, trigger.userinfo.nick):
-				self.sendReply(trigger, "You're not in that channel!")
-				tolog = "%s tried to tell %s about '%s', but they're not in that channel!" % (
-					trigger.userinfo, tellnick, name)
-				self.putlog(LOG_WARNING, tolog)
-				return
+			else:
+				# Source and target aren't in a common channel
+				if not trigger.conn.users.in_same_chan(tellnick, trigger.userinfo.nick):
+					self.sendReply(trigger, "That user isn't in a channel with you!")
+					tolog = "%s tried to tell %s about '%s', but they're not in a common channel!" % (
+						trigger.userinfo, tellnick, name)
+					self.putlog(LOG_WARNING, tolog)
+					return
 		
 		self.dbQuery(trigger, self.__Fact_Get, GET_QUERY, name)
 	
