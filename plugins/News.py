@@ -229,20 +229,9 @@ class News(Plugin):
 		# RSS feeds should be tried every 10 seconds
 		if self.RSS_Feeds:
 			self.setTimedEvent(NEWS_RSS, 10, None)
-		#feednames = self.RSS_Feeds.keys()
-		#if feednames:
-		#	feednames.sort()
-		#	# Add a timed event for each feed
-		#	for name in feednames:
-		#		feed = self.RSS_Feeds[name]
-		#		self.setTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
-		#		
-		#		tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
-		#		self.putlog(LOG_DEBUG, tolog)
-		#	
+			
 			tolog = "Registered %d RSS feeds" % len(self.RSS_Feeds)
 			self.putlog(LOG_ALWAYS, tolog)
-		
 		# Timed event for cleaning up the database once an hour
 		self.setTimedEvent(NEWS_CLEANUP, 3600, {})
 		# Timed event for spitting out news
@@ -361,11 +350,6 @@ class News(Plugin):
 			# Build a fake timed event trigger
 			new_trigger = PluginTimedEvent(NEWS_RSS, 1, feed['targets'], name)
 			self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
-		
-		#name = trigger.args[0]
-		#if name in self.RSS_Feeds:
-		#	feed = self.RSS_Feeds[name]
-		#	self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
