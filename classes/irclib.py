@@ -429,7 +429,7 @@ class ServerConnection(Connection):
 				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
 				af, socktype, proto, canonname, sa = res
 			except socket.gaierror, msg:
-				raise ServerConnectionError, msg[0]
+				raise ServerConnectionError, msg[1]
 			else:
 				self.sock = socket.socket(af, socktype, proto)
 				self.sock.bind(sa)
