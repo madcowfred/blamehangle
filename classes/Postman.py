@@ -135,15 +135,15 @@ class Postman:
 			self.__Log_Exception()
 		
 		else:
+			pluginpath = '%s.py' % os.path.join('plugins', name)
+			self.__mtimes[name] = os.stat(pluginpath).st_mtime
+			
+			self.__Children[cls.__name__] = instance
+			
 			if hasattr(instance, 'run_always'):
 				self.__run_always.append(instance.run_always)
 			if hasattr(instance, 'run_sometimes'):
 				self.__run_sometimes.append(instance.run_sometimes)
-			
-			self.__Children[cls.__name__] = instance
-			
-			pluginpath = '%s.py' % os.path.join('plugins', name)
-			self.__mtimes[name] = os.stat(pluginpath).st_mtime
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
