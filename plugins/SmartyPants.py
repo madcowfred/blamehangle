@@ -105,7 +105,7 @@ REPLY_ACTION_RE = re.compile(r'^<(?P<type>reply|action)>\s*(?P<value>.+)$', re.I
 # match <null> factoids
 NULL_RE = re.compile(r'^<null>\s*$', re.I)
 # match redirected factoids
-REDIRECT_RE = re.compile(r'^see(: *| +)(?P<factoid>.+)$')
+REDIRECT_RE = re.compile(r'^see(: *| +)(?P<factoid>.{1,64})$')
 
 # ---------------------------------------------------------------------------
 # Range for factoid name
@@ -436,31 +436,21 @@ class SmartyPants(Plugin):
 			# reply
 			self.__requests += 1
 			
-			# XXX This is devinfo legacy, I'm not really sure I want to do this
-			# but the factoid database will have a bunch of factoids that
-			# expect this behaviour
-			# replace "$nick" with the nick of the guy that requested this
-			# factoid
+			# This is devinfo (hacked up infobot?) legacy. The factoid database
+			# will have a bunch of these, so we might as well support it :|
+			#
+			# replace "$nick" with the nick of the requester
 			escnick = trigger.userinfo.nick.replace('\\', '\\\\')
 			value = SUB_NICK_RE.sub(escnick, value)
-			#value = re.sub(r'(?P<c>[^\\]|^)\$nick', \
-			#	'\g<c>' + trigger.userinfo.nick, value)
-			#row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
 			
 			# replace "$channel" with the target if this was public
 			if trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
 				value = SUB_CHAN_RE.sub(trigger.target, value)
-				#value = re.sub(r'(?P<c>[^\\]|^)\$channel', \
-				#	'\g<c>' + trigger.target, value)
-				#row['value'] = row['value'].replace('$channel', trigger.target)
 			
 			# replace "$date" with a shiny date
 			datebit = time.strftime('%a %d %b %Y %H:%M:%S')
 			shinydate = '%s %s GMT' % (datebit, GetTZ())
 			value = SUB_DATE_RE.sub(shinydate, value)
-			#value = re.sub(r'(?P<c>[^\\]|^)\$date', \
-			#	'\g<c>' + shinydate, value)
-			#row['value'] = row['value'].replace('$date', shinydate)
 			
 			
 			# If it's just a get, spit it out
