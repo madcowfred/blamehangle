@@ -1,4 +1,3 @@
-# -*- coding: iso-8859-1 -*-
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
@@ -139,7 +138,7 @@ class Airline(Plugin):
 	# Site replied
 	def __Parse_IATA(self, trigger, resp):
 		code = trigger.match.group('code').upper()
-		resp.data = resp.data.replace('&deg;', '°')
+		resp.data = resp.data.replace('&deg;', '\xb0')
 		
 		# Page not found.. but it's not a 404 :|
 		if resp.data.find('Requested File was not found') >= 0:
