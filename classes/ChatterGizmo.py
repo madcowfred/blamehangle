@@ -29,8 +29,13 @@ class WrapConn:
 	
 	users = Userlist()
 	
-	def __init__(self, conn):
+	def __init__(self, conn, options):
 		self.conn = conn
+		self.options = options
+	
+	def join_channels(self):
+		for chan in self.options['channels'].split():
+			self.conn.join(chan)
 
 # ---------------------------------------------------------------------------
 
@@ -41,10 +46,9 @@ class ChatterGizmo:
 	"""
 	
 	def __init__(self, Config):
-		self.__ircobj = irclib.IRC()
-		
 		self.Config = Config
 		
+		self.__ircobj = irclib.IRC()
 		self.Conns = {}
 	
 	def main_loop(self):
@@ -58,7 +62,33 @@ class ChatterGizmo:
 	# -----------------------------------------------------------------------
 	
 	def connect(self):
+		networks = []
+		for section in self.Config.sections():
+			if section.startswith('network.'):
+				networks.push(section)
 		
+		if not networks:
+			#putlog(no networks? how can this be?!)
+			print 'erk, no networks'
+			return
+		
+		for network in networks:
+			options = {}
+			for option in self.Config.options(network):
+				options[option] = self.Config.get(network, option)
+			
+			conn = self.__ircobj.server()
+			self.Conns[conn] = WrapConn(conn, options)
+	
+	# -----------------------------------------------------------------------
+	
+	def privmsg(self, conn, nick, text):
+		if self.Conns[conn].status == STATUS_CONNECTED:
+			conn.privmsg(nick, text)
+	
+	def notice(self, conn, nick, text):
+		if self.Conns[conn].status == STATUS_CONNECTED:
+			conn.notice(nick, text)
 	
 	# -----------------------------------------------------------------------
 	
@@ -73,3 +103,24 @@ class ChatterGizmo:
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
 		print 'Welcome to Floston Paradise!'
+		
+		for wrap in self.Conns.values():
+			wrap.join_channels()
+	
+	# -----------------------------------------------------------------------
+	# Someone just joined a channel (including ourselves)
+	# -----------------------------------------------------------------------
+	def _handle_join(self, conn, event):
+		chan = event.target().lower()
+		nick = irclib.nm_to_n(event.source())
+		
+		# Us
+		if nick == conn.real_nickname:
+			self.Conns[conn].users.self_join(chan)
+			
+			#tolog = "Joined %s" % chan
+			#self.putlog(LOG_ALWAYS, tolog)
+		
+		# Not us
+		else:
+			self.Conns[conn].users.user_join(chan, nick)
