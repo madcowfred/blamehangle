@@ -4,11 +4,12 @@
 # This is the news-gatherer plugin for Blamehangle. It scours the web for
 # news, and reports it. Exciting stuff.
 
-from random import Random
 import cPickle
 import re
 import time
 import types
+from random import Random
+from sgmllib import SGMLParseError
 
 # ---------------------------------------------------------------------------
 
@@ -415,9 +416,14 @@ class News(Plugin):
 	def __do_rss(self, page_text, event, name):
 		feed = self.RSS_Feeds[name]
 		
-		#r = RSSParser()
 		r = FeedParser()
-		r.feed(page_text)
+		# Catch any weird errors when feeding the text in
+		try:
+			r.feed(page_text)
+		except SGMLParseError, msg:
+			tolog = "Error parsing feed '%s': %s" % (feed, msg)
+			self.putlog(LOG_WARNING, tolog)
+			return
 		
 		if feed['title']:
 			feed_title = feed['title']
