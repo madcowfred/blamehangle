@@ -424,13 +424,13 @@ class WeatherMan(Plugin):
 
 def ToCelsius(val):
 	try:
-		return (round(val - 32) * 5.0 / 9)
+		return ((val - 32) * 5.0 / 9)
 	except ValueError:
 		return 0.0
 
 def ToKilometers(val):
 	try:
-		return '%d' % round(float(val) * 1.60934)
+		return '%d' % (float(val) * 1.60934)
 	except ValueError:
 		return '0'
 
