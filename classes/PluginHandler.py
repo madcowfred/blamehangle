@@ -5,7 +5,7 @@
 # Blah, stuff
 #----------------------------------------------------------------------------
 
-import types
+import types, time
 
 from classes.Plugin import Plugin
 from Plugins import *
@@ -23,12 +23,12 @@ class PluginHandler(Child):
 	"""
 
 	def setup(self):
-		self.Plugins = self.pluginList()
-		self.PUBLIC_Events = {}
-		self.MSG_Events = {}
-		self.NOTICE_Events = {}
-		self.CTCP_Events = {}
-		self.TIMED_Events = {}
+		self.__Plugins = self.pluginList()
+		self.__PUBLIC_Events = {}
+		self.__MSG_Events = {}
+		self.__NOTICE_Events = {}
+		self.__CTCP_Events = {}
+		self.__TIMED_Events = {}
 
 #----------------------------------------------------------------------------
 
@@ -38,6 +38,20 @@ class PluginHandler(Child):
 		for name in self.Plugins:
 			self.sendMessage(name, PLUGIN_REGISTER, [])
 	
+#----------------------------------------------------------------------------
+
+	# Check to see if we have any TIMED events that have expired their delai
+	# time
+	def run_sometimes(self, currtime):
+		for token in self.__TIMED_Events:
+			delay, last, targets, plugin = self.__TIMED_Events[token]
+			# Is it time to trigger this TIMED event?
+			if currtime - last >= delay:
+				message = [targets, token, TIMED, None]
+				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
+				# Update the last trigger time
+				self.__TIMED_Events[token] = (delay, currtime, targets, plugin)
+
 #----------------------------------------------------------------------------
 
 	# Generate a list of all the plugins.
@@ -59,16 +73,22 @@ class PluginHandler(Child):
 	def _message_PLUGIN_REGISTER(self, message):
 		events = message.data
 
-		for type, criterion, groups, token in events:
-			eventStore = self.__getRelevantStore(type)
+		for IRCtype, criterion, groups, token in events:
+			eventStore = self.__getRelevantStore(IRCtype)
+			
+			# Make sure that there isn't already a registered event of this
+			# name for this IRCtype
 			if token in eventStore:
-				raise ValueError, "%s already has a hook on %s" % token, type
+				raise ValueError, "%s already has a hook on %s" % token, IRCtype
 			else:
-				# Add this event to our list of events we know plugins are
-				# interested in. For all but events of the TIMED variety
-				# the criterion will be a regexp to match against; for TIMED
-				# it will be the desired delay (in seconds) between triggers.
-				eventStore[token] = (criterion, groups, message.source)
+				# Add this event to the events we know plugins are interested
+				# in.
+				
+				# TIMED events need to be handled differently
+				if IRCtype == TIMED:
+					eventStore[token] = (criterion, time.time(), groups, message.source)
+				else:
+					eventStore[token] = (criterion, groups, message.source)
 
 #----------------------------------------------------------------------------
 
@@ -76,17 +96,14 @@ class PluginHandler(Child):
 	# through the appropriate collection of events and see if any match. If
 	# we find a match, send the TRIGGER message to the appropriate plugin.
 	#
-	# Desired format of an IRC_EVENT:
-	# [ type, author, target, text ]
-	# where type is one of PUBLIC, MSG, NOTICE, CTCP
-	# author is a userinfo for the guy that said whatever made this event
-	# target is a channel name our our nick (or "me" or whatever)
-	# and text is the text, obviously. ;)
-	# I don't think ACTION should trigger a PUBLIC event.
+	# This will never happen with IRCtype == TIMED, since there is no way that
+	# ChatterGizmo can come up with a TIMED IRC_EVENT. This lets us avoid
+	# special case code here.
 	def _message_IRC_EVENT(self, message):
-		type, userinfo, target, text = message.data
+		conn, IRCtype, userinfo, target, text = message.data
 
-		eventStore = self.__getRelevantStore(type)
+		eventStore = self.__getRelevantStore(IRCtype)
+
 		for event in eventStore:
 			regexp, groups, plugin = eventStore[event]
 			match = regexp.match(text)
@@ -95,7 +112,8 @@ class PluginHandler(Child):
 				desired_text = []
 				for group in groups:
 					desired_text.append(match.group(group))
-				self.sendMessage(plugin, PLUGIN_TRIGGER, [desired_text, event])
+				message = [desired_text, event, IRCtype, userinfo]
+				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
 				
 				# should a break or something go here?
 				# do we want it to be possible to have more than one plugin
