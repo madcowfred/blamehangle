@@ -123,11 +123,23 @@ class PluginHandler(Child):
 	# We just got a reply from a plugin.
 	def _message_PLUGIN_REPLY(self, message):
 		reply = message.data
-
+		
 		if isinstance(reply.trigger, PluginTimedEvent):
-			for name in reply.trigger.targets:
-				self.sendMessage('ChatterGizmo', REQ_CONN, [name, (name, reply)])
-
+			self.privmsg(reply.trigger.targets, None, reply.replytext)
+			#for name in reply.trigger.targets:
+			#	self.sendMessage('ChatterGizmo', REQ_CONN, [name, (name, reply)])
+			
+			#for network, targets in reply.trigger.targets.items():
+			#	for target in targets:
+			#		self.privmsg(network, target, reply.replytext)
+			
+			#def _message_REPLY_CONN(self, message):
+			#	conn, (name, reply) = message.data
+			
+			#	if conn:
+			#		for target in reply.trigger.targets[name]:
+			#			self.privmsg(conn, target, reply.replytext)
+		
 		elif isinstance(reply.trigger, PluginTextTrigger):
 			nick = reply.trigger.userinfo.nick
 			target = reply.trigger.target
@@ -147,17 +159,9 @@ class PluginHandler(Child):
 			# wtf
 			errtext = "Bad reply object: %s" % reply
 			raise ValueError, errtext
-				
-	#------------------------------------------------------------------------		
-	def _message_REPLY_CONN(self, message):
-		conn, (name, reply) = message.data
-		
-		if conn:
-			for target in reply.trigger.targets[name]:
-				self.privmsg(conn, target, reply.replytext)
 	
-	# -----------------------------------------------------------------------
-
+	#------------------------------------------------------------------------		
+	
 	def __getRelevantStore(self, IRCType):
 		if IRCType == IRCT_PUBLIC:
 			return self.__PUBLIC_Events

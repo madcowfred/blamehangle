@@ -6,6 +6,7 @@ __version__ = '$Id$'
 import errno
 import re
 import select
+import types
 
 from classes import irclib
 
@@ -302,18 +303,19 @@ class ChatterGizmo(Child):
 	# This should include some sort of flood control or error checking or
 	# something. This is the quick hack version so I can see if shit is working
 	def _message_REQ_PRIVMSG(self, message):
-		maybe, target, text = message.data
-		conn = None
+		conn, target, text = message.data
 		
-		if isinstance(maybe, irclib.ServerConnection):
-			conn = maybe
+		if isinstance(conn, irclib.ServerConnection):
+			self.privmsg(conn, target, text)
+		
+		elif type(conn) == types.DictType:
+			for network, targets in conn.items():
+				net = network.lower()
+				for wrap in self.Conns.values():
+					if wrap.options['name'].lower() == net:
+						for target in targets:
+							self.privmsg(wrap.conn, target, text)
+						break
 		
 		else:
-			network = maybe.lower()
-			for wrap in self.Conns.values():
-				if wrap.options['name'].lower() == network:
-					conn = wrap.conn
-					break
-		
-		if conn:
-			self.privmsg(conn, target, text)
+			raise TypeError, 'unknown parameter type'
