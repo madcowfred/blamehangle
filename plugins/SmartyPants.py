@@ -73,7 +73,7 @@ LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
 
 GET_D_RE = re.compile("^(?P<name>.+?)\??$")
 GET_RE = re.compile("^(?P<name>.+?)\?$")
-SET_RE = re.compile("^(?!no, +)(?P<name>.+?) +(is|are) (?!also +)(?P<value>.+)$")
+SET_RE = re.compile("^(?!no, +)(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
 NO_RE = re.compile("^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
 ALSO_RE = re.compile("^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$")
 DEL_RE = re.compile("^forget +(?P<name>.+)$")
@@ -87,8 +87,6 @@ LISTVALUES_RE = re.compile("^listvalues +(?P<name>.+)$")
 TELL_RE = re.compile("^tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 
 REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
-
-
 
 
 MAX_FACT_NAME_LENGTH = 32
@@ -241,6 +239,12 @@ class SmartyPants(Plugin):
 		# to go to hell.
 		elif trigger.name == FACT_SET:
 			name = trigger.match.group('name')
+			
+			# dodgy hack to make sure we don't set retarded factoids containing
+			# "=~" in them
+			if re.search('=~', name):
+				return
+				
 			if len(name) > MAX_FACT_NAME_LENGTH:
 				if not trigger.event.IRCType == IRCT_PUBLIC:
 					replytext = "factoid name is too long"
