@@ -413,7 +413,10 @@ class News(Plugin):
 			else:
 				link = item.get('link', '<no link>')
 			
-			articles.append((title, link))
+			desc = item.get('description', '')
+			
+			article = (title, (link, desc))
+			articles.append(article)
 			query = (NEWS_QUERY, title)
 			queries.append(query)
 		
@@ -442,10 +445,7 @@ class News(Plugin):
 				if result:
 					continue
 				
-				#replytext = "%s - %s" % (title, self.__to_process[title])
-				#del self.__to_process[title]
-				
-				if self.__verbose:
+				if self.__verbose and description:
 					replytext = "%s - %s : %s" % (title, url, description)
 				else:
 					replytext = "%s - %s" % (title, url)
@@ -466,7 +466,7 @@ class News(Plugin):
 		elif isinstance(event, PluginTextTrigger):
 			if event.name == NEWS_SEARCH:
 				self.__news_search(event, results)
-			
+		
 		elif event == NEWS_INSERT:
 			# we just added some new items to our db
 			pass
@@ -495,7 +495,7 @@ class News(Plugin):
 			if len(results) > MAX_NEWS_SEARCH_RESULTS:
 				replytext = "Search for '\02%s\02' yielded too many results. Please refine your query." % search_text
 				self.sendReply(trigger, replytext)
-				
+			
 			elif len(results) > 1:
 				# We found more than one and less than the max number of items
 				replytext = "\02%d\02 Headlines found: " % len(results)
@@ -510,9 +510,9 @@ class News(Plugin):
 			else:
 				# We found exactly one item, so reply with the headline and
 				# url
-				replytext = "%s - %s : %s" % (results[0]['title'], results[0]['url'], results[0]['description'])
+				replytext = '%(title)s - %(url)s : %(description)s' % results[0]
 				self.sendReply(trigger, replytext)
-
+	
 	# -----------------------------------------------------------------------
 	
 	# Pickle an object into the given file
@@ -562,7 +562,7 @@ class Google(HTMLParser):
 		self.__found_br1 = 0
 		self.__found_br2 = 0
 		self.reset()
-		
+	
 	# -----------------------------------------------------------------------
 	
 	# Scan through the HTML, looking for a tag of the form <a class=y ..>
