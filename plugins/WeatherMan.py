@@ -18,11 +18,12 @@ WEATHER_RE = re.compile('^weather\s+(?P<location>.+)$')
 WEATHER_HELP = '\02weather\02 <location> : Retrieve weather information for location'
 WEATHER_URL = "http://search.weather.yahoo.com/search/weather2?p=%s"
 
-s1 = '[%(location)s] %(weather)s, Currently: %(currently)s°F (%(currently_c)s°C)'
-s2 = ', High: %(hi)s°F (%(hi_c)s°C), Low: %(lo)s°F (%(lo_c)s°C)'
-s3 = ', Wind: %(wind)s (%(wind_km)s kph), Feels Like: %(like)s°F (%(like_c)s°C)'
+s1 = '[%(location)s] %(weather)s, Currently: %(currently_c)s°C (%(currently_f)s°F)'
+s2 = ', High: %(hi_c)s°C (%(hi_f)s°F), Low: %(lo_c)s°C (%(lo_f)s°F)'
+s3 = ', Wind: %(wind)s, Feels Like: %(like_c)s°C (%(like_f)s°F)'
 s4 = ', Humidity: %(humidity)s, Visibility: %(visibility)s'
-WEATHER_REPLY = s1 + s2 + s3 + s4
+s5 = ', Sunrise: %(sunrise)s, Sunset: %(sunset)s'
+WEATHER_REPLY = s1 + s2 + s3 + s4 + s5
 
 # ---------------------------------------------------------------------------
 
@@ -94,10 +95,10 @@ class WeatherMan(Plugin):
 				lines = StripHTML(m.group(1))
 				
 				# Extract current conditions!
-				data['currently'] = lines[1]
+				data['currently_f'] = lines[1]
 				data['weather'] = lines[2]
-				data['hi'] = lines[3][3:]
-				data['lo'] = lines[4][3:]
+				data['hi_f'] = lines[3][3:]
+				data['lo_f'] = lines[4][3:]
 				
 				
 				# Find some more weather data
@@ -111,23 +112,28 @@ class WeatherMan(Plugin):
 				lines = StripHTML(m.group(1))
 				
 				# Extract!
-				data['like'] = lines[2]
-				data['wind'] = lines[10]
+				data['like_f'] = lines[2]
+				
+				windbits = lines[10].split()
+				if len(windbits) == 3:
+					data['wind'] = '%s kph (%s mph)' % (ToKilometers(windbits[1]), windbits[1])
+				else:
+					data['wind'] = windbits[0]
+				
 				data['humidity'] = lines[12]
+				data['sunrise'] = lines[14]
 				data['visibility'] = lines[16]
+				data['sunset'] = lines[18]
 				
 				
 				#if broken:
 				#	self.sendReply(trigger, "Failed to parse page properly")
 				
 				#else:
-				data['currently_c'] = ToCelsius(data['currently'])
-				data['hi_c'] = ToCelsius(data['hi'])
-				data['lo_c'] = ToCelsius(data['lo'])
-				data['like_c'] = ToCelsius(data['like'])
-				
-				wind_mph = data['wind'].split()[1]
-				data['wind_km'] = ToKilometers(wind_mph)
+				data['currently_c'] = ToCelsius(data['currently_f'])
+				data['hi_c'] = ToCelsius(data['hi_f'])
+				data['lo_c'] = ToCelsius(data['lo_f'])
+				data['like_c'] = ToCelsius(data['like_f'])
 				
 				replytext = WEATHER_REPLY % data
 				self.sendReply(trigger, replytext)
@@ -145,7 +151,7 @@ def StripHTML(text):
 	return lines
 
 def ToCelsius(val):
-	return '%.1f' % ((int(val) - 32) * 5.0 / 9)
+	return '%d' % round((int(val) - 32) * 5.0 / 9)
 
 def ToKilometers(val):
-	return '%d' % (int(val) * 1.60934)
+	return '%d' % round(int(val) * 1.60934)
