@@ -250,7 +250,7 @@ class PluginHandler(Child):
 				if command in self.__Help[topic]:
 					replytext = self.__Help[topic][command]
 				else:
-					replytext = "No such help topic '%s %s'" % (topic, command)
+					replytext = "No such help command '%s' in topic '%s'" % (command, topic)
 			else:
 				replytext = "No such help topic '%s'" % topic
 		
