@@ -189,10 +189,10 @@ class Postman:
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
-				if sometimes_counter == 10:
-					sometimes_counter = 0
+				if sometimes_counter % 10 == 0:
+					#sometimes_counter = 0
 					
-					gc.collect()
+					#gc.collect()
 					
 					currtime = _time()
 					
@@ -208,6 +208,10 @@ class Postman:
 					for child in self.__Children.values():
 						if hasattr(child, 'run_sometimes'):
 							child.run_sometimes(currtime)
+
+				if sometimes_counter == 1000:
+					sometimes_counter = 0
+					gc.collect()
 				
 				
 				# Sleep for a while
