@@ -139,7 +139,7 @@ class Anime(Plugin):
 				parts.append(part)
 			
 			# Find our aid
-			m = re.search(r'aid=(\d+)', page_text)
+			m = re.search(r'name="aid" value="(\d+)"', page_text)
 			if m:
 				url = AID_URL % m.group(1)
 			else:
