@@ -249,29 +249,40 @@ class async_http(buffered_dispatcher):
 			try:
 				response = self.headlines[0].split()[1]
 			except:
-				failmsg = 'Invalid HTTP response: %s' % self.headlines[0]
+				failmsg = 'Invalid HTTP response: %s' % (repr(self.headlines[0]))
 				self.failed(failmsg)
 			else:
+				# Build a header dictionary
+				headers = dict([l.split(': ', 1) for l in self.headlines[1:]])
+				
 				# Various redirect responses
 				if response in ('301', '302', '303', '307'):
-					for line in self.headlines[1:]:
-						if line.startswith('Location:'):
-							chunks = line.split(None, 1)
-							if len(chunks) != 2:
-								break
-							newurl = urlparse.urljoin(self.url, chunks[1])
-							
-							if newurl in self.seen:
-								self.failed('Redirection loop encountered!')
+					if 'Location' in headers:
+						newurl = urlparse.urljoin(self.url, headers['Location'])
+						
+						if newurl in self.seen:
+							self.failed('Redirection loop encountered!')
+						else:
+							self.seen[self.url] = 1
+							if len(self.seen) > REDIRECT_LIMIT:
+								self.failed('Redirection limit reached!')
 							else:
-								self.seen[self.url] = 1
-								if len(self.seen) > REDIRECT_LIMIT:
-									self.failed('Redirection limit reached!')
-								else:
-									self.message.data[2] = newurl
-									async_http(self.parent, self.ip, self.message, self.chunks, self.seen)
-							
-							break
+								self.message.data[2] = newurl
+								async_http(self.parent, self.ip, self.message, self.chunks, self.seen)
+					
+					else:
+						self.failed('Redirect without Location header!')
+				
+				# Not Modified
+				elif response == '304':
+					# Log something
+					tolog = 'URL not modified: %s' % (self.url)
+					self.parent.putlog(LOG_DEBUG, tolog)
+					
+					# Build the response and return it
+					resp = HTTPResponse(self.url, response, headers, '')
+					data = [self.trigger, self.method, resp]
+					self.parent.sendMessage(self.message.source, REPLY_URL, data)
 				
 				# Anything else
 				else:
@@ -280,15 +291,14 @@ class async_http(buffered_dispatcher):
 						
 						# Check for gzip
 						is_gzip = 0
-						for line in self.headlines[1:]:
-							if line.startswith('Content-Encoding:'):
-								chunks = line.split()[1:]
-								if 'gzip' in chunks:
-									is_gzip = 1
-									break
-								else:
-									tolog = 'Unknown Content-Encoding: %s' % ','.join(chunks)
-									self.parent.pulog(LOG_WARNING, tolog)
+						
+						if 'Content-Encoding' in headers:
+							chunks = headers['Content-Encoding'].split()
+							if 'gzip' in chunks:
+								is_gzip = 1
+							else:
+								tolog = 'Unknown Content-Encoding: %s' % (repr(headers['Content-Encoding']))
+								self.parent.pulog(LOG_WARNING, tolog)
 						
 						# If we think it's gzip compressed, try to unsquish it
 						if is_gzip:
@@ -321,7 +331,7 @@ class async_http(buffered_dispatcher):
 							self.parent.putlog(LOG_DEBUG, tolog)
 							
 							# Build the response and return it
-							resp = HTTPResponse(self.url, response, self.headlines, page_text)
+							resp = HTTPResponse(self.url, response, headers, page_text)
 							data = [self.trigger, self.method, resp]
 							self.parent.sendMessage(self.message.source, REPLY_URL, data)
 						
