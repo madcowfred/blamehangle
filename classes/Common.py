@@ -1,9 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains classes and constants used in most (or all)
-# of the other files.
-# ---------------------------------------------------------------------------
+
+"""Methods used in more than one place are usually kept here."""
 
 import os
 import re
@@ -57,8 +56,6 @@ def FindChunk(text, start, end, pos=None):
 	
 	# Ok, we have some text now
 	chunk = text[startspot:endpos]
-	#if len(chunk) == 0:
-	#	return None
 	
 	# Return!
 	if pos is None:
@@ -66,7 +63,7 @@ def FindChunk(text, start, end, pos=None):
 	else:
 		return (endpos+len(end), chunk)
 
-# As above, but return all matches. Poor man's regexp :)
+# As above, but return all matches.
 def FindChunks(text, start, end, limit=0):
 	chunks = []
 	n = 0
@@ -104,8 +101,7 @@ def StripHTML(text):
 _unquote_regexp = re.compile(r'&([#A-Za-z0-9]+);')
 
 def UnquoteHTML(text, *keep):
-	# thing name -> char
-	quoted = {
+	entities = {
 		'lt': '<',
 		'gt': '>',
 		'amp': '&',
@@ -115,10 +111,10 @@ def UnquoteHTML(text, *keep):
 		'#65295': '/',
 	}
 	
-	# don't unquote these
+	# don't unquote these entities
 	for k in keep:
-		if k in quoted:
-			del quoted[k]
+		if k in entities:
+			del entities[k]
 	
 	# regexp helper function to do the replacement
 	def unquote_things(m):
@@ -129,16 +125,16 @@ def UnquoteHTML(text, *keep):
 			try:
 				return chr(int(thing[2:], 16))
 			except ValueError:
-				return quoted.get(thing, whole)
+				return entities.get(thing, whole)
 		# decimal entity
 		elif thing.startswith('#'):
 			try:
 				return chr(int(thing[1:]))
 			except ValueError:
-				return quoted.get(thing, whole)
+				return entities.get(thing, whole)
 		# named entity
 		else:
-			return quoted.get(thing, whole)
+			return entities.get(thing, whole)
 	
 	# go!
 	return _unquote_regexp.sub(unquote_things, text)
