@@ -19,7 +19,7 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
-from classes.feedparser import FeedParser
+from classes import feedparser
 
 # ---------------------------------------------------------------------------
 
@@ -443,12 +443,10 @@ class News(Plugin):
 		name = trigger.args[0]
 		feed = self.RSS_Feeds[name]
 		
-		r = FeedParser()
-		# Catch any weird errors when feeding the text in
 		try:
-			r.feed(resp.data)
+			r = feedparser.parse(resp.data)
 		
-		except SGMLParseError, msg:
+		except Exception, msg:
 			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
 			self.putlog(LOG_WARNING, tolog)
 			return
@@ -457,28 +455,37 @@ class News(Plugin):
 		if feed['title']:
 			feed_title = feed['title']
 		else:
-			feed_title = r.channel.get('title', name)
+			feed_title = r['feed'].get('title', name)
 		
 		# Get any articles out of the feed
 		articles = []
 		currtime = int(time.time())
 		
-		for item in r.items[:feed['maximum_new']]:
+		for item in r['entries'][:feed['maximum_new']]:
 			item_title = item.get('title', '<No Title>').strip() or '<No Title>'
 			
+			# Find the damn link
+			if item.has_key('link'):
+				article_link = item['link']
+			elif item.has_key('links') and item['links']:
+				article_link = item['links'][0]['href']
+			else:
+				article_link = None
+			
+			# If we're ignoring items with no links, log and move on
 			if self.__rss_ignore_no_link:
-				if not item.has_key('link'):
+				if not article_link:
 					tolog = "RSS item '%s' has no link!" % item_title
 					self.putlog(LOG_DEBUG, tolog)
 					continue
-				link = item['link']
-			else:
-				link = item.get('link', '<no link>')
+			
+			if not article_link:
+				article_link = '<no link>'
 			
 			description = item.get('description', '')
 			
 			article_title = '%s: %s' % (feed_title, item_title)
-			data = [article_title, link, description, currtime]
+			data = [article_title, article_link, description, currtime]
 			articles.append(data)
 		
 		# Go for it!
