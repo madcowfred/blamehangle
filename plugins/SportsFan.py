@@ -11,7 +11,7 @@ import re, cStringIO
 SCORES = "SCORES"
 
 s0 = "^score +"
-s1 = "(?P<league>(NFL|MLB|NBA|NHL)) +"
+s1 = "(?P<league>(NFL|nfl|MLB|mlb|NBA|nba|NHL|nhl)) +"
 s2 = "(?P<team>.+)$"
 
 SCORES_RE = re.compile(s0+s1+s2)
