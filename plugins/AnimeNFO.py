@@ -56,10 +56,8 @@ class AnimeNFO(Plugin):
 		if data:
 			m = re.match('^<OUTPUT>(.+)</OUTPUT>$', data, re.S)
 			if m:
-				# Build a dictionary of FIELD: value mappings
+				# Split into field,value pairs
 				fields = re.findall(r'<(.+)>(.+)</\1>', m.group(1))
-				
-				print fields
 				
 				field, value = fields[0]
 				
