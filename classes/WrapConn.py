@@ -46,13 +46,10 @@ class WrapConn:
 		self.vhost = self.options.get('vhost', None)
 	
 	def connect(self):
-		# Initialise the variables to default values
-		self.trynick = self.nicks[0]
+		nick = self.nicks[self.trynick]
 		password = None
 		
-		# Split up the server line into it's parts
 		self.server = self.servers[0]
-		
 		host, port = self.server
 		
 		
@@ -61,7 +58,7 @@ class WrapConn:
 		
 		
 		try:
-			self.conn.connect(	host, port, self.trynick,
+			self.conn.connect(	host, port, nick,
 								username=self.options['username'],
 								ircname=self.realname,
 								vhost=self.vhost
@@ -89,12 +86,15 @@ class WrapConn:
 		# Try and connect
 		self.connect()
 	
+	# -----------------------------------------------------------------------
 	# Reset ourselves to the disconnected state
 	def disconnected(self):
 		self.status = STATUS_DISCONNECTED
 		self.stoned = 0
+		self.trynick = 0
 		
 		self.last_connect = 0
+		self.last_nick = 0
 		self.last_output = 0
 		self.last_stoned = 0
 		
@@ -105,12 +105,38 @@ class WrapConn:
 		
 		self.users = Userlist()
 	
+	# Our nick is in use
+	def nicknameinuse(self, nick):
+		# While trying to connect!
+		if self.status == STATUS_CONNECTING:
+			if nick == self.conn.real_nickname:
+				if len(self.nicks) > 1:
+					self.trynick += 1
+					if self.trynick >= len(self.nicks):
+						self.trynick = 0
+					
+					nick = self.nicks[self.trynick]
+				
+				else:
+					nick = self.nicknames[0]
+					if len(nick) < 9:
+						nick += '-'
+					else:
+						nick[8] = '-'
+				
+				self.conn.nick(nick)
+		
+		# Nick is still in use, try again later
+		elif self.status == STATUS_CONNECTED:
+			if nick != self.conn.real_nickname:
+				self.last_nick = time.time()
+	
+	# -----------------------------------------------------------------------
 	# Join the channels in our channel list
 	def join_channels(self):
 		for chan in self.channels:
 			self.conn.join(chan)
 	
-	# -----------------------------------------------------------------------
 	# Stuff outgoing data into our queues
 	def privmsg(self, target, text):
 		self.__privmsg.append([target, text])
@@ -121,11 +147,15 @@ class WrapConn:
 	def ctcp_reply(self, target, text):
 		self.__ctcp_reply.append([target, text])
 	
-	# Send some stuff to IRC whenever we feel like it
-	def do_output(self, currtime):
-		if self.status != STATUS_CONNECTED:
-			return
+	# -----------------------------------------------------------------------
+	
+	def run_sometimes(self, currtime):
+		# If we still don't have our nick, try again
+		if self.conn.real_nickname != self.nicks[0]:
+			if currtime - self.last_nick >= 30:
+				self.conn.nick(self.nicks[0])
 		
+		# Send some stuff from our output queues if we have to
 		if currtime - self.last_output >= 1:
 			if self.__ctcp_reply:
 				target, text = self.__ctcp_reply.pop(0)

@@ -31,12 +31,12 @@ class ChatterGizmo(Child):
 	
 	def setup(self):
 		self.__ircobj = irclib.IRC()
-		# Add handlers for each event in this array to call handle_event
-		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
-		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
-		for event in [ 'welcome', 'disconnect', 'error', 'namreply', 'join',
-			'part', 'kick', 'quit', 'pubmsg', 'privmsg', 'ctcp' ]:
-			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
+		# Add handlers for any event we're supposed to handle
+		for thing in dir(self):
+			if not thing.startswith('_handle_'):
+				continue
+			event = thing[8:]
+			self.__ircobj.add_global_handler(event, getattr(self, thing), -10)
 		
 		self.Conns = {}
 		self.stopping = 0
@@ -55,7 +55,8 @@ class ChatterGizmo(Child):
 				self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
 				wrap.jump_server()
 			
-			wrap.do_output(currtime)
+			elif wrap.status == STATUS_CONNECTED:
+				wrap.run_sometimes(currtime)
 	
 	def run_always(self):
 		try:
@@ -187,10 +188,10 @@ class ChatterGizmo(Child):
 		
 		if nick != conn.real_nickname:
 			self.Conns[conn].users.quit(nick)
-		
-		# If it was our primary nickname, try and regain it
-		#if nick == self.nicknames[0]:
-		#	self.connection.nick(nick)
+			
+			# If it was our primary nickname, try and regain it
+			if nick == self.Conns[conn].nicks[0]:
+				conn.nick(nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone was just kicked from a channel (including ourselves)
@@ -211,6 +212,21 @@ class ChatterGizmo(Child):
 			self.Conns[conn].users.parted(chan, kicked)
 	
 	# -----------------------------------------------------------------------
+	# Someone just changed their name (including ourselves)
+	# -----------------------------------------------------------------------
+	def _handle_nick(self, conn, event):
+		before = irclib.nm_to_n(event.source())
+		after = event.target()
+		
+		# If it wasn't us
+		if after != conn.real_nickname:
+			self.Conns[conn].users.nick(before, after)
+			
+			# If it was our primary nickname, try and regain it
+			if before == self.Conns[conn].nicks[0]:
+				conn.nick(before)
+	
+	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
 	# -----------------------------------------------------------------------
 	def _handle_namreply(self, conn, event):
@@ -222,6 +238,14 @@ class ChatterGizmo(Child):
 				nick = nick[1:]
 			
 			self.Conns[conn].users.joined(chan, nick)
+	
+	# -----------------------------------------------------------------------
+	# Our nickname is in use!
+	# -----------------------------------------------------------------------
+	def _handle_nicknameinuse(self, conn, event):
+		nick = event.arguments()[0]
+		
+		self.Conns[conn].nicknameinuse(nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone just said something in a channel we're in
