@@ -1,6 +1,8 @@
-
-__version__ = '$Id$'
-
+# ---------------------------------------------------------------------------
+# $Id$
+# ---------------------------------------------------------------------------
+# This file contains ChatterGizmo, which does most of the grunt work for IRC
+# connections.
 # ---------------------------------------------------------------------------
 
 import errno
@@ -47,7 +49,7 @@ class ChatterGizmo(Child):
 		self.stopping = 0
 		
 		self.__Rejoins = []
-
+		
 		self.__users = HangleUserList(self, 'GlobalUsers')
 	
 	# The bot has been rehashed.. re-load the global users info, and check if
@@ -278,7 +280,26 @@ class ChatterGizmo(Child):
 			# If it was our primary nickname, try and regain it
 			if nick == self.Conns[conn].nicks[0]:
 				conn.nick(nick)
-
+	
+	# -----------------------------------------------------------------------
+	# Someone just changed the mode on a channel we're in
+	# -----------------------------------------------------------------------
+	def _handle_mode(self, conn, event):
+		chan = event.target().lower()
+		
+		modestring = ' '.join(event.arguments())
+		modes = irclib.parse_channel_modes(modestring)
+		
+		for sign, mode, arg in modes:
+			# We don't care about non-user modes
+			if arg is None:
+				continue
+			
+			if sign == '+':
+				self.Conns[conn].users.addflag(chan, arg, mode)
+			elif sign == '-':
+				self.Conns[conn].users.delflag(chan, arg, mode)
+	
 	# -----------------------------------------------------------------------
 	# Someone just invited us to a channel
 	# -----------------------------------------------------------------------

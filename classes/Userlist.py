@@ -15,7 +15,7 @@ class Userlist:
 		if nick is None:
 			self.__u[chan] = {}
 		elif nick not in self.__u[chan]:
-			self.__u[chan][nick] = 1
+			self.__u[chan][nick] = []
 	
 	def parted(self, chan, nick=None):
 		if nick is None:
@@ -30,12 +30,22 @@ class Userlist:
 	def nick(self, oldnick, newnick):
 		for chan in self.__u.keys():
 			if oldnick in self.__u[chan]:
+				self.__u[chan][newnick] = self.__u[chan][oldnick]
 				del self.__u[chan][oldnick]
-				self.__u[chan][newnick] = 1
+	
+	def add_mode(self, chan, nick, mode):
+		if add_mode not in self.__u[chan][nick]:
+			self.__u[chan][nick].append(mode)
+	
+	def del_mode(self, chan, nick, mode):
+		if add_mode in self.__u[chan][nick]:
+			self.__u[chan][nick].remove(mode)
+	
+	def has_mode(self, chan, nick, mode):
+		return mode in self.__u[chan][nick]
 	
 	def in_any_chan(self, nick):
 		for nicks in self.__u.values():
 			if nick in nicks:
 				return 1
-		
 		return 0
