@@ -22,7 +22,8 @@ WHOIS_HOSTS = {
 	'org': 'whois.publicinterestregistry.net',
 }
 
-# Originally borrowed from supybot
+# Various line formats we've run in to. Fuck WHOIS servers and their inability
+# to use a standard reply format :|
 WHOIS_LINES = {
 	'created': (
 		'Created On',
@@ -51,11 +52,12 @@ WHOIS_LINES = {
 		'status',
 	),
 }
-    	
 
+# ---------------------------------------------------------------------------
 
 class NetStuff(Plugin):
 	def setup(self):
+		# Load our collection of ccTLDs
 		self.__ccTLDs = {}
 		
 		filename = os.path.join('data', 'cctlds')
@@ -63,23 +65,43 @@ class NetStuff(Plugin):
 			cctld_file = open(filename, 'r')
 		except IOError:
 			self.putlog(LOG_WARNING, "Can't find data/cctlds!")
-			return
-		
-		for line in cctld_file:
-			line = line.strip()
-			if not line:
-				continue
+		else:
+			for line in cctld_file:
+				line = line.strip()
+				if not line:
+					continue
+				
+				cctld, country = line.split(None, 1)
+				self.__ccTLDs[cctld] = country
 			
-			cctld, country = line.split(None, 1)
-			self.__ccTLDs[cctld] = country
+			cctld_file.close()
 		
-		cctld_file.close()
+		# See if we have services info
+		self.__Ports = {}
+		if os.access('/etc/services', os.R_OK):
+			for line in open('/etc/services', 'r'):
+				line = line.strip()
+				if not line or line.startswith('#') or not '/' in line:
+					continue
+				
+				parts = line.split()
+				if len(parts) < 2:
+					continue
+				
+				self.__Ports[parts[0].lower()] = parts[1].split('/')[0]
+	
+	# ---------------------------------------------------------------------------
 	
 	def register(self):
 		self.addTextEvent(
 			method = self.__ccTLD,
 			regexp = re.compile('^cctld (.+)$'),
 			help = ('net', 'cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
+		)
+		self.addTextEvent(
+			method = self.__Port,
+			regexp = re.compile('^port (.{1,20})$'),
+			help = ('net', 'port', '\02port\02 <port> OR <name> : Look up the service name for a port, or the port for a service name.'),
 		)
 		self.addTextEvent(
 			method = self.__Resolve_WHOIS,
@@ -127,6 +149,38 @@ class NetStuff(Plugin):
 				replytext = "No matches found for '%s'" % (findme)
 		
 		# Spit something out
+		self.sendReply(trigger, replytext)
+	
+	# ---------------------------------------------------------------------------
+	def __Port(self, trigger):
+		if self.__Ports == {}:
+			self.sendReply(trigger, "No ports known, missing /etc/services?")
+			return
+		
+		findme = trigger.match.group(1).lower()
+		
+		# Port number search
+		if findme.isdigit():
+			if 0 < int(findme) < 65536:
+				matches = [k for k, v in self.__Ports.items() if v == findme]
+				if matches:
+					replytext = "Port %s is service '%s'" % (findme, matches[0])
+				else:
+					replytext = "No match found."
+			else:
+				replytext = "Invalid port specified."
+		# Service name search
+		else:
+			if findme in self.__Ports:
+				replytext = "Service '%s' is port %s" % (findme, self.__Ports[findme])
+			else:
+				# No exact match, be yucky
+				matches = [k for k in self.__Ports.keys() if findme in k]
+				if matches:
+					replytext = "No exact match, partial matches :: %s" % (', '.join(matches[:20]))
+				else:
+					replytext = "No exact or partial matches found."
+		
 		self.sendReply(trigger, replytext)
 	
 	# ---------------------------------------------------------------------------
