@@ -67,7 +67,7 @@ def FindChunk(text, start, end, pos=None):
 		return (endpos+len(end), chunk)
 
 # As above, but return all matches. Poor man's regexp :)
-def FindChunks(text, start, end):
+def FindChunks(text, start, end, limit=0):
 	chunks = []
 	n = 0
 	
@@ -76,8 +76,10 @@ def FindChunks(text, start, end):
 		if result is None:
 			return chunks
 		else:
-			n = result[0]
 			chunks.append(result[1])
+			if limit and len(chunks) == limit:
+				return chunks
+			n = result[0]
 
 # ---------------------------------------------------------------------------
 # Strip HTML tags from text and split it into non-empty lines
