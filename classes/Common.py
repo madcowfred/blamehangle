@@ -99,30 +99,26 @@ def Safe_Filename(filename):
 	
 	return safe_filename
 
-# ---------------------------------------------------------------------------
-# Convert a dotted quad into a long integer. Not sure where I borrowed this
-# one from.
-# ---------------------------------------------------------------------------
-def IP_to_Long(ip):
-	longip = 0L
+def GetTZ():
+	'Sort out the wacky timezone into something we can use'
 	
-	parts = map(int, ip.split('.'))
-	for part in parts:
-		longip = (longip << 8) + part
+	# Use DST if it's there
+	if time.daylight:
+		tz = time.altzone
+	else:
+		tz = time.timezone
 	
-	return longip
-
-# ---------------------------------------------------------------------------
-# Convert a long integer into a dotted quad. This function borrowed from the
-# ASPN Python Cookbook.
-# ---------------------------------------------------------------------------
-def Long_to_IP(longip):
-	d = 256 * 256 * 256
-	parts = []
+	# GMT people
+	if tz == 0 or tz == -0:
+		return '+0000'
 	
-	while d > 0:
-		part, longip = divmod(longip, d)
-		parts.append(str(part))
-		d /= 256
+	# These people are actually ahead
+	if tz < 0:
+		sign = '+'
+		tz = tz - tz - tz
+	else:
+		sign = '-'
 	
-	return '.'.join(parts)
+	# Construct the time zone
+	hours, mins = divmod(tz / 60, 60)
+	return '%s%02d%02d' % (sign, hours, mins)
