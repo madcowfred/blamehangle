@@ -510,9 +510,9 @@ class News(Plugin):
 		articles = trigger.articles
 		del trigger.articles
 		
-		tolog = '>>articles: %s' % articles
+		tolog = '>>articles: %s' % repr(articles)
 		self.putlog(LOG_DEBUG, tolog)
-		tolog = '>>result: %s' % result
+		tolog = '>>result: %s' % repr(result)
 		self.putlog(LOG_DEBUG, tolog)
 		
 		# We don't need to add any that are already in the database
@@ -521,7 +521,7 @@ class News(Plugin):
 			if eatme:
 				articles.remove(eatme[0])
 		
-		tolog = '>>articles: %s' % articles
+		tolog = '>>articles: %s' % repr(articles)
 		self.putlog(LOG_DEBUG, tolog)
 		
 		# If we don't have any new articles, go home now
