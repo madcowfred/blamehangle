@@ -20,7 +20,7 @@ from classes.Plugin import Plugin
 
 ANTONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=ant&org1=let&org2=l'
 RHYME_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&org1=let&org2=sl'
-SYNONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l'
+SYNONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=syl&org2=l'
 
 # Match the results line
 RESULTS_RE = re.compile(r'^\((\d+) res')
