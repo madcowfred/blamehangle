@@ -11,12 +11,9 @@ important:
 	* user/access list for the SmartyPants (zhar?)
 	* convert db.dump once the bot is ready for it, and we have a newer dump
 	  (both + dene)
-	* configs/ dir, with a config file for the main bot and each plugin (that
-	  needs one) (anyone)
-	* to go with the above, make plugins use configs instead of hardcoded crap
-	  all over the place (anyone)
+	* Go through plugins and move hardcoded stuff out of them into files in
+	  the configs dir as appropriate
 
 whatever:
 	* testing! :) (anyone)
 	* Come up with more ideas for plugins (anyone)
-	* Come up with more stuff for the TODO list ;) (fred!)
