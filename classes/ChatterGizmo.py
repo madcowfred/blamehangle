@@ -98,7 +98,7 @@ class ChatterGizmo(Child):
 				#		wrap.requested_quit = 1
 		
 		for section in new_nets:
-			if not [network for conn, network in old_nets]:
+			if not [network for conn, network in old_nets if network == section]:
 				# this is a new network that has been added to our config
 				self.connect(section=section)
 	
@@ -161,7 +161,7 @@ class ChatterGizmo(Child):
 				options[option] = self.Config.get(section, option)
 			
 			conn = self.__ircobj.server()
-			self.Conns[conn] = WrapConn(self, conn, options)
+			self.Conns[conn] = WrapConn(self, section, conn, options)
 			self.Conns[conn].connect()
 		
 		else:
