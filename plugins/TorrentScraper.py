@@ -85,6 +85,8 @@ class TorrentScraper(Plugin):
 		
 		# If we found nothing, bug out
 		if items == []:
+			tolog = "Found no torrents at %s!" % resp.url
+			self.putlog(LOG_WARNING, tolog)
 			return
 		
 		# Build our query
