@@ -43,7 +43,7 @@ FACT_ALSO = "FACT_ALSO"
 FACT_DEL = "FACT_DEL"
 FACT_REPLACE = "FACT_REPLACE"
 FACT_INFO = "FACT_INFO"
-#FACT_STATUS = "FACT_STATUS"
+FACT_STATUS = "FACT_STATUS"
 FACT_LOCK = "FACT_LOCK"
 FACT_UNLOCK = "FACT_UNLOCK"
 
@@ -60,6 +60,8 @@ REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, reques
 LOCK_QUERY = "UPDATE factoids SET locker_nick = %s, locker_host = %s, locked_time = %s WHERE name = %s"
 UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, locked_time = NULL WHERE name = %s"
 
+STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
+
 GET_RE = re.compile("^(?P<name>.+?)\??$")
 SET_RE = re.compile("^(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
 ALSO_RE = re.compile("(?P<name>.+?) (is|are) also (?P<value>.+)$")
@@ -68,7 +70,7 @@ REP_RE = re.compile("^(?P<name>.+?) =~ (?P<modstring>.+)$")
 LOCK_RE = re.compile("^lock (?P<name>.+)$")
 UNLOCK_RE = re.compile("^unlock (?P<name>.+)$")
 INFO_RE = re.compile("^factinfo (?P<name>.+)\??$")
-#STATUS_RE = re.compile("^status$")
+STATUS_RE = re.compile("^status$")
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
@@ -113,6 +115,12 @@ class SmartyPants(Plugin):
 		self.__users = FactoidUserList()
 		self.__Setup_Users()
 
+		self.__start_time = time.asctime()
+		self.__requests = 0
+		self.__dunnos = 0
+		self.__sets = 0
+		self.__modifys = 0
+
 	def _message_PLUGIN_REGISTER(self, message):
 		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE, exclusive=1)
 		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_RE, exclusive=1)
@@ -130,8 +138,10 @@ class SmartyPants(Plugin):
 		unlock_msg = PluginTextEvent(FACT_UNLOCK, IRCT_MSG, UNLOCK_RE)
 		info_dir = PluginTextEvent(FACT_INFO, IRCT_PUBLIC_D, INFO_RE)
 		info_msg = PluginTextEvent(FACT_INFO, IRCT_MSG, INFO_RE)
+		status_dir = PluginTextEvent(FACT_STATUS, IRCT_PUBLIC_D, STATUS_RE)
+		status_msg = PluginTextEvent(FACT_STATUS, IRCT_MSG, STATUS_RE)
 		
-		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg)
+		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg)
 	
 	#------------------------------------------------------------------------
 	
@@ -194,6 +204,11 @@ class SmartyPants(Plugin):
 			name = trigger.match.group('name')
 			data = [trigger, (INFO_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
+
+		# Someone asked for our runtime status
+		elif trigger.name == FACT_STATUS:
+			data = [trigger, (STATUS_QUERY, [])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	#------------------------------------------------------------------------
 	
@@ -223,6 +238,9 @@ class SmartyPants(Plugin):
 
 		elif trigger.name == FACT_INFO:
 			self.__Fact_Info(trigger, results)
+			
+		elif trigger.name == FACT_STATUS:
+			self.__Fact_Status(trigger, results)
 		
 		elif trigger.name == FACT_UPDATEDB:
 			# The database just made our requested modifications, so we just
@@ -249,9 +267,11 @@ class SmartyPants(Plugin):
 		if results == [()]:
 			# The factoid wasn't in our database
 			replytext = self.__Random(DUNNO)
+			self.__dunnos += 1
 		
 		else:
 			# We found it!
+			self.__requests += 1
 			row = results[0][0]
 			replytext = '%(name)s is %(value)s' % row
 			
@@ -280,7 +300,7 @@ class SmartyPants(Plugin):
 				# The factoid wasn't in our database, so insert it
 				#
 				#INSERT INTO factoids (name, value, author_nick, author_host, created_time)
-				
+				self.__sets += 1
 				name = trigger.match.group('name')
 				value = trigger.match.group('value')
 				author_nick = trigger.userinfo.nick
@@ -350,6 +370,7 @@ class SmartyPants(Plugin):
 	# Update a factoid by adding our new text to the end of it
 	#------------------------------------------------------------------------
 	def __Fact_Update(self, trigger, value):
+		self.__modifys += 1
 		modified_time = int(time.time())
 		modifier_nick = trigger.userinfo.nick
 		modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
@@ -662,6 +683,15 @@ class SmartyPants(Plugin):
 
 		return text
 	
+	#------------------------------------------------------------------------
+	# Someone just asked for our status
+	#------------------------------------------------------------------------
+	def __Fact_Status(self, trigger, results):
+		row = results[0][0]
+		num = row['total']
+		replytext = "Since %s, there have been \02%d\02 requests, \02%d\02 modifications, \02%d\02 new factoids, and \02%d\02 dunnos. I currently reference \02%d\02 factoids." % (self.__start_time, self.__requests, self.__modifys, self.__sets, self.__dunnos, num)
+		self.sendReply(trigger, replytext)
+
 	#------------------------------------------------------------------------
 	
 	# The DB has performed our requested update to the factoid table
