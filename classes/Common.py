@@ -52,13 +52,14 @@ def FindChunk(text, start, end, pos=None):
 	
 	# Can we find the end?
 	endpos = text.find(end, startspot)
-	if endpos <= startspot:
+	#if endpos <= startpos:
+	if endpos < 0:
 		return None
 	
 	# Ok, we have some text now
 	chunk = text[startspot:endpos]
-	if len(chunk) == 0:
-		return None
+	#if len(chunk) == 0:
+	#	return None
 	
 	# Return!
 	if pos is None:
