@@ -42,7 +42,7 @@ class Dictionary(Plugin):
 		if trigger.name == DICTIONARY_DICT:
 			word = trigger.match.group('word').lower()
 			if len(word) > 30:
-				tolog = 'Dictionary: %s asked me to look up a very long word!'
+				tolog = 'Dictionary: %s asked me to look up a very long word!' % (trigger.userinfo.nick)
 				
 				self.sendReply(trigger, "That's too long!")
 			
