@@ -28,7 +28,8 @@ import fpformat
 import math
 import re
 import string
-import urllib2
+import types
+#import urllib2
 
 __author__ = "klausman-pymetar@schwarzvogel.de"
 
