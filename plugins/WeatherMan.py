@@ -80,23 +80,17 @@ class WeatherMan(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		short_dir = PluginTextEvent(WEATHER_SHORT, IRCT_PUBLIC_D, SHORT_RE)
-		short_msg = PluginTextEvent(WEATHER_SHORT, IRCT_MSG, SHORT_RE)
-		long_dir = PluginTextEvent(WEATHER_LONG, IRCT_PUBLIC_D, LONG_RE)
-		long_msg = PluginTextEvent(WEATHER_LONG, IRCT_MSG, LONG_RE)
-		forecast_dir = PluginTextEvent(WEATHER_FORECAST, IRCT_PUBLIC_D, FORECAST_RE)
-		forecast_msg = PluginTextEvent(WEATHER_FORECAST, IRCT_MSG, FORECAST_RE)
-		self.register(short_dir, short_msg, long_dir, long_msg, forecast_dir, forecast_msg)
+		# Yahoo Weather
+		self.setTextEvent(WEATHER_FORECAST, FORECAST_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(WEATHER_LONG, LONG_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(WEATHER_SHORT, SHORT_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		# METAR
+		self.setTextEvent(WEATHER_METAR, METAR_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(WEATHER_METARD, METARD_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		# TAF
+		self.setTextEvent(WEATHER_TAF, TAF_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		
-		metar_dir = PluginTextEvent(WEATHER_METAR, IRCT_PUBLIC_D, METAR_RE)
-		metar_msg = PluginTextEvent(WEATHER_METAR, IRCT_MSG, METAR_RE)
-		metard_dir = PluginTextEvent(WEATHER_METARD, IRCT_PUBLIC_D, METARD_RE)
-		metard_msg = PluginTextEvent(WEATHER_METARD, IRCT_MSG, METARD_RE)
-		self.register(metar_dir, metar_msg, metard_dir, metard_msg)
-		
-		taf_dir = PluginTextEvent(WEATHER_TAF, IRCT_PUBLIC_D, TAF_RE)
-		taf_msg = PluginTextEvent(WEATHER_TAF, IRCT_MSG, TAF_RE)
-		self.register(taf_dir, taf_msg)
+		self.registerEvents()
 		
 		self.setHelp('weather', 'weather', SHORT_HELP)
 		self.setHelp('weather', 'weatherlong', LONG_HELP)

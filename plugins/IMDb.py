@@ -28,24 +28,19 @@ APPROX_RE = re.compile(r'href="/title/tt(\d+)/">(.+)')
 
 class IMDb(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
-		imdb_dir = PluginTextEvent(IMDB_IMDB, IRCT_PUBLIC_D, IMDB_RE)
-		imdb_msg = PluginTextEvent(IMDB_IMDB, IRCT_MSG, IMDB_RE)
-		title_dir = PluginTextEvent(IMDB_TITLE, IRCT_PUBLIC_D, TITLE_RE)
-		title_msg = PluginTextEvent(IMDB_TITLE, IRCT_MSG, TITLE_RE)
-		self.register(imdb_dir, imdb_msg, title_dir, title_msg)
+		self.setTextEvent(IMDB_IMDB, IMDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(IMDB_TITLE, TITLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('imdb', 'imdb', IMDB_HELP)
 		self.setHelp('imdb', 'imdbtitle', TITLE_HELP)
 		self.registerHelp()
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
+	def _trigger_IMDB_IMDB(self, trigger):
+		url = IMDB_URL % QuoteURL(trigger.match.group(1))
+		self.urlRequest(trigger, url)
 		
-		if trigger.name == IMDB_IMDB:
-			url = IMDB_URL % QuoteURL(trigger.match.group(1))
-			self.urlRequest(trigger, url)
-		
-		elif trigger.name == IMDB_TITLE:
+	def _trigger_IMDB_TITLE(self, trigger):
 			url = TITLE_URL % int(trigger.match.group(1))
 			self.urlRequest(trigger, url)
 	
@@ -199,7 +194,7 @@ class IMDb(Plugin):
 				if data.get(field.lower(), None) is None:
 					continue
 				
-				part = '\02[\02%s\02]\02 %s' % (field, data[field.lower()])
+				part = '\02[\02%s: %s\02]\02' % (field, data[field.lower()])
 				parts.append(part)
 			
 			replytext = ' '.join(parts)

@@ -34,28 +34,17 @@ class FunStuff(Plugin):
 				self.__eightball_responses.append(self.Config.get('eightball', option))
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		eightball_dir = PluginTextEvent(FUN_EIGHTBALL, IRCT_PUBLIC_D, EIGHTBALL_RE)
-		eightball_msg = PluginTextEvent(FUN_EIGHTBALL, IRCT_MSG, EIGHTBALL_RE)
-		muddle_dir = PluginTextEvent(FUN_MUDDLE, IRCT_PUBLIC_D, MUDDLE_RE)
-		muddle_msg = PluginTextEvent(FUN_MUDDLE, IRCT_MSG, MUDDLE_RE)
-		self.register(eightball_dir, eightball_msg, muddle_dir, muddle_msg)
+		self.setTextEvent(FUN_EIGHTBALL, EIGHTBALL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FUN_MUDDLE, MUDDLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('funstuff', '8ball', EIGHTBALL_HELP)
 		self.setHelp('funstuff', 'muddle', MUDDLE_HELP)
 		self.registerHelp()
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == FUN_EIGHTBALL:
-			self.__Eightball(trigger)
-		
-		elif trigger.name == FUN_MUDDLE:
-			self.__Muddle(trigger)
-	
 	# -----------------------------------------------------------------------
 	# Come up with a random response to a question
-	def __Eightball(self, trigger):
+	def _trigger_FUN_EIGHTBALL(self, trigger):
 		while 1:
 			replytext = random.choice(self.__eightball_responses)
 			if replytext != self.__eightball_last:
@@ -66,7 +55,7 @@ class FunStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Muddle up some text by re-arranging the words
-	def __Muddle(self, trigger):
+	def _trigger_FUN_MUDDLE(self, trigger):
 		words = trigger.match.group('text').split()
 		new = []
 		

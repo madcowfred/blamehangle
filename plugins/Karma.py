@@ -5,8 +5,9 @@
 
 import re
 
-from classes.Plugin import *
+from classes.Common import *
 from classes.Constants import *
+from classes.Plugin import *
 
 #----------------------------------------------------------------------------
 
@@ -41,20 +42,17 @@ class Karma(Plugin):
 	"""
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		inc = PluginTextEvent(KARMA_PLUS, IRCT_PUBLIC, PLUS_RE)
-		dec = PluginTextEvent(KARMA_MINUS, IRCT_PUBLIC, MINUS_RE)
-		lookup_pub = PluginTextEvent(KARMA_LOOKUP, IRCT_PUBLIC_D, LOOKUP_RE)
-		lookup_msg = PluginTextEvent(KARMA_LOOKUP, IRCT_MSG, LOOKUP_RE)
-		
-		self.register(inc, dec, lookup_pub, lookup_msg)
+		self.setTextEvent(KARMA_PLUS, PLUS_RE, IRCT_PUBLIC)
+		self.setTextEvent(KARMA_MINUS, MINUS_RE, IRCT_PUBLIC)
+		self.setTextEvent(KARMA_LOOKUP, LOOKUP_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('karma', 'karma', KARMA_HELP)
 		self.setHelp('karma', 'modify', KARMA_CHANGE_HELP)
-		
 		self.registerHelp()
 	
 	#------------------------------------------------------------------------
-	
+	# We don't care what sort it is, as they all use the same select query
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		name = trigger.match.group('name')

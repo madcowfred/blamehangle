@@ -34,7 +34,6 @@ class SamplePlugin(Plugin):
 		self.SAMPLE_NAME3_TARGETS = {
 			'SuperMegaNet': ['#moo']
 			}
-		
 	
 	# -----------------------------------------------------------------------
 	# A plugin can define the run_once method if it has anything that needs
@@ -50,16 +49,15 @@ class SamplePlugin(Plugin):
 	# A plugin can define the run_always method if it has anything that needs
 	# to be done during every iteration of the main control loop in
 	# Blamehangle. This method will be called once per plugin per loop, if
-	# defined.
+	# defined. Try not to use this :)
 	def run_always(self):
 		# If you don't need to do anything in the main_loop you can omit this
 		# method entirely instead of just passing
 		pass
 	
 	# -----------------------------------------------------------------------
-	
 	# Every plugin must define the _message_PLUGIN_REGISTER method, which
-	# must call self.register with all it's events as arguments.
+	# should look something like this.
 	def _message_PLUGIN_REGISTER(self, message):
 		# the message from PluginHandler -> our plugin does not contain any
 		# data, so we don't need to worry about the contents of it here.

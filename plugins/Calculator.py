@@ -5,8 +5,9 @@
 
 import re
 
-from classes.Plugin import *
+from classes.Common import *
 from classes.Constants import *
+from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
@@ -25,27 +26,13 @@ class Calculator(Plugin):
 	"""
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		calc_dir = PluginTextEvent(CALC, IRCT_PUBLIC_D, CALC_RE)
-		calc_msg = PluginTextEvent(CALC, IRCT_MSG, CALC_RE)
-		
-		self.register(calc_dir, calc_msg)
+		self.setTextEvent(CALC, CALC_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 	
 	# --------------------------------------------------------------------------
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == CALC:
-			self.__calc(trigger)
-		else:
-			tolog = "Calculator got an unknown trigger: %s" % trigger
-			self.putlog(LOG_WARNING, tolog)
-	
-	# --------------------------------------------------------------------------
-	
 	# We have been given a string containing an expression... so lets go ahead
 	# and work it out!
-	def __calc(self, trigger):
+	def __trigger_CALC(self, trigger):
 		# mangle the string we have been given slightly.. remove any nasty
 		# attempts at **, and change every number into a float
 		calcstr = trigger.match.group(0)
@@ -82,19 +69,17 @@ class Calculator(Plugin):
 			result = eval(newstr)
 		except ZeroDivisionError:
 			replytext = "can't divide by zero"
-			self.sendReply(trigger, replytext)
 		except OverflowError, err:
-			code, msg = err
-			self.sendReply(trigger, msg)
+			replytext = err[1]
 		except ValueError, errtext:
-			self.sendReply(trigger, errtext)
+			replytext = errtext
 		except Exception:
-			replytext = "not a valid mathematical expression"
-			self.sendReply(trigger, replytext)
+			replytext = 'not a valid mathematical expression!'
 		else:
 			replytext = "%s" % result
 			if replytext.endswith(".0"):
 				replytext = replytext[:-2]
-			self.sendReply(trigger, replytext)
+		
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
 NOBOLD_RE = re.compile('</?b>')
 NOFONT_RE = re.compile('</?font[^<>]*?>')
 
+# ---------------------------------------------------------------------------
 
 GOOGLE_TRANSLATE = 'GOOGLE_TRANSLATE'
 TRANSLATE_HELP = '\02translate\02 <from> \02to\02 <to> <text> : Translate some text via Google Translate.'
@@ -32,17 +33,6 @@ TRANSLATE_URL = 'http://translate.google.com/translate_t?langpair=%s|%s&text=%s'
 GOOGLE_TRANSMANGLE = 'GOOGLE_TRANSMANGLE'
 TRANSMANGLE_HELP = '\02transmangle\02 <lang> <text> : Mangle text by translating from English to lang and back again.'
 TRANSMANGLE_RE = re.compile('^transmangle (?P<lang>\S+) (?P<text>.+)$')
-
-# ---------------------------------------------------------------------------
-# The different languages we know about
-LANGUAGES = {
-	'de': 'German',
-	'en': 'English',
-	'es': 'Spanish',
-	'fr': 'French',
-	'it': 'Italian',
-	'pt': 'Portuguese',
-}
 
 # A mapping of language translations we can do
 LANG_MAP = {
@@ -58,76 +48,74 @@ LANG_MAP = {
 
 class Google(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
-		google_dir = PluginTextEvent(GOOGLE_GOOGLE, IRCT_PUBLIC_D, GOOGLE_RE)
-		google_msg = PluginTextEvent(GOOGLE_GOOGLE, IRCT_MSG, GOOGLE_RE)
-		translate_dir = PluginTextEvent(GOOGLE_TRANSLATE, IRCT_PUBLIC_D, TRANSLATE_RE)
-		translate_msg = PluginTextEvent(GOOGLE_TRANSLATE, IRCT_MSG, TRANSLATE_RE)
-		transmangle_dir = PluginTextEvent(GOOGLE_TRANSMANGLE, IRCT_PUBLIC_D, TRANSMANGLE_RE)
-		transmangle_msg = PluginTextEvent(GOOGLE_TRANSMANGLE, IRCT_MSG, TRANSMANGLE_RE)
-		self.register(google_dir, google_msg, translate_dir, translate_msg, transmangle_dir, transmangle_msg)
+		self.setTextEvent(GOOGLE_GOOGLE, GOOGLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(GOOGLE_TRANSLATE, TRANSLATE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(GOOGLE_TRANSMANGLE, TRANSMANGLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('google', 'google', GOOGLE_HELP)
 		self.setHelp('google', 'translate', TRANSLATE_HELP)
 		self.setHelp('google', 'transmangle', TRANSMANGLE_HELP)
 		self.registerHelp()
 	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
+	# -----------------------------------------------------------------------
+	
+	def _trigger_GOOGLE_GOOGLE(self, trigger):
+		url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
+		self.urlRequest(trigger, url)
+	
+	def _trigger_GOOGLE_TRANSLATE(self, trigger):
+		_from = trigger.match.group('from').lower()
+		_to = trigger.match.group('to').lower()
+		_text = trigger.match.group('text')
 		
-		if trigger.name == GOOGLE_GOOGLE:
-			url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
-			self.urlRequest(trigger, url)
+		replytext = None
 		
-		elif trigger.name == GOOGLE_TRANSLATE:
-			_from = trigger.match.group('from').lower()
-			_to = trigger.match.group('to').lower()
-			_text = trigger.match.group('text')
-			
-			replytext = None
-			
-			# Verify our parameters
-			if not LANGUAGES.has_key(_from):
-				replytext = '"%s" is not a valid language!' % _from
-			elif not LANGUAGES.has_key(_to):
-				replytext = '"%s" is not a valid language!' % _to
-			elif _to not in LANG_MAP[_from]:
-				replytext = '"%s" to "%s" is not a valid translation!' % (_from, _to)
-			elif len(_text) > 300:
-				replytext = 'Text is too long! %d > 300' % (len(_text))
-			
-			# If we have a reply, bail now
-			if replytext is not None:
-				self.sendReply(trigger, replytext)
-				return
-			
-			# Otherwise, build the URL and send it off
-			url = TRANSLATE_URL % (_from, _to, quote(_text))
-			self.urlRequest(trigger, url)
+		# Verify our parameters
+		if not LANG_MAP.has_key(_from):
+			replytext = '"%s" is not a valid language!' % _from
+		elif not LANG_MAP.has_key(_to):
+			replytext = '"%s" is not a valid language!' % _to
+		elif _to not in LANG_MAP[_from]:
+			replytext = '"%s" to "%s" is not a valid translation!' % (_from, _to)
+		elif len(_text) > 300:
+			replytext = 'Text is too long! %d > 300' % (len(_text))
 		
-		elif trigger.name == GOOGLE_TRANSMANGLE:
-			_lang = trigger.match.group('lang').lower()
-			_text = trigger.match.group('text')
-			
-			replytext = None
-			
-			# Verify our parameters
-			if _lang == 'en':
-				replytext = "Can't translate from English to English!"
-			elif not LANGUAGES.has_key(_lang):
-				replytext = '"%s" is not a valid language!'
-			elif len(_text) > 300:
-				replytext = 'Text is too long! %d > 300' % (len(_text))
-			
-			# If we have a reply, bail now
-			if replytext is not None:
-				self.sendReply(trigger, replytext)
-				return
-			
-			# Otherwise, build the URL and send it off
-			trigger.done = 0
-			
-			url = TRANSLATE_URL % ('en', _lang, quote(_text))
-			self.urlRequest(trigger, url)
+		# If we have a reply, bail now
+		if replytext is not None:
+			self.sendReply(trigger, replytext)
+			return
+		
+		# Otherwise, build the URL and send it off
+		url = TRANSLATE_URL % (_from, _to, quote(_text))
+		self.urlRequest(trigger, url)
+		
+	def _trigger_GOOGLE_TRANSMANGLE(self, trigger):
+		_lang = trigger.match.group('lang').lower()
+		_text = trigger.match.group('text')
+		
+		replytext = None
+		
+		# Verify our parameters
+		if _lang == 'en':
+			replytext = "Can't translate from English to English!"
+		elif not LANG_MAP.has_key(_lang):
+			replytext = '"%s" is not a valid language!'
+		elif len(_text) > 300:
+			replytext = 'Text is too long! %d > 300' % (len(_text))
+		
+		# If we have a reply, bail now
+		if replytext is not None:
+			self.sendReply(trigger, replytext)
+			return
+		
+		# Otherwise, build the URL and send it off
+		trigger.done = 0
+		
+		url = TRANSLATE_URL % ('en', _lang, quote(_text))
+		self.urlRequest(trigger, url)
+	
+	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_URL(self, message):
 		trigger, page_text = message.data

@@ -6,6 +6,7 @@
 
 import re
 
+from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
@@ -53,23 +54,15 @@ WEIGHT = {
 
 class Converter(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
-		convert_dir = PluginTextEvent(CONVERT_CONVERT, IRCT_PUBLIC_D, CONVERT_RE)
-		convert_msg = PluginTextEvent(CONVERT_CONVERT, IRCT_MSG, CONVERT_RE)
-		self.register(convert_dir, convert_msg)
+		self.setTextEvent(CONVERT_CONVERT, CONVERT_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('convert', 'convert', CONVERT_HELP)
-		
 		self.registerHelp()
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == CONVERT_CONVERT:
-			self.__Convert(trigger)
 	
 	# -----------------------------------------------------------------------
 	
-	def __Convert(self, trigger):
+	def _trigger_CONVERT_CONVERT(self, trigger):
 		data = {}
 		data['amt'] = float(trigger.match.group('amt'))
 		data['from'] = trigger.match.group('from').lower()

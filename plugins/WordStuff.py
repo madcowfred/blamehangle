@@ -81,20 +81,15 @@ class WordStuff(Plugin):
 	
 	def _message_PLUGIN_REGISTER(self, message):
 		# RhymeZone
-		ant_dir = PluginTextEvent(WORD_ANTONYM, IRCT_PUBLIC_D, ANTONYM_RE)
-		ant_msg = PluginTextEvent(WORD_ANTONYM, IRCT_MSG, ANTONYM_RE)
-		rhyme_dir = PluginTextEvent(WORD_RHYME, IRCT_PUBLIC_D, RHYME_RE)
-		rhyme_msg = PluginTextEvent(WORD_RHYME, IRCT_MSG, RHYME_RE)
-		syn_dir = PluginTextEvent(WORD_SYNONYM, IRCT_PUBLIC_D, SYNONYM_RE)
-		syn_msg = PluginTextEvent(WORD_SYNONYM, IRCT_MSG, SYNONYM_RE)
+		self.setTextEvent(WORD_ANTONYM, ANTONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(WORD_RHYME, RHYME_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(WORD_SYNONYM, SYNONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# DICT
-		dict_dir = PluginTextEvent(WORD_DICT, IRCT_PUBLIC_D, DICT_RE)
-		dict_msg = PluginTextEvent(WORD_DICT, IRCT_MSG, DICT_RE)
+		self.setTextEvent(WORD_DICT, DICT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# Spell
-		spell_dir = PluginTextEvent(WORD_SPELL, IRCT_PUBLIC_D, SPELL_RE)
-		spell_msg = PluginTextEvent(WORD_SPELL, IRCT_MSG, SPELL_RE)
-		self.register(ant_dir, ant_msg, rhyme_dir, rhyme_msg, syn_dir, syn_msg,
-			dict_dir, dict_msg, spell_dir, spell_msg)
+		self.setTextEvent(WORD_SPELL, SPELL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		
+		self.registerEvents()
 		
 		self.setHelp('words', 'antonyms', ANTONYM_HELP)
 		self.setHelp('words', 'rhyme', RHYME_HELP)

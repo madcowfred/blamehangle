@@ -64,15 +64,11 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		curr_dir = PluginTextEvent(MONEY_CURRENCY, IRCT_PUBLIC_D, CURRENCY_RE)
-		curr_msg = PluginTextEvent(MONEY_CURRENCY, IRCT_MSG, CURRENCY_RE)
-		conv_dir = PluginTextEvent(MONEY_EXCHANGE, IRCT_PUBLIC_D, EXCHANGE_RE)
-		conv_msg = PluginTextEvent(MONEY_EXCHANGE, IRCT_MSG, EXCHANGE_RE)
-		quote_dir = PluginTextEvent(MONEY_QUOTE, IRCT_PUBLIC_D, QUOTE_RE)
-		quote_msg = PluginTextEvent(MONEY_QUOTE, IRCT_MSG, QUOTE_RE)
-		symbol_dir = PluginTextEvent(MONEY_SYMBOL, IRCT_PUBLIC_D, SYMBOL_RE)
-		symbol_msg = PluginTextEvent(MONEY_SYMBOL, IRCT_MSG, SYMBOL_RE)
-		self.register(conv_dir, conv_msg, curr_dir, curr_msg, quote_dir, quote_msg, symbol_dir, symbol_msg)
+		self.setTextEvent(MONEY_CURRENCY, CURRENCY_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(MONEY_EXCHANGE, EXCHANGE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(MONEY_QUOTE, QUOTE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(MONEY_SYMBOL, SYMBOL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('money', 'currency', CURRENCY_HELP)
 		self.setHelp('money', 'exchange', EXCHANGE_HELP)

@@ -3,9 +3,10 @@
 # ---------------------------------------------------------------------------
 # A huge plugin to see what the time is in various places.
 
-import re
 import os
+import re
 
+from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
@@ -24,23 +25,15 @@ class TimeDate(Plugin):
 			self.putlog(LOG_WARNING, "Unable to get timezone information on Windows systems.")
 			return
 		
-		date_dir = PluginTextEvent(TIME_DATE, IRCT_PUBLIC_D, DATE_RE)
-		date_msg = PluginTextEvent(TIME_DATE, IRCT_MSG, DATE_RE)
-		self.register(date_dir, date_msg)
+		self.setTextEvent(TIME_DATE, DATE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('time', 'date', DATE_HELP)
-		
 		self.registerHelp()
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == TIME_DATE:
-			self.__Date(trigger)
 	
 	# -----------------------------------------------------------------------
 	
-	def __Date(self, trigger):
+	def _trigger_TIME_DATE(self, trigger):
 		city = trigger.match.group('city')
 		
 		# Try to find our new timezone
