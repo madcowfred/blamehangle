@@ -510,11 +510,19 @@ class News(Plugin):
 		articles = trigger.articles
 		del trigger.articles
 		
+		tolog = '>>articles: %s' % articles
+		self.putlog(LOG_DEBUG, tolog)
+		tolog = '>>result: %s' % result
+		self.putlog(LOG_DEBUG, tolog)
+		
 		# We don't need to add any that are already in the database
 		for row in result:
 			eatme = [a for a in articles if a[0] == row['title']]
 			if eatme:
 				articles.remove(eatme[0])
+		
+		tolog = '>>articles: %s' % articles
+		self.putlog(LOG_DEBUG, tolog)
 		
 		# If we don't have any new articles, go home now
 		if len(articles) == 0:
