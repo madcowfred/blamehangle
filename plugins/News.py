@@ -99,7 +99,7 @@ class News(Plugin):
 				# We pull out a random item from our outgoing list so that
 				# we don't end up posting slabs of stories from the same
 				# site in a row
-				index = self.__rand_gen.randint(0, len(self.__outgoing))
+				index = self.__rand_gen.randint(0, len(self.__outgoing) - 1)
 				reply = self.__outgoing.pop(index)
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
