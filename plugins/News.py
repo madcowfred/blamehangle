@@ -77,8 +77,8 @@ class News(Plugin):
 		
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
 		
-		old_days = self.Config.getint('News', 'old_threshold')
-		self.__old_threshold = old_days * 86400
+		self.__old_days = self.Config.getint('News', 'old_threshold')
+		self.__old_threshold = self.__old_days * 86400
 		
 		self.__gwn_targets = {}
 		self.__gsci_targets = {}
@@ -422,7 +422,7 @@ class News(Plugin):
 		search_text = trigger.match.group('search_text')
 		if results == [()]:
 			# the search failed
-			replytext = "No headlines in the last two days found matching '\02%s\02'" % search_text
+			replytext = "No headlines in the last %d days found matching '\02%s\02'" % (self.__old_days, search_text)
 			self.sendReply(trigger, replytext)
 		else:
 			# check how many items we found
