@@ -123,33 +123,39 @@ class Postman:
 			globals()[name] = getattr(module, name)
 		
 		except ImportError:
-			tolog = "No such plugin: %s" % name
+			tolog = "No such plugin '%s'" % name
 			self.__Log(LOG_WARNING, tolog)
 		
-		# Start it up
-		tolog = "Starting plugin object '%s'" % name
-		self.__Log(LOG_ALWAYS, tolog)
-		
-		try:
-			cls = globals()[name]
-			instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
-			
-			if runonce and hasattr(instance, 'run_once'):
-				instance.run_once()
-		
 		except:
-			self.__Log_Exception()
+			self.__Log_Exception(dontcrash=1)
+			self.__Plugin_Unload(name)
 		
 		else:
-			pluginpath = '%s.py' % os.path.join('plugins', name)
-			self.__mtimes[name] = os.stat(pluginpath).st_mtime
+			# Start it up
+			tolog = "Starting plugin object '%s'" % name
+			self.__Log(LOG_ALWAYS, tolog)
 			
-			self.__Children[cls.__name__] = instance
+			try:
+				cls = globals()[name]
+				instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
+				
+				if runonce and hasattr(instance, 'run_once'):
+					instance.run_once()
 			
-			if hasattr(instance, 'run_always'):
-				self.__run_always.append(instance.run_always)
-			if hasattr(instance, 'run_sometimes'):
-				self.__run_sometimes.append(instance.run_sometimes)
+			except:
+				self.__Log_Exception(dontcrash=1)
+				self.__Plugin_Unload(name)
+			
+			else:
+				pluginpath = '%s.py' % os.path.join('plugins', name)
+				self.__mtimes[name] = os.stat(pluginpath).st_mtime
+				
+				self.__Children[cls.__name__] = instance
+				
+				if hasattr(instance, 'run_always'):
+					self.__run_always.append(instance.run_always)
+				if hasattr(instance, 'run_sometimes'):
+					self.__run_sometimes.append(instance.run_sometimes)
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
@@ -487,7 +493,7 @@ class Postman:
 	
 	# -----------------------------------------------------------------------
 	# Log an exception nicely
-	def __Log_Exception(self):
+	def __Log_Exception(self, dontcrash=0):
 		_type, _value, _tb = sys.exc_info()
 		
 		# If it's a SystemExit exception, we're really meant to die now
@@ -573,8 +579,11 @@ class Postman:
 			head, tail = os.path.split(last_file)
 			if head.endswith('plugins'):
 				root, ext = os.path.splitext(tail)
-				self.sendMessage(root, REQ_SHUTDOWN, None)
-			else:
+				if root in self.__Children:
+					self.sendMessage(root, REQ_SHUTDOWN, None)
+			
+			# If we're supposed to crash, do that
+			elif not dontcrash:
 				self.__Shutdown('Crashed!')
 	
 	# -----------------------------------------------------------------------
@@ -605,11 +614,12 @@ class Postman:
 		self.__Setup_From_Config()
 		self.__Load_Configs()
 		
-		# Check if any plugins have been removed from the config.
-		# If so, shut them down
+		# Check if any plugins have been removed from the config. If so, try
+		# and shut them down.
 		for plugin_name in old_plugin_list:
 			if plugin_name not in self.__plugin_list:
-				self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
+				if plugin_name in self.__Children:
+					self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
 		
 		# Check for any new plugins that have been added to the list
 		for plugin_name in self.__plugin_list:
