@@ -153,3 +153,17 @@ def QuoteURL(url):
 
 def UnquoteURL(url):
 	return urllib.unquote(url).replace(' ', '%20')
+
+# ---------------------------------------------------------------------------
+
+def NiceSize(bytes):
+	bytes = float(bytes)
+	
+	if bytes < 1024:
+		return '%dB' % (bytes)
+	elif bytes < (1024 * 1024):
+		return '%dKB' % (bytes / 1024)
+	elif bytes < (1024 * 1024 * 1024):
+		return '%.1fMB' % (bytes / 1024.0 / 1024.0)
+	else:
+		return '%.1fGB' % (bytes / 1024.0 / 1024.0 / 1024.0)

@@ -36,6 +36,7 @@ class HTTPMonster(Child):
 		self.urls = []
 		
 		self._requests = 0
+		self._totalbytes = 0
 		
 		self.rehash()
 	
@@ -120,6 +121,7 @@ class HTTPMonster(Child):
 	# Someone wants some stats
 	def _message_GATHER_STATS(self, message):
 		message.data['http_reqs'] = self._requests
+		message.data['http_bytes'] = self._totalbytes
 		
 		self.sendMessage('Postman', GATHER_STATS, message.data)
 
@@ -131,6 +133,7 @@ class async_http(buffered_dispatcher):
 		
 		self._error = None
 		self.closed = 0
+		self.received = 0
 		
 		self.data = []
 		self.headlines = []
@@ -244,9 +247,12 @@ class async_http(buffered_dispatcher):
 		self.last_activity = time.time()
 		
 		try:
-			self.data.append(self.recv(4096))
+			chunk = self.recv(4096)
 		except socket.error, msg:
 			self.failed(msg)
+		else:
+			self.data.append(chunk)
+			self.received += len(chunk)
 	
 	# Connection has been closed
 	def handle_close(self):
@@ -260,7 +266,6 @@ class async_http(buffered_dispatcher):
 			if line:
 				self.headlines.append(line)
 			else:
-				self.data = data
 				break
 		
 		# We have some data, might as well process it?
@@ -308,7 +313,7 @@ class async_http(buffered_dispatcher):
 				
 				# Anything else
 				else:
-					if len(self.data) > 0:
+					if len(data) > 0:
 						page_text = None
 						
 						# Check for gzip
@@ -325,14 +330,14 @@ class async_http(buffered_dispatcher):
 						# If we think it's gzip compressed, try to unsquish it
 						if is_gzip:
 							try:
-								gzf = gzip.GzipFile(fileobj=StringIO(self.data))
+								gzf = gzip.GzipFile(fileobj=StringIO(data))
 								page_text = gzf.read()
 								gzf.close()
 							except Exception, msg:
 								self.failed('gunzip failed: %s' % msg)
 						
 						else:
-							page_text = self.data[:]
+							page_text = data[:]
 						
 						# And if we still have page text, keep going
 						if page_text is not None:
@@ -347,7 +352,7 @@ class async_http(buffered_dispatcher):
 							
 							# If it was compressed, log a bit extra
 							if is_gzip:
-								tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(self.data), len(page_text))
+								tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(data), len(page_text))
 							else:
 								tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
 							self.parent.putlog(LOG_DEBUG, tolog)
@@ -373,6 +378,7 @@ class async_http(buffered_dispatcher):
 		if not self.closed:
 			self.closed = 1
 			self.parent.active -= 1
+			self.parent._totalbytes += self.received
 		
 		self.close()
 	
@@ -404,8 +410,11 @@ class async_http(buffered_dispatcher):
 		if not self.closed:
 			self.closed = 1
 			self.parent.active -= 1
+			self.parent._totalbytes += self.received
 		
 		self.close()
+		
+		raise
 
 # ---------------------------------------------------------------------------
 # Simple class to wrap the data that we're returning

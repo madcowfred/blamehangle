@@ -8,6 +8,7 @@ import os
 import re
 import time
 
+from classes.Common import NiceSize
 from classes.Constants import *
 from classes.Plugin import Plugin
 
@@ -48,6 +49,9 @@ class BotStatus(Plugin):
 		queries = (data['db_queries'] == 1) and 'query' or 'queries'
 		urls = (data['http_reqs'] == 1) and 'URL' or 'URLs'
 		plugins = (data['plugins'] == 1) and 'plugin' or 'plugins'
+		
+		if data['http_bytes']:
+			urls = '%s (%s)' % (urls, NiceSize(data['http_bytes']))
 		
 		replytext = 'I have been running for %s. I am currently in %d %s on %d %s. I am using %dKB of memory. I have performed %d database %s. I have fetched %d %s. I have %d %s loaded.' % (running, data['irc_chans'], chans, data['irc_nets'], nets, data['memory'], data['db_queries'], queries, data['http_reqs'], urls, data['plugins'], plugins)
 		self.sendReply(message.data['trigger'], replytext)
