@@ -165,7 +165,7 @@ class WeatherMan(Plugin):
 			
 			
 			# Find the chunk that tells us where we are
-			chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<!--ENDBREADCRUMBS-->')
+			chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '</b></font>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
 				self.sendReply(trigger, 'Failed to parse page properly')
