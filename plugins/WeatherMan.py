@@ -45,7 +45,7 @@ METARD_HELP = '\02metard\02 <station id> : Retrieve decoded METAR weather inform
 
 TAF_URL = 'http://weather.noaa.gov/pub/data/forecasts/taf/stations/%s.TXT'
 
-WEATHER_TAF = 'TAF'
+WEATHER_TAF = 'WEATHER_TAF'
 TAF_RE = re.compile('^taf (?P<station>\S+)$')
 TAF_HELP = '\02taf\02 <station id> : Retrieve coded TAF weather forecast.'
 
