@@ -25,6 +25,9 @@ class DatabaseWrapper:
 		self.Config = Config
 		self.db = None
 	
+	def _connect(self):
+		raise Exception, 'must override _connect()!'
+	
 	def disconnect(self):
 		if self.db:
 			self.db.close()
