@@ -30,6 +30,9 @@ TORRENTS_RE = re.compile(r'^torrents$')
 
 class GrabBT(Plugin):
 	def setup(self):
+		self.rehash()
+	
+	def rehash(self):
 		self._torrent_dir = self.Config.get('grabbt', 'torrent_dir')
 		self._new_dir = self.Config.get('grabbt', 'new_dir')
 		self._status_file = self.Config.get('grabbt', 'status_file')
