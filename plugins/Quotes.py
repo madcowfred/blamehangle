@@ -53,7 +53,11 @@ class Quotes(Plugin):
 			line = 'X-Mailer: blamehangle Quotes plugin'
 			lines.append(line)
 			
-			lines.append(trigger.match.group('quote'))
+			# Split the quote into lines
+			qlines = [l.strip() for l in trigger.match.group('quote').split('||')]
+			for qline in qlines:
+				if qline:
+					lines.append(qline)
 			
 			# Send it!
 			message = '\r\n'.join(lines)
@@ -64,11 +68,15 @@ class Quotes(Plugin):
 				server.sendmail(self.__from, self.__to, message)
 				server.quit()
 			
-			except:
-				replytext = 'Error sending mail!'
+			except Exception, msg:
+				replytext = 'Error sending mail: %s' % msg
+				tolog = 'Error sending quote mail: %s' % msg
+				self.putlog(LOG_WARNING, tolog)
 			
 			else:
 				replytext = 'Mail sent successfully'
+				tolog = '%s (%s@%s) sent a quote mail' % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host)
+				self.putlog(LOG_ALWAYS, tolog)
 			
 			self.sendReply(trigger, replytext)
 
