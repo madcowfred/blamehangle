@@ -10,5 +10,5 @@
 # Put your plugins here
 #----------------------------------------------------------------------------#
 
-from plugins.Karma import Karma
+#from plugins.Karma import Karma
 
