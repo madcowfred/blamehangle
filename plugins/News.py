@@ -174,21 +174,21 @@ class News(Plugin):
 		# News search
 		self.addTextEvent(
 			method = self.__Query_Search,
-			regexp = re.compile("^news (?P<search_text>.+)$"),
+			regexp = r'^news (?P<search_text>.+)$',
 			help = ('news', "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."),
 		)
 		# RSS feed commands
 		self.addTextEvent(
 			method = self.__Feed_List,
-			regexp = re.compile(r'^listfeeds$'),
+			regexp = r'^listfeeds$',
 			help = ('listfeeds', "\02listfeeds\02 : List the RSS feeds currently configured."),
 		)
 		self.addTextEvent(
 			method = self.__Feed_Show,
-			regexp = re.compile(r'^showfeed (?P<feed>.+)$'),
+			regexp = r'^showfeed (?P<feed>.+)$',
 			help = ('showfeed', "\02showfeed\02 <feed name> : Show some information about an RSS feed."),
 		)
-		# RSS feeds should be checked for readiness every 30 seconds
+		# RSS feeds should be checked for readiness every 10 seconds
 		if self._RSS_Feeds:
 			self.addTimedEvent(
 				method = self.__RSS_Check,

@@ -146,90 +146,90 @@ class SmartyPants(Plugin):
 		# Gets are lowest priority (default = 10)
 		self.addTextEvent(
 			method = self.__Query_Get,
-			regexp = re.compile(r'^(?P<name>.+?)\??$'),
+			regexp = r'^(?P<name>.+?)\??$',
 			priority = 0,
 			help = ('get', '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
 		)
 		if self.Options.get('public_request', None):
 			self.addTextEvent(
 				method = self.__Query_Get,
-				regexp = re.compile(r'^(?P<name>.+?)\?$'),
+				regexp = r'^(?P<name>.+?)\?$',
 				priority = 0,
 				IRCTypes = (IRCT_PUBLIC,),
 			)
 		# Sets aren't much better
 		self.addTextEvent(
 			method = self.__Query_Set,
-			regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
+			regexp = r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$',
 			priority = 1,
 			help = ('set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic.'),
 		)
 		if self.Options.get('public_assignment', None):
 			self.addTextEvent(
 				method = self.__Query_Set,
-				regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
+				regexp = r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$',
 				priority = 1,
 				IRCTypes = (IRCT_PUBLIC,),
 			)
 		self.addTextEvent(
 			method = self.__Query_Also,
 			priority = 2,
-			regexp = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$'),
+			regexp = r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$',
 		)
 		# And the rest are normalish
 		self.addTextEvent(
 			method = self.__Query_Raw,
-			regexp = re.compile(r'^rawfactoid (?P<name>.+?)$'),
+			regexp = r'^rawfactoid (?P<name>.+?)$',
 			help = ('rawfactoid', "\02rawfactoid\02 <factoid name> : Ask the bot for the definition of <factoid name>. Doesn't do variable substituion or factoid redirection."),
 		)
 		self.addTextEvent(
 			method = self.__Query_No,
-			regexp = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$'),
+			regexp = r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$',
 			help = ('overwrite', "\02no,\02 <factoid name> \02is\02 <whatever> : Replace the existing definition of <factoid name> with the new value <whatever>."),
 		)
 		self.addTextEvent(
 			method = self.__Query_Forget,
-			regexp = re.compile(r'^forget +(?P<name>.+)$'),
+			regexp = r'^forget +(?P<name>.+)$',
 			help = ('forget', '\02forget\02 <factoid name> : Remove a factoid from the bot.'),
 		)
 		self.addTextEvent(
 			method = self.__Query_Replace,
-			regexp = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$'),
+			regexp = r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$',
 			help = ('replace', "<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02 : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."),
 		)
 		self.addTextEvent(
 			method = self.__Query_Lock,
-			regexp = re.compile(r'^lock +(?P<name>.+)$'),
+			regexp = r'^lock +(?P<name>.+)$',
 			help = ('lock', "\02lock\02 <factoid name> : Lock a factoid definition, so most users cannot alter it."),
 		)
 		self.addTextEvent(
 			method = self.__Query_Unlock,
-			regexp = re.compile(r'^unlock +(?P<name>.+)$'),
+			regexp = r'^unlock +(?P<name>.+)$',
 			help = ('unlock', "\02unlock\02 <factoid name> : Unlock a locked factoid definition, so it can be edited by anyone"),
 		)
 		self.addTextEvent(
 			method = self.__Query_Info,
-			regexp = re.compile(r'^factinfo +(?P<name>.+)\??$'),
+			regexp = r'^factinfo +(?P<name>.+)\??$',
 			help = ('factinfo', "\02factinfo\02 <factoid name> : View some statistics about the given factoid."),
 		)
 		self.addTextEvent(
 			method = self.__Query_Status,
-			regexp = re.compile(r'^status$'),
+			regexp = r'^status$',
 			help = ('status', "\02status\02 : Generate some brief stats about the bot."),
 		)
 		self.addTextEvent(
 			method = self.__Query_Tell,
-			regexp = re.compile(r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$'),
+			regexp = r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$',
 			help = ('tell', "\02tell\02 <someone> \02about\02 <factoid name> : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."),
 		)
 		self.addTextEvent(
 			method = self.__Query_List_Keys,
-			regexp = re.compile(r'^listkeys +(?P<name>.+)$'),
+			regexp = r'^listkeys +(?P<name>.+)$',
 			help = ('listkeys', "\02listkeys\02 <search text> : Search through all the factoid names, and return a list of any that contain <search text>."),
 		)
 		self.addTextEvent(
 			method = self.__Query_List_Values,
-			regexp = re.compile(r'^listvalues +(?P<name>.+)$'),
+			regexp = r'^listvalues +(?P<name>.+)$',
 			help = ('listvalues', "\02listvalues\02 <search text> : Search through all the factoid definitions, and return the names of any that contain <search text>."),
 		)
 	
