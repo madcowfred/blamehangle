@@ -228,7 +228,6 @@ class ChatterGizmo(Child):
 	# Someone just said something to us in private!
 	# -----------------------------------------------------------------------
 	def _handle_privmsg(self, conn, event):
-		#chan = event.target().lower()
 		userinfo = UserInfo(event.source())
 		
 		# Strip any codes from the text
@@ -245,7 +244,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_ctcp(self, conn, event):
 		# Ignore channel CTCPs
-		if event.target()[0] == '#':
+		if event.target().startswith('#'):
 			return
 		
 		
@@ -273,10 +272,6 @@ class ChatterGizmo(Child):
 		
 		elif first == 'CLIENTINFO':
 			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
-		
-		elif first == 'TEST':
-			data = [REPLY_TEST, ('SELECT gets, filename FROM packs LIMIT 2', [])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
 		else:
 			data = [conn, IRCT_CTCP, userinfo, None, text]
