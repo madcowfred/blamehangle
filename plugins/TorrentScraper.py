@@ -21,7 +21,8 @@ SELECT_QUERY = "SELECT url, description FROM torrents WHERE url IN (%s) OR descr
 RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
 
-AMP_RE = re.compile(r'&(?!amp;)')
+# ARGH!
+ENTITY_RE = re.compile(r'&(?!amp;|lt;|gt;|quot;|apos;)')
 
 # ---------------------------------------------------------------------------
 
@@ -42,6 +43,7 @@ class TorrentScraper(Plugin):
 		self.setTimedEvent(SCRAPE_TIMER, int(self.Options['request_interval']), None)
 		if self.Options['rss_path']:
 			self.setTimedEvent(RSS_TIMER, int(self.Options['rss_interval']) * 60, None)
+			#self.setTimedEvent(RSS_TIMER, 10, None)
 		
 		self.registerEvents()
 	
@@ -62,11 +64,20 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
 	def __Parse_Page(self, trigger, resp):
+		t1 = time.time()
+		
 		items = {}
 		now = int(time.time())
 		
 		# We don't want stupid HTML entities
-		resp.data = UnquoteHTML(resp.data, 'amp')
+		resp.data = UnquoteHTML(resp.data)
+		
+		t2 = time.time()
+		
+		# But we do want to quote the damn ampersands properly
+		resp.data = ENTITY_RE.sub('&amp;', resp.data)
+		
+		t3 = time.time()
 		
 		# If it's a BNBT page, we have to do some yucky searching
 		if resp.data.find('POWERED BY BNBT') >= 0:
@@ -98,7 +109,7 @@ class TorrentScraper(Plugin):
 			soup = BeautifulSoup()
 			soup.feed(resp.data)
 			
-			# Find all of the URLs
+			# Find all of the torrent URLs
 			links = soup('a', {'href': '%.torrent%'})
 			if not links:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
@@ -106,7 +117,7 @@ class TorrentScraper(Plugin):
 			
 			for link in links:
 				# Build the new URL
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, link['href']))
+				newurl = UnquoteHTML(UnquoteURL(urlparse.urljoin(resp.url, link['href'])))
 				if newurl in items:
 					continue
 				
@@ -120,6 +131,8 @@ class TorrentScraper(Plugin):
 				# Keep it for a bit
 				items[newurl] = (now, newurl, lines[0])
 		
+		t4 = time.time()
+		
 		# If we found nothing, bug out
 		if items == {}:
 			tolog = "Found no torrents at %s!" % resp.url
@@ -130,6 +143,8 @@ class TorrentScraper(Plugin):
 		items = items.values()
 		items.sort()
 		
+		print items
+		
 		# Build our query
 		trigger.items = items
 		
@@ -137,6 +152,8 @@ class TorrentScraper(Plugin):
 		querybit = ', '.join(['%s'] * len(items))
 		
 		query = SELECT_QUERY % (querybit, querybit)
+		
+		print 'Page parsed: %.3fs %.3fs %.3fs %.3fs' % (time.time() - t4, t4 - t3, t3 - t2, t2 - t1)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
@@ -196,8 +213,9 @@ class TorrentScraper(Plugin):
 		for row in result:
 			lines = []
 			lines.append('<item>')
-			lines.append('<title>%s</title>' % AMP_RE.sub('&amp;', row['description']))
-			lines.append('<guid>%s</guid>' % QuoteURL(row['url']))
+			lines.append('<title>%s</title>' % ENTITY_RE.sub('&amp;', row['description']))
+			quotedurl = ENTITY_RE.sub('&amp;', urllib.quote(row['url'], ':/&'))
+			lines.append('<guid>%s</guid>' % quotedurl)
 			lines.append('<pubDate>%s</pubDate>' % ISODate(row['added']))
 			lines.append('</item>')
 			print >>rssfile, '\n'.join(lines)

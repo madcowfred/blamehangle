@@ -438,7 +438,8 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
 	def __Parse_RSS(self, trigger, resp):
-		resp.data = UnquoteHTML(resp.data)
+		# We need to leave the ampersands in for feedparser
+		resp.data = UnquoteHTML(resp.data, 'amp')
 		
 		name = trigger.args[0]
 		feed = self.RSS_Feeds[name]
