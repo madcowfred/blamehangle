@@ -95,6 +95,7 @@ class News(Plugin):
 	def run_sometimes(self, currtime):
 		# Periodically check if we need to send some text out to IRC
 		if currtime - self.__Last_Spam_Time >= 30:
+			self.__Last_Spam_Time = currtime
 			if self.__outgoing:
 				# We pull out a random item from our outgoing list so that
 				# we don't end up posting slabs of stories from the same
@@ -103,7 +104,6 @@ class News(Plugin):
 				reply = self.__outgoing.pop(index)
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
-				self.__Last_Spam_Time = currtime
 
 				tolog = "%s news items remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)
@@ -117,12 +117,14 @@ class News(Plugin):
 				self.__google_sci_news,
 				self.__ananova_news
 				]:
-
+			
 				for title in store:
 					url, post_time = store[title]
 					# 60 sec * 60 min * 24 hour * 2 day = 172800
 					if currtime - post_time > 172800:
 						del store[title]
+			
+			self.__pickles()
 
 
 	# -----------------------------------------------------------------------
@@ -190,7 +192,11 @@ class News(Plugin):
 	# the bot will spam every news story it sees when it is reloaded
 	def _message_REQ_SHUTDOWN(self, message):
 		Plugin._message_REQ_SHUTDOWN(self, message)
+		self.__pickles()
 
+	# -----------------------------------------------------------------------
+	
+	def __pickles(self):
 		self.__pickle(self.__google_world_news, '.news.gwn_pickle')
 		self.__pickle(self.__google_sci_news, '.news.gsci_pickle')
 		self.__pickle(self.__ananova_news, '.news.ana_pickle')
