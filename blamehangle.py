@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
-import irclib
+import sys
 
 # ---------------------------------------------------------------------------
 
-class Blamehangle:
-	"""
-	The main class. Does various exciting things, like the multiple IRC
-	server handling, and so on.
-	"""
+def main():
+	"The initial setup, config reading, and so on."
 	
-	def __init__(self):
-		self.__ircobj = irclib.IRC()
+	print 'honk!'
 
 # ---------------------------------------------------------------------------
+
+if __name__ == '__main__':
+	main()
