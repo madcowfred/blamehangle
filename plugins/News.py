@@ -183,10 +183,11 @@ class News(Plugin):
 				feed['interval'] = self.RSS_Options['default_interval']
 			feed['checked'] = currtime
 			
-			self.__Setup_RSS_Target(section, feed)
-			
 			feed['url'] = self.Config.get(section, 'url')
 			
+			feed['last-modified'] = None
+			
+			self.__Setup_RSS_Target(section, feed)
 			self.RSS_Feeds[name] = feed
 		
 		# If we found some feeds, we'll be needing a parser
@@ -341,22 +342,25 @@ class News(Plugin):
 	def _trigger_NEWS_GOOGLE_WORLD(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
 	
+	# See if any feeds should be triggering around about now
 	def _trigger_NEWS_RSS(self, trigger):
-		# see if any feeds should be triggering around about now
 		currtime = time.time()
 		
-		for name, feed in self.RSS_Feeds.items():
-			if currtime - feed['checked'] < feed['interval']:
-				continue
-			
+		ready = [(feed['checked'], name, feed) for name, feed in self.RSS_Feeds.items() if currtime - feed['checked'] >= feed['interval']]
+		ready.sort()
+		
+		for checked, name, feed in ready[:1]:
 			feed['checked'] = currtime
 			
 			# Build a fake timed event trigger
 			new_trigger = PluginTimedTrigger(NEWS_RSS, 1, feed['targets'], [name])
-			self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
 			
-			# All done
-			break
+			# Maybe send a If-Modified-Since header
+			if feed['last-modified'] is not None:
+				headers = {'If-Modified-Since': feed['last-modified']}
+				self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'], headers=headers)
+			else:
+				self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
@@ -435,6 +439,10 @@ class News(Plugin):
 	def __Parse_RSS(self, trigger, resp):
 		started = time.time()
 		
+		# If it hasn't been modified, we can continue on our merry way
+		if resp.response == '304':
+			return
+		
 		# We need to leave the ampersands in for feedparser
 		resp.data = UnquoteHTML(resp.data, 'amp')
 		
@@ -452,6 +460,9 @@ class News(Plugin):
 			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
 			self.putlog(LOG_WARNING, tolog)
 			return
+		
+		# Remember the Last-Modified header if it was sent
+		feed['last-modified'] = resp.headers.get('Last-Modified', None)
 		
 		# Work out the feed title
 		if feed['title']:
