@@ -201,6 +201,17 @@ class ChatterGizmo(Child):
 		# Tell FileMonster what our local IP is
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
+		# If we're supposed to use NickServ, do so
+		_nick = wrap.options.get('nickserv_nick')
+		_pass = wrap.options.get('nickserv_pass')
+		
+		if _nick and _pass:
+			tolog = 'Identifying with %s' % (_nick)
+			self.connlog(conn, LOG_ALWAYS, tolog)
+			
+			text = 'IDENTIFY %s' % (_pass)
+			self.privmsg(conn, _nick, text)
+		
 		wrap.join_channels()
 	
 	# -----------------------------------------------------------------------
