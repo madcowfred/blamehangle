@@ -56,7 +56,6 @@ AUSBOM_HELP = '\02ausbom\02 <location> : Get current weather data for <location>
 AUSBOM_RE = re.compile('^ausbom (?P<location>.+)$')
 AUSBOM_URL = 'http://www.bom.gov.au/products/%s.shtml'
 
-AUSBOM_PUBLIC = 'AUSBOM_PUBLIC'
 AUSBOM_UPDATE = 'AUSBOM_UPDATE'
 
 # ---------------------------------------------------------------------------
@@ -80,16 +79,7 @@ class AusBOM(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		# Register our normal command
 		self.setTextEvent(AUSBOM_AUSBOM, AUSBOM_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		# Register our public commands if there are any
-		pubs = [o[7:] for o in self.Config.options('AusBOM') if o.startswith('public.')]
-		if pubs:
-			# Make the event
-			regexp = '^(%s)$' % '|'.join(pubs)
-			r = re.compile(regexp)
-			self.setTextEvent(AUSBOM_PUBLIC, r, IRCT_PUBLIC)
-		# And done
 		self.registerEvents()
 		
 		self.setHelp('weather', 'ausbom', AUSBOM_HELP)
@@ -99,16 +89,6 @@ class AusBOM(Plugin):
 	# Someone wants some info on a location
 	def _trigger_AUSBOM_AUSBOM(self, trigger):
 		product = self.__Find_Product(trigger, trigger.match.group('location'))
-		if product:
-			url = AUSBOM_URL % (product)
-			self.urlRequest(trigger, self.__Parse_Current, url)
-	
-	# Someone wants some info on a location in public
-	def _trigger_AUSBOM_PUBLIC(self, trigger):
-		option = 'public.%s' % trigger.match.group(1)
-		location = self.Config.get('AusBOM', option)
-		
-		product = self.__Find_Product(trigger, location)
 		if product:
 			url = AUSBOM_URL % (product)
 			self.urlRequest(trigger, self.__Parse_Current, url)
@@ -135,9 +115,6 @@ class AusBOM(Plugin):
 		# Work out what our location should be
 		if trigger.name == AUSBOM_AUSBOM:
 			location = trigger.match.group('location')
-		elif trigger.name == AUSBOM_PUBLIC:
-			option = 'public.%s' % trigger.match.group(1)
-			location = self.Config.get('AusBOM', option)
 		elif trigger.name == AUSBOM_UPDATE:
 			location = None
 		

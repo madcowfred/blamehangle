@@ -56,18 +56,6 @@ class Anime(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
 		self.setTextEvent(ANIME_ANIDB, ANIDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(ANIME_ANIMENFO, ANIMENFO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		
-		# See if we have public commands for these
-		_pub_anidb = self.Config.get('anime', 'public_anidb')
-		_pub_animenfo = self.Config.get('anime', 'public_animenfo')
-		
-		if _pub_anidb:
-			temp = r'^%s (?P<findme>.+)$' % _pub_anidb
-			self.setTextEvent(ANIME_ANIDB, re.compile(temp), IRCT_PUBLIC)
-		if _pub_animenfo:
-			temp = r'^%s (?P<findme>.+)$' % _pub_animenfo
-			self.setTextEvent(ANIME_ANIMENFO, re.compile(temp), IRCT_PUBLIC)
-		
 		self.registerEvents()
 		
 		self.setHelp('anime', 'anidb', ANIDB_HELP)

@@ -58,11 +58,17 @@ class ChatterGizmo(Child):
 		self.stopping = 0
 		
 		self.__Rejoins = []
+		
+		# Set up our public commands, if there are any
+		self.__Setup_Public()
 	
 	# The bot has been rehashed.. re-load the global users info, and check if
 	# there are any changes to the servers/channels we have been requested to
 	# sit in
 	def rehash(self):
+		# Set up our public commands, if there are any
+		self.__Setup_Public()
+		
 		# Get a list of our old networks
 		old_nets = []
 		for conn in self.Conns.keys():
@@ -103,8 +109,6 @@ class ChatterGizmo(Child):
 			if not [network for conn, network in old_nets if network == section]:
 				self.connect(section=section)
 	
-	# -----------------------------------------------------------------------
-	
 	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
 		for wrap in self.Conns.values():
@@ -112,6 +116,27 @@ class ChatterGizmo(Child):
 				wrap.conn.quit(quitmsg)
 		
 		self.stopping = 1
+	
+	# -----------------------------------------------------------------------
+	# Set up any public triggers we might have
+	def __Setup_Public(self):
+		self.__Public_Exact = {}
+		self.__Public_Param = {}
+		
+		for option in self.Config.options('public'):
+			command, rewrite = self.Config.get('public', option).split(None, 1)
+			
+			# An 'exact' command
+			if option.startswith('exact'):
+				self.__Public_Exact[command] = rewrite
+				tolog = "Added exact rewrite '%s' --> '%s'" % (command, rewrite)
+			
+			# A 'param' command
+			elif option.startswith('param'):
+				self.__Public_Param[command] = rewrite
+				tolog = "Added param rewrite '%s' --> '%s'" % (command, rewrite)
+			
+			self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	
@@ -442,28 +467,31 @@ class ChatterGizmo(Child):
 		
 		# It's not addressed to anyone, so do whatever we do here
 		else:
-			data = [wrap, IRCT_PUBLIC, userinfo, chan, text]
+			# Maybe rewrite the text to look like a different command
+			parts = text.lower().split(None, 1)
+			
+			# Look for exact commands
+			if len(parts) == 1 and parts[0] in self.__Public_Exact:
+				newtext = self.__Public_Exact[parts[0]]
+				data = [wrap, IRCT_PUBLIC_D, userinfo, chan, newtext]
+				
+				tolog = "Rewrote public command '%s' to '%s'" % (text, newtext)
+				self.putlog(LOG_DEBUG, tolog)
+			
+			# Look for param commands
+			elif len(parts) == 2 and parts[0] in self.__Public_Param:
+				newtext = '%s %s' % (self.__Public_Param[parts[0]], parts[1])
+				data = [wrap, IRCT_PUBLIC_D, userinfo, chan, newtext]
+				
+				tolog = "Rewrote public command '%s' to '%s'" % (text, newtext)
+				self.putlog(LOG_DEBUG, tolog)
+			
+			# Oh well, guess it's just public text
+			else:
+				data = [wrap, IRCT_PUBLIC, userinfo, chan, text]
+			
+			# Send the event
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
-		
-		#addr = 0
-		#end = len(text)
-		#for i in range(1, end):
-		#	if text[i] in (':;,'):
-		#		if (i + 1) < end and text[i+1] == ' ':
-		#			addr = i+2
-		#		else:
-		#			addr = i+1
-		#		break
-		
-		# It's probably addressed to someone, see if it's us
-		#if addr:
-		#	if not text[:addr-2].lower() == conn.real_nickname.lower():
-		#		return
-		#	
-		#	text = text[addr:].strip()
-		#	
-		#	data = [wrap, IRCT_PUBLIC_D, userinfo, chan, text]
-		#	self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
 	# Someone just said something to us in private!
