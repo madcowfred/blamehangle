@@ -1,6 +1,6 @@
 critical:
 	* HTTPMonster - work on making the page fetching not block the entire
-	                app (anyone)
+	                app (anyone) (is this still blocking?)
 	* SmartyPants - is there any more to add? (anyone)
 	* News - think up a replacement for HTMLParser, since it seems to
 	         suck -- I may have fixed this, leave it be and see if it 
