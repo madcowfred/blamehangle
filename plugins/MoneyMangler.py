@@ -30,6 +30,8 @@ SYMBOL_RE = re.compile('^symbol (?P<findme>.+)$')
 SYMBOL_HELP = '\02symbol\02 <findme> : Look up a ticker symbol.'
 SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
 
+TITLE_RE = re.compile('<title>(\S+): Summary for (.*?) -')
+
 # ---------------------------------------------------------------------------
 
 class MoneyMangler(Plugin):
@@ -169,23 +171,36 @@ class MoneyMangler(Plugin):
 			replytext = '"%s" is not a valid ticker symbol!' % symbol
 		
 		else:
+			# See if we can get the title
+			m = TITLE_RE.search(page_text)
+			if m:
+				showme = '%s (%s)' % (m.group(2), m.group(1))
+			else:
+				showme = symbol
+			
 			# Find the data we need
 			chunk = FindChunk(page_text, '<table class="yfnc_datamodoutline1"', '</table>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
-				self.sendReply(trigger, 'Failed to parse page properly')
+				self.sendReply(trigger, 'Failed to parse page.')
 				return
 			
 			# Replace the up/down graphics with +/-
 			chunk = re.sub(r'alt="Down">\s*', '>-', chunk)
 			chunk = re.sub(r'alt="Up">\s*', '>+', chunk)
 			
-			# Strip the evil HTML!
-			lines = StripHTML(chunk)
+			# Split into table rows
+			chunks = FindChunks(chunk, '<tr>', '</tr>')
+			if not chunks:
+				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock chunks')
+				self.sendReply(trigger, 'Failed to parse page.')
+				return
 			
 			# Sort out the stock info
-			info = {'Symbol': symbol}
-			for line in lines:
+			info = {'Showme': showme}
+			
+			for tr in chunks:
+				line = StripHTML(tr)[0]
 				parts = re.split(r'\s*:\s*', line, 1)
 				if len(parts) == 2 and parts[1] != 'N/A':
 					if parts[0] in ('Last Trade', 'Index Value'):
@@ -196,8 +211,9 @@ class MoneyMangler(Plugin):
 			# Output something now :)
 			if info:
 				try:
-					replytext = '[%(Trade Time)s] %(Symbol)s: %(Value)s %(Change)s' % info
+					replytext = '[%(Trade Time)s] %(Showme)s: %(Value)s %(Change)s' % info
 				except KeyError:
+					print info
 					replytext = 'Some stock data missing, not good!'
 			else:
 				replytext = 'No stock data found? WTF?'
