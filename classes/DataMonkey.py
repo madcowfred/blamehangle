@@ -26,27 +26,25 @@ class DataMonkey(Child):
 		self.threads = []
 		self.Last_Status = time.time()
 		
-		self.Num_Connections = self.Config.getint('database', 'connections')
-		if self.Num_Connections > 0:
-			for i in range(self.Num_Connections):
-				db = Database(self.Config)
-				the_thread = Thread(target=DataThread, args=(self,db,i))
-				self.threads.append([the_thread, 0])
-				the_thread.start()
-
-				tolog = "Started db thread: %s" % the_thread.getName()
-				self.putlog(LOG_DEBUG, tolog)
-
-		else:
-			tolog = "Number of database connections is set to zero, the bot will essentially be useless"
-			self.putlog(LOG_WARNING, tolog)
+		self.conns = min(1, max(10, self.Config.getint('database', 'connections')))
 	
 	def rehash(self):
 		self.__stop_threads()
 		self.setup()
+		self.run_once()
 	
 	def shutdown(self, message):
 		self.__stop_threads()
+	
+	def run_once(self):
+		for i in range(self.conns):
+			db = Database(self.Config)
+			the_thread = Thread(target=DataThread, args=(self,db,i))
+			self.threads.append([the_thread, 0])
+			the_thread.start()
+			
+			tolog = "Started db thread: %s" % the_thread.getName()
+			self.putlog(LOG_DEBUG, tolog)
 	
 	def __stop_threads(self):
 		_sleep = time.sleep

@@ -39,37 +39,34 @@ class HTTPMonster(Child):
 		if self.Config.has_option('HTTP', 'useragent'):
 			self.user_agent = self.Config.get('HTTP', 'useragent')
 		else:
-			# Default to Mozilla running in windows
-			#self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
-			# Default to FireBird instead
+			# Default to FireBird
 			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4b) Gecko/20030516 Mozilla Firebird/0.6"
 		
 		# Set up our threads
 		if self.Config.has_option('HTTP', 'connections'):
-			conns = self.Config.getint('HTTP', 'connections')
-			if conns < 1:
-				conns = 1
-			elif conns > 10:
-				conns = 10
+			self.conns = min(1, max(10, self.Config.getint('HTTP', 'connections')))
 		else:
-			conns = 2
+			self.conns = 1
 		
 		self.urls = Queue(0)
 		self.threads = []
-		for i in range(conns):
+	
+	def rehash(self):
+		self.__stop_threads()
+		self.setup()
+		self.run_once()
+	
+	def shutdown(self, message):
+		self.__stop_threads()
+	
+	def run_once(self):
+		for i in range(self.conns):
 			the_thread = Thread(target=URLThread, args=(self,i))
 			self.threads.append([the_thread,0])
 			the_thread.start()
 			
 			tolog = "Started URL thread: %s" % the_thread.getName()
 			self.putlog(LOG_DEBUG, tolog)
-	
-	def rehash(self):
-		self.__stop_threads()
-		self.setup()
-	
-	def shutdown(self, message):
-		self.__stop_threads()
 	
 	def __stop_threads(self):
 		_sleep = time.sleep
