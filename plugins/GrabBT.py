@@ -296,6 +296,6 @@ class GrabBT(Plugin):
 				replytext = 'ERROR!'
 		
 		# Spit it out
-		return replytext
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
