@@ -5,7 +5,6 @@
 'Provides some useful/less stats about the bot.'
 
 import os
-import re
 import time
 
 from classes.Common import NiceSize, NiceTime
@@ -20,7 +19,7 @@ class BotStatus(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Gather_Stats,
-			regexp = re.compile('^botstatus$'),
+			regexp = r'^botstatus$',
 			help = ('botstatus', '\x02botstatus\x02 : Return some useful (maybe) stats about the bot.'),
 		)
 	

@@ -54,12 +54,12 @@ class Anime(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_AniDB,
-			regexp = re.compile(r'^anidb (?P<findme>.+)$'),
+			regexp = r'^anidb (?P<findme>.+)$',
 			help = ('anidb', '\02anidb\02 <name> : Search for anime information on AniDB.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_AnimeNFO,
-			regexp = re.compile(r'^animenfo (?P<findme>.+)$'),
+			regexp = r'^animenfo (?P<findme>.+)$',
 			help = ('animenfo', '\02animenfo\02 <name> : Search for anime information on AnimeNFO.'),
 		)
 	

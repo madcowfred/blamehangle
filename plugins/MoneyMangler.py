@@ -89,32 +89,32 @@ class MoneyMangler(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_ASX,
-			regexp = re.compile('^asx (?P<symbol>.+)$'),
+			regexp = r'^asx (?P<symbol>.+)$',
 			help = ('asx', '\02asx\02 <symbol> : Look up a current stock price on the ASX.'),
 		)
 		self.addTextEvent(
 			method = self.__Currency,
-			regexp = re.compile('^currency (?P<curr>\w+)$'),
+			regexp = r'^currency (?P<curr>\w+)$',
 			help = ('currency', '\02currency\02 <code OR partial name> : Look up an ISO 4217 currency code and name, given the specified information.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Exchange,
-			regexp = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$'),
+			regexp = r'^exchange (?P<amt>[\d\.]+)(?: from | )(?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$',
 			help = ('exchange', '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Quote,
-			regexp = re.compile('^quote (?P<symbol>\S+)$'),
+			regexp = r'^quote (?P<symbol>\S+)$',
 			help = ('quote', '\02quote\02 <symbol> : Look up a current stock price.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Symbol,
-			regexp = re.compile('^symbol (?P<findme>.+)$'),
+			regexp = r'^symbol (?P<findme>.+)$',
 			help = ('symbol', '\02symbol\02 <findme> : Look up a ticker symbol.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_USDebt,
-			regexp = re.compile('^usdebt$'),
+			regexp = r'^usdebt$',
 			help = ('usdebt', '\02usdebt\02 : Look up the current US National Debt.'),
 		)
 	

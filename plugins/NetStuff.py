@@ -5,7 +5,6 @@
 'Miscellaneous commands for various network things.'
 
 import os
-import re
 import socket
 
 from classes.async_buffered import buffered_dispatcher
@@ -97,22 +96,22 @@ class NetStuff(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__ccTLD,
-			regexp = re.compile('^cctld (.+)$'),
+			regexp = r'^cctld (.+)$',
 			help = ('cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
 		)
 		self.addTextEvent(
 			method = self.__Resolve_DNS,
-			regexp = re.compile('^dns (?P<host>.+)$'),
+			regexp = r'^dns (?P<host>.+)$',
 			help = ('dns', '\02dns02 <hostname> : Try to resolve hostname to IP(s).'),
 		)
 		self.addTextEvent(
 			method = self.__Port,
-			regexp = re.compile('^port (.{1,20})$'),
+			regexp = r'^port (.{1,20})$',
 			help = ('port', '\02port\02 <port> OR <name> : Look up the service name for a port, or the port for a service name.'),
 		)
 		self.addTextEvent(
 			method = self.__Resolve_WHOIS,
-			regexp = re.compile('^whois (?P<domain>[A-Za-z0-9-\.]+)$'),
+			regexp = r'^whois (?P<domain>[A-Za-z0-9-\.]+)$',
 			help = ('whois', '\02whois\02 <domain> : Look up <domain> in the WHOIS database.'),
 		)
 	

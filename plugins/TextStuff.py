@@ -5,13 +5,10 @@
 'Miscellaneous commands for playing with text.'
 
 import md5
-import re
 import sha
 import urllib
 import zlib
 
-#from classes.Common import *
-#from classes.Constants import *
 from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
@@ -35,32 +32,32 @@ class TextStuff(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__CRC32,
-			regexp = re.compile('^crc32 (?P<text>.+)$'),
+			regexp = r'^crc32 (?P<text>.+)$',
 			help = ('crc32', '\02crc32\02 <text> : Compute the CRC32 checksum of text.'),
 		)
 		self.addTextEvent(
 			method = self.__MD5,
-			regexp = re.compile('^md5 (?P<text>.+)$'),
+			regexp = r'^md5 (?P<text>.+)$',
 			help = ('md5', '\02md5\02 <text> : Compute the MD5 checksum of text.'),
 		)
 		self.addTextEvent(
 			method = self.__ROT13,
-			regexp = re.compile('^rot13 (?P<text>.+)$'),
+			regexp = r'^rot13 (?P<text>.+)$',
 			help = ('rot13', '\02rot13\02 <text> : ROT13 text.'),
 		)
 		self.addTextEvent(
 			method = self.__SHA1,
-			regexp = re.compile('^sha1 (?P<text>.+)$'),
+			regexp = r'^sha1 (?P<text>.+)$',
 			help = ('sha1', '\02sha1\02 <text> : Compute the SHA-1 checksum of text.'),
 		)
 		self.addTextEvent(
 			method = self.__QuoteURL,
-			regexp = re.compile('^quoteurl (?P<text>.+)$'),
+			regexp = r'^quoteurl (?P<text>.+)$',
 			help = ('quoteurl', '\02quoteurl\02 <url> : Quote URL?'),
 		)
 		self.addTextEvent(
 			method = self.__UnquoteURL,
-			regexp = re.compile('^unquoteurl (?P<text>.+)$'),
+			regexp = r'^unquoteurl (?P<text>.+)$',
 			help = ('unquoteurl', '\02unquoteurl\02 <url> : Unquote URL?'),
 		)
 	

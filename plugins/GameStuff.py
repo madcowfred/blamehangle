@@ -4,8 +4,6 @@
 
 'Gets information on video games from various sites.'
 
-import re
-
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
@@ -23,7 +21,7 @@ class GameStuff(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_KLOV,
-			regexp = re.compile(r'^klov (?P<title>.+)$'),
+			regexp = r'^klov (?P<title>.+)$',
 			help = ('klov', '\02klov\02 <title> : Look up <title> in the Killer List Of Video Games (KLOVG?!)'),
 		)
 		

@@ -5,7 +5,6 @@
 'A huge plugin to see what the time is in various places.'
 
 import os
-import re
 
 from classes.Common import *
 from classes.Constants import *
@@ -24,7 +23,7 @@ class TimeDate(Plugin):
 		
 		self.addTextEvent(
 			method = self.__Date,
-			regexp = re.compile('^date (?P<city>[\w\s]+)$'),
+			regexp = r'^date (?P<city>[\w\s]+)$',
 			help = ('date', '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'),
 		)
 	

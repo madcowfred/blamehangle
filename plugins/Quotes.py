@@ -4,7 +4,6 @@
 
 "Sends quotes to an e-mail address, for _really_ lazy people."
 
-import re
 import smtplib
 
 from classes.Constants import *
@@ -26,7 +25,7 @@ class Quotes(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__AddQuote,
-			regexp = re.compile('^addquote (?P<quote>.+)$'),
+			regexp = r'^addquote (?P<quote>.+)$',
 			help = ('addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
 		)
 	

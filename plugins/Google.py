@@ -44,17 +44,17 @@ class Google(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_Google,
-			regexp = re.compile(r'^google (?P<findme>.+)$'),
+			regexp = r'^google (?P<findme>.+)$',
 			help = ('google', '\02google\02 <search term> : Search via Google!'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Translate,
-			regexp = re.compile('^translate (?P<from>\S+)(?: to | )(?P<to>\S+) (?P<text>.+)$'),
+			regexp = r'^translate (?P<from>\S+)(?: to | )(?P<to>\S+) (?P<text>.+)$',
 			help = ('translate', '\02translate\02 <from> \02to\02 <to> <text> : Translate some text via Google Translate.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Transmangle,
-			regexp = re.compile('^transmangle (?P<lang>\S+) (?P<text>.+)$'),
+			regexp = r'^transmangle (?P<lang>\S+) (?P<text>.+)$',
 			help = ('transmangle', '\02transmangle\02 <lang> <text> : Mangle text by translating from English to lang and back again.'),
 		)
 	

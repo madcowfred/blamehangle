@@ -79,7 +79,7 @@ class AusBOM(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_AusBOM,
-			regexp = re.compile('^ausbom (?P<location>.+)$'),
+			regexp = r'^ausbom (?P<location>.+)$',
 			help = ('ausbom', '\02ausbom\02 <location> : Get current weather data for <location>.'),
 		)
 	

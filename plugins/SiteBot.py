@@ -59,7 +59,7 @@ class SiteBot(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Parse_Command,
-			regexp = re.compile('^%s(.+)$' % self.Options['command_prefix']),
+			regexp = '^%s(.+)$' % self.Options['command_prefix']),
 			IRCTypes = (IRCT_PUBLIC,),
 		)
 	

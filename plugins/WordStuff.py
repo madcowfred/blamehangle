@@ -66,41 +66,41 @@ class WordStuff(Plugin):
 		# AcronymFinder
 		self.addTextEvent(
 			method = self.__Fetch_Acronyms,
-			regexp = re.compile('^acronyms?(?P<n>\s+\d+\s+|\s+)(?P<acronym>\S+)$'),
+			regexp = r'^acronyms?(?P<n>\s+\d+\s+|\s+)(?P<acronym>\S+)$',
 			help = ('acronyms', '\02acronyms\02 [n] <acronym> : Look up <acronym>, possibly getting definition [n].'),
 		)
 		# RhymeZone
 		self.addTextEvent(
 			method = self.__Fetch_Antonyms,
-			regexp = re.compile('antonyms? (?P<word>\S+)$'),
+			regexp = r'antonyms? (?P<word>\S+)$',
 			help = ('antonyms', '\02antonyms\02 <word> : Search for words that have the opposite meaning to <word>.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Rhymes,
-			regexp = re.compile('rhymes? (?P<word>\S+)$'),
+			regexp = r'rhymes? (?P<word>\S+)$',
 			help = ('rhymes', '\02rhymes\02 <word> : Search for words that rhyme with <word>.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Synonyms,
-			regexp = re.compile('synonyms? (?P<word>\S+)$'),
+			regexp = r'synonyms? (?P<word>\S+)$',
 			help = ('synonyms', '\02synonyms\02 <word> : Search for words that have the same meaning of <word>.'),
 		)
 		# UrbanDictionary
 		self.addTextEvent(
 			method = self.__Fetch_Urban,
-			regexp = re.compile('^urban(?P<n>\s+\d+\s+|\s+)(?P<term>.+)$'),
+			regexp = r'^urban(?P<n>\s+\d+\s+|\s+)(?P<term>.+)$',
 			help = ('urban', '\02urban\02 [n] <term> : Look up <term> on urbandictionary.com, possibly getting definition [n].'),
 		)
 		# DICT
 		self.addTextEvent(
 			method = self.__DICT,
-			regexp = re.compile(r'^dict (?P<word>\S+)$'),
+			regexp = r'^dict (?P<word>\S+)$',
 			help = ('dict', '\02dict\02 <word> : Look up the dictionary meaning of a word.'),
 		)
 		# Spell
 		self.addTextEvent(
 			method = self.__Spell,
-			regexp = re.compile('^spell\s+(?P<word>\S+)$'),
+			regexp = r'^spell\s+(?P<word>\S+)$',
 			help = ('spell', '\02spell\02 <word> : Check spelling of a word.'),
 		)
 	

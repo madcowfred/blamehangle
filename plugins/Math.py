@@ -13,8 +13,9 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 CALC_OP_RE = re.compile(r'(?P<op>[+\-/*%^()])')
+STAR_PLUS_RE = re.compile(r'\*+')
 
-# Minimum and maximums for base number conversion (64 bit number)
+# Minimum and maximums for base number conversion (64 bit signed int)
 MIN_64BIT = -9223372036854775808
 MAX_64BIT = 9223372036854775807
 
@@ -30,12 +31,12 @@ class Math(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Base,
-			regexp = re.compile(r'^base (?P<from>\d+) *(?P<to>|\d+) (?P<number>[0-9A-Fa-f]+)$'),
+			regexp = r'^base (?P<from>\d+) *(?P<to>|\d+) (?P<number>[0-9A-Fa-f]+)$',
 			help = ('base', '\x02base\x02 <from> [to] <number> : Convert <number> from base <from> to base [to] (default is 10).'),
 		)
 		self.addTextEvent(
 			method = self.__Calc,
-			regexp = re.compile(r'^[ ()0-9e.+\-*/%^]+$'),
+			regexp = r'^[ ()0-9e.+\-*/%^]+$',
 			help = ('calc', '<expr> : Calculate the result of <expr>.'),
 		)
 	
@@ -112,8 +113,8 @@ class Math(Plugin):
 		# mangle the string we have been given slightly.. remove any nasty
 		# attempts at **, and change every number into a float
 		calcstr = trigger.match.group(0)
-		calcstr = re.sub("\*+", "*", calcstr)
-		calcstr = CALC_OP_RE.sub(" \g<op> ", calcstr)
+		calcstr = STAR_PLUS_RE.sub('*', calcstr)
+		calcstr = CALC_OP_RE.sub(' \g<op> ', calcstr)
 		
 		# Loop through the input string, converting all numbers to floats, and
 		# any ^ characters to **, which is python's exponent operator.
@@ -122,20 +123,20 @@ class Math(Plugin):
 		
 		for piece in pieces:
 			if CALC_OP_RE.match(piece):
-				if piece == "^":
-					newstr += "**"
+				if piece == '^':
+					newstr += '**'
 				else:
 					newstr += piece
-			elif piece.endswith("e"):
+			elif piece.endswith('e'):
 				newstr += piece
 			else:
-				if newstr.endswith("e+") or newstr.endswith("e-"):
+				if newstr.endswith('e+') or newstr.endswith('e-'):
 					newstr += piece
 				else:
 					try:
-						newstr += "%s" % float(piece)
+						newstr += '%s' % float(piece)
 					except ValueError:
-						newstr += "0"
+						newstr += '0'
 		
 		# Try to evaluate the expression!
 		try:
@@ -150,7 +151,7 @@ class Math(Plugin):
 			replytext = 'Not a valid mathematical expression!'
 		else:
 			replytext = str(result)
-			if replytext.endswith(".0"):
+			if replytext.endswith('.0'):
 				replytext = replytext[:-2]
 		
 		self.sendReply(trigger, replytext)

@@ -1,11 +1,8 @@
-# -*- coding: iso-8859-1 -*-
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
 
 'Converts between various distance/volume/weight measurements.'
-
-import re
 
 from classes.Common import *
 from classes.Constants import *
@@ -53,7 +50,7 @@ class Converter(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Convert,
-			regexp = re.compile('^convert (?P<amt>-?[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$'),
+			regexp = r'^convert (?P<amt>-?[\d\.]+)(?: from | )(?P<from>\S+)(?: to | )(?P<to>\S+)$',
 			help = ('convert', '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?'),
 		)
 	
@@ -70,11 +67,11 @@ class Converter(Plugin):
 		
 		elif data['from'] == 'c' and data['to'] == 'f':
 			value = '%.1f' % ((data['amt'] * 9.0 / 5) + 32)
-			replytext = '%s °C == %s °F' % (data['amt'], value)
+			replytext = '%s \xb0C == %s \xb0F' % (data['amt'], value)
 		
 		elif data['from'] == 'f' and data['to'] == 'c':
 			value = '%.1f' % ((data['amt'] - 32) * 5.0 / 9)
-			replytext = '%s °F == %s °C' % (data['amt'], value)
+			replytext = '%s \xb0F == %s \xb0C' % (data['amt'], value)
 		
 		else:
 			for MAP in (DISTANCE, VOLUME, WEIGHT):

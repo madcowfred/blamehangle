@@ -33,34 +33,34 @@ class WeatherMan(Plugin):
 		# Yahoo Weather
 		self.addTextEvent(
 			method = self.__Fetch_Weather_Forecast,
-			regexp = re.compile('^forecast\s+(?P<location>.+)$'),
+			regexp = r'^forecast\s+(?P<location>.+)$',
 			help = ('forecast', '\02forecast\02 <location> : Retrieve weather forecast for location'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Weather_Short,
-			regexp = re.compile('^weather\s+(?P<location>.+)$'),
+			regexp = r'^weather\s+(?P<location>.+)$',
 			help = ('weather', '\02weather\02 <location> : Retrieve weather information for location (short format)'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Weather_Long,
-			regexp = re.compile('^weatherlong\s+(?P<location>.+)$'),
+			regexp = r'^weatherlong\s+(?P<location>.+)$',
 			help = ('weatherlong', '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'),
 		)
 		# METAR
 		self.addTextEvent(
 			method = self.__Fetch_DMETAR,
-			regexp = re.compile('^dmetar (?P<station>\S+)$'),
+			regexp = r'^dmetar (?P<station>\S+)$',
 			help = ('dmetar', '\02dmetar\02 <station id> : Retrieve decoded METAR weather information.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_METAR,
-			regexp = re.compile('^metar (?P<station>\S+)$'),
+			regexp = r'^metar (?P<station>\S+)$',
 			help = ('metar', '\02metar\02 <station id> : Retrieve coded METAR weather information.'),
 		)
 		# TAF
 		self.addTextEvent(
 			method = self.__Fetch_TAF,
-			regexp = re.compile('^taf (?P<station>\S+)$'),
+			regexp = r'^taf (?P<station>\S+)$',
 			help = ('taf', '\02taf\02 <station id> : Retrieve coded TAF weather forecast.'),
 		)
 	

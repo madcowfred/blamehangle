@@ -55,23 +55,23 @@ class GrabBT(Plugin):
 			)
 			self.addTextEvent(
 				method = self.__Torrent_Space,
-				regexp = re.compile(r'^torrentspace$'),
+				regexp = r'^torrentspace$',
 				IRCTypes = (IRCT_PUBLIC_D,),
 			)
 		
 		self.addTextEvent(
 			method = self.__Torrent_Grab,
-			regexp = re.compile(r'^grab (http://.+)$'),
+			regexp = r'^grab (http://.+)$',
 			IRCTypes = (IRCT_PUBLIC_D,),
 		)
 		self.addTextEvent(
 			method = self.__Torrent_List,
-			regexp = re.compile(r'^torrents$'),
+			regexp = r'^torrents$',
 			IRCTypes = (IRCT_PUBLIC_D,),
 		)
 		self.addTextEvent(
 			method = self.__Torrent_Speed,
-			regexp = re.compile(r'^torrentspeed$'),
+			regexp = r'^torrentspeed$',
 			IRCTypes = (IRCT_PUBLIC_D,),
 		)
 	

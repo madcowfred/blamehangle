@@ -30,12 +30,12 @@ class Video(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_IMDb,
-			regexp = re.compile(r'^imdb (.+)$'),
+			regexp = r'^imdb (.+)$',
 			help = ('imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_TVTome,
-			regexp = re.compile(r'^tvtome (.+)$'),
+			regexp = r'^tvtome (.+)$',
 			help = ('tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
 		)
 	

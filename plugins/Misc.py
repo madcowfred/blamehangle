@@ -26,12 +26,12 @@ class Misc(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_BugMeNot,
-			regexp = re.compile(r'^bugmenot (\S+)$'),
+			regexp = r'^bugmenot (\S+)$',
 			help = ('bugmenot', '\x02bugmenot\x02 <site> : See if BugMeNot has a login for <site>.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_PGP_Key,
-			regexp = re.compile(r'^pgpkey (\S+)$'),
+			regexp = r'^pgpkey (\S+)$',
 			help = ('pgpkey', '\x02pgpkey\x02 <findme> : Search pgp.mit.edu for a key/keys matching <findme>, returning the first match.'),
 		)
 	
