@@ -124,6 +124,9 @@ class MoneyMangler(Plugin):
 		elif data['to'] not in self.Currencies:
 			replytext = '%(to)s is not a valid currency code' % data
 			self.sendReply(trigger, replytext)
+		elif 'e' in data['amt']:
+			replytext = '%(amt)s is beyond the range of convertable values' % data
+			self.sendReply(trigger, replytext)
 		else:
 			fetchme = EXCHANGE_URL % data
 			returnme = (trigger, data)
