@@ -18,21 +18,26 @@ CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to
 # ---------------------------------------------------------------------------
 # Mapping of measurements to SI units (meters)
 DISTANCE = {
-	'miles': ('miles', 1609.34),
-	'ft': ('feet', 0.3048),
 	'in': ('inches', 0.0254),
-	'km': ('kilometers', 1000),
-	'm': ('meters', 1),
-	'cm': ('centimeters', 0.01),
+	'ft': ('feet', 0.3048),
+	'yd': ('yards', 0.9144),
+	'miles': ('miles', 1609.34),
 	'mm': ('millimeters', 0.001),
+	'cm': ('centimeters', 0.01),
+	'm': ('meters', 1),
+	'km': ('kilometers', 1000),
 }
 
 # Mapping of weights to, err, grams
 WEIGHT = {
+	'mg': ('milligrams', 0.001,
+	'cg': ('centigrams', 0.01),
 	'g': ('grams', 1),
 	'kg': ('kilograms', 1000),
-	'lb': ('pounds', 453.5923),
 	'oz': ('ounces', 28.3495),
+	'lb': ('pounds', 453.5923),
+	'stone': ('stone', 6350.2931),
+	't': ('tonnes', 1000000),
 }
 
 # ---------------------------------------------------------------------------
