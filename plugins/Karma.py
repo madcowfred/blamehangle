@@ -58,7 +58,7 @@ class Karma(Plugin):
 		result, [key, event, conn, IRCtype, target, userinfo] = message.data
 		
 		if event == KARMA_LOOKUP:
-			if result == "":
+			if result == []:
 				# no karma!
 				replytext = "%s has neutral karma." % key
 				reply = [replytext, conn, IRCtype, target, userinfo]
@@ -70,24 +70,24 @@ class Karma(Plugin):
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 		elif event == KARMA_PLUS:
-			if result == "":
+			if result == []:
 				# no karma, so insert as 1
-				queryObj = whatever(__INSERT_QUERY, (1, key), (KARMA_MOD, key))
+				queryObj = whatever(__INSERT_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# increment existing karma
 				key, value = result
-				queryObj = whatever(__UPDATE_QUERY, (1, key), (KARMA_MOD, key))
+				queryObj = whatever(__UPDATE_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 				
 		elif event == KARMA_MINUS:
-			if result == "":
+			if result == []:
 				# no karma, so insert as -1
-				queryObj =  whatever(__INSERT_QUERY, (-1, key), (KARMA_MOD, key))
+				queryObj =  whatever(__INSERT_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# decrement existing karma
-				queryObj = whatever(__UPDAtE_QUERY, (-1, key) (KARMA_MOD, key))
+				queryObj = whatever(__UPDATE_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 
 		elif event == KARMA_MOD:
