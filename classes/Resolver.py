@@ -51,8 +51,8 @@ class Resolver(Child):
 		for i in range(self.__resolver_threads):
 			t = Thread(target=ResolverThread, args=(self, i))
 			t.setName('Resolver %d' % i)
-			t.start()
 			self.Threads.append([t, 0])
+			t.start()
 			
 			tolog = "Started DNS thread: %s" % t.getName()
 			self.putlog(LOG_DEBUG, tolog)
