@@ -227,6 +227,42 @@ our own command matching.
 </tr>
 <tr class="desc">
 <td colspan="2">An implementation of an infobot, similar to... every other infobot.</td>
+</tr><tr>
+<td width="300">&lt;factoid name&gt; =~ s/&lt;search&gt;/&lt;replace&gt;/</td>
+<td>Search through the definition of &lt;factoid name&gt;, replacing any instances of the string &lt;search&gt; with &lt;replace&gt;. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'.</td>
+</tr><tr>
+<td width="300">&lt;factoid name&gt;?</td>
+<td>Ask the bot for the definiton of &lt;factoid name&gt;.</td>
+</tr><tr>
+<td width="300">factinfo &lt;factoid name&gt;</td>
+<td>View some statistics about the given factoid.</td>
+</tr><tr>
+<td width="300">forget &lt;factoid name&gt;</td>
+<td>Remove a factoid from the bot.</td>
+</tr><tr>
+<td width="300">listkeys &lt;search text&gt;</td>
+<td>Search through all the factoid names, and return a list of any that contain &lt;search text&gt;</td>
+</tr><tr>
+<td width="300">listvalues &lt;search text&gt;</td>
+<td>Search through all the factoid definitions, and return the names of any that contain &lt;search text&gt;</td>
+</tr><tr>
+<td width="300">lock &lt;factoid name&gt;</td>
+<td>Lock a factoid definition, so most users cannot alter it.</td>
+</tr><tr>
+<td width="300">no, &lt;factoid name&gt; is &lt;whatever&gt;</td>
+<td>Replace the existing definition of &lt;factoid name&gt; with the new value &lt;whatever&gt;.</td>
+</tr><tr>
+<td width="300">rawfactoid &lt;factoid name&gt;</td>
+<td>Ask the bot for the definition of &lt;factoid name&gt;. Doesn't do variable substituion or factoid redirection.</td>
+</tr><tr>
+<td width="300">status</td>
+<td>Generate some brief stats about the bot.</td>
+</tr><tr>
+<td width="300">tell &lt;someone&gt; about &lt;factoid name&gt;</td>
+<td>Ask the bot to send the definition of &lt;factoid name&gt; to &lt;someone&gt; in a /msg.</td>
+</tr><tr>
+<td width="300">unlock &lt;factoid name&gt;</td>
+<td>Unlock a locked factoid definition, so it can be edited by anyone</td>
 </tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
 <td colspan="2">SportsFan</td>
