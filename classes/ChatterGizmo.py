@@ -154,10 +154,6 @@ class ChatterGizmo(Child):
 		if nick != conn.real_nickname:
 			self.Conns[conn].users.quit(nick)
 			
-			# If the user has left all our channels, tell FileMonster
-			#if not self.__Users.in_any_chan(nick):
-			#	self.sendMessage('FileMonster', USER_LEFT, nick)
-			
 			# If it was our primary nickname, try and regain it
 			#if nick == self.nicknames[0]:
 			#	self.connection.nick(nick)
@@ -179,10 +175,6 @@ class ChatterGizmo(Child):
 		
 		else:
 			self.Conns[conn].users.parted(chan, kicked)
-			
-			# If the user has left all our channels, tell FileMonster
-			#if not self.__Users.in_any_chan(nick):
-			#	self.sendMessage('FileMonster', USER_LEFT, nick)
 	
 	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
@@ -226,8 +218,10 @@ class ChatterGizmo(Child):
 			
 			text = text[addr:]
 			
-			self.sendMessage('PluginHandler', PUBLIC_D, [conn, userinfo, text])
+			data = [conn, IRCT_PUBLIC_D, userinfo, chan, text]
+			self.sendMessage('PluginHandler', IRC_EVENT, data)
 		
 		# It's not addressed to anyone, so do whatever we do here
 		else:
-			self.sendMessage('PluginHandler', PUBLIC, [conn, userinfo, text])
+			data = [conn, IRCT_PUBLIC, userinfo, chan, text]
+			self.sendMessage('PluginHandler', IRC_EVENT, data)

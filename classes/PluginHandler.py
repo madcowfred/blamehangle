@@ -88,7 +88,7 @@ class PluginHandler(Child):
 				# in.
 				
 				# TIMED events need to be handled differently
-				if IRCtype == TIMED:
+				if IRCtype == IRCT_TIMED:
 					eventStore[token] = (criterion, time.time(), groups, message.source)
 				else:
 					eventStore[token] = (criterion, groups, message.source)
@@ -129,12 +129,12 @@ class PluginHandler(Child):
 	def _message_PLUGIN_REPLY(self, message):
 		text, conn, IRCtype, target, userinfo = message.data
 
-		if IRCtype == PUBLIC:
+		if IRCtype == IRCT_PUBLIC:
 			# We are sending back to public, prepend the relevant nick
 			tosend = "%s: %s" % (userinfo.nick, text)
 			self.privmsg(tosend, conn, target)
 		
-		elif IRCtype == TIMED:
+		elif IRCtype == IRCT_TIMED:
 			# We need to handle TIMED events differently, since they have a
 			# dictionary describing the intended targets for the message on
 			# each network
@@ -148,15 +148,15 @@ class PluginHandler(Child):
 	
 	#------------------------------------------------------------------------		
 	def __getRelevantStore(self, type):
-		if type == PUBLIC:
+		if type == IRCT_PUBLIC:
 			return self.__PUBLIC_Events
-		elif type == MSG:
+		elif type == IRCT_MSG:
 			return self.__MSG_Events
-		elif type == NOTICE:
+		elif type == IRCT_NOTICE:
 			return self.__NOTICE_Events
-		elif type == CTCP:
+		elif type == IRCT_CTCP:
 			return self.__CTCP_Events
-		elif type == TIMED:
+		elif type == IRCT_TIMED:
 			return self.__TIMED_Events
 		else:
 			# Some smartass has come up with a new event type
