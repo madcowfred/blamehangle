@@ -21,7 +21,6 @@ not important but more than whatever:
 	* admin interface? (fred, port from MCO?)
 	* Fix Karma so that it doesn't use KARMA_MOD hackery and instead uses the
 	  "if typ == types.TupleType:" form like in SmartyPants (anyone)
-	* spell plugin (anyone)
 	* dict plugin (anyone)
 
 whatever:
