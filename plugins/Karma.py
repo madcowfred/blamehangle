@@ -39,7 +39,7 @@ class Karma(Plugin):
 
 	PLUS_RE = re.compile("^.*(?=\+\+$)")
 	MINUS_RE = re.compile("^.*(?=--$)")
-	LOOKUP_RE = re.compile("^karma .*(?=$|\?$)")
+	LOOKUP_RE = re.compile("^karma .*(?P<name>?=$|\?$)")
 	
 	#------------------------------------------------------------------------
 
@@ -47,8 +47,8 @@ class Karma(Plugin):
 		reply = [
 		(PUBLIC, PLUS_RE, [0], KARMA_PLUS),
 		(PUBLIC, MINUS_RE, [0], KARMA_MINUS),
-		(PUBLIC, LOOKUP_RE, [0], KARMA_LOOKUP),
-		(MSG, LOOKUP_RE, [0], KARMA_LOOKUP)
+		(PUBLIC_D, LOOKUP_RE, ['name'], KARMA_LOOKUP),
+		(MSG, LOOKUP_RE, ['name'], KARMA_LOOKUP)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
