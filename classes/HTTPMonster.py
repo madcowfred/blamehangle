@@ -53,19 +53,17 @@ class HTTPMonster(Child):
 		self.max_conns = max(1, min(10, self.Config.getint('HTTP', 'connections')))
 		
 		# Set up our user-agent
-		if self.Config.has_option('HTTP', 'useragent'):
-			self.user_agent = self.Config.get('HTTP', 'useragent')
-		else:
-			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.5) Gecko/20031015 Firebird/0.7"
+		self.user_agent = self.Config.get('HTTP', 'useragent')
 	
 	# -----------------------------------------------------------------------
 	
-	def run_always(self):
+	def run_sometimes(self, currtime):
+		# See if we should start a new HTTP transfer
 		if self.urls and self.active < self.max_conns:
 			host, message, chunks = self.urls.pop(0)
 			async_http(self, host, message, chunks, {})
-	
-	def run_sometimes(self, currtime):
+		
+		# See if anything has timed out
 		for a in [a for a in asyncore.socket_map.values() if isinstance(a, async_http)]:
 			a.timeout_check(currtime)
 	
