@@ -136,14 +136,6 @@ class ChatterGizmo(Child):
 		self.connect()
 	
 	def run_sometimes(self, currtime):
-		# Process any data from IRC
-		#try:
-		#	self.__ircobj.process_once()
-		#
-		#except select.error, msg:
-		#	if msg[0] == errno.EINTR:
-		#		pass
-		
 		# Stop if we're all done
 		if self.stopping:
 			for wrap in self.Conns.values():
@@ -155,7 +147,7 @@ class ChatterGizmo(Child):
 		
 		# See if we have to try rejoining any channels
 		for rejoin in self.__Rejoins:
-			last, conn, connect_id, chan = rejoin
+			last, connid, connect_id, chan = rejoin
 			wrap = self.Conns[connid]
 			
 			if wrap.conn.status != STATUS_CONNECTED or wrap.connect_id != connect_id:
@@ -164,7 +156,7 @@ class ChatterGizmo(Child):
 			
 			elif (currtime - last) >= 20:
 				self.__Rejoins.remove(rejoin)
-				conn.join(chan)
+				self.Conns[connid].conn.join(chan)
 		
 		# Do other stuff here
 		for conn, wrap in self.Conns.items():
@@ -258,7 +250,7 @@ class ChatterGizmo(Child):
 			# Delay our joins by 2 seconds so that we're (probably) identified
 			badtime = time.time() - 18
 			for chan in wrap.channels:
-				data = [badtime, wrap.conn, wrap.connect_id, chan]
+				data = [badtime, wrap.conn.connid, wrap.connect_id, chan]
 				self.__Rejoins.append(data)
 		
 		# Normal joining
@@ -440,7 +432,7 @@ class ChatterGizmo(Child):
 		chan = event.arguments[0].lower()
 		
 		# Try to join again soon
-		data = [time.time(), conn, self.Conns[connid].connect_id, chan]
+		data = [time.time(), connid, self.Conns[connid].connect_id, chan]
 		self.__Rejoins.append(data)
 	
 	_handle_unavailresource = _joinerror
