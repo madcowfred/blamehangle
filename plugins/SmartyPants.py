@@ -160,7 +160,10 @@ class SmartyPants(Plugin):
 		listval_dir = PluginTextEvent(FACT_LISTVALUES, IRCT_PUBLIC_D, LISTVALUES_RE)
 		listval_msg = PluginTextEvent(FACT_LISTVALUES, IRCT_MSG, LISTVALUES_RE)
 		
-		self.register(get_dir, get_msg, set_dir, set_msg, no_dir, no_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg, listkey_dir, listkey_msg, listval_dir, listval_msg)
+		self.register(get_dir, get_msg, get_pub, set_dir, set_msg, no_dir, no_msg,
+			also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg,
+			unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg,
+			listkey_dir, listkey_msg, listval_dir, listval_msg)
 	
 	#------------------------------------------------------------------------
 	
