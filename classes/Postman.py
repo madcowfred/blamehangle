@@ -33,23 +33,23 @@ class Postman:
 		self.ConfigFile = ConfigFile
 		self.Config = Config
 		
+		# Initialise the global message queue
+		self.inQueue = []
+		
 		self.__Stopping = 0
 		
-		self.__Setup_From_Config()
-
 		# Install our signal handlers here
 		# note, win32 has no SIGHUP signal
 		if hasattr(signal, 'SIGHUP'):
 			signal.signal(signal.SIGHUP, self.SIG_HUP)
 		signal.signal(signal.SIGTERM, self.SIG_TERM)
 		
-		
 		# Open our log file and rotate it if we have to
 		self.__Log_Open()
 		self.__Log_Rotate()
-
-		# Initialise the global message queue
-		self.inQueue = []
+		
+		# ?
+		self.__Setup_From_Config()
 		
 		# Load all the configs supplied for plugins
 		self.__Load_Configs()
@@ -68,7 +68,7 @@ class Postman:
 		
 		for name in self.__plugin_list:
 			self.__import_plugin(name)
-
+		
 		# add Helper to the list of plugins so that it can do its thing
 		self.__plugin_list.append('Helper')
 
@@ -79,25 +79,18 @@ class Postman:
 		self.__log_debug = self.Config.getboolean('logging', 'debug')
 		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
 		self.__plugin_list = self.Config.get('plugin', 'plugins').split()
-
+	
 	# -----------------------------------------------------------------------
-
+	
 	def __import_plugin(self, name):
-		#plugins = self.__Children['PluginHandler'].pluginList()
-		#for clsname in plugins:
-		#	tolog = "Starting plugin object '%s'" % clsname
-		#	self.__Log(LOG_DEBUG, tolog)
-		#	
-		#	cls = globals()[clsname]
-		#	instance = cls(cls.__name__, self.inQueue, self.Config)
-		#	self.__Children[cls.__name__] = instance
-
 		try:
 			module = __import__('plugins.%s' % name, globals(), locals(), [name])
 			globals()[name] = getattr(module, name)
+		
 		except ImportError:
 			tolog = "No such plugin: %s" % name
 			self.__Log(LOG_WARNING, tolog)
+		
 		else:
 			tolog = "Starting plugin object '%s'" % name
 			self.__Log(LOG_ALWAYS, tolog)
@@ -382,7 +375,7 @@ class Postman:
 		for section in self.Config.sections():
 			junk = self.Config.remove_section(section)
 		
-		old_plugin_list = self.__plugin_list
+		old_plugin_list = self.__plugin_list[:]
 		self.Config.read(self.ConfigFile)
 		self.__Setup_From_Config()
 		self.__Load_Configs()
