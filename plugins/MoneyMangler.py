@@ -11,23 +11,28 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
+MONEY_ASX = 'MONEY_ASX'
+ASX_HELP = "\02asx\02 <symbol> : Look up a current stock price on the ASX."
+ASX_RE = re.compile('^asx (?P<symbol>.+)$')
+ASX_URL = 'http://www.asx.com.au/asx/markets/EquitySearchResults.jsp?method=get&template=F1001&ASXCodes=%s'
+
 MONEY_CURRENCY = 'MONEY_CURRENCY'
-CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
 CURRENCY_HELP = "'\02currency\02 <code OR partial name>' : Look up the currency code and name, given the specified information"
+CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
 
 MONEY_EXCHANGE = 'MONEY_EXCHANGE'
-EXCHANGE_RE = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 EXCHANGE_HELP = "'\02exchange\02 <amount> <currency 1> \02to\02 <currency 2>' : Convert currency using current exchange rates. Currencies are specified using their three letter code."
+EXCHANGE_RE = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 EXCHANGE_URL = 'http://finance.yahoo.com/m5?a=%(amt)s&s=%(from)s&t=%(to)s&c=0'
 
 MONEY_QUOTE = 'MONEY_QUOTE'
-QUOTE_RE = re.compile('^quote (?P<symbol>\S+)$')
 QUOTE_HELP = '\02quote\02 <symbol> : Look up a current stock price.'
+QUOTE_RE = re.compile('^quote (?P<symbol>\S+)$')
 QUOTE_URL = 'http://finance.yahoo.com/q?d=v1&s=%s'
 
 MONEY_SYMBOL = 'MONEY_SYMBOL'
-SYMBOL_RE = re.compile('^symbol (?P<findme>.+)$')
 SYMBOL_HELP = '\02symbol\02 <findme> : Look up a ticker symbol.'
+SYMBOL_RE = re.compile('^symbol (?P<findme>.+)$')
 SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
 
 TITLE_RE = re.compile('<title>(\S+): Summary for (.*?) -')
@@ -52,18 +57,26 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
+		self.setTextEvent(MONEY_ASX, ASX_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(MONEY_CURRENCY, CURRENCY_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(MONEY_EXCHANGE, EXCHANGE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(MONEY_QUOTE, QUOTE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(MONEY_SYMBOL, SYMBOL_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		
+		self.setHelp('money', 'asx', ASX_HELP)
 		self.setHelp('money', 'currency', CURRENCY_HELP)
 		self.setHelp('money', 'exchange', EXCHANGE_HELP)
 		self.setHelp('money', 'quote', QUOTE_HELP)
 		self.setHelp('money', 'symbol', SYMBOL_HELP)
 		self.registerHelp()
 	
+	# -----------------------------------------------------------------------
+	# Someone wants to lookup a stock or stocks on the ASX
+	def _trigger_MONEY_ASX(self, trigger):
+		symbol = trigger.match.group('symbol').upper()
+		url = ASX_URL % symbol
+		self.urlRequest(trigger, self.__ASX, url)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to find a currency
@@ -136,6 +149,51 @@ class MoneyMangler(Plugin):
 		findme = trigger.match.group('findme').upper()
 		url = SYMBOL_URL % findme
 		self.urlRequest(trigger, self.__Symbol, url)
+	
+	# -----------------------------------------------------------------------
+	# Parse the ASX page and spit out any results
+	def __ASX(self, trigger, page_text):
+		# Get all table rows
+		trs = FindChunks(page_text, '<tr', '</tr>')
+		if not trs:
+			self.putlog(LOG_WARNING, 'ASX page parsing failed: no table rows?!')
+			self.sendReply(trigger, 'Failed to parse page.')
+			return
+		
+		# Parse any that are the ones we're after
+		infos = []
+		
+		for tr in trs:
+			if tr.find('<strong>') < 0:
+				continue
+			
+			# Find all table cells in this row
+			tds = FindChunks(tr, '<td', '</td>')
+			if not tds:
+				self.putlog(LOG_WARNING, 'ASX page parsing failed: no table cells?!')
+				self.sendReply(trigger, 'Failed to parse page.')
+				return
+			
+			# Get our data
+			symbol = StripHTML(tds[0])[0]
+			if symbol.endswith(' *'):
+				symbol = symbol[:-2]
+			last = StripHTML(tds[1])[0]
+			change = StripHTML(tds[2])[0]
+			if not change.startswith('-'):
+				change = '+' + change
+			#volume = StripHTML(tds[8])[0]
+			
+			info = '\02[\02%s: %s %s\02]\02' % (symbol, last, change)
+			infos.append(info)
+		
+		# If we have any stocks, spit em out
+		if infos:
+			replytext = ' '.join(infos)
+		else:
+			replytext = 'No stock data found.'
+		
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Parse the exchange page and spit out a result
