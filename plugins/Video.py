@@ -2,6 +2,7 @@
 # $Id$
 # ---------------------------------------------------------------------------
 # Interface to IMDb, for moderately lazy people
+# Interface to TVTome, for moderately lazy people
 
 import re
 
@@ -11,45 +12,51 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-IMDB_IMDB = 'IMDB_IMDB'
-IMDB_HELP = '\02imdb\02 <search term> : Search for a movie on IMDb.'
+VIDEO_IMDB = 'VIDEO_IMDB'
+IMDB_HELP = "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a title."
 IMDB_RE = re.compile(r'^imdb (.+)$')
 IMDB_URL = "http://us.imdb.com/find?q=%s&type=fuzzy&tv=off&sort=smart;tt=1"
-
-IMDB_TITLE = 'IMDB_TITLE'
-TITLE_HELP = '\02imdb\02 <number> : Show information on a specific title number on IMDb.'
-TITLE_RE = re.compile(r'^imdbtitle (\d{1,7})$')
-TITLE_URL = "http://us.imdb.com/title/tt%07d/"
 
 EXACT_RE = re.compile(r'href="/title/tt(\d+)/">')
 APPROX_RE = re.compile(r'href="/title/tt(\d+)/">(.+)')
 
 # ---------------------------------------------------------------------------
 
-class IMDb(Plugin):
+VIDEO_TVTOME = 'VIDEO_TVTOME'
+TVTOME_HELP = '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'
+TVTOME_RE = re.compile(r'^tvtome (.+)$')
+TVTOME_URL = 'http://www.tvtome.com/tvtome/servlet/Search'
+
+# ---------------------------------------------------------------------------
+
+class Video(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
-		self.setTextEvent(IMDB_IMDB, IMDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(IMDB_TITLE, TITLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(VIDEO_IMDB, IMDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(VIDEO_TVTOME, TVTOME_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		
-		self.setHelp('imdb', 'imdb', IMDB_HELP)
-		self.setHelp('imdb', 'imdbtitle', TITLE_HELP)
+		self.setHelp('video', 'imdb', IMDB_HELP)
+		self.setHelp('video', 'tvtome', TVTOME_HELP)
 		self.registerHelp()
 	
-	def _trigger_IMDB_IMDB(self, trigger):
+	def _trigger_VIDEO_IMDB(self, trigger):
 		url = IMDB_URL % QuoteURL(trigger.match.group(1))
 		self.urlRequest(trigger, self.__IMDb, url)
 	
-	def _trigger_IMDB_TITLE(self, trigger):
-		url = TITLE_URL % int(trigger.match.group(1))
-		self.urlRequest(trigger, self.__Title, url)
+	def _trigger_VIDEO_TVTOME(self, trigger):
+		data = {
+			'searchType': 'show',
+			'searchString': trigger.match.group(1).lower(),
+		}
+		
+		self.urlRequest(trigger, self.__TVTome, TVTOME_URL, data)
 	
 	# ---------------------------------------------------------------------------
 	
 	def __IMDb(self, trigger, page_text):
 		# If this isn't a search result, try it as a title.
 		if page_text.find('title search</title>') < 0:
-			self.__Title(trigger, page_text)
+			self.__IMDb_Title(trigger, page_text)
 			return
 		
 		movie = trigger.match.group(1)
@@ -80,7 +87,7 @@ class IMDb(Plugin):
 			
 			title = m.group(1)
 			url = TITLE_URL % int(title)
-			self.urlRequest(trigger, self.__Title, url)
+			self.urlRequest(trigger, self.__IMDb_Title, url)
 		
 		# Some approximate matches.. use the first 5 results
 		elif page_text.find('<b>Approximate Matches</b>') >= 0:
@@ -120,7 +127,7 @@ class IMDb(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	
-	def __Title(self, trigger, page_text):
+	def __IMDb_Title(self, trigger, page_text):
 		page_text = UnquoteHTML(page_text)
 		
 		# No match, arg!
@@ -191,5 +198,80 @@ class IMDb(Plugin):
 			
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
+	
+	# ---------------------------------------------------------------------------
+	# Parse a TVTome search results page
+	def __TVTome(self, trigger, page_text):
+		# It's not a search result
+		if page_text.find('Show search for:') < 0:
+			self.__TVTome_Show(trigger, page_text)
+		
+		# It is a search result!
+		else:
+			# Find the results block
+			chunk = FindChunk(page_text, 'Show search for:', "Didn't find what you")
+			if not chunk:
+				self.sendReply(trigger, 'Page parsing failed: results.')
+				return
+			
+			# Find the shows
+			shows = FindChunks(chunk, '">', '</a>')
+			if shows:
+				parts = []
+				for show in shows:
+					part = '\02[\02%s\02]\02' % (show)
+					parts.append(part)
+				
+				if len(parts) > 10:
+					replytext = 'Found \02%d\02 results, first 10: %s' % (len(parts), ' '.join(parts[:10]))
+				else:
+					replytext = 'Found \02%d\02 results: %s' % (len(parts), ' '.join(parts))
+			
+			else:
+				replytext = 'No results found.'
+			
+			self.sendReply(trigger, replytext)
+	
+	def __TVTome_Show(self, trigger, page_text):
+		# Find the show title
+		show_title = FindChunk(page_text, '<h1>', '</h1>')
+		if not show_title:
+			self.sendReply(trigger, 'Page parsing failed: show title.')
+			return
+		
+		# Find the show info
+		chunk = FindChunk(page_text, '<!-- Show Information body Begins -->', '<!-- Show Information body Ends -->')
+		chunk = FindChunk(chunk, '<table width="575"', '</table>')
+		if not chunk:
+			self.sendReply(trigger, 'Page parsing failed: show info.')
+			return
+		
+		# Find the table cells!
+		data = [('Title', show_title)]
+		
+		trs = FindChunks(chunk, '<tr>', '</tr>')
+		for tr in trs:
+			tds = FindChunks(tr, '">', '</td>')
+			if len(tds) == 2:
+				data.append(tds)
+		
+		# Find the page URL
+		path = FindChunk(page_text, '<input type="hidden" name="returnTo" value="', '">')
+		if path:
+			url = 'http://www.tvtome.com' + path
+			data.append(('URL', url))
+		
+		# We found stuff!
+		if len(data) > 1:
+			parts = []
+			for k, v in data:
+				part = '\02[\02%s: %s\02]\02' % (k, v)
+				parts.append(part)
+			replytext = ' '.join(parts)
+		
+		else:
+			replytext = 'Page parsing failed: info table.'
+		
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
