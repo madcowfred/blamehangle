@@ -12,9 +12,8 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 BEE_SPELL = 'BEE_SPELL'
-
+SPELL_HELP = "'\02spell\02' <word> : Check spelling for <word>"
 SPELL_RE = re.compile('^spell (?P<word>\S+)$')
-
 
 # ---------------------------------------------------------------------------
 
@@ -46,13 +45,8 @@ class SpellingBee(Plugin):
 		if self.__bin:
 			spell_dir = PluginTextEvent(BEE_SPELL, IRCT_PUBLIC_D, SPELL_RE)
 			spell_msg = PluginTextEvent(BEE_SPELL, IRCT_MSG, SPELL_RE)
-			
 			self.register(spell_dir, spell_msg)
-			self.__set_help_msgs()
-	
-	def __set_help_msgs(self):
-		SPELL_HELP = "'\02spell\02' <word> : Check spelling for <word>"
-		self.setHelp('words', 'spell', SPELL_HELP)
+			self.setHelp('words', 'spell', SPELL_HELP)
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
@@ -79,8 +73,9 @@ class SpellingBee(Plugin):
 		# We only care about the second line
 		line = data[1]
 		
-		# If it starts with '*', we were right!'
-		if line.startswith('*'):
+		# If it starts with '*', we were right! And if it starts with +, we
+		# were also right :|
+		if line.startswith('*') or line.startswith('+'):
 			replytext = "'%s' is probably spelled correctly." % word
 		# If it starts with '#', we were pretty wrong!
 		elif line.startswith('#'):
