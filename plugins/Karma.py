@@ -2,15 +2,6 @@
 # $Id$
 #----------------------------------------------------------------------------
 # Karma plugin
-#----------------------------------------------------------------------------
-#
-# Karma uses the following SQL table:
-# CREATE TABLE karma (
-#	name varchar(192) NOT NULL default '',
-#	value bigint(20) default NULL,
-#	PRIMARY KEY (key)
-# ) TYPE=MyISAM;
-#
 
 from classes.Plugin import *
 from classes.Constants import *

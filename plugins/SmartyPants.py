@@ -2,30 +2,6 @@
 # $Id$
 #----------------------------------------------------------------------------
 # This file contains (or at least will contain!) the factoid resolver.
-#
-# It was too much pain to have this split into a seperate table for the
-# locks for too little reward. I merged it back in.
-#
-# The factoid resolver uses the following SQL table:
-# CREATE TABLE factoids (
-# 	name varchar(64) NOT NULL default '',
-#	value text NOT NULL,
-#	author_nick varchar(64) default NULL,
-#	author_host varchar(192) default NULL,
-#	modifier_nick varchar(64) default NULL,
-#	modifier_host varchar(192) default NULL,
-#	requester_nick varchar(64) default NULL,
-#	requester_host varchar(192) default NULL,
-#	request_count int(11) NOT NULL default 0,
-#	locker_nick varchar(64) default NULL,
-#	locker_host varchar(192) default NULL,
-#	created_time int(11) default NULL,
-#	modified_time int(11) default NULL,
-#	requested_time int(11) default NULL,
-#	locked_time int (11) default NULL,
-#	PRIMARY KEY (name)
-# ) TYPE=MyISAM;
-#
 
 import random
 import re
