@@ -23,7 +23,7 @@ class Userlist:
 		elif nick in self.__u[chan]:
 			del self.__u[chan][nick]
 	
-	def user_quit(self, nick):
+	def quit(self, nick):
 		for chan in self.__u.keys():
 			self.user_part(chan, nick)
 	
@@ -34,8 +34,8 @@ class Userlist:
 				self.__u[chan][newnick] = 1
 	
 	def in_any_chan(self, nick):
-		for chan in self.__u.keys():
-			if nick in self.__u[chan]:
+		for nicks in self.__u.values():
+			if nick in nicks:
 				return 1
 		
 		return 0
