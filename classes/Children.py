@@ -96,12 +96,11 @@ class Child:
 	def putlog(self, level, text):
 		self.sendMessage('Postman', REQ_LOG, [level, text])
 	
-	# A _single_ DB query
-	def dbQuery(self, returnme, query, *args):
-		data = [returnme, (query, args)]
+	# Multiple DB queries, be afraid
+	def dbQuery(self, returnme, *queries):
+		#if len(queries) % 2 > 0:
+		#	self.putlog(LOG_WARNING, 'queries parameter to dbQuery is not a multiple of 2!')
+		#	return
+		
+		data = [returnme, queries]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
-	
-	# For multi-query method?
-	#if len(queries) % 2 > 0:
-	#	self.putlog(LOG_WARNING, 'queries parameter to dbQuery is not a multiple of 2!')
-	#	return

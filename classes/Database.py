@@ -80,10 +80,23 @@ class Database:
 def DataThread(parent, db, message):
 	results = []
 	
-	toreturn = message.data[0]
-	queries = message.data[1:]
+	toreturn, queries = message.data
 	
-	for query, args in queries:
+	for chunk in queries:
+		query = chunk[0]
+		# If there's any args, use them
+		if len(chunk) >= 2:
+			if type(chunk[1]) in (types.ListType, types.TupleType):
+				args = chunk[1]
+			else:
+				args = chunk[1:]
+		# No args!
+		else:
+			args = []
+		
+		tolog = 'Query: %s, Args: %s' % (query, args)
+		parent.putlog(LOG_DEBUG, tolog)
+		
 		try:
 			result = db.query(query, *args)
 		
