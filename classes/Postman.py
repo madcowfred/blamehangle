@@ -70,9 +70,6 @@ class Postman:
 			signal.signal(signal.SIGHUP, self.SIG_HUP)
 		signal.signal(signal.SIGTERM, self.SIG_TERM)
 		
-		# ?
-		self.__Setup_From_Config()
-		
 		# Load all the configs supplied for plugins
 		self.__Load_Configs()
 		
@@ -108,20 +105,6 @@ class Postman:
 		# Import plugins
 		for name in self.__plugin_list:
 			self.__Plugin_Load(name)
-	
-	# -----------------------------------------------------------------------
-	
-	def __Setup_From_Config(self):
-		self.__logfile_filename = self.Config.get('logging', 'log_file')
-		self.__log_debug = self.Config.getboolean('logging', 'debug')
-		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
-		self.__log_debug_query = self.Config.getboolean('logging', 'debug_query')
-		
-		self.__plugin_list = self.Config.get('plugin', 'plugins').split()
-		
-		self.__mail_server = self.Config.get('mail', 'server')
-		self.__mail_from = self.Config.get('mail', 'from')
-		self.__mail_tracebacks = self.Config.get('mail', 'tracebacks').split()
 	
 	# -----------------------------------------------------------------------
 	# Load a plugin
@@ -207,7 +190,7 @@ class Postman:
 	
 	def SIG_HUP(self, signum, frame):
 		self.__Log(LOG_WARNING, 'Received SIGHUP')
-		self.__Reload_Config()
+		self.__Rehash()
 	
 	def SIG_TERM(self, signum, frame):
 		self.__Log(LOG_WARNING, 'Received SIGTERM')
@@ -235,7 +218,7 @@ class Postman:
 						
 						# Reload our config
 						elif message.ident == REQ_REHASH:
-							self.__Reload_Config()
+							self.__Rehash()
 						
 						# Die!
 						elif message.ident == REQ_SHUTDOWN:
@@ -604,6 +587,25 @@ class Postman:
 	# -----------------------------------------------------------------------
 	# Load config info
 	def __Load_Configs(self):
+		# Various settings
+		self.__logfile_filename = self.Config.get('logging', 'log_file')
+		self.__log_debug = self.Config.getboolean('logging', 'debug')
+		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
+		self.__log_debug_query = self.Config.getboolean('logging', 'debug_query')
+		
+		self.__mail_server = self.Config.get('mail', 'server')
+		self.__mail_from = self.Config.get('mail', 'from')
+		self.__mail_tracebacks = self.Config.get('mail', 'tracebacks').split()
+		
+		# Don't let foolish people load a plugin twice
+		plugins = self.Config.get('plugin', 'plugins').split()
+		self.__plugin_list = []
+		for name in plugins:
+			if name in self.__plugin_list:
+				raise Exception, "Plugin '%s' is listed more than once!" % (name)
+			self.__plugin_list.append(name)
+		
+		# Load our plugins
 		config_dir = self.Config.get('plugin', 'config_dir')
 		if os.path.exists(config_dir):
 			for config_file in os.listdir(config_dir):
@@ -613,9 +615,9 @@ class Postman:
 		# Set up the userlist now
 		self.Userlist.Reload()
 	
-	# Reload our config, duh
-	def __Reload_Config(self):
-		self.__Log(LOG_ALWAYS, 'Rehashing config...')
+	# Reload our configs and update stuff
+	def __Rehash(self):
+		self.__Log(LOG_ALWAYS, 'Rehashing...')
 		
 		# Make a copy of the plugin list
 		old_plugin_list = self.__plugin_list[:]
@@ -626,7 +628,6 @@ class Postman:
 		
 		# Re-load the configs
 		self.Config.read(self.ConfigFile)
-		self.__Setup_From_Config()
 		self.__Load_Configs()
 		
 		# Check if any plugins have been removed from the config. If so, try
