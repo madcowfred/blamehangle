@@ -162,8 +162,12 @@ class Postman:
 	# -----------------------------------------------------------------------
 	
 	def run_forever(self):
+		# Bind things locally, or something like that
 		_sleep = time.sleep
 		_time = time.time
+		
+		_always = self.__run_always
+		_sometimes = self.__run_sometimes
 		
 		sometimes_counter = 0
 		
@@ -224,7 +228,7 @@ class Postman:
 				children = self.__Children.values()
 				
 				for child in children:
-					if child.inQueue == []:
+					if not child.inQueue:
 						continue
 					
 					message = child.inQueue.pop(0)
@@ -246,7 +250,7 @@ class Postman:
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
-				if sometimes_counter == 5:
+				if sometimes_counter == 4:
 					sometimes_counter = 0
 					
 					# See if our log file has to rotate
