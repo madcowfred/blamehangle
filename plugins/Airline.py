@@ -48,16 +48,26 @@ FLIGHT_RE = re.compile(f1+f2+f3+f9)
 # ---------------------------------------------------------------------------
 
 class Airline(Plugin):
-	"""
-	Does airline stuff?
-	"""
-	
 	def setup(self):
-		config_dir = self.Config.get('plugin', 'config_dir')
-		self.Airlines = self.loadPickle('aircodes.data') or {}
-		if self.Airlines:
-			tolog = 'Loaded %d carriers from aircodes.data' % len(self.Airlines)
-			self.putlog(LOG_DEBUG, tolog)
+		# Load our airline codes
+		self.Airlines = {}
+		
+		filename = os.path.join('data', 'airline_codes')
+		try:
+			code_file = open(filename, 'r')
+		except IOError:
+			self.putlog(LOG_WARNING, "Can't find data/airline_codes!")
+			return
+		
+		for line in code_file:
+			line = line.strip()
+			if not line:
+				continue
+			
+			code, airline = line.split(None, 1)
+			self.Airlines[code] = airline
+		
+		code_file.close()
 	
 	def rehash(self):
 		self.setup()
