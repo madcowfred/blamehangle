@@ -9,10 +9,10 @@
 # This is done so that url requests will not cause the bot to hang if the
 # remote http server responds slowly.
 
+import select
 import time
 
 from Queue import *
-from select import select
 #from thread import start_new_thread
 from threading import *
 # we have our own version which doesn't mangle our User-Agent
@@ -91,7 +91,19 @@ class HTTPMonster(Child):
 
 # ---------------------------------------------------------------------------
 
+# Will work on this one day (fred)
+#class URLThread(threading.Thread):
+#	def __init__(self, parent):
+#		threading.Thread.__init__(self)
+#		
+#		self.parent = parent
+#		self.stopnow = 0
+#	
+#	def run(self):
+
+
 def URLThread(parent, myindex):
+	_select = select.select
 	_sleep = time.sleep
 	_time = time.time
 	
@@ -107,73 +119,84 @@ def URLThread(parent, myindex):
 		# if not, take a nap
 		except Empty:
 			_sleep(0.25)
+			continue
 		
 		# we have something to do
-		else:
-			returnme, url = message.data
-			
-			tolog = 'fetching URL: %s' % url
-			parent.putlog(LOG_DEBUG, tolog)
-			
-			last_read = _time()
-			pagetext = ''
-			
-			try:
-				# get the page
-				request = urllib2.Request(url)
-				request.add_header('User-Agent', parent.user_agent)
-				request.add_header('Connection', 'close')
-				#request.add_header("If-Modified-Since", format_http_date(modified))
-				#request.add_header("Accept-encoding", "gzip")
-				
-				the_page = urllib2.urlopen(request)
-				
-				while 1:
-					can_read = select([the_page], [], [], 1)[0]
+		returnme, url = message.data
+		
+		tolog = 'Fetching URL: %s' % url
+		parent.putlog(LOG_DEBUG, tolog)
+		
+		last_read = _time()
+		pagetext = ''
+		
+		# get the page
+		request = urllib2.Request(url)
+		request.add_header('User-Agent', parent.user_agent)
+		request.add_header('Connection', 'close')
+		# Not sure if we should use these
+		#request.add_header("If-Modified-Since", format_http_date(modified))
+		#request.add_header("Accept-encoding", "gzip")
+		
+		the_page = urllib2.urlopen(request)
+		
+		try:
+			while 1:
+				try:
+					can_read = _select([the_page], [], [], 1)[0]
 					if can_read:
 						data = the_page.read(1024)
 						if len(data) == 0:
 							break
-						pagetext += data
-						
-						last_read = _time()
-						
-						_sleep(0.05)
 					
 					elif (_time() - last_read >= 30):
 						raise Exception, 'connection timed out'
+					
+					else:
+						print "bok"
 				
-				the_page.close()
+				except IOError, msg:
+					tolog = "IOError: %s" % msg
+					parent.putlog(LOG_DEBUG, tolog)
+					pass
 				
-				# XXX This shouldn't be needed, but I suspect these are hanging
-				# around and not getting collected for whatever reason
-				del the_page
+				else:
+					pagetext += data
+					last_read = _time()
+					_sleep(0.05)
+		
+		except Exception, msg:
+			# Something bad happened
+			tolog = "Error while trying to fetch url: %s - %s" % (url, why)
+			parent.putlog(LOG_ALWAYS, tolog)
 			
-			except Exception, why:
-				# something borked
-				tolog = "Error while trying to fetch url: %s - %s" % (url, why)
-				parent.putlog(LOG_ALWAYS, tolog)
-				
-				tolog = "Received %d bytes of data" % len(pagetext)
-				parent.putlog(LOG_DEBUG, tolog)
-				
-				raise
-			
-			else:
-				# we have the page
+			#tolog = "Received %d bytes of data" % len(pagetext)
+			#parent.putlog(LOG_DEBUG, tolog)
+		
+		
+		# XXX This shouldn't be needed, but I suspect these are hanging
+		# around and not getting collected for whatever reason
+		if the_page.fp:
+			the_page.close()
+		del the_page
+		
+		
+		# We have some data, might as well process it?
+		if len(pagetext) > 0:
+			#else:
+			# we have the page
+			m = dodgy_html_check(pagetext)
+			while m:
+				pre = pagetext[:m.start()]
+				post = pagetext[m.end():]
+				start, end = m.span('href')
+				fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
+				pagetext = pre + 'href=' + fixed + post
 				m = dodgy_html_check(pagetext)
-				while m:
-					pre = pagetext[:m.start()]
-					post = pagetext[m.end():]
-					start, end = m.span('href')
-					fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
-					pagetext = pre + 'href=' + fixed + post
-					m = dodgy_html_check(pagetext)
-				
-				tolog = 'Finished fetching URL: %s' % url
-				parent.putlog(LOG_DEBUG, tolog)
-				
-				data = [returnme, pagetext]
-				message = Message('HTTPMonster', message.source, REPLY_URL, data)
-				parent.outQueue.put(message)
-
+			
+			tolog = 'Finished fetching URL: %s' % url
+			parent.putlog(LOG_DEBUG, tolog)
+			
+			data = [returnme, pagetext]
+			message = Message('HTTPMonster', message.source, REPLY_URL, data)
+			parent.outQueue.put(message)
