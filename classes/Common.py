@@ -135,9 +135,13 @@ def GetTZ():
 
 # ---------------------------------------------------------------------------
 # Search through text, finding the chunk between start and end.
-def FindChunk(text, start, end):
+def FindChunk(text, start, end, pos=None):
 	# Can we find the start?
-	startpos = text.find(start)
+	if pos is None:
+		startpos = text.find(start)
+	else:
+		startpos = text.find(start, pos)
+	
 	if startpos < 0:
 		return None
 	
@@ -157,7 +161,23 @@ def FindChunk(text, start, end):
 		return None
 	
 	# Return!
-	return chunk
+	if pos is None:
+		return chunk
+	else:
+		return (endpos+len(end), chunk)
+
+# As above, but return all matches. Poor man's regexp :)
+def FindChunks(text, start, end):
+	chunks = []
+	n = 0
+	
+	while 1:
+		result = FindChunk(text, start, end, n)
+		if result is None:
+			return chunks
+		else:
+			n = result[0]
+			chunks.append(result[1])
 
 # ---------------------------------------------------------------------------
 # Strip HTML tags from text and split it into non-empty lines
