@@ -133,9 +133,9 @@ class Postman:
 			if hasattr(child, 'run_once'):
 				child.run_once()
 			if hasattr(child, 'run_always'):
-				__always.append(child)
+				__always.append(child.run_always)
 			if hasattr(child, 'run_sometimes'):
-				__sometimes.append(child)
+				__sometimes.append(child.run_sometimes)
 		
 		while 1:
 			try:
@@ -189,8 +189,8 @@ class Postman:
 				for child in self.__Children.values():
 					child.handleMessages()
 				
-				for child in __always:
-					child.run_always()
+				for func in __always:
+					func()
 				
 				
 				# Do things that don't need to be done all that often
@@ -209,8 +209,8 @@ class Postman:
 						self.__Shutdown_Check()
 					
 					# Run anything our children want done occasionally
-					for child in __sometimes:
-						child.run_sometimes(currtime)
+					for func in __sometimes:
+						func(currtime)
 				
 				# Sleep for a while
 				_sleep(0.04)
