@@ -101,7 +101,7 @@ class Google(Plugin):
 		if _lang == 'en':
 			replytext = "Can't translate from English to English!"
 		elif not LANG_MAP.has_key(_lang):
-			replytext = '"%s" is not a valid language!'
+			replytext = '"%s" is not a valid language!' % _lang
 		elif len(_text) > 300:
 			replytext = 'Text is too long! %d > 300' % (len(_text))
 		
