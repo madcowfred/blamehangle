@@ -188,10 +188,13 @@ class Postman:
 			
 			del self.__Children[name]
 		
-		# 'unload' the module
-		if globals().has_key(name):
+		# Remove the global name bound to the module
+		try:
 			del globals()[name]
+		except KeyError:
+			pass
 		
+		# Remove the module from memory
 		try:
 			del sys.modules['plugins.' + name]
 		except KeyError:
