@@ -34,11 +34,11 @@ class Userlist:
 				del self.__u[chan][oldnick]
 	
 	def add_mode(self, chan, nick, mode):
-		if add_mode not in self.__u[chan][nick]:
+		if mode not in self.__u[chan][nick]:
 			self.__u[chan][nick].append(mode)
 	
 	def del_mode(self, chan, nick, mode):
-		if add_mode in self.__u[chan][nick]:
+		if mode in self.__u[chan][nick]:
 			self.__u[chan][nick].remove(mode)
 	
 	def has_mode(self, chan, nick, mode):
