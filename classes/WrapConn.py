@@ -52,7 +52,7 @@ class WrapConn:
 		
 		host, port = self.server
 		
-		tolog = 'bork! Connecting to %s:%d...' % (self.options['name'], host, port)
+		tolog = 'bork! Connecting to %s:%d...' % (host, port)
 		print tolog
 		
 		#self.putlog(LOG_ALWAYS, tolog)

@@ -15,13 +15,15 @@ from Plugins import *
 
 from classes.Children import Child
 
+#----------------------------------------------------------------------------
+
 class PluginHandler(Child):
 	"""
 	This is the class that handles all the program <-> plugin communication.
 
 	add detail here when there is detail to add.
 	"""
-
+	
 	def setup(self):
 		self.__Plugins = self.pluginList()
 		self.__PUBLIC_Events = {}
@@ -29,9 +31,9 @@ class PluginHandler(Child):
 		self.__NOTICE_Events = {}
 		self.__CTCP_Events = {}
 		self.__TIMED_Events = {}
-
+	
 	#------------------------------------------------------------------------
-
+	
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
 	def run_once(self):
@@ -51,7 +53,10 @@ class PluginHandler(Child):
 				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
 				# Update the last trigger time
 				self.__TIMED_Events[token] = (delay, currtime, targets, plugin)
-
+	
+	def run_always(self):
+		pass
+	
 	#------------------------------------------------------------------------
 
 	# Generate a list of all the plugins.

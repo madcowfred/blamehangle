@@ -11,10 +11,12 @@ from Queue import *
 # ---------------------------------------------------------------------------
 
 from classes.Common import *
-from Constants import *
+from classes.Constants import *
 
 from Plugins import *
-from ChatterGizmo import ChatterGizmo
+
+from classes.ChatterGizmo import ChatterGizmo
+from classes.PluginHandler import PluginHandler
 
 #from OfferBot import Chatterbox
 #from FileMonster import FileMonster
@@ -47,9 +49,12 @@ class Postman:
 		self.__Children = {}
 
 		#system = [ ChatterGizmo, PluginHandler, WhateverTheDatabaseIs ]
-		system = [ ChatterGizmo ]
+		system = [ ChatterGizmo, PluginHandler ]
 		
 		for cls in system:
+			tolog = "Starting system object '%s'" % cls.__name__
+			self.__Log(LOG_DEBUG, tolog)
+			
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
 		

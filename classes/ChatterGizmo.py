@@ -91,7 +91,7 @@ class ChatterGizmo(Child):
 	
 	def _handle_welcome(self, conn, event):
 		tolog = 'Connected to %s:%d' % self.Conns[conn].server
-		self.connlog(LOG_ALWAYS, tolog)
+		self.connlog(conn, LOG_ALWAYS, tolog)
 		
 		# Start the stoned timer thing
 		#self.__Stoned_Check()
