@@ -481,7 +481,7 @@ class News(Plugin):
 					continue
 				article_link = '<No Link>'
 			else:
-				article_link = item['link']
+				article_link = item['link'] or ''
 			
 			# If we have to, see if we can find a real URL
 			if feed['find_real_url']:
