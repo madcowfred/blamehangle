@@ -2,6 +2,11 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
+"""
+Scrapes pages at a specific interval and keeps track of torrents on them,
+then generates an RSS feed of the latest ones.
+"""
+
 import re
 import time
 import urllib
