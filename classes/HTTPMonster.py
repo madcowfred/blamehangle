@@ -20,6 +20,8 @@ import urlparse
 
 from cStringIO import StringIO
 
+from classes.async_buffered import buffered_dispatcher
+
 from classes.Children import Child
 from classes.Constants import *
 from classes.Common import *
@@ -98,9 +100,9 @@ class HTTPMonster(Child):
 
 # ---------------------------------------------------------------------------
 
-class async_http(asyncore.dispatcher_with_send):
+class async_http(buffered_dispatcher):
 	def __init__(self, parent, ip, message, chunks, seen):
-		asyncore.dispatcher_with_send.__init__(self)
+		buffered_dispatcher.__init__(self)
 		
 		self._error = None
 		self.closed = 0

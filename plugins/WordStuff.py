@@ -4,12 +4,13 @@
 
 'Various commands for playing with words.'
 
-import asyncore
 import os
 import re
 import socket
 import time
 from urllib import quote
+
+from classes.async_buffered import buffered_dispatcher
 
 from classes.Common import *
 from classes.Constants import *
@@ -467,9 +468,9 @@ class WordStuff(Plugin):
 # Blah to evil people who can't agree on line seperators :)
 _linesep_regexp = re.compile('\r?\n')
 
-class async_dict(asyncore.dispatcher_with_send):
+class async_dict(buffered_dispatcher):
 	def __init__(self, parent, trigger):
-		asyncore.dispatcher_with_send.__init__(self)
+		buffered_dispatcher.__init__(self)
 		
 		self.__read_buf = ''
 		self.state = 0

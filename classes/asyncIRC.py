@@ -8,11 +8,12 @@ Implements an asyncore based IRC thing.
 Largely a refactor of irclib.py (Joel Roshdal).
 """
 
-import asyncore
 import re
 import socket
 import sys
 import types
+
+from classes.async_buffered import buffered_dispatcher
 
 # ---------------------------------------------------------------------------
 # Yes, this thing is horrible.
@@ -60,9 +61,9 @@ def is_channel(s):
 
 # ---------------------------------------------------------------------------
 
-class asyncIRC(asyncore.dispatcher_with_send):
+class asyncIRC(buffered_dispatcher):
 	def __init__(self):
-		asyncore.dispatcher_with_send.__init__(self)
+		buffered_dispatcher.__init__(self)
 		
 		# Set our conn id
 		global CONNID

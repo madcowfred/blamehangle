@@ -4,9 +4,10 @@
 
 'Various bits and pieces for looking up anime information.'
 
-import asyncore
 import re
 import socket
+
+from classes.async_buffered import buffered_dispatcher
 
 from classes.Common import *
 from classes.Constants import *
@@ -222,9 +223,9 @@ class Anime(Plugin):
 
 # ---------------------------------------------------------------------------
 
-class async_animenfo(asyncore.dispatcher_with_send):
+class async_animenfo(buffered_dispatcher):
 	def __init__(self, parent, trigger):
-		asyncore.dispatcher_with_send.__init__(self)
+		buffered_dispatcher.__init__(self)
 		
 		self.data = ''
 		self.status = 0
