@@ -65,6 +65,7 @@ class asyncIRC(buffered_dispatcher):
 			'nicklen': 9,
 			'user_modes': {'o': '@', 'v': '+'},
 			'user_modes_r': {'@': 'o', '+': 'v'},
+			'wall_targets': [],
 		}
 	
 	# Is this a channel?
@@ -216,16 +217,28 @@ class asyncIRC(buffered_dispatcher):
 						k, v = argument, None
 					
 					if v is None:
-						pass
+						# Can NOTICE @#chan
+						if k == 'WALLCHOPS':
+							if '@' not in self.features['wall_targets']:
+								self.features['wall_targets'].append('@')
+						# Can NOTICE +#chan
+						elif k == 'WALLVOICES':
+							if '+' not in self.features['wall_targets']:
+								self.features['wall_targets'].append('+')
 					else:
+						# Modes that can be set on a channel
 						if k == 'CHANMODES':
 							self.features['channel_modes'] = v.split(',')
+						# Characters used as channel prefixes
 						elif k == 'CHANTYPES':
 							self.features['channel_types'] = [c for c in v]
+						# Maximum targets for PRIVMSG/NOTICE
 						elif k == 'MAXTARGETS':
 							self.features['max_targets'] = int(v)
+						# Maximum nickname length
 						elif k == 'NICKLEN':
 							self.features['nicklen'] = int(v)
+						# Channel modes for users and the prefix they get
 						elif k == 'PREFIX':
 							self.features['user_modes'] = {}
 							self.features['user_modes_r'] = {}
@@ -234,6 +247,11 @@ class asyncIRC(buffered_dispatcher):
 							for i in range(len(chars)):
 								self.features['user_modes'][chars[i]] = signs[i]
 								self.features['user_modes_r'][signs[i]] = chars[i]
+						# Mode types we can send PRIVMSG/NOTICE to?
+						elif k == 'STATUSMSG':
+							for c in v:
+								if c not in self.features['wall_targets']:
+									self.features['wall_targets'].append(c)
 			
 			# We always have to answer a PING
 			elif command == 'ping':
