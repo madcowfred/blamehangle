@@ -37,6 +37,11 @@ class FunStuff(Plugin):
 	# ---------------------------------------------------------------------------
 	
 	def register(self):
+		self.addTextEvent(
+			method = self.__Dice,
+			regexp = re.compile(r'^dice (?P<num>\d{1,3})d(?P<sides>\d{1,3})$'),
+			help = ('funstuff', 'dice', '\02dice\02 <n>\02d\02<s> : Roll <n> dice of <s> sides and return the results.'),
+		)
 		# Remember to fix this regexp in the year 10000
 		self.addTextEvent(
 			method = self.__Easter,
@@ -64,6 +69,29 @@ class FunStuff(Plugin):
 			regexp = re.compile('^horo (?P<sign>\S+)$'),
 			help = ('funstuff', 'horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
 		)
+	
+	# -----------------------------------------------------------------------
+	# Roll some dice
+	def __Dice(self, trigger):
+		num = int(trigger.match.group('num'))
+		sides = int(trigger.match.group('sides'))
+		
+		# Silly people are annoying
+		if not (0 < num <= 100 and 2 < sides <= 100):
+			self.sendReply(trigger, "don't be silly.")
+			return
+		
+		# Roll 'em
+		results = []
+		total = 0
+		for i in range(num):
+			d = random.randint(1, sides)
+			total += d
+			results.append(str(d))
+		
+		# Spit out the results
+		replytext = '%d rolls of a %d-sided die == \02%s\02 (%s)' % (num, sides, total, ' '.join(results))
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Work out what date Easter Sunday falls on for a given year.
