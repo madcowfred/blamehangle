@@ -212,7 +212,7 @@ class ChatterGizmo(Child):
 		
 		# See if it's addressed to anyone
 		addr = 0
-		for i in range(1, min(10, len(text)):
+		for i in range(1, min(10, len(text))):
 			if text[i] in (':;,-'):
 				if text[i+1] == ' ':
 					addr = i+2
@@ -230,4 +230,3 @@ class ChatterGizmo(Child):
 		# It's not addressed to anyone, so do whatever we do here
 		else:
 			a = 'b'
-	

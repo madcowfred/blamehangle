@@ -69,6 +69,15 @@ class Child:
 			self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
+	# Default REQ_SHUTDOWN handler
+	# -----------------------------------------------------------------------
+	def _message_REQ_SHUTDOWN(self, message):
+		tolog = '%s shutting down' % self.__name
+		self.putlog(LOG_DEBUG, tolog)
+		
+		self.stopnow = 1
+	
+	# -----------------------------------------------------------------------
 	# Send a message, takes the same arguments as Message()
 	# -----------------------------------------------------------------------
 	def sendMessage(self, *args):

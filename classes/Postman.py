@@ -219,10 +219,8 @@ class Postman:
 		tolog = 'Shutting down (%s)...' % why
 		self.__Log(LOG_ALWAYS, tolog)
 		
-		# Send shutdown messages to Queuer, FileMonster and HeadHoncho.
-		# PackMan and Chatterbox need to do some things after FileMonster
-		# has finished.
-		#self.sendMessage(['Queuer', 'FileMonster', 'HeadHoncho'], REQ_SHUTDOWN, [why])
+		# Send shutdown messages to everyone
+		self.sendMessage(None, REQ_SHUTDOWN, why)
 	
 	# Don't actually quit until our children have finished shutting down
 	def __Shutdown_Check(self):
