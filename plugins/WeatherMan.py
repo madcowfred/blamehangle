@@ -277,8 +277,7 @@ class WeatherMan(Plugin):
 				
 				if chunks[0] == 'Wind':
 					parts = chunks[1].split()
-					data['wind_dir'] = parts[2]
-					data['wind_speed'] = self.GetWind(trigger, parts[6])
+					data['wind'] = '%s %s' % (parts[2], self.GetWind(trigger, parts[6]))
 				
 				elif chunks[0] == 'Visibility':
 					data['visibility'] = chunks[1]
@@ -318,8 +317,8 @@ class WeatherMan(Plugin):
 			if 'temps' in data:
 				part = 'Currently: %s' % (data['temps'])
 				parts.append(part)
-			if 'wind_dir' in data and 'wind_speeds' in data:
-				part = 'Wind: %s %s' % (data['wind_dir'], data['wind_speeds'])
+			if 'wind' in data:
+				part = 'Wind: %s' % (data['wind'])
 				parts.append(part)
 			if 'humidity' in data:
 				part = 'Humidity: %s' % (data['humidity'])
