@@ -75,13 +75,14 @@ class PluginTimedEvent:
 	interval_elapsed() : returns true if the interval for this event has
 		elapsed
 	"""
-	def __init__(self, name, interval, targets):
+	def __init__(self, name, interval, targets, *args):
 		self.name = name
 		self.interval = interval
 		self.targets = targets
 		self.IRCType = IRCT_TIMED
 		self.last_trigger = time.time()
-
+		self.args = args
+	
 	def __str__(self):
 		return "%s: %s" % (IRCT_TIMED, self.name)
 	
