@@ -200,12 +200,14 @@ class ChatterGizmo(Child):
 		
 		# See if it's addressed to anyone
 		addr = 0
-		for i in range(1, min(10, len(text))):
+		end = min(10, len(text))
+		for i in range(1, end):
 			if text[i] in (':;,-'):
-				if text[i+1] == ' ':
+				if (i + 1) < end and text[i+1] == ' ':
 					addr = i+2
 				else:
 					addr = i+1
+				break
 		
 		# It's probably addressed to someone, see if it's us
 		if addr:
@@ -273,7 +275,7 @@ class ChatterGizmo(Child):
 			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
 		
 		elif first == 'TEST':
-			data = [REPLY_TEST, ('SELECT * FROM totals', [])]
+			data = [REPLY_TEST, ('SELECT gets, filename FROM packs LIMIT 2', [])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
 		else:
