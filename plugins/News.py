@@ -444,8 +444,8 @@ class News(Plugin):
 
 		started = time.time()
 		
-		# Unquote our HTML (not sure if this is stil required)
-		#resp.data = UnquoteHTML(resp.data)
+		# Unquote our data, HTML entities suck
+		resp.data = UnquoteHTML(resp.data)
 		
 		# Get our feed info
 		name = trigger.source
