@@ -932,9 +932,9 @@ class SmartyPants(Plugin):
 	# Someone just asked to search the factoid database
 	def __Fact_Search(self, trigger, result):
 		findme = self.__Sane_Name(trigger)
-		if trigger.name == FACT_LISTKEYS:
+		if trigger.name == '__Query_List_Keys':
 			what = 'key'
-		elif trigger.name == FACT_LISTVALUES:
+		elif trigger.name == '__Query_List_Values':
 			what = 'value'
 		
 		# Error!
