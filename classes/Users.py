@@ -59,11 +59,11 @@ class HangleUserList:
 	# -----------------------------------------------------------------------
 	# Check if the supplied hostname matches any of the hostmasks supplied
 	# for users in the userlist. Return any users that matched.
-	def __Match_Host(self, hostname):
+	def __Match_Host(self, hostmask):
 		matches = []
 		for name, user in self.__users.items():
 			for regexp in user.regexps:
-				if regexp.match(hostname):
+				if regexp.match(hostmask):
 					matches.append(user)
 					break
 		return matches
@@ -71,7 +71,7 @@ class HangleUserList:
 	# -----------------------------------------------------------------------
 	# Check if the supplied irc user has the required flag
 	def Has_Flag(self, userinfo, plugin, flag):
-		matches = self.__Match_Host(userinfo.hostmask)
+		matches = self.__Match_Host(userinfo.hostmask())
 		for user in matches:
 			if user.Has_Flag(plugin, flag):
 				return 1

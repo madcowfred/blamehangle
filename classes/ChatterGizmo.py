@@ -23,6 +23,17 @@ RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
 
 # ---------------------------------------------------------------------------
 
+# Shiny way to look at an event
+class IRCEvent:
+	def __init__(self, prefix, userinfo, command, target, arguments):
+		self.prefix = prefix
+		self.userinfo = userinfo
+		self.command = command
+		self.target = target
+		self.arguments = arguments
+
+# ---------------------------------------------------------------------------
+
 class ChatterGizmo(Child):
 	def setup(self):
 		self.Conns = {}
@@ -138,15 +149,27 @@ class ChatterGizmo(Child):
 
 	# -----------------------------------------------------------------------
 	# Our handy dandy generic event handler
-	def _event_handler(self, connid, event):
+	def _event_handler(self, connid, prefix, hostmask, command, target, arguments):
+		wrap = self.Conns[connid]
+		
+		# Get our userinfo from the magical list
+		if hostmask is not None:
+			userinfo = wrap.ircul.get_userinfo(hostmask)
+		else:
+			userinfo = None
+		
+		event = IRCEvent(prefix, userinfo, command, target, arguments)
+		
+		# Trigger any local events
 		name = '_handle_%s' % (event.command)
 		method = getattr(self, name, None)
 		if method is not None:
 			method(connid, self.Conns[connid].conn, event)
 		
-		for name, events in self.__Handlers.items():
-			if event.command in events or 'ALL' in events:
-				self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
+		# Trigger any other events
+		#for name, events in self.__Handlers.items():
+		#	if event.command in events or 'ALL' in events:
+		#		self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
 	
 	# -----------------------------------------------------------------------
 	# Raw 376 - End of MOTD (and 422 - No MOTD)
@@ -164,7 +187,7 @@ class ChatterGizmo(Child):
 		wrap.conn.sendline('MODE %s +i' % wrap.conn.getnick())
 		
 		# Create our mode list
-		wrap.modes.modes = wrap.conn.features['channel_modes']
+		wrap.ircul._modelist = wrap.conn.features['channel_modes']
 		
 		# If we're supposed to use NickServ, do so
 		if wrap.nickserv_nick and wrap.nickserv_pass:
@@ -235,42 +258,46 @@ class ChatterGizmo(Child):
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
 			# These need to know
-			wrap.modes.joined(chan)
-			wrap.users.joined(chan)
+			wrap.ircul.user_joined(chan)
 			
 			# Request the modes set on this channel
 			wrap.conn.sendline('MODE %s' % chan)
+			
+			# Request the list of users on this channel
+			wrap.conn.sendline('WHO %s' % chan)
 		
 		# Not us
 		else:
-			wrap.users.joined(chan, nick)
+			wrap.ircul.user_joined(chan, nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone just parted a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_part(self, connid, conn, event):
+		wrap = self.Conns[connid]
 		chan = event.target.lower()
 		nick = event.userinfo.nick
 		
 		# Us
 		if nick == conn.getnick():
-			self.Conns[connid].users.parted(chan)
+			wrap.ircul.user_parted(chan)
 			
 			tolog = 'Left %s' % chan
 			self.connlog(connid, LOG_ALWAYS, tolog)
 		
 		# Not us
 		else:
-			self.Conns[connid].users.parted(chan, nick)
+			wrap.ircul.user_parted(chan, nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone just quit (including ourselves? not sure)
 	# -----------------------------------------------------------------------
 	def _handle_quit(self, connid, conn, event):
+		wrap = self.Conns[connid]
 		nick = event.userinfo.nick
 		
 		if nick != conn.getnick():
-			self.Conns[connid].users.quit(nick)
+			wrap.ircul.user_quit(nick)
 			
 			# If it was our primary nickname, try and regain it
 			if nick == self.Conns[connid].nicks[0]:
@@ -291,15 +318,15 @@ class ChatterGizmo(Child):
 			# User modes
 			if mode in wrap.conn.features['user_modes']:
 				if sign == '+':
-					wrap.users.add_mode(chan, arg, mode)
+					wrap.ircul.user_add_mode(chan, arg, mode)
 				elif sign == '-':
-					wrap.users.del_mode(chan, arg, mode)
+					wrap.ircul.user_del_mode(chan, arg, mode)
 			# Guess it's a channel mode
 			else:
 				if sign == '+':
-					wrap.modes.add_mode(chan, mode, arg)
+					wrap.ircul.chan_add_mode(chan, mode, arg)
 				else:
-					wrap.modes.del_mode(chan, mode, arg)
+					wrap.ircul.chan_del_mode(chan, mode, arg)
 	
 	# -----------------------------------------------------------------------
 	# Raw 324 - Channel mode is
@@ -314,9 +341,9 @@ class ChatterGizmo(Child):
 		# Now do something with them
 		for sign, mode, arg in modes:
 			if sign == '+':
-				wrap.modes.add_mode(chan, mode, arg)
+				wrap.ircul.chan_add_mode(chan, mode, arg)
 			else:
-				wrap.modes.del_mode(chan, mode, arg)
+				wrap.ircul.chan_del_mode(chan, mode, arg)
 	
 	# -----------------------------------------------------------------------
 	# Someone just invited us to a channel
@@ -336,6 +363,7 @@ class ChatterGizmo(Child):
 	# Someone was just kicked from a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_kick(self, connid, conn, event):
+		wrap = self.Conns[connid]
 		chan = event.target.lower()
 		kicked = event.arguments[0]
 		
@@ -343,32 +371,61 @@ class ChatterGizmo(Child):
 			tolog = '%s kicked me from %s, rejoining...' % (event.userinfo, chan)
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
-			self.Conns[connid].users.parted(chan)
-			self.Conns[connid].join_channel(chan)
+			wrap.ircul.user_parted(chan)
+			wrap.join_channel(chan)
 		
 		else:
-			self.Conns[connid].users.parted(chan, kicked)
+			wrap.ircul.user_parted(chan, kicked)
 	
 	# -----------------------------------------------------------------------
 	# Someone just changed their name (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_nick(self, connid, conn, event):
+		wrap = self.Conns[connid]
 		before = event.userinfo.nick
 		after = event.target
 		
 		# Update the userlist
-		self.Conns[connid].users.nick(before, after)
+		wrap.ircul.user_nick(event.userinfo.hostmask, after)
 		
 		# If it was our primary nickname, try and regain it
 		if after != conn.getnick() and before == self.Conns[connid].nicks[0]:
 			conn.nick(before)
 	
 	# -----------------------------------------------------------------------
+	# Numeric 352 : WHO reply
+	# -----------------------------------------------------------------------
+	def _handle_whoreply(self, connid, conn, event):
+		# chan ident host server nick ?modes? ?n realname?
+		wrap = self.Conns[connid]
+		chan = event.arguments[0].lower()
+		ident, host = event.arguments[1:3]
+		nick = event.arguments[4]
+		modes = event.arguments[5]
+		
+		# Add this user to the userlist
+		hostmask = '%s!%s@%s' % (nick, ident, host)
+		wrap.ircul.user_joined(chan, hostmask)
+		
+		# Add any modes this user seems to have
+		for sign in modes:
+			mode = wrap.conn.features['user_modes_r'].get(sign, None)
+			if mode is not None:
+				wrap.ircul.user_add_mode(chan, nick, mode)
+	
+	# -----------------------------------------------------------------------
+	# Numeric 315 : WHO reply
+	# -----------------------------------------------------------------------
+	def _handle_endofwho(self, connid, conn, event):
+		tolog = 'Userlist synched for %s' % (event.arguments[0])
+		self.connlog(connid, LOG_ALWAYS, tolog)
+	
+	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
 	# -----------------------------------------------------------------------
-	def _handle_namreply(self, connid, conn, event):
-		chan = event.arguments[1].lower()
+	def _dont_handle_namreply(self, connid, conn, event):
 		wrap = self.Conns[connid]
+		chan = event.arguments[1].lower()
 		
 		# We need this the other way around
 		sign_to_char = dict([(v, k) for k, v in wrap.conn.features['user_modes'].items()])
@@ -376,10 +433,10 @@ class ChatterGizmo(Child):
 		# Add each nick to the channel user list
 		for nick in event.arguments[2].split():
 			if nick[0] in sign_to_char:
-				self.Conns[connid].users.joined(chan, nick[1:])
-				self.Conns[connid].users.add_mode(chan, nick[1:], sign_to_char[nick[0]])
+				wrap.ircul.user_joined(chan, nick[1:])
+				wrap.ircul.user_add_mode(chan, nick[1:], sign_to_char[nick[0]])
 			else:
-				self.Conns[connid].users.joined(chan, nick)
+				wrap.ircul.user_joined(chan, nick)
 	
 	# -----------------------------------------------------------------------
 	# Our nickname is in use!
@@ -479,8 +536,8 @@ class ChatterGizmo(Child):
 				return
 			
 			# If we're ignoring strangers, skip them
-			if wrap.ignore_strangers == 1 and not wrap.users.in_any_chan(event.userinfo.nick):
-				return
+			#if wrap.ignore_strangers == 1 and not wrap.ircul.user_in_any_chan(event.userinfo.nick):
+			#	return
 			
 			# Strip any codes from the text
 			text = RE_STRIP_CODES.sub('', event.arguments[0])
@@ -612,7 +669,7 @@ class ChatterGizmo(Child):
 		
 		for wrap in self.Conns.values():
 			nets += 1
-			chans += len(wrap.users.channels())
+			chans += len(wrap.ircul._c)
 		
 		message.data['irc_nets'] = nets
 		message.data['irc_chans'] = chans

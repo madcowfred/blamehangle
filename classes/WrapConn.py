@@ -13,9 +13,8 @@ import time
 import types
 
 from classes.asyncIRC import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
-from classes.ChanModes import ChanModes
-from classes.ChanUsers import ChanUsers
 from classes.Constants import *
+from classes.IRCUserList import IRCUserList
 
 # ---------------------------------------------------------------------------
 # How long in seconds to wait for a connect attempt to time out
@@ -148,8 +147,7 @@ class WrapConn:
 		self.__notice = []
 		self.__ctcp_reply = []
 		
-		self.modes = ChanModes()
-		self.users = ChanUsers()
+		self.ircul = IRCUserList()
 	
 	def connect(self):
 		if self.dnswait:

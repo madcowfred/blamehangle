@@ -53,7 +53,7 @@ class Quotes(Plugin):
 			line = 'To: %s' % self.Options['mail_to']
 			lines.append(line)
 			
-			line = 'Subject: Quote from %s' % trigger.userinfo.hostmask
+			line = 'Subject: Quote from %s' % (trigger.userinfo)
 			lines.append(line)
 			
 			line = 'X-Mailer: blamehangle Quotes plugin'

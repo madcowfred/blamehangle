@@ -6,7 +6,7 @@
 
 class OptionsDict(dict):
 	def get_net(self, option, trigger, chan=None):
-		network = trigger.conn.name.lower()
+		network = trigger.wrap.name.lower()
 		if chan is None:
 			return self.get(option, {}).get(network, None)
 		else:

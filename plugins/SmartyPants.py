@@ -368,9 +368,9 @@ class SmartyPants(Plugin):
 		name = self.__Sane_Name(trigger)
 		
 		if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'tell'):
-			if tellnick[0] in '#&':
+			if tellnick[0] in '#&+!':
 				# Target is a channel we're not in.
-				if tellnick not in trigger.conn.users.channels():
+				if not trigger.wrap.ircul.user_in_any_chan(tellnick):
 					self.sendReply(trigger, "I'm not in that channel!")
 					tolog = "%s tried to tell %s about '%s', but I'm not in that channel!" % (
 						trigger.userinfo, tellnick, name)
@@ -378,7 +378,7 @@ class SmartyPants(Plugin):
 					return
 				
 				# Target is a channel the source isn't in.
-				if not trigger.conn.users.in_chan(tellnick, trigger.userinfo.nick):
+				if not trigger.wrap.ircul.user_in_chan(tellnick, trigger.userinfo.nick):
 					self.sendReply(trigger, "You're not in that channel!")
 					tolog = "%s tried to tell %s about '%s', but they're not in that channel!" % (
 						trigger.userinfo, tellnick, name)
@@ -387,7 +387,7 @@ class SmartyPants(Plugin):
 			
 			else:
 				# Source and target aren't in a common channel
-				if not trigger.conn.users.in_same_chan(tellnick, trigger.userinfo.nick):
+				if not trigger.wrap.ircul.user_in_same_chan(tellnick, trigger.userinfo.nick):
 					self.sendReply(trigger, "That user isn't in a channel with you!")
 					tolog = "%s tried to tell %s about '%s', but they're not in a common channel!" % (
 						trigger.userinfo, tellnick, name)
@@ -489,10 +489,10 @@ class SmartyPants(Plugin):
 				tellnick = trigger.match.group('nick')
 				
 				msgtext = "Told %s that %s is %s" % (tellnick, row['name'], value)
-				self.privmsg(trigger.conn, trigger.userinfo.nick, msgtext)
+				self.privmsg(trigger.wrap, trigger.userinfo.nick, msgtext)
 				
 				msgtext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, row['name'], value)
-				self.privmsg(trigger.conn, tellnick, msgtext)
+				self.privmsg(trigger.wrap, tellnick, msgtext)
 			
 			
 			# Update the request count and nick

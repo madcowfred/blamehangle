@@ -134,16 +134,16 @@ class PluginTextTrigger:
 	event    : the event that caused this trigger
 	match    : the match object that was returned by the event's regexp
 	IRCType  : the IRCType FIXME
-	conn     : the IRC connection this trigger came from
+	wrap     : the IRC connection wrapper this trigger came from
 	target   : the target of the line that caused this trigger (eg, channel)
 	userinfo : a userinfo object for the source of the event
 	"""
 	
-	def __init__(self, event, match, IRCType, conn, target, userinfo):
+	def __init__(self, event, match, IRCType, wrap, target, userinfo):
 		self.event = event
 		self.match = match
 		self.IRCType = IRCType
-		self.conn = conn
+		self.wrap = wrap
 		self.target = target
 		self.userinfo = userinfo
 		self.name = self.event.name
@@ -232,3 +232,5 @@ class PluginReply:
 	
 	def __repr__(self):
 		return "<class PluginReply: " + self.__str__() + ">"
+
+# ---------------------------------------------------------------------------

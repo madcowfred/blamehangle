@@ -131,7 +131,7 @@ class PluginHandler(Child):
 	# ChatterGizmo can come up with a TIMED IRC_EVENT. This lets us avoid
 	# special case code here.
 	def _message_IRC_EVENT(self, message):
-		conn, IRCType, userinfo, target, text = message.data
+		wrap, IRCType, userinfo, target, text = message.data
 		
 		triggered = {}
 		
@@ -147,7 +147,7 @@ class PluginHandler(Child):
 			priorities.sort()
 			
 			for plugin, event, m in triggered[priorities[-1]]:
-				trigger = PluginTextTrigger(event, m, IRCType, conn, target, userinfo)
+				trigger = PluginTextTrigger(event, m, IRCType, wrap, target, userinfo)
 				if plugin is self:
 					if event.name == '_HELPER_':
 						self.__Helper(trigger)
@@ -165,7 +165,7 @@ class PluginHandler(Child):
 				
 				user_host = '%s@%s' % (userinfo.ident, userinfo.host)
 				
-				data = (time.time(), irct, conn.name, target, userinfo.nick, user_host, text)
+				data = (time.time(), irct, wrap.name, target, userinfo.nick, user_host, text)
 				self.dbQuery(None, self.__Query_Log, LOG_QUERY, *data)
 	
 	# -----------------------------------------------------------------------
@@ -191,17 +191,18 @@ class PluginHandler(Child):
 			self.privmsg(reply.trigger.targets, None, reply.replytext)
 		
 		elif isinstance(reply.trigger, PluginTextTrigger):
+			wrap = reply.trigger.wrap
 			nick = reply.trigger.userinfo.nick
 			target = reply.trigger.target
-			conn = reply.trigger.conn
+			
 			if reply.trigger.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
 				if reply.process:
 					tosend = "%s: %s" % (nick, reply.replytext)
 				else:
 					tosend = reply.replytext
-				self.privmsg(conn, target, tosend)
+				self.privmsg(wrap, target, tosend)
 			else:
-				self.privmsg(conn, nick, reply.replytext)
+				self.privmsg(wrap, nick, reply.replytext)
 		
 		elif isinstance(reply.trigger, PluginFakeTrigger):
 			tolog = "PluginFakeTrigger: '%s'" % reply.replytext

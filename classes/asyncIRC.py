@@ -32,30 +32,6 @@ STATUS_CONNECTING = 'Connecting'
 STATUS_CONNECTED = 'Connected'
 
 # ---------------------------------------------------------------------------
-# Shiny way to look at an event
-class IRCEvent:
-	def __init__(self, prefix, userinfo, command, target, arguments):
-		self.prefix = prefix
-		self.userinfo = userinfo
-		self.command = command
-		self.target = target
-		self.arguments = arguments
-
-# Shiny way to look at a user.
-class UserInfo:
-	def __init__(self, hostmask):
-		self.hostmask = hostmask
-		
-		self.nick, rest = hostmask.split('!')
-		self.ident, self.host = rest.split('@')
-	
-	def __str__(self):
-		return '%s (%s@%s)' % (self.nick, self.ident, self.host)
-	
-	def __repr__(self):
-		return '<UserInfo: %s>' % (self.hostmask)
-
-# ---------------------------------------------------------------------------
 
 class asyncIRC(buffered_dispatcher):
 	def __init__(self):
@@ -88,6 +64,7 @@ class asyncIRC(buffered_dispatcher):
 			'max_targets': 3,
 			'nicklen': 9,
 			'user_modes': {'o': '@', 'v': '+'},
+			'user_modes_r': {'@': 'o', '+': 'v'},
 		}
 	
 	# Is this a channel?
@@ -133,9 +110,9 @@ class asyncIRC(buffered_dispatcher):
 	# An event happened, off we go
 	def __trigger_event(self, *args):
 		#print self.connid, 'EVENT:', repr(args)
-		event = IRCEvent(*args)
+		#event = IRCEvent(*args)
 		for method in self.__handlers:
-			method(self.connid, event)
+			method(self.connid, *args)
 	
 	# Your basic 'send a line of text to the server' method
 	def sendline(self, line, *args):
@@ -149,7 +126,7 @@ class asyncIRC(buffered_dispatcher):
 		
 		self.send(line + '\r\n')
 	
-	# We want our nickname
+	# Someone wants our nickname
 	def getnick(self):
 		return self.__nickname
 	
@@ -201,7 +178,7 @@ class asyncIRC(buffered_dispatcher):
 		for line in lines:
 			#print '<', repr(line)
 			
-			prefix = command = target = userinfo = None
+			prefix = command = target = hostmask = None
 			arguments = []
 			
 			m = _command_regexp.match(line)
@@ -209,7 +186,7 @@ class asyncIRC(buffered_dispatcher):
 			if m.group('prefix'):
 				prefix = m.group('prefix')
 				if prefix.find('!') >= 0:
-					userinfo = UserInfo(prefix)
+					hostmask = prefix
 			
 			if m.group('command'):
 				command = m.group('command').lower()
@@ -227,30 +204,36 @@ class asyncIRC(buffered_dispatcher):
 				self.status = STATUS_CONNECTED
 				self.welcomed = 1
 				self.__nickname = arguments[0]
-			elif command == 'nick' and userinfo.nick == self.__nickname:
+			elif command == 'nick' and hostmask.split('!', 1)[0] == self.__nickname:
 				self.__nickname = arguments[0]
 			
-			# We need to do scan the 005 replies for features
+			# We need to scan the 005 replies for features
 			elif command == '005':
 				for argument in arguments:
 					try:
 						k, v = argument.split('=', 1)
 					except ValueError:
-						continue
+						k, v = argument, None
 					
-					if k == 'CHANMODES':
-						self.features['channel_modes'] = v.split(',')
-					elif k == 'CHANTYPES':
-						self.features['channel_types'] = [c for c in v]
-					elif k == 'MAXTARGETS':
-						self.features['max_targets'] = int(v)
-					elif k == 'NICKLEN':
-						self.features['nicklen'] = int(v)
-					elif k == 'PREFIX':
-						self.features['user_modes'] = {}
-						chars, signs = v[1:].split(')', 1)
-						for i in range(len(chars)):
-							self.features['user_modes'][chars[i]] = signs[i]
+					if v is None:
+						pass
+					else:
+						if k == 'CHANMODES':
+							self.features['channel_modes'] = v.split(',')
+						elif k == 'CHANTYPES':
+							self.features['channel_types'] = [c for c in v]
+						elif k == 'MAXTARGETS':
+							self.features['max_targets'] = int(v)
+						elif k == 'NICKLEN':
+							self.features['nicklen'] = int(v)
+						elif k == 'PREFIX':
+							self.features['user_modes'] = {}
+							self.features['user_modes_r'] = {}
+							
+							chars, signs = v[1:].split(')', 1)
+							for i in range(len(chars)):
+								self.features['user_modes'][chars[i]] = signs[i]
+								self.features['user_modes_r'][signs[i]] = chars[i]
 			
 			# We always have to answer a PING
 			elif command == 'ping':
@@ -286,7 +269,7 @@ class asyncIRC(buffered_dispatcher):
 						arguments = [m]
 					
 					# Trigger the event
-					self.__trigger_event(prefix, userinfo, command, target, arguments)
+					self.__trigger_event(prefix, hostmask, command, target, arguments)
 			
 			else:
 				if command not in ('quit', 'ping'):
@@ -302,7 +285,7 @@ class asyncIRC(buffered_dispatcher):
 				command = numeric_events.get(command, command)
 				
 				# Trigger the event
-				self.__trigger_event(prefix, userinfo, command, target, arguments)
+				self.__trigger_event(prefix, hostmask, command, target, arguments)
 	
 	# -----------------------------------------------------------------------
 	# Connect to a server
