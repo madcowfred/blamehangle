@@ -94,9 +94,9 @@ class Child:
 	def putlog(self, level, text):
 		self.sendMessage('Postman', REQ_LOG, [level, text])
 	
-	# Multiple DB queries, be afraid
-	def dbQuery(self, returnme, *queries):
-		data = [returnme, queries]
+	# Short way of doing a DB query
+	def dbQuery(self, trigger, method, query, *args):
+		data = [trigger, method, query, args]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	# Request a URL to be fetched

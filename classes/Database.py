@@ -120,6 +120,7 @@ class Postgres(DatabaseWrapper):
 #            this thread
 # --------------------------------------------------------------
 def DataThread(parent, db, myindex):
+	myname = parent.threads[myindex][0].getName()
 	_sleep = time.sleep
 	
 	while 1:
@@ -137,45 +138,29 @@ def DataThread(parent, db, myindex):
 		
 		# we have a query
 		else:
-			tolog = '%s : Actioning a request' % \
-				parent.threads[myindex][0].getName()
-			parent.putlog(LOG_DEBUG, tolog)
-			results = []
-			toreturn, queries = message.data
+			trigger, method, query, args = message.data
 			
-			for chunk in queries:
-				query = chunk[0]
-				# If there's any args, use them
-				if len(chunk) >= 2:
-					if type(chunk[1]) in (types.ListType, types.TupleType):
-						args = chunk[1]
-					else:
-						args = chunk[1:]
-				# No args!
-				else:
-					args = []
-				
-				tolog = 'Query: "%s", Args: %s' % (query, repr(args))
-				parent.putlog(LOG_QUERY, tolog)
-				
-				try:
-					result = db.query(query, *args)
-				
-				except:
-					# Log the error
-					t, v = sys.exc_info()[:2]
-					
-					tolog = '%s - %s' % (t, v)
-					parent.putlog(LOG_WARNING, tolog)
-					
-					results.append(())
-					
-					db.disconnect()
-				
-				else:
-					results.append(result)
+			tolog = 'Query: "%s", Args: %s' % (query, repr(args))
+			parent.putlog(LOG_QUERY, tolog)
 			
-			data = [toreturn, results]
+			try:
+				result = db.query(query, *args)
 			
+			except:
+				# Log the error
+				t, v = sys.exc_info()[:2]
+				
+				tolog = '%s - %s' % (t, v)
+				parent.putlog(LOG_WARNING, tolog)
+				
+				result = None
+				
+				db.disconnect()
+			
+			# Return our results
+			data = [trigger, method, result]
 			message = Message('DataMonkey', message.source, REPLY_QUERY, data)
 			parent.outQueue.append(message)
+			
+			# Clean up
+			del trigger, method, query, args, result

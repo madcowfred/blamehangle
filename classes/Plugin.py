@@ -33,8 +33,12 @@ class Plugin(Child):
 			getattr(self, method_name)(trigger)
 		else:
 			raise Exception, 'either make %s or overwrite _message_PLUGIN_TRIGGER' % method_name
-		
-		#raise Exception, 'need to overwrite PLUGIN_TRIGGER message handler in %s' % self.__name
+	
+	# Default query reply handler, eek
+	def _message_REPLY_QUERY(self, message):
+		trigger, method, result = message.data
+		if method is not None:
+			method(trigger, result)
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
