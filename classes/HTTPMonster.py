@@ -113,9 +113,17 @@ class async_http(asyncore.dispatcher_with_send):
 		
 		self.path = path
 		
-		# Create the socket and start the connection
+		# Create the socket
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.connect((host, port))
+		
+		# Try to connect. It seems this will blow up if it can't resolve the
+		# host.
+		try:
+			self.connect((host, port))
+		except socket.gaierror, msg:
+			tolog = "Error while trying to fetch url: %s - %s" % (self.url, msg)
+			self.parent.putlog(LOG_ALWAYS, tolog)
+			self.close()
 	
 	# Connection succeeded
 	def handle_connect(self):
