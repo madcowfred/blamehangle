@@ -222,7 +222,7 @@ class Postman:
 		# Send shutdown messages to Queuer, FileMonster and HeadHoncho.
 		# PackMan and Chatterbox need to do some things after FileMonster
 		# has finished.
-		self.sendMessage(['Queuer', 'FileMonster', 'HeadHoncho'], REQ_SHUTDOWN, [why])
+		#self.sendMessage(['Queuer', 'FileMonster', 'HeadHoncho'], REQ_SHUTDOWN, [why])
 	
 	# Don't actually quit until our children have finished shutting down
 	def __Shutdown_Check(self):
