@@ -47,14 +47,54 @@ class MoneyMangler(Plugin):
 	"""
 	
 	def setup(self):
-		self.Currencies = self.loadPickle('currency.data')
-		if self.Currencies is None:
-			self.Currencies = {}
-			tolog = "Error loading data from currency.data, MoneyMangler will not work!"
-			self.putlog(LOG_WARNING, tolog)
-	
-	def rehash(self):
-		self.setup()
+		self.__Currencies = {}
+		
+		filename = os.path.join('data', 'currencies')
+		
+		update = 0
+		if os.path.isfile(filename):
+			# If the file is a week or more old, update the list
+			timediff = time.time() - os.stat(filename).st_mtime
+			if timediff > (7 * 24 * 60 * 60):
+				update = 1
+				self.putlog(LOG_ALWAYS, 'Currency data is stale, updating...')
+			# Guess it's current-ish, try loading it
+			else:
+				try:
+					curr_file = open(filename, 'r')
+				except IOError:
+					tolog = 'Unable to open %s, currency conversion is broken!' % filename
+					self.putlog(LOG_WARNING, tolog)
+				else:
+					for line in curr_file.readlines():
+						line = line.strip()
+						if not line:
+							continue
+						
+						try:
+							code, country = line.split(None, 1)
+							self.__Currencies[code] = country
+						except ValueError:
+							continue
+					
+					tolog = 'Loaded %d currencies from %s.' % (len(self.__Currencies), filename)
+					self.putlog(LOG_ALWAYS, tolog)
+		
+		else:
+			# File isn't even here
+			update = 1
+			self.putlog(LOG_ALWAYS, 'Currency data is missing, updating...')
+		
+		# If we have to update, go do that
+		if update:
+			data = {
+				'amt': '1.00',
+				'from': 'USD',
+				'to': 'CAD',
+			}
+			url = EXCHANGE_URL % data
+			trigger = PluginFakeTrigger('CURRENCY_UPDATE')
+			self.urlRequest(trigger, self.__Update_Currencies, url)
 	
 	# -----------------------------------------------------------------------
 	
@@ -88,14 +128,14 @@ class MoneyMangler(Plugin):
 		# Possible currency code?
 		if len(curr) == 3:
 			ucurr = curr.upper()
-			if ucurr in self.Currencies:
-				replytext = '%s (%s)' % (self.Currencies[ucurr], ucurr)
+			if ucurr in self.__Currencies:
+				replytext = '%s (%s)' % (self.__Currencies[ucurr], ucurr)
 				self.sendReply(trigger, replytext)
 				return
 		
 		# Search the whole bloody lot
 		found = []
-		for code, name in self.Currencies.items():
+		for code, name in self.__Currencies.items():
 			if name.lower().find(curr) >= 0:
 				found.append(code)
 		
@@ -124,9 +164,9 @@ class MoneyMangler(Plugin):
 		data['from'] = trigger.match.group('from').upper()
 		data['to'] = trigger.match.group('to').upper()
 		
-		if data['from'] not in self.Currencies:
+		if data['from'] not in self.__Currencies:
 			replytext = '%(from)s is not a valid currency code' % data
-		elif data['to'] not in self.Currencies:
+		elif data['to'] not in self.__Currencies:
 			replytext = '%(to)s is not a valid currency code' % data
 		elif 'e' in data['amt']:
 			replytext = '%(amt)s is beyond the range of convertable values' % data
@@ -325,5 +365,50 @@ class MoneyMangler(Plugin):
 			# Spit something out
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Update the currency list
+	def __Update_Currencies(self, trigger, page_url, page_text):
+		# Find the giant list
+		chunk = FindChunk(page_text, '<input name="amt"', '</select>')
+		if not chunk:
+			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
+			return
+		
+		# Find the options
+		chunks = FindChunks(chunk, '<option value="', '</option>')
+		if not chunks:
+			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
+			return
+		
+		# Parse 'em
+		for chunk in chunks:
+			code = chunk[:3]
+			country = chunk[5:-7]
+			if code and country:
+				self.__Currencies[code] = country
+		
+		# We's done
+		if self.__Currencies:
+			tolog = 'Currency update complete, found %d currencies.' % (len(self.__Currencies))
+			self.putlog(LOG_ALWAYS, tolog)
+			
+			filename = os.path.join('data', 'currencies')
+			try:
+				curr_file = open(filename, 'w')
+			except IOError:
+				tolog = 'Unable to open %s for writing!' % filename
+				self.putlog(LOG_WARNING, tolog)
+			
+			else:
+				currs = self.__Currencies.items()
+				currs.sort()
+				for code, country in currs:
+					towrite = '%s %s\n' % (code, country)
+					curr_file.write(towrite)
+				curr_file.close()
+		
+		else:
+			self.putlog(LOG_WARNING, 'Currency update failed, found 0 currencies!')
 
 # ---------------------------------------------------------------------------
