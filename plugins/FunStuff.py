@@ -15,7 +15,7 @@ from classes.Plugin import *
 # This regexp needs fixing in the year 3000, don't forget
 FUN_EASTER = 'FUN_EASTER'
 EASTER_HELP = '\02easter\02 <year> : Work out what day Easter Sunday falls on for a given year.'
-EASTER_RE = re.compile('^easter (?P<year>[12]\d\d\d)$')
+EASTER_RE = re.compile('^easter (?P<year>\d{1,4})$')
 
 FUN_EIGHTBALL = 'FUN_EIGHTBALL'
 EIGHTBALL_HELP = '\028ball\02 <question> : The magic 8 ball will answer your question!'
@@ -71,22 +71,16 @@ class FunStuff(Plugin):
 		d = l + 28 - 31 * ( m / 4 )
 		
 		# Get a useful sort of time value out of that
-		temp_date = '%04d %02d %02d' % (y, m, d)
-		try:
-			t = time.strptime(temp_date, '%Y %m %d')
+		easter_date = '%04d%02d%02d' % (y, m, d)
+		now_date = time.strftime('%Y%m%d')
 		
-		except ValueError:
-			replytext = 'Failed to parse date, uh-oh'
+		month = ('January', 'February', 'March', 'April', 'May', 'June',
+			'July', 'August', 'September', 'October', 'November', 'December')
 		
+		if now_date > easter_date:
+			replytext = 'Easter Sunday was on %s %02d, %d AD' % (month[m-1], d, y)
 		else:
-			# If it was previous, use was
-			now = time.time()
-			then = time.mktime(t)
-			
-			if now > then:
-				replytext = time.strftime('Easter Sunday was on %B %d in %Y', t)
-			else:
-				replytext = time.strftime('Easter Sunday will be on %B %d in %Y', t)
+			replytext = 'Easter Sunday will be on %s %02d, %d AD' % (month[m-1], d, y)
 		
 		self.sendReply(trigger, replytext)
 	
