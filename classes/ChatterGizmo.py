@@ -621,11 +621,11 @@ class ChatterGizmo(Child):
 						# If we combine targets for this network, do that
 						if wrap.options.get('combine_targets', 1):
 							target = ','.join(targets)
-							self.privmsg(wrap.conn, target, text)
+							self.privmsg(wrap.conn.connid, target, text)
 						# Oh well, do it the slow way
 						else:
 							for target in targets:
-								self.privmsg(wrap.conn, target, text)
+								self.privmsg(wrap.conn.connid, target, text)
 						
 						break
 		
