@@ -70,7 +70,8 @@ class GetBotOps(Plugin):
 					for ui in matches:
 						# If he's opped, ask him for ops
 						if wrap.ircul.user_has_mode(chan, ui.nick, 'o'):
-							self.privmsg(wrap, ui.nick, 'OP %s' % data['pass'])
+							text = 'OP %s %s' % (data['pass'], chan)
+							self.privmsg(wrap, ui.nick, text)
 							
 							tolog = 'Asked %s for ops on %s.' % (ui.nick, chan)
 							self.connlog(wrap, LOG_ALWAYS, tolog)
