@@ -34,6 +34,12 @@ FIELDMAP = {
 	'LINK': 'Link',
 }
 
+ERRORS = {
+	'1': 'Empty query string',
+	'2': 'Database error',
+	'3': 'Unexpected error',
+}
+
 # ---------------------------------------------------------------------------
 
 class AnimeNFO(Plugin):
@@ -62,7 +68,8 @@ class AnimeNFO(Plugin):
 				field, value = fields[0]
 				
 				if field == 'ERROR':
-					replytext = 'AnimeNFO returned error %s' % value
+					errortext = ERRORS.get(value, 'Unknown error')
+					replytext = 'AnimeNFO returned error: %s' % errortext
 				
 				elif field == 'RESULT':
 					if value == '0':
