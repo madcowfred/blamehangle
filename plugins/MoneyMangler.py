@@ -275,7 +275,7 @@ class MoneyMangler(Plugin):
 				showme = symbol
 			
 			# Find the data we need
-			chunk = FindChunk(page_text, '<table class="yfnc_datamodoutline1"', '</table>')
+			chunk = FindChunk(page_text, '<td class="yfnc_datamodoutline1"><table width="100%"', '</table>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
 				self.sendReply(trigger, 'Failed to parse page.')
