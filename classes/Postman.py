@@ -93,6 +93,8 @@ class Postman:
 							
 							self.Config.read(self.ConfigFile)
 							self.__Load_Configs()
+							for child in self.__Children.values():
+								child.Config = self.Config
 							
 							self.sendMessage(None, REQ_REHASH, None)
 							#self.sendMessage('HeadHoncho', REPLY_LOAD_CONFIG, message.data)
