@@ -28,15 +28,19 @@ class Karma(Plugin):
 	KARMA_MINUS = "KARMA_MINUS"
 	KARMA_LOOKUP = "KARMA_LOOKUP"
 	KARMA_MOD = "KARMA_MOD"
+
+	__PLUS_RE = re.compile("^.*(?=\+\+$)")
+	__MINUS_RE = re.compile("^.*(?=--$)")
+	__LOOKUP_RE = re.compile("^karma .*(?=$|\?$)")
 	
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_REGISTER(self, message):
 		reply = [
-		(PUBLIC, re.compile("^.*(?=\+\+$)"), [0], KARMA_PLUS),
-		(PUBLIC, re.compile("^.*(?=--$)"), [0], KARMA_MINUS),
-		(PUBLIC, re.compile("^karma .*(?=$|\?$)"), [0], KARMA_LOOKUP),
-		(MSG, re.complie("^karma .*(?=$|\?$)"), [0], KARMA_LOOKUP)
+		(PUBLIC, __PLUS_RE, [0], KARMA_PLUS),
+		(PUBLIC, __MINUS_RE, [0], KARMA_MINUS),
+		(PUBLIC, __LOOKUP_RE, [0], KARMA_LOOKUP),
+		(MSG, __LOOKUP_RE, [0], KARMA_LOOKUP)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
