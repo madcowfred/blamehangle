@@ -18,6 +18,7 @@ from classes.Constants import *
 FACT_SET = "FACT_SET"
 FACT_GET = "FACT_GET"
 FACT_REDIRECT = "FACT_REDIRECT"
+FACT_RAW = "FACT_RAW"
 FACT_ALSO = "FACT_ALSO"
 FACT_DEL = "FACT_DEL"
 FACT_REPLACE = "FACT_REPLACE"
@@ -57,6 +58,7 @@ LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value LIKE '%%%s%%'"
 GET_D_RE = re.compile(r'^(?P<name>.+?)\??$')
 GET_RE = re.compile(r'^(?P<name>.+?)\?$')
 SET_RE = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$')
+RAW_RE = re.compile(r'^rawfactoid (?P<name>.+?)$')
 NO_RE = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$')
 ALSO_RE = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$')
 DEL_RE = re.compile(r'^forget +(?P<name>.+)$')
@@ -183,6 +185,7 @@ class SmartyPants(Plugin):
 		if self.__set_pub:
 			self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC)
 		# Rest are normal
+		self.setTextEvent(FACT_RAW, RAW_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_NO, NO_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_ALSO, ALSO_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_DEL, DEL_RE, IRCT_PUBLIC_D, IRCT_MSG)
@@ -286,6 +289,13 @@ class SmartyPants(Plugin):
 			self.dbQuery(trigger, self.__Fact_Set, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
+	# Someone wants to look up a factoid, but they don't want variable substituion
+	# or redirects.
+	def _trigger_FACT_RAW(self, trigger):
+		name = self.__Sane_Name(trigger)
+		self.dbQuery(trigger, self.__Fact_Raw, GET_QUERY, name)
+	
+	# -----------------------------------------------------------------------
 	# Somone wants to replace a factoid definition
 	def _trigger_FACT_NO(self, trigger):
 		name = self.__Sane_Name(trigger)
@@ -370,7 +380,7 @@ class SmartyPants(Plugin):
 		
 		# Error!
 		if result is None:
-			self.sendReply('An unknown database error occurred.')
+			self.sendReply(trigger, 'An unknown database error occurred.')
 		
 		# No result
 		elif result == ():
@@ -453,7 +463,7 @@ class SmartyPants(Plugin):
 	def __Fact_Redirect(self, trigger, result):
 		# Error!
 		if result is None:
-			self.sendReply('An unknown database error occurred.')
+			self.sendReply(trigger, 'An unknown database error occurred.')
 		
 		# No result, redirect failed
 		elif result == ():
@@ -488,7 +498,7 @@ class SmartyPants(Plugin):
 		
 		# Error!
 		if result is None:
-			self.sendReply('An unknown database error occurred.')
+			self.sendReply(trigger, 'An unknown database error occurred.')
 		
 		# No result, insert it
 		elif result == ():
@@ -511,6 +521,44 @@ class SmartyPants(Plugin):
 			row = result[0]
 			replytext = "...but '%s' is already set to something else!" % row['name']
 			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# something
+	# -----------------------------------------------------------------------
+	# A user asked to lookup a factoid. We've already dug it out of the
+	# database, so all we need to do is formulate a reply and send it out.
+	# -----------------------------------------------------------------------
+	def __Fact_Raw(self, trigger, result):
+		name = self.__Sane_Name(trigger)
+		
+		# Error!
+		if result is None:
+			self.sendReply(trigger, 'An unknown database error occurred.')
+		
+		# No result
+		elif result == ():
+			# The factoid wasn't in our database
+			self.__dunnos += 1
+			
+			replytext = random.choice(DUNNO)
+			self.sendReply(trigger, replytext)
+		
+		# Found it!
+		else:
+			row = result[0]
+			
+			# This factoid wasn't a <null>, so update stats and generate the
+			# reply
+			self.__requests += 1
+			
+			replytext = '%(name)s is %(value)s' % row
+			self.sendReply(trigger, replytext)
+			
+			# Update the request count and nick
+			requester_nick = trigger.userinfo.nick
+			requester_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
+			now = int(time.time())
+			self.dbQuery(trigger, None, REQUESTED_QUERY, requester_nick, requester_host, now, name)
 	
 	# -----------------------------------------------------------------------
 	# A user just tried to update a factoid by replacing the existing
