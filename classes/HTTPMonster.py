@@ -264,8 +264,6 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# See if we've timed out
 	def timeout_check(self, currtime):
-		print currtime, self.last_activity
-		
 		if currtime - self.last_activity > HTTP_TIMEOUT:
 			self.failed('Connection timed out')
 	
