@@ -40,10 +40,19 @@ class Dictionary(Plugin):
 		trigger = message.data
 		
 		if trigger.name == DICTIONARY_DICT:
-			tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, trigger.match.group('word').lower())
-			self.putlog(LOG_ALWAYS, tolog)
+			word = trigger.match.group('word').lower()
+			if len(word) > 30:
+				tolog = 'Dictionary: %s asked me to look up a very long word!'
+				
+				self.sendReply(trigger, "That's too long!")
 			
-			async_dict(self, trigger)
+			else:
+				tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, word)
+				
+				async_dict(self, trigger)
+			
+			self.putlog(LOG_ALWAYS, tolog)
+
 
 # ---------------------------------------------------------------------------
 # Blah to evil people who can't agree on line seperators :)
