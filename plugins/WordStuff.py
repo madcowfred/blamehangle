@@ -6,13 +6,16 @@
 from classes.Plugin import *
 from classes.Constants import *
 
-import re, cStringIO
+import re
+from cStringIO import StringIO
+
+# ---------------------------------------------------------------------------
 
 WORD_RHYME = "WORD_RHYME"
 WORD_SYNONYM = "WORD_SYNONYM"
 WORD_ANTONYM = "WORD_ANTONYM"
 
-wordbit = "(?P<word>[^ ]+)$"
+wordbit = "(?P<word>\S+)$"
 WORD_RHYME_RE = re.compile("rhyme +" + wordbit)
 WORD_SYNONYM_RE = re.compile("synonyms +" + wordbit)
 WORD_ANTONYM_RE = re.compile("antonyms +" + wordbit)
@@ -21,10 +24,11 @@ RHYME_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&or
 SYNONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l"
 ANTONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=ant&org1=let&org2=l"
 
+# ---------------------------------------------------------------------------
 
 MAX_WORD_RESULTS = 50
 
-
+# ---------------------------------------------------------------------------
 
 class WordStuff(Plugin):
 	"""
@@ -87,7 +91,7 @@ class WordStuff(Plugin):
 		word = trigger.match.group('word').lower()
 
 		# Search through the page for answers
-		s = cStringIO.StringIO(page_text)
+		s = StringIO(page_text)
 		
 		if trigger.name == WORD_RHYME:
 			heading = "Words that rhyme with"
