@@ -75,8 +75,6 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
 	def __Parse_Page(self, trigger, resp):
-		t1 = time.time()
-		
 		items = {}
 		
 		# We don't want stupid HTML entities
@@ -84,8 +82,6 @@ class TorrentScraper(Plugin):
 		
 		# But we do want to quote the damn ampersands properly
 		resp.data = ENTITY_RE.sub('&amp;', resp.data)
-		
-		t2 = time.time()
 		
 		# If it's a BNBT page, we have to do some yucky searching
 		if resp.data.find('BNBT') >= 0:
@@ -156,23 +152,14 @@ class TorrentScraper(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
-		t3 = time.time()
-		
 		# Switch back to a list
 		items = items.values()
-		#items.sort()
-		
-		# Build our query
 		trigger.items = items
 		
+		# Build our query
 		args = [item[0] for item in items] + [item[1] for item in items]
 		querybit = ', '.join(['%s'] * len(items))
-		
 		query = SELECT_QUERY % (querybit, querybit)
-		
-		t4 = time.time()
-		
-		#print 't1-t2: %.4fs, t2-t3: %.4fs, t3-t4: %.4fs' % (t2-t1, t3-t2, t4-t3)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
