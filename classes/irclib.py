@@ -434,10 +434,12 @@ class ServerConnection(Connection):
 		try:
 			self.sock.connect((self.server, self.port))
 		except socket.error, msg:
-			if msg[0] == errno.EINPROGRESS:
+			# 10035 is the Winsock way of saying EINPROGRESS :\
+			if msg[0] in (errno.EINPROGRESS, 10035):
 				self.status = STATUS_CONNECTING
 				pass
 			else:
+				print msg
 				raise ServerConnectionError, msg[0]
 		
 		return self
