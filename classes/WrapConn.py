@@ -13,6 +13,12 @@ STATUS_DISCONNECTED = 'Disconnected'
 STATUS_CONNECTING = 'Connecting'
 STATUS_CONNECTED = 'Connected'
 
+CONNECT_TIMEOUT = 2
+CONNECT_HOLDOFF = 5
+
+STONED_INTERVAL = 5
+STONED_COUNT = 2
+
 # ---------------------------------------------------------------------------
 
 class WrapConn:
@@ -56,6 +62,9 @@ class WrapConn:
 			self.parent.connlog("vhost is set, but socket module doesn't have getaddrinfo()!")
 			self.vhost = None
 	
+	def connlog(self, level, text):
+		self.parent.connlog(self.conn, level, text)
+	
 	def connect(self):
 		nick = self.nicks[self.trynick]
 		password = None
@@ -65,7 +74,7 @@ class WrapConn:
 		
 		
 		tolog = 'Connecting to %s:%d...' % (host, port)
-		self.parent.connlog(self.conn, LOG_ALWAYS, tolog)
+		self.connlog(LOG_ALWAYS, tolog)
 		
 		
 		try:
@@ -80,7 +89,7 @@ class WrapConn:
 				x = x[1]
 			
 			tolog = 'Connection failed: %s' % x
-			self.parent.connlog(self.conn, LOG_ALWAYS, tolog)
+			self.connlog(LOG_ALWAYS, tolog)
 			
 			self.status = STATUS_DISCONNECTED
 		
@@ -161,26 +170,48 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	
 	def run_sometimes(self, currtime):
-		# If we still don't have our nick, try again
-		if self.conn.real_nickname != self.nicks[0]:
-			if currtime - self.last_nick >= 30:
-				self.conn.nick(self.nicks[0])
+		if self.status == STATUS_DISCONNECTED and currtime - self.last_connect >= CONNECT_HOLDOFF:
+			self.jump_server()
 		
-		# Send some stuff from our output queues if we have to
-		if (currtime - self.last_output) >= 1:
-			if self.__ctcp_reply:
-				target, text = self.__ctcp_reply.pop(0)
-				self.conn.ctcp_reply(target, text)
+		# Connecting stuff
+		elif self.status == STATUS_CONNECTING and currtime - self.last_connect >= CONNECT_TIMEOUT:
+			self.connlog(LOG_ALWAYS, "Connection failed: timed out")
+			self.conn.disconnect()
+		
+		# Connected stuff!
+		elif self.status == STATUS_CONNECTED:
+			# If we still don't have our nick, try again
+			if self.conn.real_nickname != self.nicks[0]:
+				if currtime - self.last_nick >= 30:
+					self.conn.nick(self.nicks[0])
 			
-			elif self.__notice:
-				target, text = self.__notice.pop(0)
-				self.conn.notice(target, text)
+			# Send some stuff from our output queues if we have to
+			if (currtime - self.last_output) >= 1:
+				if self.__ctcp_reply:
+					target, text = self.__ctcp_reply.pop(0)
+					self.conn.ctcp_reply(target, text)
+				
+				elif self.__notice:
+					target, text = self.__notice.pop(0)
+					self.conn.notice(target, text)
+				
+				elif self.__privmsg:
+					target, text = self.__privmsg.pop(0)
+					self.conn.privmsg(target, text)
+				
+				else:
+					return
+				
+				self.last_output = currtime
 			
-			elif self.__privmsg:
-				target, text = self.__privmsg.pop(0)
-				self.conn.privmsg(target, text)
-			
-			else:
-				return
-			
-			self.last_output = currtime
+			# Stoned check
+			if (currtime - self.last_stoned) >= STONED_INTERVAL:
+				self.last_stoned = currtime
+				
+				if self.stoned > STONED_COUNT:
+					self.parent.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
+					self.disconnected()
+				else:
+					self.stoned += 1
+					#self.privmsg(self.conn.real_nickname, "Stoned yet?")
+					self.privmsg('bob', "Stoned yet?")

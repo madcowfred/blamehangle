@@ -20,14 +20,6 @@ from classes.Users import *
 
 # ---------------------------------------------------------------------------
 
-TIMER_RECONNECT = 'TIMER_RECONNECT'
-TIMER_TIMED_OUT = 'TIMER_TIMED_OUT'
-TIMER_STONED_CHECK = 'TIMER_STONED_CHECK'
-
-INTERVAL_STONED_CHECK = 30
-
-# ---------------------------------------------------------------------------
-
 # bold | codes off | reverse | underline | 3 forms of colours
 STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,2}|\x03)')
 
@@ -110,8 +102,6 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	
 	def run_once(self):
-		#self.addTimer('moo', 5, 'cow')
-		
 		self.connect()
 	
 	def run_sometimes(self, currtime):
@@ -146,8 +136,7 @@ class ChatterGizmo(Child):
 		
 		# Do other stuff here
 		for conn, wrap in self.Conns.items():
-			if wrap.status == STATUS_CONNECTED:
-				wrap.run_sometimes(currtime)
+			wrap.run_sometimes(currtime)
 	
 	# -----------------------------------------------------------------------
 	
@@ -205,9 +194,6 @@ class ChatterGizmo(Child):
 		tolog = 'Connected to %s:%d' % wrap.server
 		self.connlog(conn, LOG_ALWAYS, tolog)
 		
-		# Start the stoned timer thing
-		self.addTimer(TIMER_STONED_CHECK, INTERVAL_STONED_CHECK, conn, wrap.connect_id)
-		
 		# Tell FileMonster what our local IP is
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
@@ -226,8 +212,6 @@ class ChatterGizmo(Child):
 			if self.Conns[conn].requested_quit:
 				del self.Conns[conn]
 				del conn
-			else:
-				self.addTimer(TIMER_RECONNECT, 5, conn)
 	
 	# It was bad.
 	def _handle_error(self, conn, event):
@@ -428,28 +412,22 @@ class ChatterGizmo(Child):
 	def _handle_privmsg(self, conn, event):
 		userinfo = UserInfo(event.source())
 		
-		if self.__users.check_user_flags(userinfo, 'ignore'):
-			return
-		
-		# Strip any codes from the text
-		text = STRIP_CODES.sub('', event.arguments()[0])
-		
-		# Strip leading and trailing spaces
-		text = text.strip()
-		
-		if text == '':
-			return
-		
-		wrap = self.Conns[conn]
-		
 		# Stoned check
 		if userinfo.nick == conn.real_nickname:
 			wrap.stoned -= 1
 		
-		# Not a stoned check
 		else:
-			data = [wrap, IRCT_MSG, userinfo, None, text]
-			self.sendMessage('PluginHandler', IRC_EVENT, data)
+			if self.__users.check_user_flags(userinfo, 'ignore'):
+				return
+			
+			# Strip any codes from the text
+			text = STRIP_CODES.sub('', event.arguments()[0])
+			# Strip leading and trailing spaces
+			text = text.strip()
+			
+			if text != '':
+				data = [self.Conns[conn], IRCT_MSG, userinfo, None, text]
+				self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
 	# Someone is sending us a CTCP
@@ -523,41 +501,3 @@ class ChatterGizmo(Child):
 		
 		else:
 			raise TypeError, 'unknown parameter type'
-	
-	# A timer has triggered, yay
-	def _message_REPLY_TIMER_TRIGGER(self, message):
-		ident, data = message.data
-		
-		if ident == TIMER_RECONNECT:
-			conn = data[0]
-			self.Conns[conn].jump_server()
-		
-		elif ident == TIMER_STONED_CHECK:
-			conn, connect_id = data
-			wrap = self.Conns[conn]
-			
-			# Same connection, do the increment check
-			if connect_id == wrap.connect_id:
-				wrap.stoned += 1
-				if wrap.stoned >= 4:
-					conn.disconnect()
-					return
-			
-			self.addTimer(TIMER_STONED_CHECK, INTERVAL_STONED_CHECK, conn, wrap.connect_id)
-			self.privmsg(conn, conn.real_nickname, 'stoned check!')
-		
-		#elif ident == TIMER_TIMED_OUT:
-		#	conn = data[0]
-		#	self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
-		#	
-		#	self._handle_disconnect(self, conn, event):
-		#	
-		#	if conn.sock:
-		#		conn.sock.close()
-		#	
-		#	self.Conns[conn].disconnected()
-		#	conn.disconnect()
-		#	
-		#	elif wrap.status == STATUS_CONNECTING and (currtime - wrap.last_connect) >= 30:
-		#		self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
-		#		wrap.jump_server()
