@@ -107,11 +107,10 @@ class MySQL(DatabaseWrapper):
 									user=self.Config.get('database', 'username'),
 									passwd=self.Config.get('database', 'password'),
 									connect_timeout=20,
-									compress=1,
 									)
 
 # ---------------------------------------------------------------------------
-# Wrapper class for pyGreSQL
+# Wrapper class for psycopg/pyGreSQL
 class Postgres(DatabaseWrapper):
 	def _connect(self):
 		if self.db:
