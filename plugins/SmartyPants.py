@@ -31,10 +31,10 @@ class SmartyPants(Plugin):
 	__SET_QUERY = "INSERT INTO factoids VALUES (stuff goes here)"
 
 	__GET_RE = re.compile(".*(?=\?$)")
-	__SET_RE = re.compile("(.+?) (is|are) (.+)$")
-	__DEL_RE = re.compile("forget (.+)$")
-	__MOD_RE = re.compile("(.+?) =~ (.+)$")
-	__INFO_RE = re.compile("factinfo (.+)$")
+	__SET_RE = re.compile("(?P<key>.+?) (is|are) (?P<value>.+)$")
+	__DEL_RE = re.compile("forget (?P<key>.+)$")
+	__MOD_RE = re.compile("(?P<key>.+?) =~ (?P<modstring>.+)$")
+	__INFO_RE = re.compile("factinfo (?P<key>.+)$")
 	__STATUS_RE = re.compile("status$")
 	
 	#------------------------------------------------------------------------
@@ -43,14 +43,14 @@ class SmartyPants(Plugin):
 		reply = [
 		(PUBLIC, __GET_RE, [0], FACT_GET),
 		(MSG, __GET_RE, [0], FACT_GET),
-		(PUBLIC, __SET_RE, [1, 3], FACT_SET),
-		(MSG, __SET_RE, [1, 3], FACT_SET),
-		(PUBLIC, __DEL_RE, [1], FACT_DEL),
-		(MSG, __DEL_RE, [1], FACT_DEL),
-		(PUBLIC, __MOD_RE, [1, 2], FACT_MOD),
-		(MSG, __MOD_RE, [1, 2], FACT_MOD),
-		(PUBLIC, __INFO_RE, [1], FACT_INFO),
-		(MSG, __INFO_RE, [1], FACT_INFO),
+		(PUBLIC, __SET_RE, ['key', 'value'], FACT_SET),
+		(MSG, __SET_RE, ['key', 'value'], FACT_SET),
+		(PUBLIC, __DEL_RE, ['key'], FACT_DEL),
+		(MSG, __DEL_RE, ['key'], FACT_DEL),
+		(PUBLIC, __MOD_RE, ['key', 'modstring'], FACT_MOD),
+		(MSG, __MOD_RE, ['key', 'modstring'], FACT_MOD),
+		(PUBLIC, __INFO_RE, ['key'], FACT_INFO),
+		(MSG, __INFO_RE, ['key'], FACT_INFO),
 		(PUBLIC, __STATUS_RE, [0], FACT_STATUS),
 		(MSG, __STATUS_RE, [0], FACT_STATUS)
 		]

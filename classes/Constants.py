@@ -35,3 +35,9 @@ NOTICE = 'IRCT_NOTICE'
 CTCP = 'IRCT_CTCP'
 TIMED = 'IRCT_TIMED'
 
+# ---------------------------------------------------------------------------
+# Request constants
+# ---------------------------------------------------------------------------
+REQ_PRIVMSG = 'REQ_PRIVMSG'
+REQ_NOTICE = 'REQ_NOTICE'
+REQ_LOG = 'REQ_LOG'

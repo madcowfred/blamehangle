@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains the objects for each 'component' of MadCowOffer.
+# This file contains the objects for each 'component' of Blamehangle.
 # ---------------------------------------------------------------------------
 
 from Queue import *
@@ -80,10 +80,10 @@ class Child:
 	# Functions for a few messages that we use a lot
 	# -----------------------------------------------------------------------
 	def privmsg(self, nick, text):
-		self.sendMessage('Chatterbox', REQ_PRIVMSG, [nick, text])
+		self.sendMessage('ChatterGizmo', REQ_PRIVMSG, [nick, text])
 	
 	def notice(self, nick, text):
-		self.sendMessage('Chatterbox', REQ_NOTICE, [nick, text])
+		self.sendMessage('ChatterGizmo', REQ_NOTICE, [nick, text])
 	
 	def putlog(self, level, text):
 		self.sendMessage('Postman', REQ_LOG, [level, text])

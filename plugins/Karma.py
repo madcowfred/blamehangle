@@ -20,27 +20,27 @@ class Karma(Plugin):
 	karma, meaning zero.
 	"""
 	
-	__SELECT_QUERY = "SELECT key, value FROM karma WHERE key = %s"
-	__INSERT_QUERY = "INSERT INTO karma VALUES ('%s',%d)"
-	__UPDATE_QUERY = "UPDATE karma SET key, value = key, %d WHERE key = %s"
+	SELECT_QUERY = "SELECT key, value FROM karma WHERE key = %s"
+	INSERT_QUERY = "INSERT INTO karma VALUES ('%s',%d)"
+	UPDATE_QUERY = "UPDATE karma SET key, value = key, %d WHERE key = %s"
 	
 	KARMA_PLUS = "KARMA_PLUS"
 	KARMA_MINUS = "KARMA_MINUS"
 	KARMA_LOOKUP = "KARMA_LOOKUP"
 	KARMA_MOD = "KARMA_MOD"
 
-	__PLUS_RE = re.compile("^.*(?=\+\+$)")
-	__MINUS_RE = re.compile("^.*(?=--$)")
-	__LOOKUP_RE = re.compile("^karma .*(?=$|\?$)")
+	PLUS_RE = re.compile("^.*(?=\+\+$)")
+	MINUS_RE = re.compile("^.*(?=--$)")
+	LOOKUP_RE = re.compile("^karma .*(?=$|\?$)")
 	
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_REGISTER(self, message):
 		reply = [
-		(PUBLIC, __PLUS_RE, [0], KARMA_PLUS),
-		(PUBLIC, __MINUS_RE, [0], KARMA_MINUS),
-		(PUBLIC, __LOOKUP_RE, [0], KARMA_LOOKUP),
-		(MSG, __LOOKUP_RE, [0], KARMA_LOOKUP)
+		(PUBLIC, PLUS_RE, [0], KARMA_PLUS),
+		(PUBLIC, MINUS_RE, [0], KARMA_MINUS),
+		(PUBLIC, LOOKUP_RE, [0], KARMA_LOOKUP),
+		(MSG, LOOKUP_RE, [0], KARMA_LOOKUP)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
@@ -49,7 +49,7 @@ class Karma(Plugin):
 	def _message_PLUGIN_TRIGGER(self, message):
 		[key], event, conn, IRCtype, target, userinfo = message.data
 		
-		queryObj = whatever(__SELECT_QUERY, key, [key, event, conn, IRCtype, target, userinfo])
+		queryObj = whatever(SELECT_QUERY, key, [key, event, conn, IRCtype, target, userinfo])
 		self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 	
 	#------------------------------------------------------------------------
@@ -72,22 +72,22 @@ class Karma(Plugin):
 		elif event == KARMA_PLUS:
 			if result == []:
 				# no karma, so insert as 1
-				queryObj = whatever(__INSERT_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj = whatever(INSERT_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# increment existing karma
 				key, value = result
-				queryObj = whatever(__UPDATE_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj = whatever(UPDATE_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 				
 		elif event == KARMA_MINUS:
 			if result == []:
 				# no karma, so insert as -1
-				queryObj =  whatever(__INSERT_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj =  whatever(INSERT_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# decrement existing karma
-				queryObj = whatever(__UPDATE_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj = whatever(UPDATE_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 
 		elif event == KARMA_MOD:

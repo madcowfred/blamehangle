@@ -45,25 +45,6 @@ class Message:
 		
 		return '(%.4fs) %s --> %s: (%s) %s' % (diff, self.source, self.targetstring, self.ident, self.data)
 
-# ---------------------------------------------------------------------------
-# Shiny way to represent a pack row.
-# ---------------------------------------------------------------------------
-class Pack:
-	# row is a row returned from the database, which is a list in this format:
-	# [ cat_id, pack_id, gets, oldgets, filesize, filename, description ]
-	def __init__(self, row):
-		self.cat_id = row[0]
-		self.pack_id = row[1]
-		self.gets = row[2]
-		self.oldgets = row[3]
-		self.filesize = row[4]
-		self.filename = row[5]
-		self.description = row[6]
-		
-		if len(row) == 8:
-			self.extra = row[7]
-		else:
-			self.extra = ''
 
 # ---------------------------------------------------------------------------
 # Shiny way to look at a user.
@@ -74,8 +55,6 @@ class UserInfo:
 		
 		self.nick, rest = hostmask.split('!')
 		self.ident, self.host = rest.split('@')
-
-		self.idlelamer = 0
 
 # ---------------------------------------------------------------------------
 # Returns a nicely formatted size for display.
