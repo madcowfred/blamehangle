@@ -225,10 +225,13 @@ class WeatherMan(Plugin):
 		f_val = f_val.strip()
 		c_val = ToCelsius(f_val)
 		
-		network = trigger.conn.options['name'].lower()
-		chan = trigger.target.lower()
+		if trigger.target is not None:
+			network = trigger.conn.options['name'].lower()
+			chan = trigger.target.lower()
+			format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
+		else:
+			format = self.__Formats['default']
 		
-		format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
 		if format == 'both':
 			return '%sC (%sF)' % (c_val, f_val)
 		elif format == 'metric':
@@ -242,10 +245,13 @@ class WeatherMan(Plugin):
 		mph_val = mph_val.strip()
 		kph_val = ToKilometers(mph_val)
 		
-		network = trigger.conn.options['name'].lower()
-		chan = trigger.target.lower()
+		if trigger.target is not None:
+			network = trigger.conn.options['name'].lower()
+			chan = trigger.target.lower()
+			format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
+		else:
+			format = self.__Formats['default']
 		
-		format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
 		if format == 'both':
 			return '%s kph (%s mph)' % (kph_val, mph_val)
 		elif format == 'metric':
