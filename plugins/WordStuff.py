@@ -11,10 +11,10 @@ import time
 from urllib import quote
 
 from classes.async_buffered import buffered_dispatcher
-
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
+from classes.SimpleCacheDict import SimpleCacheDict
 
 # ---------------------------------------------------------------------------
 
@@ -39,14 +39,14 @@ URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 class WordStuff(Plugin):
 	def setup(self):
+		# Cache these results for 12 hours
+		self.AcronymCache = SimpleCacheDict(43200)
+		self.UrbanCache = SimpleCacheDict(43200)
+		
 		self.rehash()
 	
 	def rehash(self):
-		# Load our options
 		self.Options = self.OptionsDict('WordStuff')
-		
-		# Acronym stuff
-		self.__Acronym_Defs = {}
 		
 		# Spell stuff
 		if self.Options['spell_bin']:
@@ -55,12 +55,8 @@ class WordStuff(Plugin):
 				self.putlog(LOG_WARNING, tolog)
 				
 				self.__spell_bin = None
-			
 			else:
 				self.__spell_bin = '%s -a -S' % (self.Options['spell_bin'])
-		
-		# Urban stuff
-		self.__Urban_Defs = {}
 	
 	# -----------------------------------------------------------------------
 	
@@ -110,22 +106,14 @@ class WordStuff(Plugin):
 	
 	def __Fetch_Acronyms(self, trigger):
 		acronym = trigger.match.group('acronym').upper()
-		if len(acronym) > 10:
+		if len(acronym) > 20:
 			self.sendReply(trigger, "That's too long!")
-		
 		else:
-			if acronym in self.__Acronym_Defs:
-				# Older than 12 hours, kill it
-				if (time.time() - self.__Acronym_Defs[acronym]['time']) > 43200:
-					del self.__Acronym_Defs[acronym]
-				# Use the cached one
-				else:
-					self.__Acronym_Reply(trigger)
-					return
-			
-			# Fetch a new one
-			url = ACRONYM_URL % QuoteURL(acronym)
-			self.urlRequest(trigger, self.__AcronymFinder, url)
+			if acronym in self.AcronymCache:
+				self.__Acronym_Reply(trigger)
+			else:
+				url = ACRONYM_URL % QuoteURL(acronym)
+				self.urlRequest(trigger, self.__Parse_AcronymFinder, url)
 	
 	def __Fetch_Antonyms(self, trigger):
 		word = quote(trigger.match.group('word').lower())
@@ -148,18 +136,11 @@ class WordStuff(Plugin):
 			self.sendReply(trigger, "That's too long!")
 		
 		else:
-			if term in self.__Urban_Defs:
-				# Older than 12 hours, kill it
-				if (time.time() - self.__Urban_Defs[term]['time']) > 43200:
-					del self.__Urban_Defs[term]
-				# Use the cached one
-				else:
-					self.__Urban_Reply(trigger)
-					return
-			
-			# Fetch a new one
-			url = URBAN_URL % QuoteURL(term)
-			self.urlRequest(trigger, self.__Urban, url)
+			if term in self.UrbanCache:
+				self.__Urban_Reply(trigger)
+			else:
+				url = URBAN_URL % QuoteURL(term)
+				self.urlRequest(trigger, self.__Parse_Urban, url)
 	
 	# -----------------------------------------------------------------------
 	
@@ -177,12 +158,12 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of an AcronymFinder page
-	def __AcronymFinder(self, trigger, resp):
+	def __Parse_AcronymFinder(self, trigger, resp):
 		acronym = trigger.match.group('acronym').upper()
 		
 		# No match!
 		if resp.data.find('was not found in the database') >= 0:
-			replytext = "No definitions found for '%s'" % acronym
+			replytext = "No definitions found for '%s'" % (acronym)
 			self.sendReply(trigger, replytext)
 		
 		# Some matches!
@@ -210,14 +191,8 @@ class WordStuff(Plugin):
 			# If we got some definitions, add them to the cache and spit
 			# something out
 			if defs:
-				self.__Acronym_Defs[acronym] = {
-					'time': time.time(),
-					'defs': defs
-				}
-				
+				self.AcronymCache[acronym] = defs
 				self.__Acronym_Reply(trigger)
-			
-			# If not, cry
 			else:
 				replytext = 'Page parsing failed: definition.'
 				self.sendReply(trigger, replytext)
@@ -231,14 +206,15 @@ class WordStuff(Plugin):
 		acronym = trigger.match.group('acronym').upper()
 		
 		# See if they're being stupid
-		numdefs = len(self.__Acronym_Defs[acronym]['defs'])
-		
-		if n > numdefs:
-			replytext = "There are only %d definitions for '%s'!"% (numdefs, acronym)
-		
-		# Guess they're not
+		defs = self.AcronymCache.get(acronym)
+		if defs is None:
+			replytext = "Cached entry for %s has just expired!" % acronym
 		else:
-			replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (acronym, n, numdefs, self.__Acronym_Defs[acronym]['defs'][n-1])
+			numdefs = len(defs)
+			if n > numdefs:
+				replytext = "There are only %d definitions for '%s'!"% (numdefs, acronym)
+			else:
+				replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (acronym, n, numdefs, defs[n-1])
 		
 		# Spit it out
 		self.sendReply(trigger, replytext)
@@ -358,7 +334,7 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Urban dictionary got back to us, yo
-	def __Urban(self, trigger, resp):
+	def __Parse_Urban(self, trigger, resp):
 		term = trigger.match.group('term').lower()
 		
 		# No match!
@@ -369,9 +345,9 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(resp.data, '<blockquote>', '</blockquote>')
+			chunks = FindChunks(resp.data, '<div style="padding-left: 30px; padding-right: 30px">', '</div>')
 			if not chunks:
-				self.sendReply(trigger, 'Page parsing failed: blockquotes.')
+				self.sendReply(trigger, 'Page parsing failed: divs.')
 				return
 			
 			# Parse the definitions
@@ -413,14 +389,8 @@ class WordStuff(Plugin):
 			# If we got some definitions, add them to the cache and spit
 			# something out
 			if defs:
-				self.__Urban_Defs[term] = {
-					'time': time.time(),
-					'defs': defs
-				}
-				
+				self.UrbanCache[term] = defs
 				self.__Urban_Reply(trigger)
-			
-			# If not, cry
 			else:
 				replytext = 'Page parsing failed: definition.'
 				self.sendReply(trigger, replytext)
@@ -434,14 +404,15 @@ class WordStuff(Plugin):
 		term = trigger.match.group('term').lower()
 		
 		# See if they're being stupid
-		numdefs = len(self.__Urban_Defs[term]['defs'])
-		
-		if n > numdefs:
-			replytext = "There are only %d definitions for '%s'!"% (numdefs, term)
-		
-		# Guess they're not
+		defs = self.UrbanCache.get(term)
+		if defs is None:
+			replytext = "Cached entry for %s has just expired!" % (term)
 		else:
-			replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (term, n, numdefs, self.__Urban_Defs[term]['defs'][n-1])
+			numdefs = len(defs)
+			if n > numdefs:
+				replytext = "There are only %d definitions for '%s'!"% (numdefs, term)
+			else:
+				replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (term, n, numdefs, defs[n-1])
 		
 		# Spit it out
 		self.sendReply(trigger, replytext)

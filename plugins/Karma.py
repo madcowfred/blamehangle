@@ -90,18 +90,14 @@ class Karma(Plugin):
 		chars = [32, 35, 39, 43, 45, 46, 91, 93, 94, 95, 124]
 		# 0-9 (48-57)
 		chars += range(48, 58)
-		# A-Z (65-90)
-		chars += range(65, 91)
 		# a-z (97-122)
 		chars += range(97, 123)
 		
 		# Build the table! \x00 is our 'bad' char
-		self.__trans = ''
-		for i in range(256):
-			if i in chars:
-				self.__trans += chr(i)
-			else:
-				self.__trans += '\x00'
+		trans = ['\x00'] * 256
+		for i in chars:
+			trans[i] = chr(i)
+		self.__trans = ''.join(trans)
 	
 	# Return a sanitised karma key name.
 	def __Sane_Name(self, trigger):
@@ -110,9 +106,7 @@ class Karma(Plugin):
 		# lower case
 		newname = newname.lower()
 		# translate the name according to our table
-		newname = newname.translate(self.__trans)
-		# remove any bad chars now
-		newname = newname.replace('\x00', '')
+		newname = newname.translate(self.__trans).replace('\x00', '')
 		# strip leading and trailing spaces
 		newname = newname.strip()
 		
@@ -257,5 +251,5 @@ class Karma(Plugin):
 			
 			replytext = 'Worst \x02%d\x02 karma values: %s' % (self.Options['num_worst'], ', '.join(bits))
 			self.sendReply(trigger, replytext)
-	
-#----------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------

@@ -3,8 +3,8 @@
 # ---------------------------------------------------------------------------
 
 """
-Implements threaded DNS lookups. These don't seem to block in Python 2.3,
-but do in 2.2... oh well. It's about time for people to upgrade anyway :)
+Implements threaded DNS lookups. getaddrinfo() lets the rest of the Python
+interpreter run in 2.3+, yay.
 """
 
 import socket
@@ -16,24 +16,23 @@ from threading import Thread
 from classes.Children import Child
 from classes.Constants import *
 from classes.Plugin import PluginTimedEvent
-
-# ---------------------------------------------------------------------------
-
-RESOLVER_CLEANUP = 'RESOLVER_CLEANUP'
+from classes.SimpleCacheDict import SimpleCacheDict
 
 # ---------------------------------------------------------------------------
 
 class Resolver(Child):
 	def setup(self):
-		self.Last_Cleanup = time.time()
+		self.DNSCache = SimpleCacheDict(1)
 		self.Requests = Queue(0)
-		
-		self.DNSCache = {}
 		self.Threads = []
 		
-		# Get our options
-		self.__cache_length = self.Config.getint('DNS', 'cache_time') * 60
-		self.__resolver_threads = self.Config.getint('DNS', 'resolver_threads')
+		self.rehash()
+	
+	def rehash(self):
+		self.Options = self.OptionsDict('DNS')
+		# Update the cache expiry time and trigger an expire
+		self.DNSCache.cachesecs = self.Options['cache_time'] * 60
+		self.DNSCache.expire()
 	
 	# Make sure we stop our threads at shutdown time
 	def shutdown(self, message):
@@ -44,13 +43,13 @@ class Resolver(Child):
 		self.__Start_Threads()
 		
 		# Now we pretend to be a plugin so we can have a timed event
-		event = PluginTimedEvent(RESOLVER_CLEANUP, 60, None, [])
+		event = PluginTimedEvent('RESOLVER_CLEANUP', 300, None, [])
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, [event])
 	
 	# -----------------------------------------------------------------------
 	# Start our threads!
 	def __Start_Threads(self):
-		for i in range(self.__resolver_threads):
+		for i in range(self.Options['resolver_threads']):
 			t = Thread(target=ResolverThread, args=(self, i))
 			t.setName('Resolver %d' % i)
 			self.Threads.append([t, 0])
@@ -74,13 +73,6 @@ class Resolver(Child):
 		self.putlog(LOG_DEBUG, "All DNS threads halted")
 	
 	# -----------------------------------------------------------------------
-	# Time to delete some entries from our cache
-	def _message_PLUGIN_TRIGGER(self, message):
-		currtime = time.time()
-		for k in [k for k, v in self.DNSCache.items() if currtime - v[0] >= self.__cache_length]:
-			del self.DNSCache[k]
-	
-	# -----------------------------------------------------------------------
 	# Someone wants us to resolve something, woo
 	def _message_REQ_DNS(self, message):
 		# If the requested host is cached, just send that back
@@ -89,7 +81,6 @@ class Resolver(Child):
 			data.append(self.DNSCache[message.data[2]][1])
 			data.append(message.data[3])
 			self.sendMessage(message.source, REPLY_DNS, data)
-		
 		# If not, go resolve it
 		else:
 			self.Requests.put(message)
@@ -135,3 +126,5 @@ def ResolverThread(parent, myindex):
 			data = [trigger, method, hosts, args]
 		
 		parent.sendMessage(message.source, REPLY_DNS, data)
+
+# ---------------------------------------------------------------------------
