@@ -458,7 +458,6 @@ class ChatterGizmo(Child):
 			
 			# If we're ignoring strangers, skip them
 			if wrap.ignore_strangers == 1 and not wrap.users.in_any_chan(userinfo.nick):
-				print 'ignored!'
 				return
 			
 			# Strip any codes from the text
