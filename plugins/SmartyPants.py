@@ -166,12 +166,12 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_D_RE, exclusive=1)
-		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_D_RE, exclusive=1)
-		get_pub = PluginTextEvent(FACT_GET, IRCT_PUBLIC, GET_RE, exclusive=1)
-		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE)
-		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE)
-		set_pub = PluginTextEvent(FACT_SET, IRCT_PUBLIC, SET_RE)
+		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_D_RE, priority=0)
+		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_D_RE, priority=0)
+		get_pub = PluginTextEvent(FACT_GET, IRCT_PUBLIC, GET_RE, priority=0)
+		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE, priority=1)
+		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE, priority=1)
+		set_pub = PluginTextEvent(FACT_SET, IRCT_PUBLIC, SET_RE, priority=1)
 		no_dir = PluginTextEvent(FACT_NO, IRCT_PUBLIC_D, NO_RE)
 		no_msg = PluginTextEvent(FACT_NO, IRCT_MSG, NO_RE)
 		also_dir = PluginTextEvent(FACT_ALSO, IRCT_PUBLIC_D, ALSO_RE)
