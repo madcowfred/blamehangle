@@ -112,14 +112,14 @@ class ChatterGizmo(Child):
 			# An 'exact' command
 			if option.startswith('exact'):
 				self.__Public_Exact[command] = rewrite
-				tolog = "Added exact rewrite '%s' --> '%s'" % (command, rewrite)
+				#tolog = "Added exact rewrite '%s' --> '%s'" % (command, rewrite)
 			
 			# A 'param' command
 			elif option.startswith('param'):
 				self.__Public_Param[command] = rewrite
-				tolog = "Added param rewrite '%s' --> '%s'" % (command, rewrite)
+				#tolog = "Added param rewrite '%s' --> '%s'" % (command, rewrite)
 			
-			self.putlog(LOG_DEBUG, tolog)
+			#self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	
