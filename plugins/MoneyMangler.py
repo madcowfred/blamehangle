@@ -106,6 +106,9 @@ class MoneyMangler(Plugin):
 		# Someone wants to look up a ticker symbol
 		elif trigger.name == MONEY_SYMBOL:
 			findme = trigger.match.group('findme').upper()
+			# we need '+' instead of ' '
+			findme = re.sub(r'\s+', '+', findme)
+			
 			returnme = (trigger, findme)
 			fetchme = SYMBOL_URL % findme
 			self.urlRequest(returnme, fetchme)
