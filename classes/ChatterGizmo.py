@@ -237,7 +237,6 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_welcome(self, connid, conn, event):
 		wrap = self.Conns[connid]
-		print wrap
 		
 		wrap.connect_id += 1
 		wrap.conn.status = STATUS_CONNECTED
@@ -254,7 +253,7 @@ class ChatterGizmo(Child):
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
 			text = 'IDENTIFY %s' % (_pass)
-			self.privmsg(conn, _nick, text)
+			self.privmsg(connid, _nick, text)
 			
 			# Delay our joins by 2 seconds so that we're (probably) identified
 			badtime = time.time() - 18
@@ -617,7 +616,7 @@ class ChatterGizmo(Child):
 		conn, target, text = message.data
 		
 		if isinstance(conn, asyncIRC.asyncIRC):
-			self.privmsg(conn, target, text)
+			self.privmsg(conn.connid, target, text)
 		
 		elif isinstance(conn, WrapConn):
 			self.privmsg(conn.conn.connid, target, text)
