@@ -79,7 +79,11 @@ class Plugin(Child):
 		# Failed
 		if resp.data is None:
 			if not hasattr(self, '_QuietURLErrors'):
-				self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
+				if not hasattr(self, '_VerboseURLErrors'):
+					self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
+				else:
+					replytext = 'HTTP transfer from %s failed, ruh-roh.' % resp.url
+					self.sendReply(trigger, replytext)
 			return
 		
 		# Call the method

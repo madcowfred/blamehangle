@@ -101,7 +101,19 @@ class News(Plugin):
 		self.News_Options = self.SetupOptions('News')
 		self.RSS_Options = self.SetupOptions('RSS')
 		
+		# Set up our error reporting thing
+		if hasattr(self, '_QuietURLErrors'):
+			del self._QuietURLErrors
+		if hasattr(self, '_VerboseURLErrors'):
+			del self._VerboseURLErrors
 		
+		error_type = self.News_Options.get('error_type', 'normal')
+		if error_type == 'quiet':
+			self._QuietURLErrors = 1
+		elif error_type == 'verbose':
+			self._VerboseURLErrors = 1
+		
+		# Some old stuff that needs to be fixed
 		self.__old_days = self.Config.getint('News', 'old_threshold')
 		self.__old_threshold = self.__old_days * 86400
 		
@@ -304,7 +316,7 @@ class News(Plugin):
 		matches = [name for name in self.RSS_Feeds.keys() if name.lower() == findme]
 		if matches:
 			feed = self.RSS_Feeds[matches[0]]
-			replytext = "'%s' is %s every %d minutes" % (matches[0], feed['url'], feed['interval'] / 60)
+			replytext = "'%s' is %s every %d seconds" % (matches[0], feed['url'], feed['interval'])
 		else:
 			replytext = 'Sorry, no feed by that name.'
 		self.sendReply(trigger, replytext)
@@ -335,6 +347,7 @@ class News(Plugin):
 		
 		for name, feed in self.RSS_Feeds.items():
 			if currtime - feed['checked'] < feed['interval']:
+				print 'not yet'
 				continue
 			
 			feed['checked'] = currtime
