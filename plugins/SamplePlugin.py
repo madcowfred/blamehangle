@@ -91,9 +91,9 @@ class SamplePlugin(Plugin):
 		# the message from PluginHandler -> our plugin does not contain any
 		# data, so we don't need to worry about the contents of it here.
 		reply = [
-		(MSG, SAMPLE_RE1, [0], SAMPLE_TOKEN1),
-		(PUBLIC, SAMPLE_RE2, ['some_name'], SAMPLE_TOKEN2)
-		(TIMED, 900, SAMPLE_TOKEN3_TARGETS, SAMPLE_TOKEN3)
+		(IRCT_MSG, SAMPLE_RE1, [0], SAMPLE_TOKEN1),
+		(IRCT_PUBLIC, SAMPLE_RE2, ['some_name'], SAMPLE_TOKEN2)
+		(IRCT_TIMED, 900, SAMPLE_TOKEN3_TARGETS, SAMPLE_TOKEN3)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	

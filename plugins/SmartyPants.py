@@ -72,18 +72,18 @@ class SmartyPants(Plugin):
 
 	def _message_PLUGIN_REGISTER(self, message):
 		reply = [
-		(PUBLIC, __GET_RE, [0], FACT_GET),
-		(MSG, __GET_RE, [0], FACT_GET),
-		(PUBLIC, __SET_RE, ['key', 'value'], FACT_SET),
-		(MSG, __SET_RE, ['key', 'value'], FACT_SET),
-		(PUBLIC, __DEL_RE, ['key'], FACT_DEL),
-		(MSG, __DEL_RE, ['key'], FACT_DEL),
-		(PUBLIC, __MOD_RE, ['key', 'modstring'], FACT_MOD),
-		(MSG, __MOD_RE, ['key', 'modstring'], FACT_MOD),
-		(PUBLIC, __INFO_RE, ['key'], FACT_INFO),
-		(MSG, __INFO_RE, ['key'], FACT_INFO),
-		(PUBLIC, __STATUS_RE, [0], FACT_STATUS),
-		(MSG, __STATUS_RE, [0], FACT_STATUS)
+		(IRCT_PUBLIC, __GET_RE, [0], FACT_GET),
+		(IRCT_MSG, __GET_RE, [0], FACT_GET),
+		(IRCT_PUBLIC, __SET_RE, ['key', 'value'], FACT_SET),
+		(IRCT_MSG, __SET_RE, ['key', 'value'], FACT_SET),
+		(IRCT_PUBLIC, __DEL_RE, ['key'], FACT_DEL),
+		(IRCT_MSG, __DEL_RE, ['key'], FACT_DEL),
+		(IRCT_PUBLIC, __MOD_RE, ['key', 'modstring'], FACT_MOD),
+		(IRCT_MSG, __MOD_RE, ['key', 'modstring'], FACT_MOD),
+		(IRCT_PUBLIC, __INFO_RE, ['key'], FACT_INFO),
+		(IRCT_MSG, __INFO_RE, ['key'], FACT_INFO),
+		(IRCT_PUBLIC, __STATUS_RE, [0], FACT_STATUS),
+		(IRCT_MSG, __STATUS_RE, [0], FACT_STATUS)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
