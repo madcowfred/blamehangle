@@ -311,7 +311,7 @@ class Postman:
 					meth()
 				
 				# Do things that don't need to be done all that often
-				sometimes_counter = (sometimes_counter + 1) % 4
+				sometimes_counter = (sometimes_counter + 1) % 5
 				if sometimes_counter == 0:
 					currtime = time.time()
 					
@@ -329,7 +329,7 @@ class Postman:
 						meth(currtime)
 				
 				# Sleep for a while
-				time.sleep(0.05)
+				time.sleep(0.02)
 			
 			except KeyboardInterrupt:
 				self.__Shutdown('Ctrl-C pressed')
