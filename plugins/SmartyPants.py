@@ -1016,7 +1016,7 @@ class SmartyPants(Plugin):
 			# check how many items we found
 			results = results[0]
 			if len(results) > MAX_FACT_SEARCH_RESULTS:
-				replytext = "Factoid search of '\02%s\02' by %s yielded too many results. Please refine your query." % (findme, what)
+				replytext = "Factoid search of '\02%s\02' by %s yielded too many results (%d). Please refine your query." % (findme, what, len(results))
 				self.sendReply(trigger, replytext)
 			else:
 				# We found some items, but less than our max threshold, so
