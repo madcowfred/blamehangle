@@ -21,7 +21,7 @@ class SpellingBee(Plugin):
 	def setup(self):
 		self.__bin = ''
 		self.__setup_config()
-
+	
 	def __setup_config(self):
 		bin	= self.Config.get('SpellingBee', 'bin_location')
 		if bin:
@@ -77,8 +77,9 @@ class SpellingBee(Plugin):
 		# were also right :|
 		if line.startswith('*') or line.startswith('+'):
 			replytext = "'%s' is probably spelled correctly." % word
-		# If it starts with '#', we were pretty wrong!
-		elif line.startswith('#'):
+		# If it starts with '#', we were pretty wrong! '?' means we were
+		# pretty wrong, but we may have been right in an alternate universe.
+		elif line.startswith('#') or line.startswith('?'):
 			replytext = "'%s' isn't even CLOSE to being a real word!" % word
 		# We weren't right, but we might be close
 		elif line.startswith('&'):
