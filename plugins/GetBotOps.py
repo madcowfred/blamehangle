@@ -59,7 +59,7 @@ class GetBotOps(Plugin):
 				if chan not in wrap.ircul._c or not wrap.ircul._c[chan].synched:
 					continue
 				
-				# If we're not in the userlist yet, we have to wait
+				# If we're already opped, there's no point asking
 				if wrap.ircul.user_has_mode(chan, ournick, 'o'):
 					continue
 				
