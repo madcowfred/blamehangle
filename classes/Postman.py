@@ -324,7 +324,6 @@ class Postman:
 				# Do things that don't need to be done all that often
 				sometimes_counter = (sometimes_counter + 1) % 4
 				if sometimes_counter == 0:
-					#currtime = _time()
 					currtime = time.time()
 					
 					# See if our log file has to rotate
