@@ -15,65 +15,88 @@ from classes.Constants import *
 
 # ---------------------------------------------------------------------------
 
-FACT_SET = "FACT_SET"
-FACT_GET = "FACT_GET"
-FACT_REDIRECT = "FACT_REDIRECT"
-FACT_RAW = "FACT_RAW"
-FACT_ALSO = "FACT_ALSO"
-FACT_DEL = "FACT_DEL"
-FACT_REPLACE = "FACT_REPLACE"
-FACT_NO = "FACT_NO"
-FACT_INFO = "FACT_INFO"
-FACT_STATUS = "FACT_STATUS"
-FACT_LOCK = "FACT_LOCK"
-FACT_UNLOCK = "FACT_UNLOCK"
-FACT_LISTKEYS = "FACT_LISTKEYS"
-FACT_LISTVALUES = "FACT_LISTVALUES"
-FACT_TELL = "FACT_TELL"
-
-FACT_UPDATEDB = "FACT_MOD"
-
+FACT_GET = 'FACT_GET'
+GET_HELP = "<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>."
+GET_RE = re.compile(r'^(?P<name>.+?)\?$')
+GET_D_RE = re.compile(r'^(?P<name>.+?)\??$')
 GET_QUERY = "SELECT name, value, locker_nick FROM factoids WHERE name = %s"
-SET_QUERY = "INSERT INTO factoids (name, value, author_nick, author_host, created_time) VALUES (%s, %s, %s, %s, %s)"
-MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
-DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
-INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
+FACT_REDIRECT = "FACT_REDIRECT"
+
+FACT_SET = 'FACT_SET'
+SET_HELP = "<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic."
+SET_QUERY = "INSERT INTO factoids (name, value, author_nick, author_host, created_time) VALUES (%s, %s, %s, %s, %s)"
+SET_RE = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$')
+
+FACT_ALSO = 'FACT_ALSO'
+ALSO_RE = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$')
+
+FACT_RAW = 'FACT_RAW'
+RAW_HELP = "\02rawfactoid\02 <factoid name> : Ask the bot for the definition of <factoid name>. Doesn't do variable substituion or factoid redirection."
+RAW_RE = re.compile(r'^rawfactoid (?P<name>.+?)$')
+
+FACT_NO = 'FACT_NO'
+NO_RE = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$')
 # Build the giant 'no, ' query
 NO_QUERY  = "UPDATE factoids SET value = %s, author_nick = %s, author_host = %s, created_time = %s"
 NO_QUERY += ", modifier_nick = '', modifier_host = '', modified_time = NULL, requester_nick = ''"
 NO_QUERY += ", requester_host = '', requested_time = NULL, request_count = 0, locker_nick = ''"
 NO_QUERY += ", locker_host = '', locked_time = NULL WHERE name = %s"
 
-REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, requester_nick = %s, requester_host = %s, requested_time = %s WHERE name = %s"
+FACT_DEL = 'FACT_DEL'
+DEL_HELP = "\02forget\02 <factoid name> : Remove a factoid from the bot."
+DEL_RE = re.compile(r'^forget +(?P<name>.+)$')
+DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
 
+FACT_REPLACE = 'FACT_REPLACE'
+REPLACE_HELP = "<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02 : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."
+REPLACE_RE = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$')
+
+FACT_LOCK = 'FACT_LOCK'
+LOCK_HELP = "\02lock\02 <factoid name> : Lock a factoid definition, so most users cannot alter it."
+LOCK_RE = re.compile(r'^lock +(?P<name>.+)$')
 LOCK_QUERY = "UPDATE factoids SET locker_nick = %s, locker_host = %s, locked_time = %s WHERE name = %s"
+
+FACT_UNLOCK = 'FACT_UNLOCK'
+UNLOCK_HELP = "\02unlock\02 <factoid name> : Unlock a locked factoid definition, so it can be edited by anyone"
+UNLOCK_RE = re.compile(r'^unlock +(?P<name>.+)$')
 UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, locked_time = NULL WHERE name = %s"
 
+FACT_INFO = 'FACT_INFO'
+INFO_HELP = "\02factinfo\02 <factoid name> : View some statistics about the given factoid."
+INFO_RE = re.compile(r'^factinfo +(?P<name>.+)\??$')
+INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
+
+FACT_STATUS = 'FACT_STATUS'
+STATUS_HELP = "\02status\02 : Generate some brief stats about the bot."
+STATUS_RE = re.compile(r'^status$')
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
+FACT_LISTKEYS = 'FACT_LISTKEYS'
+LISTKEYS_HELP = "\02listkeys\02 <search text> : Search through all the factoid names, and return a list of any that contain <search text>"
+LISTKEYS_RE = re.compile(r'^listkeys +(?P<name>.+)$')
 LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%'"
+
+FACT_LISTVALUES = 'FACT_LISTVALUES'
+LISTVALUES_HELP = "\02listvalues\02 <search text> : Search through all the factoid definitions, and return the names of any that contain <search text>"
+LISTVALUES_RE = re.compile(r'^listvalues +(?P<name>.+)$')
 LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value LIKE '%%%s%%'"
 
-GET_D_RE = re.compile(r'^(?P<name>.+?)\??$')
-GET_RE = re.compile(r'^(?P<name>.+?)\?$')
-SET_RE = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$')
-RAW_RE = re.compile(r'^rawfactoid (?P<name>.+?)$')
-NO_RE = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$')
-ALSO_RE = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$')
-DEL_RE = re.compile(r'^forget +(?P<name>.+)$')
-REPLACE_RE = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$')
-LOCK_RE = re.compile(r'^lock +(?P<name>.+)$')
-UNLOCK_RE = re.compile(r'^unlock +(?P<name>.+)$')
-INFO_RE = re.compile(r'^factinfo +(?P<name>.+)\??$')
-STATUS_RE = re.compile(r'^status$')
-LISTKEYS_RE = re.compile(r'^listkeys +(?P<name>.+)$')
-LISTVALUES_RE = re.compile(r'^listvalues +(?P<name>.+)$')
+FACT_TELL = 'FACT_TELL'
+TELL_HELP = "\02tell\02 <someone> \02about\02 <factoid name> : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."
 TELL_RE = re.compile(r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$')
 
-REPLY_ACTION_RE = re.compile(r'^<(?P<type>reply|action)>\s*(?P<value>.+)$', re.I)
-NULL_RE = re.compile(r'^<null>\s*$', re.I)
 
+OVERWRITE_HELP = "\02no,\02 <factoid name> \02is\02 <whatever> : Replace the existing definition of <factoid name> with the new value <whatever>."
+
+# misc db queries
+MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
+REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, requester_nick = %s, requester_host = %s, requested_time = %s WHERE name = %s"
+
+# match <reply> or <action> factoids
+REPLY_ACTION_RE = re.compile(r'^<(?P<type>reply|action)>\s*(?P<value>.+)$', re.I)
+# match <null> factoids
+NULL_RE = re.compile(r'^<null>\s*$', re.I)
 # match redirected factoids
 REDIRECT_RE = re.compile(r'^see(: *| +)(?P<factoid>.+)$')
 
@@ -184,10 +207,10 @@ class SmartyPants(Plugin):
 		self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		if self.__set_pub:
 			self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC)
+		self.setTextEvent(FACT_ALSO, ALSO_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# Rest are normal
 		self.setTextEvent(FACT_RAW, RAW_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_NO, NO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_ALSO, ALSO_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_DEL, DEL_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_REPLACE, REPLACE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FACT_LOCK, LOCK_RE, IRCT_PUBLIC_D, IRCT_MSG)
@@ -200,36 +223,19 @@ class SmartyPants(Plugin):
 		
 		self.registerEvents()
 		
-		self.__set_help_messages()
-	
-	# -----------------------------------------------------------------------
-
-	def __set_help_messages(self):
-		FACT_GET_HELP = "'<factoid name>\02?\02' : Ask the bot for the definiton of <factoid name>."
-		FACT_SET_HELP = "'<factoid name> \02is\02 <whatever>' OR '<factoid name> \02is also\02 <whatever> : Teach the bot about a topic."
-		FACT_MOD_HELP = "'<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02' : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."
-		FACT_OVERWRITE_HELP = "'\02no,\02 <factoid name> \02is\02 <whatever>' : Replace the existing definition of <factoid name> with the new value <whatever>."
-		FACT_FORGET_HELP = "'\02forget\02 <factoid name>' : Remove a factoid from the bot."
-		FACT_LOCK_HELP = "'\02lock\02 <factoid name>' : Lock a factoid definition, so most users cannot alter it."
-		FACT_UNLOCK_HELP = "'\02unlock\02 <factoid name>' : Unlock a locked factoid definition, so it can be edited by anyone"
-		FACT_LISTKEYS_HELP = "'\02listkeys\02 <search text>' : Search through all the factoid names, and return a list of any that contain <search text>"
-		FACT_LISTVALUES_HELP = "'\02listvalues\02 <search text>' : Search through all the factoid definitions, and return the names of any that contain <search text>"
-		FACT_STATUS_HELP = "'\02status\02' : Generate some brief stats about the bot."
-		FACT_TELL_HELP = "'\02tell\02 <someone> \02about\02 <factoid name>' : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."
-		FACT_INFO_HELP = "'\02factinfo\02 <factoid name>' : View some statistics about the given factoid."
-		
-		self.setHelp('infobot', 'get', FACT_GET_HELP)
-		self.setHelp('infobot', 'set', FACT_SET_HELP)
-		self.setHelp('infobot', '=~', FACT_MOD_HELP)
-		self.setHelp('infobot', 'overwrite', FACT_OVERWRITE_HELP)
-		self.setHelp('infobot', 'forget', FACT_FORGET_HELP)
-		self.setHelp('infobot', 'lock', FACT_LOCK_HELP)
-		self.setHelp('infobot', 'unlock', FACT_UNLOCK_HELP)
-		self.setHelp('infobot', 'tell', FACT_TELL_HELP)
-		self.setHelp('infobot', 'listkeys', FACT_LISTKEYS_HELP)
-		self.setHelp('infobot', 'listvalues', FACT_LISTVALUES_HELP)
-		self.setHelp('infobot', 'factinfo', FACT_INFO_HELP)
-		self.setHelp('infobot', 'status', FACT_STATUS_HELP)
+		self.setHelp('infobot', 'get', GET_HELP)
+		self.setHelp('infobot', 'set', SET_HELP)
+		self.setHelp('infobot', 'rawfactoid', RAW_HELP)
+		self.setHelp('infobot', '=~', REPLACE_HELP)
+		self.setHelp('infobot', 'overwrite', OVERWRITE_HELP)
+		self.setHelp('infobot', 'forget', DEL_HELP)
+		self.setHelp('infobot', 'lock', LOCK_HELP)
+		self.setHelp('infobot', 'unlock', UNLOCK_HELP)
+		self.setHelp('infobot', 'tell', TELL_HELP)
+		self.setHelp('infobot', 'listkeys', LISTKEYS_HELP)
+		self.setHelp('infobot', 'listvalues', LISTVALUES_HELP)
+		self.setHelp('infobot', 'factinfo', INFO_HELP)
+		self.setHelp('infobot', 'status', STATUS_HELP)
 		
 		self.registerHelp()
 	
