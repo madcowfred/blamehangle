@@ -583,6 +583,8 @@ class ChatterGizmo(Child):
 			if self.Userlist.Has_Flag(userinfo, 'Global', 'admin'):
 				tolog = "Admin '%s' (%s@%s) requested a rehash." % (userinfo.nick, userinfo.ident, userinfo.host)
 				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
+				
+				self.Conns[conn].notice(userinfo.nick, 'Rehashing...')
 			# If not, cry
 			else:
 				tolog = "Unknown lamer '%s' (%s@%s) requested rehash!" % (userinfo.nick, userinfo.ident, userinfo.host)
