@@ -10,12 +10,15 @@
 # remote http server responds slowly.
 
 import asyncore
+import gzip
 import re
 import socket
 import sys
 import time
 import urllib
 import urlparse
+
+from cStringIO import StringIO
 
 from classes.Children import Child
 from classes.Constants import *
@@ -162,6 +165,8 @@ class async_http(asyncore.dispatcher_with_send):
 		self.send(text)
 		text = 'User-Agent: %s\r\n' % (self.parent.user_agent)
 		self.send(text)
+		text = 'Accept-Encoding: gzip\r\n'
+		self.send(text)
 		#text = "Connection: close\r\n"
 		#self.send(text)
 		self.send('\r\n')
@@ -226,21 +231,52 @@ class async_http(asyncore.dispatcher_with_send):
 				# Anything else
 				else:
 					if len(self.data) > 0:
-						page_text = self.data[:]
-						m = dodgy_html_check(page_text)
-						while m:
-							pre = page_text[:m.start()]
-							post = page_text[m.end():]
-							start, end = m.span('href')
-							fixed = '"' + page_text[start:end - 1].replace("'", "%39") + '"'
-							page_text = pre + 'href=' + fixed + post
+						page_text = None
+						
+						# Check for gzip
+						is_gzip = 0
+						for line in headlines[1:]:
+							if line.startswith('Content-Encoding:'):
+								chunks = line.split()[1:]
+								if 'gzip' in chunks:
+									is_gzip = 1
+									break
+								else:
+									tolog = 'Unknown Content-Encoding: %s' % ','.join(chunks)
+									self.parent.pulog(LOG_WARNING, tolog)
+						
+						# If we think it's gzip compressed, try to unsquish it
+						if is_gzip:
+							try:
+								gzf = gzip.GzipFile(fileobj=StringIO(self.data))
+								page_text = gzf.read()
+								gzf.close()
+							except Exception, msg:
+								self.failed('gunzip failed: %s' % msg)
+						
+						else:
+							page_text = self.data[:]
+						
+						# And if we still have page text, keep going
+						if page_text is not None:
 							m = dodgy_html_check(page_text)
-						
-						tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
-						self.parent.putlog(LOG_DEBUG, tolog)
-						
-						data = [self.trigger, self.method, self.url, page_text]
-						self.parent.sendMessage(self.message.source, REPLY_URL, data)
+							while m:
+								pre = page_text[:m.start()]
+								post = page_text[m.end():]
+								start, end = m.span('href')
+								fixed = '"' + page_text[start:end - 1].replace("'", "%39") + '"'
+								page_text = pre + 'href=' + fixed + post
+								m = dodgy_html_check(page_text)
+							
+							# If it was compressed, log a bit extra
+							if is_gzip:
+								tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(self.data), len(page_text))
+							else:
+								tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
+							self.parent.putlog(LOG_DEBUG, tolog)
+							
+							data = [self.trigger, self.method, self.url, page_text]
+							self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
 		if not self.closed:
