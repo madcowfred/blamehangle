@@ -18,8 +18,9 @@ from random import Random
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
+from classes.SimpleRSSParser import SimpleRSSParser
 
-from classes.feedparser import FeedParser
+#from classes.feedparser import FeedParser
 
 # ---------------------------------------------------------------------------
 
@@ -47,8 +48,6 @@ GOOGLE_WORLD_URL = 'http://news.google.com/?ned=us&topic=w'
 # Dirty dirty regexps
 GOOGLE_STORY_TITLE_RE = re.compile(r'<td valign=top><a href="(http://.*?)" id=.*?><b>(.*?)</b>')
 GOOGLE_STORY_TEXT_RE = re.compile(r'<font size=-1>(?!<)(.*?)</font>')
-#GOOGLE_STORY_TITLE_RE = re.compile(r'<a class=y href="/url\?ntc=\S+&q=(.*?)">(.*?)</a>')
-#GOOGLE_STORY_TEXT_RE = re.compile(r'</b><br>(.*?)<br>')
 
 # ---------------------------------------------------------------------------
 
@@ -140,8 +139,8 @@ class News(Plugin):
 			self.RSS_Feeds[name] = feed
 		
 		# If we found some feeds, we'll be needing a parser
-		if self.RSS_Feeds:
-			self.__Parser = FeedParser()
+		#if self.RSS_Feeds:
+		#	self.__Parser = FeedParser()
 	
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check
@@ -421,14 +420,15 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
 	def __Parse_RSS(self, trigger, resp):
-		started = time.time()
-		
 		# If it hasn't been modified, we can continue on our merry way
 		if resp.response == '304':
 			return
+
+		started = time.time()
 		
 		# We need to leave the ampersands in for feedparser
-		resp.data = UnquoteHTML(resp.data, 'amp')
+		#resp.data = UnquoteHTML(resp.data, 'amp')
+		#resp.data = UnquoteHTML(resp.data)
 		
 		# Get our feed info
 		name = trigger.args[0]
@@ -436,9 +436,11 @@ class News(Plugin):
 		
 		# Try to parse it
 		try:
-			r = self.__Parser
-			r.reset()
-			r.feed(resp.data)
+			#r = self.__Parser
+			#r.reset()
+			#r.feed(resp.data)
+			
+			rss = SimpleRSSParser(resp.data)
 		
 		except Exception, msg:
 			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
@@ -449,15 +451,17 @@ class News(Plugin):
 		feed['last-modified'] = resp.headers.get('Last-Modified', None)
 		
 		# Work out the feed title
-		if feed['title']:
-			feed_title = feed['title']
-		else:
-			feed_title = r.channel.get('title', name)
+		feed_title = feed['title'] or rss['feed']['title']
+		#if feed['title']:
+		#	feed_title = feed['title']
+		#else:
+		#	feed_title = r.channel.get('title', name)
 		
 		# Get any articles out of the feed
 		articles = []
 		
-		for item in r.items[:feed['maximum_new']]:
+		#for item in r.items[:feed['maximum_new']]:
+		for item in rss['items'][:feed['maximum_new']]:
 			item_title = item.get('title', '<No Title>').strip() or '<No Title>'
 			article_title = '%s: %s' % (feed_title, item_title)
 			
@@ -470,10 +474,10 @@ class News(Plugin):
 				article_link = '<No Link>'
 			else:
 				# feedparser gives us weird results sometimes
-				if type(item['link']) == types.ListType:
-					continue
-				else:
-					article_link = item['link']
+				#if type(item['link']) == types.ListType:
+				#	continue
+				#else:
+				article_link = item['link']
 			
 			description = item.get('description', '')
 			
@@ -488,9 +492,12 @@ class News(Plugin):
 							break
 			
 			# Get rid of any annoying quoted HTML and eat any tabs
-			article_title = UnquoteHTML(article_title).replace('\t', ' ')
-			article_link = UnquoteHTML(article_link)
-			description = UnquoteHTML(description).replace('\t', ' ')
+			#article_title = UnquoteHTML(article_title).replace('\t', ' ')
+			#article_link = UnquoteHTML(article_link)
+			#description = UnquoteHTML(description).replace('\t', ' ')
+			article_title = article_title.replace('\t', ' ')
+			article_link = article_link.replace('\t', ' ')
+			description = description.replace('\t', ' ')
 			
 			# Keep the article for later
 			data = [article_title, article_link, description]
@@ -563,6 +570,8 @@ class News(Plugin):
 		# Add the new articles to our outgoing queue, then start adding them
 		# to the database.
 		ctime = time.time()
+		new = 0
+		
 		for title, url, description in newarticles:
 			replytext = '%s - %s' % (title, url)
 			
@@ -574,12 +583,17 @@ class News(Plugin):
 			if self.News_Options['verbose'] and description:
 				replytext = '%s : %s' % (replytext, description)
 			
-			# stick it in the outgoing queue
+			# Stick it in the outgoing queue
 			reply = PluginReply(trigger, replytext)
 			self.__outgoing.append(reply)
 			
-			# Insert it into the DB
+			# And insert it into the DB
 			self.dbQuery(trigger, None, INSERT_QUERY, title, url, description, ctime)
+			new += 1
+		
+		if new:
+			tolog = "Added %d news item(s) to the outgoing queue" % (new)
+			self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title

@@ -23,7 +23,7 @@ RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
 
 # ARGH!
-ENTITY_RE = re.compile(r'&(?!amp;|lt;|gt;|quot;|apos;)')
+#ENTITY_RE = re.compile(r'&(?!amp;|lt;|gt;|quot;|apos;)')
 
 # ---------------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ class TorrentScraper(Plugin):
 		resp.data = UnquoteHTML(resp.data)
 		
 		# But we do want to quote the damn ampersands properly
-		resp.data = ENTITY_RE.sub('&amp;', resp.data)
+		#resp.data = ENTITY_RE.sub('&amp;', resp.data)
 		
 		# If it's a BNBT page, we have to do some yucky searching
 		if resp.data.find('BNBT') >= 0:
@@ -127,7 +127,7 @@ class TorrentScraper(Plugin):
 				# Build the new URL
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
 				# Dirty filthy ampersands
-				newurl = newurl.replace('&amp;', '&')
+				#newurl = newurl.replace('&amp;', '&')
 				if newurl in items:
 					continue
 				
@@ -245,8 +245,9 @@ class TorrentScraper(Plugin):
 			lines = []
 			lines.append('<item>')
 			lines.append('<title>%s</title>' % ENTITY_RE.sub('&amp;', row['description']))
-			quotedurl = ENTITY_RE.sub('&amp;', urllib.quote(row['url'], ':/&'))
-			lines.append('<link>%s</link>' % quotedurl)
+			#quotedurl = ENTITY_RE.sub('&amp;', urllib.quote(row['url'], ':/&'))
+			#lines.append('<link>%s</link>' % quotedurl)
+			lines.append('<link>%s</link>' % row['url'])
 			lines.append('<pubDate>%s</pubDate>' % ISODate(row['added']))
 			lines.append('</item>')
 			print >>rssfile, '\n'.join(lines)
