@@ -128,6 +128,7 @@ def URLThread(parent, myindex):
 		parent.putlog(LOG_DEBUG, tolog)
 		
 		last_read = _time()
+		the_page = None
 		pagetext = ''
 		
 		# get the page
@@ -149,8 +150,8 @@ def URLThread(parent, myindex):
 						if len(data) == 0:
 							break
 					
-					elif (_time() - last_read >= 30):
-						raise Exception, 'connection timed out'
+					elif (_time() - last_read >= 15):
+						raise Exception, 'transfer timed out'
 					
 					else:
 						print "bok"
