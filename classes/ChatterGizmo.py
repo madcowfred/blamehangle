@@ -3,6 +3,34 @@ import errno
 import select
 
 from classes import irclib
+from classes.Userlist import Userlist
+
+# ---------------------------------------------------------------------------
+# Constants specific to this module
+# ---------------------------------------------------------------------------
+
+STATUS_DISCONNECTED = 'Disconnected'
+STATUS_CONNECTING = 'Connecting'
+STATUS_CONNECTED = 'Connected'
+
+# ---------------------------------------------------------------------------
+
+class WrapConn:
+	"""
+	Wraps an irclib Connection object and the various data we keep about it
+	into a moderately simple class.
+	"""
+	
+	status = STATUS_DISCONNECTED
+	stoned = 0
+	
+	last_connect = 0
+	last_stoned = 0
+	
+	users = Userlist()
+	
+	def __init__(self, conn):
+		self.conn = conn
 
 # ---------------------------------------------------------------------------
 
@@ -29,17 +57,14 @@ class ChatterGizmo:
 	
 	# -----------------------------------------------------------------------
 	
+	def connect(self):
+		
+	
+	# -----------------------------------------------------------------------
+	
 	def _handle_welcome(self, conn, event):
 		#tolog = 'Connected to %s' % self.server_list[0]
 		#self.putlog(LOG_ALWAYS, tolog)
-		
-		#self.status = STATUS_CONNECTED
-		#self.__Connect_Last = time.time()
-		
-		#self.stoned = 0
-		
-		# Initialise the channels dictionary
-		#self.__Users = UserList()
 		
 		# Start the stoned timer thing
 		#self.__Stoned_Check()
