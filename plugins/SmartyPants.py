@@ -68,19 +68,19 @@ STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 LISTKEYS_QUERY = 'SELECT name FROM factoids WHERE name LIKE "%%%s%%"'
 LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
 
-GET_D_RE = re.compile("^(?P<name>.+?)\??$")
-GET_RE = re.compile("^(?P<name>.+?)\?$")
-SET_RE = re.compile("^(?!no, )(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
-NO_RE = re.compile("^no, (?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
-ALSO_RE = re.compile("^(?P<name>.+?) (is|are) also (?P<value>.+)$")
-DEL_RE = re.compile("^forget (?P<name>.+)$")
-REP_RE = re.compile("^(?P<name>.+?) =~ (?P<modstring>.+)$")
-LOCK_RE = re.compile("^lock (?P<name>.+)$")
-UNLOCK_RE = re.compile("^unlock (?P<name>.+)$")
-INFO_RE = re.compile("^factinfo (?P<name>.+)\??$")
-STATUS_RE = re.compile("^status$")
-LISTKEYS_RE = re.compile("^listkeys (?P<name>.+)$")
-LISTVALUES_RE = re.compile("^listvalues (?P<name>.+)$")
+GET_D_RE = re.compile("^ *(?P<name>.+?)\??$")
+GET_RE = re.compile("^ *(?P<name>.+?)\?$")
+SET_RE = re.compile("^(?!no, +)(?P<name>.+?) +(is|are) (?!also +)(?P<value>.+)$")
+NO_RE = re.compile("^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
+ALSO_RE = re.compile("^ *(?P<name>.+?) +(is|are) +also +(?P<value>.+)$")
+DEL_RE = re.compile("^ *forget +(?P<name>.+)$")
+REP_RE = re.compile("^ *(?P<name>.+?) +=~ +(?P<modstring>.+)$")
+LOCK_RE = re.compile("^ *lock +(?P<name>.+)$")
+UNLOCK_RE = re.compile("^ *unlock +(?P<name>.+)$")
+INFO_RE = re.compile("^ *factinfo +(?P<name>.+)\??$")
+STATUS_RE = re.compile("^ *status$")
+LISTKEYS_RE = re.compile("^ *listkeys +(?P<name>.+)$")
+LISTVALUES_RE = re.compile("^ *listvalues +(?P<name>.+)$")
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
