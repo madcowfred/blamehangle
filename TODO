@@ -17,6 +17,7 @@ important:
 	  all over the place (anyone)
 
 whatever:
+	* make News use the DB instead of pickles, maybe? (anyone)
 	* testing! :) (anyone)
 	* Come up with more ideas for plugins (anyone)
 	* Come up with more stuff for the TODO list ;) (fred!)
