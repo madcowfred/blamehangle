@@ -19,6 +19,15 @@ _command_regexp = re.compile(r'^(:(?P<prefix>[^ ]+) +)?(?P<command>[^ ]+)( *(?P<
 _linesep_regexp = re.compile(r'\r?\n')
 
 # ---------------------------------------------------------------------------
+# Shiny way to look at an event
+class IRCEvent:
+	def __init__(self, prefix, userinfo, command, target, arguments):
+		self.prefix = prefix
+		self.userinfo = userinfo
+		self.command = command
+		self.target = target
+		self.arguments = arguments
+
 # Shiny way to look at a user.
 class UserInfo:
 	def __init__(self, hostmask):
@@ -26,6 +35,12 @@ class UserInfo:
 		
 		self.nick, rest = hostmask.split('!')
 		self.ident, self.host = rest.split('@')
+	
+	def __str__(self):
+		return '%s (%s@%s)' % (self.nick, self.ident, self.host)
+	
+	def __repr__(self):
+		return '<IRCEvent: %s>' % (self.hostmask)
 
 # Is this a channel?
 def is_channel(s):
@@ -50,9 +65,10 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		self.__handlers.append(method)
 	
 	# An event happened, off we go
-	def __trigger_event(self, command, prefix, target, arguments):
+	def __trigger_event(self, *args):
+		event = IRCEvent(*args)
 		for method in self.__handlers:
-			method(command, prefix, target, arguments)
+			method(event)
 	
 	# Your basic 'send a line of text to the server' method
 	def sendline(self, line, *args):
@@ -85,10 +101,12 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		# Split the data into lines. The last line is either incomplete or
 		# empty, so keep it as our buffer.
 		lines = __linesep_regexp.split(self.__read_buf)
-		self.__read_buf = lines[-1]
+		self.__read_buf = lines.pop()
 		
 		for line in lines[:-1]:
-			prefix = command = arguments = userinfo = None
+			prefix = command = target = userinfo = None
+			arguments = []
+			
 			m = _command_regexp.match(line)
 			
 			if m.group('prefix'):
@@ -145,7 +163,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 				command = numeric_events.get(command, command)
 				
 				# Trigger the event
-				self.__trigger_event(self, command, prefix, target, arguments)
+				self.__trigger_event(self, prefix, userinfo, command, target, arguments)
 	
 	# -----------------------------------------------------------------------
 	# Connect to a server
