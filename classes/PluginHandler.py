@@ -8,10 +8,8 @@
 import types, time
 
 from classes.Plugin import Plugin
+from classes.Constants import *
 from Plugins import *
-
-#from classes.Something import Something_describing_irc_events
-# maybe the above will just come from Constants
 
 from classes.Children import Child
 
@@ -37,7 +35,7 @@ class PluginHandler(Child):
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
 	def run_once(self):
-		for name in self.Plugins:
+		for name in self.__Plugins:
 			self.sendMessage(name, PLUGIN_REGISTER, [])
 	
 	#------------------------------------------------------------------------
