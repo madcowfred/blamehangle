@@ -140,10 +140,26 @@ class SmartyPants(Plugin):
 
 	def __setup_config(self):
 		self.__users = HangleUserList(self, 'InfobotUsers')
-		self.__get_pub = self.Config.getboolean('Infobot', 'public_requests')
-		self.__set_pub = self.Config.getboolean('Infobot', 'public_assignment')
+		self.__get_pub = {}
+		self.__set_pub = {}
+
+		for option in self.Config.options('Infobot'):
+			try:
+				[text, network] = option.split('.')
+				network = network.lower()
+			except:
+				tolog = "malformed option in Infobot config: %s" % option
+				self.putlog(LOG_WARNING, tolog)
+			else:
+				if text == 'public_request':
+					self.__get_pub[network] = self.Config.get('Infobot', option).lower().split()
+				elif text == 'public_assignment':
+					self.__set_pub[network] = self.Config.get('Infobot', option).lower().split()
+				else:
+					tolog = "malformed option in Infobot config: %s" % option
+					self.putlog(LOG_WARNING, tolog)
 	
-	def __message_REQ_REHASH(self, message):
+	def rehash(self):
 		self.__setup_config()
 	
 	# -----------------------------------------------------------------------
@@ -231,6 +247,19 @@ class SmartyPants(Plugin):
 		
 		# Someone wants to view a factoid.
 		if trigger.name == FACT_GET:
+			# check to see if it was a public, and abort if we are not replying
+			# to public requests for this server/channel
+			if trigger.event.IRCType == IRCT_PUBLIC:
+				network = trigger.conn.options['name'].lower()
+				try:
+					if trigger.target.lower() not in self.__get_pub[network]:
+						return
+				except:
+					return
+
+			# Either it wasn't an IRCT_PUBLIC, or we have a config rule that
+			# says we are allowed to reply to public queries on this server in
+			# this channel, so look it up.
 			name = trigger.match.group('name')
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
@@ -239,6 +268,16 @@ class SmartyPants(Plugin):
 		# to go to hell.
 		elif trigger.name == FACT_SET:
 			name = trigger.match.group('name')
+			
+			# check to see if it was a public, and abort if we are not replying
+			# to public requests for this server/channel
+			if trigger.event.IRCType == IRCT_PUBLIC:
+				network = trigger.conn.options['name'].lower()
+				try:
+					if trigger.target.lower() not in self.__set_pub[network]:
+						return
+				except:
+					return
 			
 			# dodgy hack to make sure we don't set retarded factoids containing
 			# "=~" in them

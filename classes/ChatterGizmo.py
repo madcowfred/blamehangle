@@ -342,6 +342,8 @@ class ChatterGizmo(Child):
 					addr = i+1
 				break
 		
+		wrap = self.Conns[conn]
+		
 		# It's probably addressed to someone, see if it's us
 		if addr:
 			if not text[:addr-2].lower() == conn.real_nickname.lower():
@@ -349,12 +351,12 @@ class ChatterGizmo(Child):
 			
 			text = text[addr:]
 			
-			data = [conn, IRCT_PUBLIC_D, userinfo, chan, text]
+			data = [wrap, IRCT_PUBLIC_D, userinfo, chan, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 		
 		# It's not addressed to anyone, so do whatever we do here
 		else:
-			data = [conn, IRCT_PUBLIC, userinfo, chan, text]
+			data = [wrap, IRCT_PUBLIC, userinfo, chan, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
@@ -375,7 +377,8 @@ class ChatterGizmo(Child):
 		if text == '':
 			return
 		
-		data = [conn, IRCT_MSG, userinfo, None, text]
+		wrap = self.Conns[conn]
+		data = [wrap, IRCT_MSG, userinfo, None, text]
 		self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
@@ -422,7 +425,8 @@ class ChatterGizmo(Child):
 				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
 		
 		else:
-			data = [conn, IRCT_CTCP, userinfo, None, first + rest]
+			wrap = self.Conns[conn]
+			data = [wrap, IRCT_CTCP, userinfo, None, first + rest]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
@@ -432,6 +436,11 @@ class ChatterGizmo(Child):
 		
 		if isinstance(conn, irclib.ServerConnection):
 			self.privmsg(conn, target, text)
+
+		elif isinstance(conn, WrapConn):
+			for server_conn in self.Conns:
+				if self.Conns[server_conn] == conn:
+					self.privmsg(server_conn, target, text)
 		
 		elif type(conn) == types.DictType:
 			for network, targets in conn.items():

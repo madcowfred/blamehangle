@@ -61,7 +61,7 @@ class HangleUserList:
 				try:
 					[nick, part] = option.split('.')
 				except:
-					tolog = "malformed user option in factoid config: %s" % option
+					tolog = "malformed user option in config section %s: %s" % (ini_section, option)
 					parent.putlog(LOG_WARNING, tolog)
 				else:
 					if part == 'hostmasks':
