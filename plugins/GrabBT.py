@@ -97,6 +97,9 @@ class GrabBT(Plugin):
 		# Spam the new files
 		for file in [f for f in files if f not in self.__files]:
 			localfile = os.path.join(self._new_dir, file)
+			if not os.path.isfile(localfile):
+				continue
+			
 			filesize = float(os.path.getsize(localfile)) / 1024 / 1024
 			
 			if self._http_base:
