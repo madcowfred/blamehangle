@@ -43,6 +43,7 @@ IRCT_TIMED = 'IRCT_TIMED'
 # ---------------------------------------------------------------------------
 # Request constants
 # ---------------------------------------------------------------------------
+REQ_DNS = 'REQ_DNS'
 REQ_LOG = 'REQ_LOG'
 REQ_NOTICE = 'REQ_NOTICE'
 REQ_PRIVMSG = 'REQ_PRIVMSG'
@@ -56,6 +57,7 @@ REQ_REHASH = 'REQ_REHASH'
 # ---------------------------------------------------------------------------
 # Reply constants
 # ---------------------------------------------------------------------------
+REPLY_DNS = 'REPLY_DNS'
 REPLY_QUERY = 'REPLY_QUERY'
 REPLY_URL = 'REPLY_URL'
 REPLY_SHUTDOWN = 'REPLY_SHUTDOWN'

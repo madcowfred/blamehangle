@@ -66,8 +66,8 @@ class Child:
 	# Default REQ_SHUTDOWN handler
 	# -----------------------------------------------------------------------
 	def _message_REQ_SHUTDOWN(self, message):
-		tolog = '%s shutting down' % self._name
-		self.putlog(LOG_ALWAYS, tolog)
+		#tolog = '%s shutting down' % self._name
+		#self.putlog(LOG_ALWAYS, tolog)
 		
 		if hasattr(self, 'shutdown'):
 			self.shutdown(message)
@@ -94,12 +94,17 @@ class Child:
 	def putlog(self, level, text):
 		self.sendMessage('Postman', REQ_LOG, [level, text])
 	
-	# Short way of doing a DB query
+	# Request a DNS lookup
+	def dnsLookup(self, trigger, method, host, *args):
+		data = [trigger, method, host, args]
+		self.sendMessage('Resolver', REQ_DNS, data)
+	
+	# Request a DB query
 	def dbQuery(self, trigger, method, query, *args):
 		data = [trigger, method, query, args]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
-	# Request a URL to be fetched
+	# Request a URL fetch
 	def urlRequest(self, trigger, method, url, data={}):
 		req = [trigger, method, url, data]
 		self.sendMessage('HTTPMonster', REQ_URL, req)

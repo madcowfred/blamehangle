@@ -20,10 +20,12 @@ from classes.Users import *
 
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
+from classes.Helper import Helper
 from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
+from classes.Resolver import Resolver
+
 from classes.Plugin import Plugin
-from classes.Helper import Helper
 
 # ---------------------------------------------------------------------------
 
@@ -74,7 +76,7 @@ class Postman:
 		# Create our children
 		self.__Children = {}
 		
-		system = [ PluginHandler, ChatterGizmo, DataMonkey, HTTPMonster, Helper ]
+		system = [ PluginHandler, Resolver, ChatterGizmo, DataMonkey, HTTPMonster, Helper ]
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
 			self.__Log(LOG_ALWAYS, tolog)
@@ -147,8 +149,8 @@ class Postman:
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
-		tolog = "Unloading plugin object '%s'" % name
-		self.__Log(LOG_DEBUG, tolog)
+		#tolog = "Unloading plugin object '%s'" % name
+		#self.__Log(LOG_DEBUG, tolog)
 		
 		if self.__Children.has_key(name):
 			# Remove them from the run_* lists

@@ -37,9 +37,8 @@ REDIRECT_LIMIT = 3
 
 class HTTPMonster(Child):
 	"""
-	The HTTPMonster
-	This class takes requests for URLs and fetches them in a new thread
-	to ensure that the bot will not freeze due to slow servers, or whatever
+	This class takes requests for URLs and fetches them asynchronously to
+	ensure that the bot will not freeze due to slow servers, or whatever.
 	"""
 	
 	def setup(self):
@@ -67,7 +66,8 @@ class HTTPMonster(Child):
 		asyncore.poll()
 		
 		if self.urls and self.active < self.max_conns:
-			async_http(self, self.urls.pop(0), {})
+			host, message, chunks = self.urls.pop(0)
+			async_http(self, host, message, chunks, {})
 	
 	def run_sometimes(self, currtime):
 		for a in [a for a in asyncore.socket_map.values() if isinstance(a, async_http)]:
@@ -76,15 +76,35 @@ class HTTPMonster(Child):
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
+		# We need to quote spaces
+		url = re.sub(r'\s+', '%20', message.data[2])
+		
+		# Parse the URL into chunky bits
+		chunks = urlparse.urlparse(url)
+		
+		# And go off to resolve the host
+		host = chunks[1].split(":", 1)[0]
+		self.dnsLookup(None, None, host, message, chunks)
+	
+	# We got a DNS reply, deal with it. This is quite yucky.
+	def _message_REPLY_DNS(self, message):
+		_, _, hosts, (origmsg, chunks) = message.data
+		if hosts is None:
+			# log an error here
+			return
+		
+		# We want to prefer IPv4 connections
+		hosts.sort()
+		
 		if self.active < self.max_conns:
-			async_http(self, message, {})
+			async_http(self, hosts[0][1], origmsg, chunks, {})
 		else:
-			self.urls.append(message)
+			self.urls.append((hosts[0][1], origmsg, chunks))
 
 # ---------------------------------------------------------------------------
 
 class async_http(asyncore.dispatcher_with_send):
-	def __init__(self, parent, message, seen):
+	def __init__(self, parent, ip, message, chunks, seen):
 		asyncore.dispatcher_with_send.__init__(self)
 		
 		self._error = None
@@ -94,14 +114,16 @@ class async_http(asyncore.dispatcher_with_send):
 		self.headlines = []
 		
 		self.parent = parent
+		self.ip = ip
 		self.message = message
+		self.chunks = chunks
 		self.seen = seen
 		
 		self.trigger = message.data[0]
 		self.method = message.data[1]
 		# we need '+' instead of ' '
-		self.url = re.sub(r'\s+', '+', message.data[2])
-		# POST parameters, but only if we're NOT redirecting!s
+		self.url = re.sub(r'\s+', '%20', message.data[2])
+		# POST parameters, but only if we're NOT redirecting!
 		if message.data[3] and not seen:
 			self.post_data = urllib.urlencode(message.data[3])
 		else:
@@ -112,7 +134,7 @@ class async_http(asyncore.dispatcher_with_send):
 		parent.putlog(LOG_DEBUG, tolog)
 		
 		# Parse the URL, saving the bits we need
-		scheme, host, path, params, query, fragment = urlparse.urlparse(self.url)
+		scheme, host, path, params, query, fragment = urlparse.urlparse(message.data[2])
 		
 		# Work out our host/port from the host field
 		try:
@@ -140,7 +162,7 @@ class async_http(asyncore.dispatcher_with_send):
 		# Try to connect. It seems this will blow up if it can't resolve the
 		# host.
 		try:
-			self.connect((host, port))
+			self.connect((ip, port))
 		except socket.gaierror, msg:
 			self.failed(msg)
 		else:
@@ -227,7 +249,7 @@ class async_http(asyncore.dispatcher_with_send):
 									self.failed('Redirection limit reached!')
 								else:
 									self.message.data[2] = newurl
-									async_http(self.parent, self.message, self.seen)
+									async_http(self.parent, self.ip, self.message, self.chunks, self.seen)
 							
 							break
 				

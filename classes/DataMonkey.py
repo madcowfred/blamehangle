@@ -71,7 +71,7 @@ class DataMonkey(Child):
 		while [t for t,s in self.threads if t.isAlive()]:
 			_sleep(0.1)
 		
-		tolog = "All db threads shutdown"
+		tolog = "All DB threads halted"
 		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------

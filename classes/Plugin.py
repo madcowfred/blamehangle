@@ -60,6 +60,12 @@ class Plugin(Child):
 		else:
 			raise Exception, 'either make %s or overwrite _message_PLUGIN_TRIGGER' % method_name
 	
+	# Default DNS reply handler, eek
+	def _message_REPLY_DNS(self, message):
+		trigger, method, hosts = message.data
+		if method is not None:
+			method(trigger, hosts)
+	
 	# Default query reply handler, eek
 	def _message_REPLY_QUERY(self, message):
 		trigger, method, result = message.data
