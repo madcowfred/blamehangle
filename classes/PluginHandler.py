@@ -7,7 +7,7 @@
 
 import types, time
 
-from classes.Plugin import Plugin
+from classes.Plugin import *
 from classes.Constants import *
 from Plugins import *
 
@@ -44,17 +44,17 @@ class PluginHandler(Child):
 	# Check to see if we have any TIMED events that have expired their delai
 	# time
 	def run_sometimes(self, currtime):
-		for token in self.__TIMED_Events:
-			delay, last, targets, plugin = self.__TIMED_Events[token]
-			# Is it time to trigger this TIMED event?
-			if currtime - last >= delay:
-				message = [targets, token, None, IRCT_TIMED, None, None]
-				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
-				# Update the last trigger time
-				self.__TIMED_Events[token] = (delay, currtime, targets, plugin)
+
+		for name in self.__TIMED_Events:
+			event, plugin = self.__TIMED_Events[name]
+			if event.interval_elapsed(currtime):
+				event.last_trigger = currtime
+				self.sendMessage(plugin, PLUGIN_TRIGGER, event)
 	
-	def run_always(self):
-		pass
+	# -----------------------------------------------------------------------
+	
+	#def run_always(self):
+		#pass
 	
 	#------------------------------------------------------------------------
 
@@ -76,23 +76,15 @@ class PluginHandler(Child):
 	# A plugin has responded
 	def _message_PLUGIN_REGISTER(self, message):
 		events = message.data
+		
+		for event in events:
+			eventStore = self.__getRelevantStore(event.IRCType)
 
-		for IRCtype, criterion, groups, token in events:
-			eventStore = self.__getRelevantStore(IRCtype)
-			
-			# Make sure that there isn't already a registered event of this
-			# name for this IRCtype
-			if token in eventStore:
-				raise ValueError, "%s already has a hook on %s" % token, IRCtype
+			if event.name in eventStore:
+				errtext = "%s already has an event for %s" % (event.name, event.IRCType)
+				raise ValueError, errtext
 			else:
-				# Add this event to the events we know plugins are interested
-				# in.
-				
-				# TIMED events need to be handled differently
-				if IRCtype == IRCT_TIMED:
-					eventStore[token] = (criterion, time.time(), groups, message.source)
-				else:
-					eventStore[token] = (criterion, groups, message.source)
+				eventStore[event.name] = (event, message.source)
 
 	#------------------------------------------------------------------------
 
@@ -108,79 +100,70 @@ class PluginHandler(Child):
 
 		eventStore = self.__getRelevantStore(IRCtype)
 
-		for event in eventStore:
-			regexp, groups, plugin = eventStore[event]
-			match = regexp.match(text)
+		for name in eventStore:
+			event, plugin = eventStore[name]
+			match = event.regexp.match(text)
 			if match:
-				# We found a winner!
-				desired_text = []
-				for group in groups:
-					desired_text.append(match.group(group))
-				message = [desired_text, event, conn, IRCtype, target, userinfo]
-				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
-				
-				# should a break or something go here?
-				# do we want it to be possible to have more than one plugin
-				# trigger on the same text?
+				trigger = PluginTextTrigger(event, match, conn, target, userinfo)
+				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+				# Should we break here? do we want it to be possible to
+				# have more than one plugin trigger on the same text?
 		
 
 	#------------------------------------------------------------------------		
-	# We just got a reply from a plugin, containing the string it would like us
-	# to send back out to IRC.
+	# We just got a reply from a plugin.
 	def _message_PLUGIN_REPLY(self, message):
-		text, conn, IRCtype, target, userinfo = message.data
+		reply = message.data
 
-		if IRCtype == IRCT_PUBLIC or IRCtype == IRCT_PUBLIC_D:
-			# We are sending back to public, prepend the relevant nick
-			tosend = "%s: %s" % (userinfo.nick, text)
-			self.privmsg(conn, target, tosend)
-		
-		elif IRCtype == IRCT_TIMED:
-			# We need to handle TIMED events differently, since they have a
-			# dictionary describing the intended targets for the message on
-			# each network
-			for name in target:
-				self.sendMessage('ChatterGizmo', REQ_CONN, [name, [name, target, text]])
+		if isinstance(reply.trigger, PluginTimedEvent):
+			for name in reply.trigger.targets:
+				self.sendMessage('ChatterGizmo', REQ_CONN, [name, (name, reply)])
+
+		elif isinstance(reply.trigger, PluginTextTrigger):
+			nick = reply.trigger.userinfo.nick
+			target = reply.trigger.target
+			conn = reply.trigger.conn
+			if reply.trigger.event.IRCType == IRCT_PUBLIC \
+				or reply.trigger.event.IRCType == IRCT_PUBLIC_D:
+				
+				if reply.process:
+					tosend = "%s: %s" % (nick, reply.replytext)
+				else:
+					tosend = reply.replytext
+				self.privmsg(conn, target, tosend)
+			else:
+				self.privmsg(conn, nick, reply.replytext)
 
 		else:
-			# all other types are responded to with a /msg
-			self.privmsg(conn, userinfo.nick, text)
-	
+			# wtf
+			errtext = "Bad reply object: %s" % reply
+			raise ValueError, errtext
+				
 	#------------------------------------------------------------------------		
 	def _message_REPLY_CONN(self, message):
-		conn, [name, targets, text] = message.data
+		conn, (name, reply) = message.data
 		
 		if conn:
-			for target in targets[name]:
-				self.privmsg(conn, target, text)
+			for target in reply.trigger.targets[name]:
+				self.privmsg(conn, target, reply.replytext)
 	
 	# -----------------------------------------------------------------------
 
-	def __getRelevantStore(self, type):
-		if type == IRCT_PUBLIC:
+	def __getRelevantStore(self, IRCType):
+		if IRCType == IRCT_PUBLIC:
 			return self.__PUBLIC_Events
-		elif type == IRCT_PUBLIC_D:
+		elif IRCType == IRCT_PUBLIC_D:
 			return self.__PUBLIC_D_Events
-		elif type == IRCT_MSG:
+		elif IRCType == IRCT_MSG:
 			return self.__MSG_Events
-		elif type == IRCT_NOTICE:
+		elif IRCType == IRCT_NOTICE:
 			return self.__NOTICE_Events
-		elif type == IRCT_CTCP:
+		elif IRCType == IRCT_CTCP:
 			return self.__CTCP_Events
-		elif type == IRCT_TIMED:
+		elif IRCType == IRCT_TIMED:
 			return self.__TIMED_Events
 		else:
-			# Some smartass has come up with a new event type
-			raise AttributeError, "no such event type: %s" % type
+			# Some smartass has come up with a new IRCType
+			raise AttributeError, "no such event IRCType: %s" % IRCType
 
 	#------------------------------------------------------------------------
-
-	# Need some magic that can turn a string of a network name into a
-	# connection object for that network
-	def __getConn(self, name):
-		# Probably need to find a way to get the Postman to set an attribute
-		# on PluginHandler that contains a list (or something) of all the
-		# current connections, or a list of (name, conn) pairs.
-		# or something.
-		pass
-

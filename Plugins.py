@@ -11,6 +11,6 @@
 #----------------------------------------------------------------------------#
 
 #from plugins.SP2 import SamplePlugin
-#from plugins.SamplePlugin import SamplePlugin
+from plugins.SamplePlugin import SamplePlugin
 from plugins.Karma import Karma
 from plugins.News import News

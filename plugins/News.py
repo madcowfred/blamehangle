@@ -5,7 +5,7 @@
 # news, and reports it.
 # exciting stuff.
 
-from classes.Plugin import Plugin
+from classes.Plugin import *
 from classes.Constants import *
 
 from classes.HTMLParser import HTMLParser, HTMLParseError
@@ -15,6 +15,28 @@ import cPickle, time
 NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
 NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
 NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
+
+TITLE_INSERT = "TITLE_INSERT"
+TIME_CHECK = "TIME_CHECK"
+
+# I tried using "datetime" as the type for the time column, but it created
+# interesting things like the following:
+#+-------+---------------------+
+#| title | time                |
+#+-------+---------------------+
+#| hello | 2000-10-47 63:46:97 |
+#+-------+---------------------+
+# so I for the following
+#CREATE TABLE news (
+#	title char(255) NOT NULL default '',
+#	time bigint(20) default NULL,
+#	PRIMARY KEY (title)
+#	TYPE=MyISAM;
+
+
+TITLE_QUERY = "SELECT title FROM news WHERE title = %s"
+INSERT_QUERY = "INSERT INTO news VALUES (%s,%s)"
+TIME_QUERY = "DELETE FROM news WHERE time - %s < %s"
 
 # All this crap should be moved into the config, and then dealt with during
 # setup()
@@ -47,13 +69,9 @@ class News(Plugin):
 	"""
 
 	def setup(self):
-		# The pickle dir should probably come from the config, also
-		self.pickle_dir = '.pickles/'
-		
-		self.__google_world_news = self.__unpickle('.news.gwn_pickle') or {}
-		self.__google_sci_news = self.__unpickle('.news.gsci_pickle') or {}
-		self.__ananova_news = self.__unpickle('.news.ana_pickle') or {}
 		self.__outgoing = self.__unpickle('.news.out_pickle') or []
+
+		self.__to_process = {}
 		
 		self.__Last_Spam_Time = time.time()
 		self.__Last_Clearout_Time = time.time()
@@ -65,29 +83,28 @@ class News(Plugin):
 
 	# Check google news every 5 minutes, and ananova every 6 hours
 	def _message_PLUGIN_REGISTER(self, message):
-		reply = [
-		(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
-		(IRCT_TIMED, 1800, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
-		(IRCT_TIMED, 3600, ANANOVA_TARGETS, NEWS_ANANOVA)
-		]
-		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
+		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, 300, GOOGLE_WORLD_TARGETS)
+		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, 1800, GOOGLE_SCI_TARGETS)
+		anaq = PluginTimedEvent(NEWS_ANANOVA, 3600, ANANOVA_TARGETS)
+
+		self.register(gwn, gsci, anaq)
 	
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_TRIGGER(self, message):
-		targets, token, _, IRCtype, _, _ = message.data
-
-		if token == NEWS_GOOGLE_WORLD:
+		event = message.data
+		
+		if event.name == NEWS_GOOGLE_WORLD:
 			#pass
-			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_WORLD, [targets, token, IRCtype]])
-		elif token == NEWS_GOOGLE_SCI:
+			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_WORLD, event])
+		elif event.name == NEWS_GOOGLE_SCI:
 			#pass
-			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_SCI, [targets, token, IRCtype]])
-		elif token == NEWS_ANANOVA:
+			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_SCI, event])
+		elif event.name == NEWS_ANANOVA:
 			#pass
-			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, [targets, token, IRCtype]])
+			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, event])
 		else:
-			errstring = "News has no event: %s" % token
+			errstring = "News has no event: %s" % event.name
 			raise ValueError, errstring
 	
 	# -----------------------------------------------------------------------
@@ -107,92 +124,91 @@ class News(Plugin):
 
 				tolog = "%s news items remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)
-
-			# This is also an appropriate place to check to see if any news
-			# items in our various stores are old and need to be purged
-			# (we purge old items so that these data structures do not
-			# bloat into crazy oblivion)
-			for store in [
-				self.__google_world_news,
-				self.__google_sci_news,
-				self.__ananova_news
-				]:
-			
-				for title in store:
-					url, post_time = store[title]
-					# 60 sec * 60 min * 24 hour * 2 day = 172800
-					if currtime - post_time > 172800:
-						del store[title]
-			
-			self.__pickles()
-
+				self.__pickle(self.__outgoing, '.news.out_pickle')
+		
+		# Once an hour, go and check for old news and purge it from the
+		# db
+		if currtime - self.__Last_Clearout_Time >= 3600:
+			self.__Last_Clearout_Time = currtime
+			week = 604800
+			a_week_ago = currtime - week
+			data = [(TIME_CHECK, None), (TIME_QUERY, [week, a_week_ago])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 	# -----------------------------------------------------------------------
 
 	def _message_REPLY_URL(self, message):
-		page_text, [targets, token, IRCtype] = message.data
+		page_text, event = message.data
 
-		if token == NEWS_GOOGLE_WORLD:
-			store = self.__google_world_news
-			self.__do_google(page_text, store, targets, token, IRCtype)
-		elif token == NEWS_GOOGLE_SCI:
-			store = self.__google_sci_news
-			self.__do_google(page_text, store, targets, token, IRCtype)
-		elif token == NEWS_ANANOVA:
-			store = self.__ananova_news
-			self.__do_ananova(page_text, store, targets, token, IRCtype)
+		if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI:
+			parser = Google()
+		elif event.name == NEWS_ANANOVA:
+			parser = Ananova()
+		else:
+			errtext = "Unknown: %s" % event.name
+			raise ValueError, errtext
+			
+		self.__do_news(page_text, parser, event)
 	
 	# -----------------------------------------------------------------------
 
-	def __do_google(self, page_text, store, targets, token, IRCtype):
-		parser = Google()
+	def __do_news(self, page_text, parser, event):
 		try:
 			parser.feed(page_text)
 			parser.close()
 		
 		except HTMLParseError, e:
 			# something fucked up
-			tolog = "Error parsing google - %s" % e
+			tolog = "Error parsing news - %s" % e
 			self.putlog(LOG_WARNING, tolog)
 		
 		else:
 			for title in parser.news:
-				if not title in store:
-					# this is a new item!
-					store[title] = (parser.news[title], time.time())
-					replytext = "%s - %s" % (title, parser.news[title])
-					reply = [replytext, None, IRCtype, targets, None]
-					self.__outgoing.append(reply)
+				data = [(event, title), (TITLE_QUERY, [title])]
+				self.__to_process[title] = parser.news[title]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				
+				#if not title in store:
+					## this is a new item!
+					#store[title] = (parser.news[title], time.time())
+					#replytext = "%s - %s" % (title, parser.news[title])
+					#self.__outgoing.append(replytext)
 	
 	# -----------------------------------------------------------------------
 	
-	# haven't looked at ananova yet
-	def __do_ananova(self, page_text, store, targets, token, IRCtype):
-		parser = Ananova()
-		try:
-			parser.feed(page_text)
-			parser.close()
+	def _message_REPLY_QUERY(self, message):
+		result, (event, title) = message.data
 
-		except HTMLParseError, e:
-			tolog = "Error parsing ananova - %s" % e
-			self.putlog(LOG_WARNING, tolog)
-		
+		if isinstance(event, PluginTimedEvent):
+			# this wasn't a modification request
+			if result == [()]:
+				# the title wasn't in the news db
+				replytext = "%s - %s" % (title, self.__to_process[title])
+				del self.__to_process[title]
+				reply = PluginReply(event, replytext)
+				self.__outgoing.append(reply)
+				# add it to the db!
+				data = [(TITLE_INSERT, title), (INSERT_QUERY, [title, time.time()])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				
+		elif event == TITLE_INSERT:
+			# we just added a new item to our db
+			pass
+		elif event == TIME_CHECK:
+			# we just did an hourly check for old news
+			pass
+
 		else:
-			for title in parser.news:
-				if not title in store:
-					# this is a new item!
-					store[title] = (parser.news[title], time.time())
-					replytext = "%s - %s" % (title, parser.news[title])
-					reply = [replytext, None, IRCtype, targets, None]
-					self.__outgoing.append(reply)
+			errtext = "Unknown event: %s" % event
+			raise ValueError, errtext
 	
 	# -----------------------------------------------------------------------
 
 	# Upon shutdown, we need to save the news items we have seen, otherwise
 	# the bot will spam every news story it sees when it is reloaded
-	def _message_REQ_SHUTDOWN(self, message):
-		Plugin._message_REQ_SHUTDOWN(self, message)
-		self.__pickles()
+	#def _message_REQ_SHUTDOWN(self, message):
+	#	Plugin._message_REQ_SHUTDOWN(self, message)
+	#	self.__pickles()
 
 	# -----------------------------------------------------------------------
 	
@@ -208,9 +224,8 @@ class News(Plugin):
 	# announce on IRC, so that when the bot is restarted we can remember
 	# all these values
 	def __pickle(self, obj, pickle):
-		filename = self.pickle_dir + pickle
 		try:
-			f = open(filename, "wb")
+			f = open(pickle, "wb")
 		except:
 			# We couldn't open our file :(
 			tolog = "Unable to open %s for writing" % filename
@@ -225,15 +240,14 @@ class News(Plugin):
 
 	# Restore our cache of news titles we have found
 	def __unpickle(self, pickle):
-		filename = self.pickle_dir + pickle
 		try:
-			f = open(filename, "rb")
+			f = open(pickle, "rb")
 		except:
 			# Couldn't open the pickle file, so don't try to unpickle
 			pass
 		else:
 			# We have a pickle!
-			tolog = "trying to read pickle from %s" % filename
+			tolog = "trying to read pickle from %s" % pickle
 			self.putlog(LOG_DEBUG, tolog)
 			obj = cPickle.load(f)
 			f.close()

@@ -12,7 +12,7 @@
 # ) TYPE=MyISAM;
 #
 
-from classes.Plugin import Plugin
+from classes.Plugin import *
 from classes.Constants import *
 import re
 
@@ -25,8 +25,8 @@ KARMA_MINUS = "KARMA_MINUS"
 KARMA_LOOKUP = "KARMA_LOOKUP"
 KARMA_MOD = "KARMA_MOD"
 
-PLUS_RE = re.compile("^.*(?=\+\+$)")
-MINUS_RE = re.compile("^.*(?=--$)")
+PLUS_RE = re.compile("(?P<name>^.*)(?=\+\+$)")
+MINUS_RE = re.compile("(?P<name>^.*)(?=--$)")
 LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
 class Karma(Plugin):
@@ -42,68 +42,64 @@ class Karma(Plugin):
 	"""
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		reply = [
-		(IRCT_PUBLIC, PLUS_RE, [0], KARMA_PLUS),
-		(IRCT_PUBLIC, MINUS_RE, [0], KARMA_MINUS),
-		(IRCT_PUBLIC_D, LOOKUP_RE, ['name'], KARMA_LOOKUP),
-		(IRCT_MSG, LOOKUP_RE, ['name'], KARMA_LOOKUP)
-		]
-		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
+		inc = PluginTextEvent(KARMA_PLUS, IRCT_PUBLIC, PLUS_RE)
+		dec = PluginTextEvent(KARMA_MINUS, IRCT_PUBLIC, MINUS_RE)
+		lookup_pub = PluginTextEvent(KARMA_LOOKUP, IRCT_PUBLIC_D, LOOKUP_RE)
+		lookup_msg = PluginTextEvent(KARMA_LOOKUP, IRCT_MSG, LOOKUP_RE)
+
+		self.register(inc, dec, lookup_pub, lookup_msg)
 	
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_TRIGGER(self, message):
-		[origname], event, conn, IRCtype, target, userinfo = message.data
-		
-		name = origname.lower()
-		returnme = [name, event, conn, IRCtype, target, userinfo]
-		data = [returnme, (SELECT_QUERY, [name])]
+		trigger = message.data
+		name = trigger.match.group('name')
+		name = name.lower()
+		data = [trigger, (SELECT_QUERY, [name])]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
-	
+		
 	#------------------------------------------------------------------------
 
 	def _message_REPLY_QUERY(self, message):
-		result, [name, event, conn, IRCtype, target, userinfo] = message.data
+		result, trigger = message.data
+		name = trigger.match.group('name')
 		
-		if event == KARMA_LOOKUP:
+		if trigger.name == KARMA_LOOKUP:
 			if result == [()]:
 				# no karma!
 				replytext = "%s has neutral karma." % name
-				reply = [replytext, conn, IRCtype, target, userinfo]
-				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
+				self.sendReply(trigger, replytext)
 			else:
 				info = result[0][0]
 				if info['value'] == 0:
 					replytext = "%s has neutral karma." % name
 				else:
 					replytext = "%s has karma of %d" % (name, info['value'])
-				reply = [replytext, conn, IRCtype, target, userinfo]
-				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
+				self.sendReply(trigger, replytext)
 				
-		elif event == KARMA_PLUS:
-			returnme = [name, KARMA_MOD, conn, IRCtype, target, userinfo]
+		elif trigger.name == KARMA_PLUS:
+			trigger.name = KARMA_MOD
 			if result == [()]:
 				# no karma, so insert as 1
-				data = [returnme, (INSERT_QUERY, [name, 1])]
+				data = [trigger, (INSERT_QUERY, [name, 1])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 			else:
 				# increment existing karma
-				#name, value = [result]
-				data = [returnme, (UPDATE_QUERY, [1, name])]
+				data = [trigger, (UPDATE_QUERY, [1, name])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 				
-		elif event == KARMA_MINUS:
-			returnme = [name, KARMA_MOD, conn, IRCtype, target, userinfo]
+		elif trigger.name == KARMA_MINUS:
+			trigger.name = KARMA_MOD
 			if result == [()]:
 				# no karma, so insert as -1
-				data = [returnme, (INSERT_QUERY, [name, -1])]
+				data = [trigger, (INSERT_QUERY, [name, -1])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 			else:
 				# decrement existing karma
-				data = [returnme, (UPDATE_QUERY, [-1, name])]
+				data = [trigger, (UPDATE_QUERY, [-1, name])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 
-		elif event == KARMA_MOD:
+		elif trigger.name == KARMA_MOD:
 			# The database just made our requested modifications to the karma
 			# table. We don't need to do anything about this, so just pass
 			pass
