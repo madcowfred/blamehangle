@@ -113,18 +113,6 @@ class AusBOM(Plugin):
 			url = AUSBOM_URL % (product)
 			self.urlRequest(trigger, self.__Parse_Current, url)
 	
-	def asdf_message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		
-		if trigger.name == AUSBOM_UPDATE:
-			self.__Parse_Current(trigger, page_text)
-		
-		elif trigger.name == AUSBOM_AUSBOM:
-			self.__Parse_Current(trigger, page_text, trigger.match.group('location'))
-		
-		elif trigger.name.startswith(AUSBOM_PUBLIC):
-			self.__Parse_Current(trigger, page_text, trigger.event.location)
-	
 	# -----------------------------------------------------------------------
 	# Send URL requests for updating
 	def __Update_Locations(self):
@@ -146,7 +134,7 @@ class AusBOM(Plugin):
 	def __Parse_Current(self, trigger, page_text):
 		# Work out what our location should be
 		if trigger.name == AUSBOM_AUSBOM:
-			location = self.__Find_Product(trigger, trigger.match.group('location'))
+			location = trigger.match.group('location')
 		elif trigger.name == AUSBOM_PUBLIC:
 			option = 'public.%s' % trigger.match.group(1)
 			location = self.Config.get('AusBOM', option)
