@@ -352,7 +352,7 @@ class SmartyPants(Plugin):
 		elif trigger.name == '__Query_List_Values':
 			query = LISTVALUES_QUERY
 		
-		self.dbQuery(query, self.__Fact_Search, query, findme)
+		self.dbQuery(trigger, self.__Fact_Search, query, findme)
 	
 	def __Query_List_Keys(self, trigger):
 		self.__Query_Search(trigger)
