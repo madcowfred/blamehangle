@@ -36,6 +36,11 @@ class Postman:
 		# Initialise the global message queue
 		self.inQueue = []
 		
+		# mtimes for plugins
+		self.__mtimes = {}
+		# these plugins really want to be reloaded
+		self.__reloadme = {}
+		
 		self.__Stopping = 0
 		
 		# Install our signal handlers here
@@ -92,6 +97,9 @@ class Postman:
 			self.__Log(LOG_WARNING, tolog)
 		
 		else:
+			pluginpath = '%s.py' % os.path.join('plugins', name)
+			self.__mtimes[name] = os.stat(pluginpath).st_mtime
+			
 			tolog = "Starting plugin object '%s'" % name
 			self.__Log(LOG_ALWAYS, tolog)
 			
@@ -145,6 +153,14 @@ class Postman:
 							if issubclass(globals()[message.source], Plugin):
 								del self.__Children[message.source]
 								del globals()[message.source]
+								
+								# If it's really being reloaded, do that
+								if self.__reloadme.has_key(message.source):
+									self.__import_plugin(message.source)
+									if hasattr(self.__Children[message.source], 'run_once'):
+										self.__Children[message.source].run_once()
+									
+									del self.__reloadme[message.source]
 					
 					else:
 						# Log the message if debug is enabled
@@ -371,11 +387,14 @@ class Postman:
 	def __Reload_Config(self):
 		self.__Log(LOG_ALWAYS, 'Rehashing config...')
 		
+		# Make a copy of the plugin list
+		old_plugin_list = self.__plugin_list[:]
+		
 		# Delete all of our old sections first
 		for section in self.Config.sections():
 			junk = self.Config.remove_section(section)
 		
-		old_plugin_list = self.__plugin_list[:]
+		# Re-load the configs
 		self.Config.read(self.ConfigFile)
 		self.__Setup_From_Config()
 		self.__Load_Configs()
@@ -391,10 +410,25 @@ class Postman:
 		
 		# Check for any new plugins that have been added to the list
 		for plugin_name in self.__plugin_list:
+			# New plugin, load it
 			if plugin_name not in old_plugin_list:
 				self.__import_plugin(plugin_name)
 				if hasattr(self.__Children[plugin_name], 'run_once'):
 					self.__Children[plugin_name].run_once()
+			# Check the mtime, and possibly reload
+			else:
+				pluginpath = '%s.py' % os.path.join('plugins', plugin_name)
+				if os.path.exists(pluginpath):
+					newmtime = os.stat(pluginpath).st_mtime
+					
+					if newmtime > self.__mtimes[plugin_name]:
+						self.__mtimes[plugin_name] = newmtime
+						self.__reloadme[plugin_name] = 1
+						
+						tolog = "Plugin '%s' has been updated, reloading" % plugin_name
+						self.__Log(LOG_ALWAYS, tolog)
+						
+						self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
 		
 		# This is where you'd expect the code to remove any imported plugins
 		# that are no longer needed to go, but instead we put it in the handler
