@@ -34,34 +34,23 @@ class SiteBot(Plugin):
 		self.rehash()
 	
 	def rehash(self):
-		# Basic config stuff
-		self.__channels = self.Config.get('sitebot', 'channels').lower().split()
-		self.__command_prefix = self.Config.get('sitebot', 'command_prefix')
-		self.__glftpd_path = self.Config.get('sitebot', 'glftpd_path')
-		self.__site_name = self.Config.get('sitebot', 'site_name')
+		self.Options = self.OptionsDict('SiteBot', autosplit=True)
 		
 		# Get our list of paths for df
 		self.__df_paths = []
-		for option in self.Config.options('sitebot-df'):
-			self.__df_paths.append(self.Config.get('sitebot-df', option).split(None, 1))
-		
+		for option in self.OptionsList('SiteBot-Disks'):
+			self.__df_paths.append(option.split(None, 1))
 		self.__df_paths.sort()
 		
-		# Set up our horrible targets
+		# Set up our horrible targets :|
 		self.__logme = {}
-		
-		sections = [s for s in self.Config.sections() if s.startswith('sitebot.')]
-		for section in sections:
-			network = section.split('.', 1)[1]
-			
-			for option in self.Config.options(section):
-				bits = self.Config.get(section, option).split()
-				chan = bits[0]
-				for logtype in bits[1:]:
+		for network, chans in self.Options['output'].items():
+			for chan, logtypes in chans.items():
+				for logtype in logtypes:
 					self.__logme.setdefault(logtype.upper(), {}).setdefault(network, []).append(chan)
 		
 		# Open the log and seek to the end
-		logfile = os.path.join(self.__glftpd_path, 'ftp-data/logs/glftpd.log')
+		logfile = os.path.join(self.Options['glftpd_path'], 'ftp-data/logs/glftpd.log')
 		self.__logfile = open(logfile, 'r')
 		self.__logfile.seek(0, 2)
 	
@@ -70,7 +59,7 @@ class SiteBot(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Parse_Command,
-			regexp = re.compile('^%s(.+)$' % self.__command_prefix),
+			regexp = re.compile('^%s(.+)$' % self.Options['command_prefix']),
 			IRCTypes = (IRCT_PUBLIC,),
 		)
 	
@@ -111,7 +100,7 @@ class SiteBot(Plugin):
 				self.putlog(LOG_DEBUG, replytext)
 				
 				# Spruce it up a bit
-				replytext = '\02(\02%s\02)\02 %s' % (self.__site_name, replytext)
+				replytext = '\02(\02%s\02)\02 %s' % (self.Options['site_name'], replytext)
 				
 				# Spit it out somewhere? Yikes.
 				targets = self.__Get_Targets(logtype)
@@ -211,7 +200,8 @@ class SiteBot(Plugin):
 	
 	def __Parse_Command(self, trigger):
 		# Don't talk to people not in our channels
-		if trigger.target.lower() not in self.__channels:
+		chans = self.Options.get_net('channels', trigger)
+		if not chans or trigger.target.lower() not in chans:
 			return
 		
 		# See if we know what they're on about
@@ -219,14 +209,14 @@ class SiteBot(Plugin):
 		
 		findme = '_cmd_%s' % bits[0].lower()
 		if hasattr(self, findme):
-			replytext = '\02(\02%s\02)\02 %s' % (self.__site_name, getattr(self, findme)(bits[1:]))
+			replytext = '\02(\02%s\02)\02 %s' % (self.Options['site_name'], getattr(self, findme)(bits[1:]))
 			self.sendReply(trigger, replytext, process=0)
 	
 	# -----------------------------------------------------------------------
 	# Current bandwidth
 	def _cmd_bw(self, params):
 		# Make sure we can see the command
-		ftpwho = os.path.join(self.__glftpd_path, 'bin/ftpwho')
+		ftpwho = os.path.join(self.Options['glftpd_path'], 'bin/ftpwho')
 		if not os.access(ftpwho, os.X_OK):
 			return
 		
@@ -319,7 +309,7 @@ class SiteBot(Plugin):
 		for path, display in self.__df_paths:
 			if path.startswith('/'):
 				path = path[1:]
-			disk = os.path.join(self.__glftpd_path, path)
+			disk = os.path.join(self.Options['glftpd_path'], path)
 			
 			if hasattr(os, 'statvfs'):
 				try:
@@ -370,7 +360,7 @@ class SiteBot(Plugin):
 		
 		# See if they have a file
 		userpath = 'ftp-data/users/%s' % (username)
-		userfile = os.path.join(self.__glftpd_path, userpath)
+		userfile = os.path.join(self.Options['glftpd_path'], userpath)
 		
 		if not os.access(userfile, os.R_OK):
 			return 'ERROR: user does not exist!'

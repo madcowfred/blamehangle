@@ -78,10 +78,10 @@ class News(Plugin):
 	
 	def rehash(self):
 		# Load our options into something easier to use
-		self.News_Options = self.SetupOptions('News')
-		self.RSS_Options = self.SetupOptions('RSS')
+		self.News_Options = self.OptionsDict('News', autosplit=True)
+		self.RSS_Options = self.OptionsDict('RSS', autosplit=True)
 		
-		# Set up our error reporting thing
+		# Set up our error reporting mess
 		if hasattr(self, '_QuietURLErrors'):
 			del self._QuietURLErrors
 		if hasattr(self, '_VerboseURLErrors'):
@@ -97,40 +97,18 @@ class News(Plugin):
 		self.__old_days = self.Config.getint('News', 'old_threshold')
 		self.__old_threshold = self.__old_days * 86400
 		
-		# Set up our news targets
-		self.__Setup_News_Targets()
+		# Set up our targets dict
+		self.__Targets = {}
+		for target in ('ananova_quirkies', 'google_business', 'google_health', 'google_science', 'google_sport', 'google_world'):
+			self.__Targets[target] = self.News_Options.pop(target, {})
+		self.__Targets['rss_default'] = self.RSS_Options.pop('default_targets', {})
 		
-		# Setup our RSS feeds
+		# And set up our RSS feeds
 		self.__Setup_RSS_Feeds()
 	
 	# Make extra sure our news queue is saved
 	def shutdown(self, message):
 		self.savePickle('.news.outgoing', self.__outgoing)
-	
-	# -----------------------------------------------------------------------
-	# Set up the target dictionaries for our Ananova/Google spam
-	def __Setup_News_Targets(self):
-		self.__Targets = {
-			'ananova_quirkies': {},
-			'google_business': {},
-			'google_health': {},
-			'google_science': {},
-			'google_sport': {},
-			'google_world': {},
-			'rss_default': {},
-		}
-		
-		# Try splitting our News options into store/network bits
-		for option, value in self.News_Options.items():
-			bits = option.split('.', 1)
-			if len(bits) == 2 and bits[0] in self.__Targets:
-				self.__Targets[bits[0]][bits[1]] = value.split()
-		
-		# Now see if we have some RSS defaults
-		for option, value in self.RSS_Options.items():
-			if option.startswith('default_targets.'):
-				network = option.split('.', 1)[1]
-				self.__Targets['rss_default'][network] = value.split()
 	
 	# -----------------------------------------------------------------------
 	# Do stuff
@@ -144,41 +122,18 @@ class News(Plugin):
 				continue
 			
 			feed = {}
+			feedopts = self.OptionsDict(section)
 			
-			# Feed URL
-			feed['url'] = self.Config.get(section, 'url')
-			
-			# Feed title
-			if self.Config.has_option(section, 'title'):
-				feed['title'] = self.Config.get(section, 'title')
-			else:
-				feed['title'] = None
-			
-			# Interval to check this feed
-			if self.Config.has_option(section, 'interval'):
-				feed['interval'] = self.Config.getint(section, 'interval')
-			else:
-				feed['interval'] = self.RSS_Options['default_interval']
-			feed['checked'] = currtime
-			
-			# Maximum new items to care about
-			if self.Config.has_option(section, 'maximum_new'):
-				feed['maximum_new'] = self.Config.getint(section, 'maximum_new')
-			else:
-				# FIXME: temporary until people update their config
-				feed['maximum_new'] = self.RSS_Options.get('default_maximum_new', 10)
-			
-			# Find real URL
-			if self.Config.has_option(section, 'find_real_url'):
-				feed['find_real_url'] = self.Config.getint(section, 'find_real_url')
-			else:
-				feed['find_real_url'] = 0
-			
-			# Last modified time
-			feed['last-modified'] = None
-			
-			# Set up any targets this feed might want
-			self.__Setup_RSS_Target(section, feed)
+			feed = {
+				'url': feedopts['url'],
+				'title': feedopts.get('title', None),
+				'interval': feedopts.get('interval', self.RSS_Options['default_interval']),
+				'maximum_new': feedopts.get('maximum_new', self.RSS_Options['default_maximum_new']),
+				'find_real_url': feedopts.get('find_real_url', 0),
+				'targets': feedopts.get('targets', self.__Targets['rss_default']),
+				'checked': currtime,
+				'last-modified': None,
+			}
 			
 			# And done
 			name = section.split('.', 1)[1]
@@ -187,19 +142,6 @@ class News(Plugin):
 		# If we found some feeds, we'll be needing a parser
 		if self.RSS_Feeds:
 			self.__Parser = FeedParser()
-	
-	def __Setup_RSS_Target(self, section, feed):
-		feed['targets'] = {}
-		
-		# Try to find some targets for this feed
-		for option in self.Config.options(section):
-			bits = option.split('.', 1)
-			if len(bits) == 2 and bits[0].startswith('targets'):
-				feed['targets'][bits[1]] = self.Config.get(section, option).split()
-		
-		# Couldn't find any, use the default
-		if not feed['targets']:
-			feed['targets'] = self.__Targets['rss_default']
 	
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check

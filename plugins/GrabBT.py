@@ -24,33 +24,20 @@ class GrabBT(Plugin):
 		self.rehash()
 	
 	def rehash(self):
-		self._torrent_dir = self.Config.get('grabbt', 'torrent_dir')
-		self._new_dir = self.Config.get('grabbt', 'new_dir')
-		self._status_file = self.Config.get('grabbt', 'status_file')
-		self._http_base = self.Config.get('grabbt', 'http_base')
+		self.Options = self.OptionsDict('GrabBT', autosplit=True)
 		
 		# If the new dir is valid, get a list of it's files
-		if self._new_dir and os.path.isdir(self._new_dir):
-			self.__files = dircache.listdir(self._new_dir)
+		if self.Options['new_dir'] and os.path.isdir(self.Options['new_dir']):
+			self.__files = dircache.listdir(self.Options['new_dir'])
 		else:
 			self.__files = None
 		
-		# Work out our allowed channels
-		self.__commands = {}
-		for option in [o for o in self.Config.options('grabbt') if o.startswith('commands.')]:
-			self.__commands[option[9:]] = self.Config.get('grabbt', option).split()
-		
-		self.__newfiles = {}
-		for option in [o for o in self.Config.options('grabbt') if o.startswith('newfiles.')]:
-			self.__newfiles[option[9:]] = self.Config.get('grabbt', option).split()
-		
-		if not self.__commands and not self.__newfiles:
+		if not self.Options['commands'] and not self.Options['newfiles']:
 			self.putlog(LOG_WARNING, "No channels configured!")
 		
 		# Compile our regexps
 		self.__grab_res = []
-		for option in self.Config.options('grabbt-re'):
-			regexp = self.Config.get('grabbt-re', option)
+		for regexp in self.OptionsList('GrabBT-Allowed'):
 			try:
 				r = re.compile(regexp)
 			except Exception, msg:
@@ -60,8 +47,8 @@ class GrabBT(Plugin):
 				self.__grab_res.append(r)
 	
 	def register(self):
-		# If we have to, start the check timer
-		if self.__files is not None and self.__newfiles:
+		# If we have to, start the check timer and enable torrentspace
+		if self.__files is not None and self.Options['newfiles']:
 			self.addTimedEvent(
 				method = self.__Torrent_Check,
 				interval = 5,
@@ -91,24 +78,24 @@ class GrabBT(Plugin):
 	# -----------------------------------------------------------------------
 	# It's time to see if we have any new files
 	def __Torrent_Check(self, trigger):
-		files = dircache.listdir(self._new_dir)
+		files = dircache.listdir(self.Options['new_dir'])
 		if files is self.__files:
 			return
 		
 		# Spam the new files
 		for file in [f for f in files if f not in self.__files]:
-			localfile = os.path.join(self._new_dir, file)
+			localfile = os.path.join(self.Options['new_dir'], file)
 			if not os.path.isfile(localfile):
 				continue
 			
 			filesize = float(os.path.getsize(localfile)) / 1024 / 1024
 			
-			if self._http_base:
-				replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (file, filesize, self._http_base, QuoteURL(file))
+			if self.Options['http_base']:
+				replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (file, filesize, self.Options['http_base'], QuoteURL(file))
 			else:
 				replytext = '\x0303New file\x03: %s (%.1fMB)' % (file, filesize)
 			
-			self.privmsg(self.__newfiles, None, replytext)
+			self.privmsg(self.Options['newfiles'], None, replytext)
 		
 		self.__files = files
 	
@@ -119,7 +106,7 @@ class GrabBT(Plugin):
 		url = trigger.match.group(1)
 		
 		# Make sure they're in an allowed channel
-		if network not in self.__commands or trigger.target not in self.__commands[network]:
+		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
 			tolog = "%s (%s@%s) on %s/%s trying to grab a torrent." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
 			return
@@ -186,7 +173,7 @@ class GrabBT(Plugin):
 			self.sendReply(trigger, "That doesn't seem to point to a torrent!")
 			return
 		
-		torrentpath = os.path.join(self._torrent_dir, torrentfile)
+		torrentpath = os.path.join(self.Options['torrent_dir'], torrentfile)
 		
 		# Don't overwrite
 		if os.path.exists(torrentpath):
@@ -208,14 +195,14 @@ class GrabBT(Plugin):
 	def __Torrent_List(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
-		if network not in self.__commands or trigger.target not in self.__commands[network]:
+		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
 			tolog = "%s (%s@%s) on %s/%s trying to list torrents." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
 		# Get the list of torrents
 		try:
-			lines = open(self._status_file, 'r').readlines()
+			lines = open(self.Options['status_file'], 'r').readlines()
 		except:
 			self.sendReply(trigger, "Couldn't open status file, no active torrents?")
 			return
@@ -240,14 +227,14 @@ class GrabBT(Plugin):
 	def __Torrent_Speed(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
-		if network not in self.__commands or trigger.target not in self.__commands[network]:
+		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
 			tolog = "%s (%s@%s) on %s/%s trying to see torrent speed." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
 		# Get the list of torrents
 		try:
-			lines = open(self._status_file, 'r').readlines()
+			lines = open(self.Options['status_file'], 'r').readlines()
 		except:
 			self.sendReply(trigger, "Couldn't open status file, no active torrents?")
 			return
@@ -272,7 +259,7 @@ class GrabBT(Plugin):
 	def __Torrent_Space(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
-		if network not in self.__commands or trigger.target not in self.__commands[network]:
+		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
 			tolog = "%s (%s@%s) on %s/%s trying to see torrent speed." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
 			return
@@ -280,7 +267,7 @@ class GrabBT(Plugin):
 		# See how much disk space we have then
 		if hasattr(os, 'statvfs'):
 			try:
-				info = os.statvfs(self._new_dir)
+				info = os.statvfs(self.Options['new_dir'])
 			except OSError:
 				replytext = 'ERROR!'
 			else:
@@ -293,7 +280,7 @@ class GrabBT(Plugin):
 				replytext = '%.1fGB of %.1fGB (%d%%) free' % (freegb, totalgb, per)
 		
 		else:
-			cmdline = '/bin/df -k %s' % self._new_dir
+			cmdline = '/bin/df -k %s' % self.Options['new_dir']
 			lines = os.popen(cmdline, 'r').readlines()
 			parts = lines[1].split()
 			

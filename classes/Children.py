@@ -11,6 +11,7 @@ import os
 
 from classes.Constants import *
 from classes.Message import Message
+from classes.OptionsDict import OptionsDict
 
 # ---------------------------------------------------------------------------
 
@@ -194,5 +195,48 @@ class Child:
 	def urlRequest(self, trigger, method, url, data={}, headers={}):
 		req = [trigger, getattr(method, '__name__', None), url, data, headers]
 		self.sendMessage('HTTPMonster', REQ_URL, req)
+	
+	# -----------------------------------------------------------------------
+	# Load all options in section into a dictionary. This does some automatic
+	# conversions: number strings become longs, per network/channel configs
+	# become dictionaries.
+	def OptionsDict(self, section, autosplit=False):
+		dict = OptionsDict()
+		
+		for option in self.Config.options(section):
+			value = self.Config.get(section, option)
+			if value.isdigit():
+				value = long(value)
+			
+			parts = option.split('.')
+			# If it has no periods, it's just an option
+			if len(parts) == 1:
+				dict[option] = value
+			# If it has one period, it's a per-network config
+			elif len(parts) == 2:
+				if autosplit is True:
+					dict.setdefault(parts[0], {})[parts[1]] = value.split()
+				else:
+					dict.setdefault(parts[0], {})[parts[1]] = value
+			# If it has two periods, it's a per-channel config
+			elif len(parts) == 3:
+				if autosplit:
+					dict.setdefault(parts[0], {}).setdefault(parts[1], {})[parts[2]] = value.split()
+				else:
+					dict.setdefault(parts[0], {}).setdefault(parts[1], {})[parts[2]] = value
+			# What the hell is it?
+			else:
+				tolog = "Unknown option '%s'" % (option)
+				self.putlog(LOG_WARNING, tolog)
+		
+		return dict
+	
+	# Load all options in a section into a list. This only keeps the values,
+	# option names are discarded.
+	def OptionsList(self, section):
+		values = []
+		for option in self.Config.options(section):
+			values.append(self.Config.get(section, option))
+		return values
 
 # ---------------------------------------------------------------------------

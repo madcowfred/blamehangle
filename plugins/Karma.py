@@ -42,7 +42,7 @@ class Karma(Plugin):
 	
 	def rehash(self):
 		# Load our options
-		self.Options = self.SetupOptions('Karma')
+		self.Options = self.OptionsDict('Karma')
 		
 		# Set up our combines
 		self.__Combines = {}

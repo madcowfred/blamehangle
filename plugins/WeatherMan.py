@@ -24,26 +24,7 @@ class WeatherMan(Plugin):
 		self.rehash()
 	
 	def rehash(self):
-		self.__Short_Parts = self.Config.get('WeatherMan', 'short').split()
-		self.__Long_Parts = self.Config.get('WeatherMan', 'long').split()
-		
-		self.__Formats = {'default': 'both'}
-		for option in self.Config.options('WeatherMan'):
-			if option.startswith('formats.'):
-				if option == 'formats.default':
-					self.__Formats['default'] = self.Config.get('WeatherMan', option)
-				else:
-					parts = option.lower().split('.')
-					if len(parts) == 3:
-						format = self.Config.get('WeatherMan', option)
-						if format in ('both', 'metric', 'imperial'):
-							self.__Formats.setdefault(parts[1], {})[parts[2]] = format
-						else:
-							tolog = 'Mangled option in WeatherMan config: %s' % (option)
-							self.putlog(LOG_WARNING, tolog)
-					else:
-						tolog = 'Mangled option in WeatherMan config: %s' % (option)
-						self.putlog(LOG_WARNING, tolog)
+		self.Options = self.OptionsDict('WeatherMan')
 	
 	# -----------------------------------------------------------------------
 	
@@ -233,12 +214,12 @@ class WeatherMan(Plugin):
 			chunks = []
 			
 			if trigger.name == '__Fetch_Weather_Short':
-				for part in self.__Short_Parts:
+				for part in self.Options['short_parts'].split():
 					if part in data:
 						chunks.append(data[part])
 			
 			elif trigger.name == '__Fetch_Weather_Long':
-				for part in self.__Long_Parts:
+				for part in self.Options['long_parts'].split():
 					if part in data:
 						chunks.append(data[part])
 			
@@ -319,12 +300,7 @@ class WeatherMan(Plugin):
 		f_val = f_val.strip()
 		c_val = ToCelsius(f_val)
 		
-		if trigger.target is not None:
-			network = trigger.conn.options['name'].lower()
-			chan = trigger.target.lower()
-			format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
-		else:
-			format = self.__Formats['default']
+		format = self.Options.get_net('format', trigger, trigger.target)
 		
 		if format == 'both':
 			return '%sC (%sF)' % (c_val, f_val)
@@ -339,12 +315,7 @@ class WeatherMan(Plugin):
 		mph_val = mph_val.strip()
 		kph_val = ToKilometers(mph_val)
 		
-		if trigger.target is not None:
-			network = trigger.conn.options['name'].lower()
-			chan = trigger.target.lower()
-			format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
-		else:
-			format = self.__Formats['default']
+		format = self.Options.get_net('format', trigger, trigger.target)
 		
 		if format == 'both':
 			return '%s kph (%s mph)' % (kph_val, mph_val)

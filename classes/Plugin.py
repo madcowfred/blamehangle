@@ -133,21 +133,6 @@ class Plugin(Child):
 			return None
 		else:
 			return obj
-	
-	# -----------------------------------------------------------------------
-	# Basic thing to load our options into something easier to use
-	def SetupOptions(self, section, dict=None):
-		options = {}
-		
-		for option in self.Config.options(section):
-			# Be nice to numbers
-			value = self.Config.get(section, option)
-			if value.isdigit():
-				options[option] = long(value)
-			else:
-				options[option] = value
-		
-		return options
 
 # ---------------------------------------------------------------------------
 

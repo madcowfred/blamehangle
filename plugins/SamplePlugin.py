@@ -27,7 +27,7 @@ class SamplePlugin(Plugin):
 	# the plugin is started (hence the self.rehash() call above).
 	def rehash(self):
 		# Load our config into a useful dictionary
-		self.Options = self.SetupOptions('SamplePlugin')
+		self.Options = self.OptionsDict('SamplePlugin')
 	
 	# -----------------------------------------------------------------------
 	# A plugin can define the run_once method if it has anything that needs

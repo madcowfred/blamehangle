@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Send quotes to an e-mail address, for _really_ lazy people
+
+"Sends quotes to an e-mail address, for _really_ lazy people."
 
 import re
 import smtplib
@@ -16,9 +17,7 @@ class Quotes(Plugin):
 		self.rehash()
 	
 	def rehash(self):
-		self.__server = self.Config.get('Quotes', 'mail_server')
-		self.__from = self.Config.get('Quotes', 'mail_from')
-		self.__to = self.Config.get('Quotes', 'mail_to')
+		self.Options = self.OptionsDict('Quotes')
 	
 	# ---------------------------------------------------------------------------
 	
@@ -35,10 +34,10 @@ class Quotes(Plugin):
 			# Build the message
 			lines = []
 			
-			line = 'From: %s' % self.__from
+			line = 'From: %s' % self.Options['mail_from']
 			lines.append(line)
 			
-			line = 'To: %s' % self.__to
+			line = 'To: %s' % self.Options['mail_to']
 			lines.append(line)
 			
 			line = 'Subject: Quote from %s' % trigger.userinfo.hostmask
@@ -63,13 +62,13 @@ class Quotes(Plugin):
 			message = '\r\n'.join(lines)
 			
 			try:
-				server = smtplib.SMTP(self.__server)
-				server.sendmail(self.__from, self.__to, message)
+				server = smtplib.SMTP(self.Options['mail_server'])
+				server.sendmail(self.Options['mail_from'], self.Options['mail_to'], message)
 				server.quit()
 			
 			except Exception, msg:
-				replytext = 'Error sending mail: %s' % msg
-				tolog = 'Error sending quote mail: %s' % msg
+				replytext = 'Error sending mail: %s' % (msg)
+				tolog = 'Error sending quote mail: %s' % (msg)
 				self.putlog(LOG_WARNING, tolog)
 			
 			else:

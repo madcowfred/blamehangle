@@ -39,30 +39,25 @@ URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 class WordStuff(Plugin):
 	def setup(self):
-		self.__spell_bin = None
-		
 		self.rehash()
 	
 	def rehash(self):
+		# Load our options
+		self.Options = self.OptionsDict('WordStuff')
+		
 		# Acronym stuff
 		self.__Acronym_Defs = {}
 		
-		# DICT stuff
-		self._dict_host = self.Config.get('WordStuff', 'dict_host')
-		self._dict_port = self.Config.getint('WordStuff', 'dict_port')
-		self._dict_dict = self.Config.get('WordStuff', 'dict_dict')
-		
 		# Spell stuff
-		bin	= self.Config.get('WordStuff', 'spell_bin')
-		if bin:
-			if not os.access(bin, os.X_OK):
-				tolog = '%s is not executable or not a file, spell command will not work!' % bin
+		if self.Options['spell_bin']:
+			if not os.access(self.Options['spell_bin'], os.X_OK):
+				tolog = '%s is not executable or not a file, spell command will not work!' % (self.Options['spell_bin'])
 				self.putlog(LOG_WARNING, tolog)
 				
 				self.__spell_bin = None
 			
 			else:
-				self.__spell_bin = '%s -a -S' % bin
+				self.__spell_bin = '%s -a -S' % (self.Options['spell_bin'])
 		
 		# Urban stuff
 		self.__Urban_Defs = {}
@@ -473,7 +468,7 @@ class async_dict(buffered_dispatcher):
 		# Try to connect. It seems this will blow up if it can't resolve the
 		# host.
 		try:
-			self.connect((self.parent._dict_host, self.parent._dict_port))
+			self.connect((self.parent.Options['dict_host'], self.parent.Options['dict_port']))
 		except socket.gaierror, msg:
 			tolog = "Error while connecting to DICT server: %s - %s" % (self.url, msg)
 			self.parent.putlog(LOG_WARNING, tolog)
@@ -498,11 +493,11 @@ class async_dict(buffered_dispatcher):
 				if line.startswith('220 '):
 					self.state = 1
 					
-					tosend = 'DEFINE %s %s\r\n' % (self.parent._dict_dict, self.word)
+					tosend = 'DEFINE %s %s\r\n' % (self.parent.Options['dict_dict'], self.word)
 					self.send(tosend)
 				
 				elif line.startswith('530 '):
-					tolog = "DICT server '%s' says: %s" % (self.parent._dict_host, line)
+					tolog = "DICT server '%s' says: %s" % (self.parent.Options['dict_host'], line)
 					self.putlog(LOG_ALWAYS, tolog)
 					self.close()
 				

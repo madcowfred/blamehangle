@@ -29,10 +29,7 @@ class FunStuff(Plugin):
 	def rehash(self):
 		self.__eightball_last = ''
 		# Load the 8ball responses
-		self.__eightball_responses = []
-		for option in self.Config.options('eightball'):
-			if option.startswith('response'):
-				self.__eightball_responses.append(self.Config.get('eightball', option))
+		self.__eightball_responses = self.OptionsList('EightBall')
 	
 	# ---------------------------------------------------------------------------
 	

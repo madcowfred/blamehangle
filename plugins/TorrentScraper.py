@@ -38,15 +38,13 @@ class TorrentScraper(Plugin):
 	
 	def rehash(self):
 		# Easy way to get general options
-		self.Options = self.SetupOptions('TorrentScraper')
+		self.Options = self.OptionsDict('TorrentScraper')
 		
 		# Get the list of URLs from our config
-		newurls = {}
-		for option in self.Config.options('TorrentScraper-URLs'):
-			newurls[self.Config.get('TorrentScraper-URLs', option)] = 0
+		newurls = self.OptionsList('TorrentScraper-URLs')
 		
 		# Add any new ones to the list
-		for url in newurls.keys():
+		for url in newurls:
 			if url not in self.URLs:
 				self.URLs[url] = {
 					'checked': 0,

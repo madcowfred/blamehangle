@@ -120,33 +120,12 @@ class SmartyPants(Plugin):
 		self.rehash()
 	
 	def rehash(self):
-		self.__get_pub = {}
-		self.__set_pub = {}
+		self.Options = self.OptionsDict('Infobot', autosplit=True)
 		
-		self.max_fact_name_length = DEF_FACT_NAME_LENGTH
-		self.max_fact_value_length = DEF_FACT_VALUE_LENGTH
-		self.alter_is_also = 1
-		self.alter_search_replace = 1
-		
-		for option in self.Config.options('Infobot'):
-			if option.startswith('public_request'):
-				[text, network] = option.split('.')
-				self.__get_pub[network.lower()] = self.Config.get('Infobot', option).lower().split()
-			elif option.startswith('public_assignment'):
-				[text, network] = option.split('.')
-				self.__set_pub[network.lower()] = self.Config.get('Infobot', option).lower().split()
-			
-			elif option == 'alter_is_also':
-				self.alter_is_also = self.Config.getint('Infobot', option)
-			elif option == 'alter_search_replace':
-				self.alter_search_replace = self.Config.getint('Infobot', option)
-			
-			elif option == 'max_fact_name_length':
-				val = self.Config.getint('Infobot', option)
-				self.max_fact_name_length = max(MIN_FACT_NAME_LENGTH, min(MAX_FACT_NAME_LENGTH, val))
-			elif option == 'max_fact_value_length':
-				val = self.Config.getint('Infobot', option)
-				self.max_fact_value_length = max(MIN_FACT_VALUE_LENGTH, min(MAX_FACT_VALUE_LENGTH, val))
+		self.Options['max_fact_name_length'] = max(MIN_FACT_NAME_LENGTH, min(MAX_FACT_NAME_LENGTH,
+			self.Options.get('max_fact_name_length', DEF_FACT_NAME_LENGTH)))
+		self.Options['max_fact_value_length'] = max(MIN_FACT_VALUE_LENGTH, min(MAX_FACT_VALUE_LENGTH,
+			self.Options.get('max_fact_value_length', DEF_FACT_VALUE_LENGTH)))
 	
 	# -----------------------------------------------------------------------
 	
@@ -158,7 +137,7 @@ class SmartyPants(Plugin):
 			priority = 0,
 			help = ('infobot', 'get',  '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
 		)
-		if self.__get_pub:
+		if self.Options['public_request']:
 			self.addTextEvent(
 				method = self.__Query_Get,
 				regexp = re.compile(r'^(?P<name>.+?)\?$'),
@@ -173,7 +152,7 @@ class SmartyPants(Plugin):
 			priority = 1,
 			help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic.'),
 		)
-		if self.__set_pub:
+		if self.Options['public_assignment']:
 			self.addTextEvent(
 				method = self.__Query_Set,
 				regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
@@ -258,11 +237,8 @@ class SmartyPants(Plugin):
 		# check to see if it was a public, and abort if we are not replying
 		# to public requests for this server/channel
 		if trigger.IRCType == IRCT_PUBLIC:
-			network = trigger.conn.options['name'].lower()
-			try:
-				if trigger.target.lower() not in self.__get_pub[network]:
-					return
-			except:
+			chans = self.Options.get_net('public_request', trigger)
+			if not chans or trigger.target.lower() not in chans:
 				return
 		
 		# Either it wasn't an IRCT_PUBLIC, or we have a config rule that
@@ -286,11 +262,8 @@ class SmartyPants(Plugin):
 		# check to see if it was a public, and abort if we are not replying
 		# to public requests for this server/channel
 		if trigger.IRCType == IRCT_PUBLIC:
-			network = trigger.conn.options['name'].lower()
-			try:
-				if trigger.target.lower() not in self.__set_pub[network]:
-					return
-			except:
+			chans = self.Options.get_net('public_assignment', trigger)
+			if not chans or trigger.target.lower() not in chans:
 				return
 		
 		# dodgy hack to make sure we don't set retarded factoids containing
@@ -299,7 +272,7 @@ class SmartyPants(Plugin):
 			return
 		
 		# Too long
-		if len(name) > self.max_fact_name_length:
+		if len(name) > self.Options['max_fact_name_length']:
 			if not trigger.IRCType == IRCT_PUBLIC:
 				self.sendReply(trigger, 'Factoid name is too long!')
 		else:
@@ -315,7 +288,7 @@ class SmartyPants(Plugin):
 	# Someone wants to add to the definition of a factoid
 	def __Query_Also(self, trigger):
 		name = self.__Sane_Name(trigger)
-		if len(name) > self.max_fact_name_length:
+		if len(name) > self.Options['max_fact_name_length']:
 			self.sendReply(trigger, 'Factoid name is too long!')
 		else:
 			self.dbQuery(trigger, self.__Fact_Also, GET_QUERY, name)
@@ -571,7 +544,7 @@ class SmartyPants(Plugin):
 		# No result, insert it
 		elif result == ():
 			value = trigger.match.group('value')
-			if len(value) > self.max_fact_value_length:
+			if len(value) > self.Options['max_fact_value_length']:
 				self.sendReply(trigger, 'Factoid value is too long!')
 				return
 			
@@ -634,7 +607,7 @@ class SmartyPants(Plugin):
 	def __Fact_No(self, trigger, result):
 		name = self.__Sane_Name(trigger)
 		value = trigger.match.group('value')
-		if len(value) > self.max_fact_value_length:
+		if len(value) > self.Options['max_fact_value_length']:
 			replytext = 'Factoid value is too long!'
 			self.sendReply(trigger, replytext)
 			return
@@ -691,7 +664,7 @@ class SmartyPants(Plugin):
 		else:
 			row = result[0]
 			
-			if self.alter_is_also and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
+			if self.Options['alter_is_also'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
 				replytext = "You don't have permission to alter factoids."
 				self.sendReply(trigger, replytext)
 				return
@@ -706,7 +679,7 @@ class SmartyPants(Plugin):
 	# Update a factoid by changing the value text
 	def __Fact_Update(self, trigger, value):
 		name = self.__Sane_Name(trigger)
-		if len(value) > self.max_fact_value_length:
+		if len(value) > self.Options['max_fact_value_length']:
 			replytext = "Factoid value is too long!"
 			self.sendReply(trigger, replytext)
 			return
@@ -767,7 +740,7 @@ class SmartyPants(Plugin):
 			row = result[0]
 			value = row['value']
 			
-			if self.alter_search_replace and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
+			if self.Options['alter_search_replace'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
 				replytext = "You don't have permission to alter factoids."
 				self.sendReply(trigger, replytext)
 				return
@@ -791,7 +764,7 @@ class SmartyPants(Plugin):
 					
 					# bitch at the user if they made the factoid too
 					# long
-					if len(new_value) > self.max_fact_value_length:
+					if len(new_value) > self.Options['max_fact_value_length']:
 						self.sendReply(trigger, 'Factoid value is too long!')
 					else:
 						# everything is okay, make the change
