@@ -501,7 +501,7 @@ class News(Plugin):
 		# If we just have one article, we can go the easy way
 		#
 		if len(trigger.articles) == 1:
-			self.dbQuery(trigger, self.__News_New, NEWS_QUERY, trigger.articles[0][0])
+			self.dbQuery(trigger, self.__News_Reply, NEWS_QUERY, trigger.articles[0][0])
 		
 		# If we have more, construct a monster query
 		else:
