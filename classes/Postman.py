@@ -244,8 +244,6 @@ class Postman:
 					
 					for meth in _always:
 						meth()
-					#if hasattr(child, 'run_always'):
-					#	child.run_always()
 				
 				
 				# Do things that don't need to be done all that often
@@ -263,12 +261,8 @@ class Postman:
 					
 					# Run anything our children want done occasionally
 					currtime = _time()
-					
-					for child in children:
-						for meth in _sometimes:
-							meth(currtime)
-						#if hasattr(child, 'run_sometimes'):
-						#	child.run_sometimes(currtime)
+					for meth in _sometimes:
+						meth(currtime)
 				
 				# Sleep for a while
 				_sleep(0.05)
