@@ -57,9 +57,8 @@ class Child:
 	# -----------------------------------------------------------------------
 	def _message_REQ_REHASH(self, message):
 		if hasattr(self, 'rehash'):
-			tolog = '%s rehashing' % self._name
-			self.putlog(LOG_DEBUG, tolog)
-			
+			#tolog = '%s rehashing' % self._name
+			#self.putlog(LOG_DEBUG, tolog)
 			self.rehash()
 	
 	# -----------------------------------------------------------------------
