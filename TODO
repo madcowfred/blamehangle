@@ -3,7 +3,8 @@ critical:
 	                app (anyone)
 	* SmartyPants (anyone)
 	* News - think up a replacement for HTMLParser, since it seems to
-	         suck (anyone)
+	         suck -- I may have fixed this, leave it be and see if it 
+			 breaks (anyone)
 
 important:
 	* Port the global ignore list from MCO? (fred)
