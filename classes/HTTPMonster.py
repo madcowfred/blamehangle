@@ -51,11 +51,11 @@ class HTTPMonster(Child):
 		self.rehash()
 	
 	def rehash(self):
-		# Set up our connection limit
 		self.max_conns = max(1, min(10, self.Config.getint('HTTP', 'connections')))
-		
-		# Set up our user-agent
 		self.user_agent = self.Config.get('HTTP', 'useragent')
+		
+		self.use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
+		self.dns_order = self.Config.get('DNS', 'http_order').strip().split()
 	
 	# -----------------------------------------------------------------------
 	
@@ -88,12 +88,26 @@ class HTTPMonster(Child):
 	def __DNS_Reply(self, trigger, hosts, args):
 		origmsg, chunks = args
 		
+		# Do our IPv6 check here
+		if hosts:
+			if self.use_ipv6:
+				if self.dns_order:
+					new = []
+					for f in self.dns_order:
+						new += [h for h in hosts if h[0] == int(f)]
+					hosts = new
+			else:
+				hosts = [h for h in hosts if h[0] == 4]
+		
 		# We got no hosts, DNS failure!
-		if hosts is None:
+		if hosts is None or hosts == []:
 			trigger, method, url = origmsg.data[:3]
 			
 			# Log an error
-			tolog = "Error while trying to fetch URL '%s': %s" % (url, 'DNS failure')
+			if hosts is None:
+				tolog = "Error while trying to fetch URL '%s': DNS failure" % (url)
+			else:
+				tolog = "Error while trying to fetch URL '%s': no valid DNS results" % (url)
 			self.putlog(LOG_ALWAYS, tolog)
 			
 			# Build the response and return it
@@ -103,13 +117,13 @@ class HTTPMonster(Child):
 			
 			return
 		
-		# We want to prefer IPv4 connections
-		hosts.sort()
+		# If we have a free connection, start it now. If not, queue it.
+		print hosts
 		
 		if self.active < self.max_conns:
-			async_http(self, hosts[0][1], origmsg, chunks, {})
+			async_http(self, hosts, origmsg, chunks, {})
 		else:
-			self.urls.append((hosts[0][1], origmsg, chunks))
+			self.urls.append((hosts, origmsg, chunks))
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some stats
@@ -121,7 +135,7 @@ class HTTPMonster(Child):
 # ---------------------------------------------------------------------------
 
 class async_http(buffered_dispatcher):
-	def __init__(self, parent, ip, message, chunks, seen):
+	def __init__(self, parent, hosts, message, chunks, seen):
 		buffered_dispatcher.__init__(self)
 		
 		self._error = None
@@ -131,7 +145,7 @@ class async_http(buffered_dispatcher):
 		self.headlines = []
 		
 		self.parent = parent
-		self.ip = ip
+		self.hosts = hosts
 		self.message = message
 		self.chunks = chunks
 		self.seen = seen
@@ -155,10 +169,11 @@ class async_http(buffered_dispatcher):
 		# Parse the URL, saving the bits we need
 		scheme, host, path, params, query, fragment = urlparse.urlparse(message.data[2])
 		
-		# Work out our host/port from the host field
+		# Work out our port from the host field
 		try:
 			host, port = host.split(":", 1)
-			port = int(port)
+			if not port.isdigit():
+				port = 80
 		except (TypeError, ValueError):
 			port = 80
 		
@@ -176,12 +191,15 @@ class async_http(buffered_dispatcher):
 		self.path = path
 		
 		# Create the socket
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		if self.hosts[0][0] == 4:
+			self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		else:
+			self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
 		
 		# Try to connect. It seems this will blow up if it can't resolve the
 		# host.
 		try:
-			self.connect((ip, port))
+			self.connect((self.hosts[0][1], port))
 		except socket.error, msg:
 			self.failed(msg)
 		except socket.gaierror, msg:
@@ -231,7 +249,11 @@ class async_http(buffered_dispatcher):
 	# Connection has data to read
 	def handle_read(self):
 		self.last_activity = time.time()
-		self.data.append(self.recv(4096))
+		
+		try:
+			self.data.append(self.recv(4096))
+		except socket.error, msg:
+			self.failed(msg)
 	
 	# Connection has been closed
 	def handle_close(self):
@@ -259,9 +281,7 @@ class async_http(buffered_dispatcher):
 				# Build a header dictionary
 				headers = {}
 				for line in self.headlines[1:]:
-					k, v = line.split(': ', 1)
-					while k.endswith(':'):
-						k = k[:-1]
+					k, v = re.split(':+ ', line, 1)
 					headers[k] = v
 				
 				# Various redirect responses
@@ -277,7 +297,7 @@ class async_http(buffered_dispatcher):
 								self.failed('Redirection limit reached!')
 							else:
 								self.message.data[2] = newurl
-								async_http(self.parent, self.ip, self.message, self.chunks, self.seen)
+								async_http(self.parent, self.hosts, self.message, self.chunks, self.seen)
 					
 					else:
 						self.failed('Redirect without Location header!')
@@ -351,6 +371,10 @@ class async_http(buffered_dispatcher):
 					# We got no data!
 					else:
 						self.failed('no data returned: response = %s' % response)
+		
+		# We got no header lines... strange
+		else:
+			self.failed('no headers returned')
 		
 		# Clean up
 		if not self.closed:
