@@ -55,9 +55,9 @@ class Karma(Plugin):
 		trigger = message.data
 		name = trigger.match.group('name')
 		name = name.lower()
-		data = [trigger, (SELECT_QUERY, [name])]
-		self.sendMessage('DataMonkey', REQ_QUERY, data)
-		
+		query = (SELECT_QUERY, name)
+		self.dbQuery(trigger, query)
+	
 	#------------------------------------------------------------------------
 
 	def _message_REPLY_QUERY(self, message):
@@ -76,37 +76,37 @@ class Karma(Plugin):
 				else:
 					replytext = "%s has karma of %d" % (name, info['value'])
 				self.sendReply(trigger, replytext)
-				
+		
 		elif trigger.name == KARMA_PLUS:
 			trigger.name = KARMA_MOD
 			if result == [()]:
 				# no karma, so insert as 1
-				data = [trigger, (INSERT_QUERY, [name, 1])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				query = (INSERT_QUERY, name, 1)
+				self.dbQuery(trigger, query)
 			else:
 				# increment existing karma
-				data = [trigger, (UPDATE_QUERY, [1, name])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
-				
+				query = (UPDATE_QUERY, 1, name)
+				self.dbQuery(trigger, query)
+		
 		elif trigger.name == KARMA_MINUS:
 			trigger.name = KARMA_MOD
 			if result == [()]:
 				# no karma, so insert as -1
-				data = [trigger, (INSERT_QUERY, [name, -1])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				query = (INSERT_QUERY, name, -1)
+				self.dbQuery(trigger, query)
 			else:
 				# decrement existing karma
-				data = [trigger, (UPDATE_QUERY, [-1, name])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
-
+				query = (UPDATE_QUERY, -1, name)
+				self.dbQuery(trigger, query)
+		
 		elif trigger.name == KARMA_MOD:
 			# The database just made our requested modifications to the karma
 			# table. We don't need to do anything about this, so just pass
 			pass
-
+		
 		else:
 			# We got a wrong message, what the fuck?
 			errtext = "Database sent Karma an erroneous %s" % event
 			raise ValueError, errtext
-
+	
 	#------------------------------------------------------------------------
