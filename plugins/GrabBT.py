@@ -35,6 +35,8 @@ class GrabBT(Plugin):
 		if not self.Options['commands'] and not self.Options['newfiles']:
 			self.putlog(LOG_WARNING, "No channels configured!")
 		
+		self.Options['need_mode'] = self.Options.get('need_mode', '').split('')
+		
 		# Compile our regexps
 		self.__grab_res = []
 		for regexp in self.OptionsList('GrabBT-Allowed'):
@@ -103,13 +105,27 @@ class GrabBT(Plugin):
 	# Someone wants us to get a torrent
 	def __Torrent_Grab(self, trigger):
 		network = trigger.conn.options['name'].lower()
+		chan = trigger.target.lower()
 		url = trigger.match.group(1)
 		
 		# Make sure they're in an allowed channel
-		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
-			tolog = "%s (%s@%s) on %s/%s trying to grab a torrent." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
+			tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
 			self.putlog(LOG_WARNING, tolog)
 			return
+		
+		# Make sure they have the right user mode
+		if self.Options['need_mode']:
+			hasmode = 0
+			for mode in self.Options['need_mode']:
+				if trigger.conn.users.has_mode(chan, trigger.userinfo.nick, mode):
+					hasmode = 1
+					break
+			
+			if hasmode == 0:
+				tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
+				self.putlog(LOG_WARNING, tolog)
+				return
 		
 		# If the user has the grabany flag, go for it
 		if self.Userlist.Has_Flag(trigger.userinfo, 'GrabBT', 'grabany'):
@@ -129,14 +145,14 @@ class GrabBT(Plugin):
 			self.sendReply(trigger, "Downloading torrent...")
 			self.urlRequest(trigger, self.__Save_Torrent, url)
 			
-			tolog = "%s (%s@%s) on %s/%s asked me to download a torrent" % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+			tolog = "%s on %s/%s asked me to download a torrent" % (trigger.userinfo, network, chan)
 			self.putlog(LOG_ALWAYS, tolog)
 		
 		# And if we didn't, cry
 		else:
 			self.sendReply(trigger, "That URL is not allowed.")
 			
-			tolog = "%s (%s@%s) on %s/%s tried to grab torrent: %s" % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target, url)
+			tolog = "%s on %s/%s tried to grab torrent: %s" % (trigger.userinfo, network, chan, url)
 			self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
@@ -194,9 +210,10 @@ class GrabBT(Plugin):
 	# Someone wants to see how our torrents are doing.
 	def __Torrent_List(self, trigger):
 		network = trigger.conn.options['name'].lower()
+		chan = trigger.target.lower()
 		
-		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
-			tolog = "%s (%s@%s) on %s/%s trying to list torrents." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
+			tolog = "%s on %s/%s trying to list torrents." % (trigger.userinfo, network, chan)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
@@ -226,9 +243,10 @@ class GrabBT(Plugin):
 	# Someone wants to see some total torrent speed.
 	def __Torrent_Speed(self, trigger):
 		network = trigger.conn.options['name'].lower()
+		chan = trigger.target.lower()
 		
-		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
-			tolog = "%s (%s@%s) on %s/%s trying to see torrent speed." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
+			tolog = "%s on %s/%s trying to see torrent speed." % (trigger.userinfo, network, chan)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
@@ -258,9 +276,10 @@ class GrabBT(Plugin):
 	# Someone wants to see how much disk space we have free.
 	def __Torrent_Space(self, trigger):
 		network = trigger.conn.options['name'].lower()
+		chan = trigger.target.lower()
 		
-		if network not in self.Options['commands'] or trigger.target not in self.Options['commands'][network]:
-			tolog = "%s (%s@%s) on %s/%s trying to see torrent speed." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
+			tolog = "%s on %s/%s trying to see torrent space." % (trigger.userinfo, network, chan)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
