@@ -9,15 +9,12 @@ import signal
 import sys
 import time
 import traceback
-#from Queue import *
 from exceptions import SystemExit
 
 # ---------------------------------------------------------------------------
 
 from classes.Common import *
 from classes.Constants import *
-
-#from Plugins import *
 
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
@@ -150,17 +147,19 @@ class Postman:
 						# A child just shut itself down. If it was a plugin,
 						# "unimport" it.
 						elif message.ident == REPLY_SHUTDOWN:
-							if issubclass(globals()[message.source], Plugin):
-								del self.__Children[message.source]
-								del globals()[message.source]
+							child = message.source
+							if issubclass(globals()[child], Plugin):
+								del self.__Children[child]
+								#del globals()[message.source]
+								del sys.modules['plugins.'+child]
 								
 								# If it's really being reloaded, do that
-								if self.__reloadme.has_key(message.source):
-									self.__import_plugin(message.source)
-									if hasattr(self.__Children[message.source], 'run_once'):
-										self.__Children[message.source].run_once()
+								if self.__reloadme.has_key(child):
+									self.__import_plugin(child)
+									if hasattr(self.__Children[child], 'run_once'):
+										self.__Children[child].run_once()
 									
-									del self.__reloadme[message.source]
+									del self.__reloadme[child]
 					
 					else:
 						# Log the message if debug is enabled
