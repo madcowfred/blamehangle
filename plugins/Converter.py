@@ -14,7 +14,7 @@ from classes.Plugin import *
 
 CONVERT_CONVERT = 'CONVERT_CONVERT'
 CONVERT_HELP = '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?' 
-CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
+CONVERT_RE = re.compile('^convert (?P<amt>-?[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
 
 # ---------------------------------------------------------------------------
 # Mapping of distance measurements to SI units (meters)
