@@ -130,16 +130,22 @@ class Karma(Plugin):
 			
 			else:
 				self.dbQuery(trigger, self.__Karma_Lookup, SELECT_QUERY, name)
+		else:
+			self.sendReply(trigger, 'Invalid key name!')
 	
 	def _trigger_KARMA_PLUS(self, trigger):
 		name = self.__Sane_Name(trigger)
 		if name:
 			self.dbQuery(trigger, self.__Karma_Plus, SELECT_QUERY, name)
+		else:
+			self.sendReply(trigger, 'Invalid key name!')
 	
 	def _trigger_KARMA_MINUS(self, trigger):
 		name = self.__Sane_Name(trigger)
 		if name:
 			self.dbQuery(trigger, self.__Karma_Minus, SELECT_QUERY, name)
+		else:
+			self.sendReply(trigger, 'Invalid key name!')
 	
 	#------------------------------------------------------------------------
 	# Does karma lookups
