@@ -132,32 +132,7 @@ class ChatterGizmo(Child):
 	# We just got out DNS reply, yay
 	def _DNS_Reply(self, trigger, hosts, args):
 		connid = args[0]
-		host = self.Conns[connid].server[0]
-		
-		self.Conns[connid].dnswait = 0
-		
-		# Resolve failure
-		if hosts is None:
-			tolog = 'Unable to resolve server: %s' % (host)
-			self.connlog(connid, LOG_ALWAYS, tolog)
-		
-		# Something useful happened
-		else:
-			if self.use_ipv6:
-				if self.dns_order:
-					new = []
-					for f in self.dns_order:
-						new += [h for h in hosts if h[0] == int(f)]
-					hosts = new
-			else:
-				hosts = [h for h in hosts if h[0] == 4]
-			
-			if hosts == []:
-				tolog = "No usable IPs found for '%s'" % (host)
-				self.connlog(connid, LOG_ALWAYS, tolog)
-			
-			else:
-				self.Conns[connid].really_connect(hosts)
+		self.Conns[connid].really_connect(hosts)
 	
 	# -----------------------------------------------------------------------
 	

@@ -144,47 +144,71 @@ class WrapConn:
 		self.dnswait = 1
 		self.parent.dnsLookup(None, self.parent._DNS_Reply, self.server[0], self.conn.connid)
 	
-	def really_connect(self, hosts):
-		# We don't want to connect to an IP that we've tried recently
-		ips = [h for h in hosts if h[1] not in self.server[3]]
-		if not ips:
-			del self.server[3][:]
-			ips = hosts
-		
-		self.server[3].append(ips[0][1])
-		
-		ip = ips[0][1]
-		host = self.server[0]
-		port = self.server[1]
-		nick = self.nicks[self.trynick]
-		password = self.server[2]
-		
-		
-		tolog = 'Connecting to %s (%s) port %d...' % (host, ip, port)
-		self.connlog(LOG_ALWAYS, tolog)
-		
-		# IPv6 host, set the socket family
-		if ips[0][0] == 6:
-			family = socket.AF_INET6
-		else:
-			family = socket.AF_INET
-		
-		self.conn.connect_to_server(ip, port, nick,
-									username=self.username,
-									ircname=self.realname,
-									vhost=self.vhost,
-									family=family,
-									)
-		
-		self.last_connect = time.time()
-	
+	# Jump to the next server in our list
 	def jump_server(self):
 		if len(self.servers) > 1:
 			server = self.servers.pop(0)
 			self.servers.append(server)
 		
-		# Try and connect
 		self.connect()
+	
+	# -----------------------------------------------------------------------
+	
+	def really_connect(self, hosts):
+		self.dnswait = 0
+		self.last_connect = time.time()
+		
+		host = self.server[0]
+		port = self.server[1]
+		nick = self.nicks[self.trynick]
+		password = self.server[2]
+		
+		# Resolve failure
+		if hosts is None:
+			tolog = 'Unable to resolve server: %s' % (host)
+			self.connlog(LOG_ALWAYS, tolog)
+		
+		# Something useful happened
+		else:
+			if self.parent.use_ipv6:
+				if self.parent.dns_order:
+					new = []
+					for f in self.parent.dns_order:
+						new += [h for h in hosts if h[0] == int(f)]
+					hosts = new
+			else:
+				hosts = [h for h in hosts if h[0] == 4]
+			
+			if hosts == []:
+				tolog = "No usable IPs found for '%s'" % (host)
+				self.connlog(LOG_ALWAYS, tolog)
+			
+			else:
+				# We don't want to connect to an IP that we've tried recently
+				ips = [h for h in hosts if h[1] not in self.server[3]]
+				if not ips:
+					del self.server[3][:]
+					ips = hosts
+				
+				ip = ips[0][1]
+				self.server[3].append(ip)
+				
+				# Off we go
+				tolog = 'Connecting to %s (%s) port %d...' % (host, ip, port)
+				self.connlog(LOG_ALWAYS, tolog)
+				
+				# IPv6 host, set the socket family
+				if ips[0][0] == 6:
+					family = socket.AF_INET6
+				else:
+					family = socket.AF_INET
+				
+				self.conn.connect_to_server(ip, port, nick,
+											username=self.username,
+											ircname=self.realname,
+											vhost=self.vhost,
+											family=family,
+											)
 	
 	# -----------------------------------------------------------------------
 	# Reset ourselves to the disconnected state
