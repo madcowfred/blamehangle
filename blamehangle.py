@@ -40,7 +40,7 @@ def main():
 	_sleep = time.sleep
 	
 	while 1:
-		Gizmo.run_once()
+		Gizmo.main_loop()
 		_sleep(0.05)
 
 # ---------------------------------------------------------------------------

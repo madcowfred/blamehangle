@@ -12,7 +12,9 @@ class ChatterGizmo:
 	def __init__(self, Config):
 		self.__ircobj = irclib.IRC()
 		
-		self.__Connections = {}
+		self.Config = Config
+		
+		self.Conns = {}
 	
-	def run_once(self):
-		print 'honk!'
+	def main_loop(self):
+		print 'main!'
