@@ -9,7 +9,6 @@ want to use.
 
 import random
 import re
-import shlex
 import time
 import types
 import urlparse
@@ -225,26 +224,8 @@ class News(Plugin):
 		if len(findme) < 3:
 			self.sendReply(trigger, 'Search query is too short (< 3)!')
 		else:
-			crits, args = [], []
 			findme = findme.replace('%', '\\%')
-			
-			# Parse the text and build our silly query
-			words = shlex.split(findme)
-			for word in words:
-				# Negative
-				if word.startswith('-'):
-					word = word[1:]
-					crit = 'title NOT ILIKE %s'
-					crits.append(crit)
-				# Positive
-				else:
-					if word.startswith('+'):
-						word = word[1:]
-					crit = 'title ILIKE %s'
-					crits.append(crit)
-				
-				arg = '%%%s%%' % (word)
-				args.append(arg)
+			crits, args = ParseSearchString('title', findme)
 			
 			# Off we go
 			query = SEARCH_QUERY % (' AND '.join(crits))

@@ -10,7 +10,6 @@ database trickery.
 
 import random
 import re
-import shlex
 import time
 import types
 
@@ -351,31 +350,13 @@ class SmartyPants(Plugin):
 		# Pick the right query
 		if trigger.name == '__Query_List_Keys':
 			query = LISTKEYS_QUERY
-			field = 'name'
+			column = 'name'
 		elif trigger.name == '__Query_List_Values':
 			query = LISTVALUES_QUERY
-			field = 'value'
+			column = 'value'
 		
 		# Build our SQL restraints
-		crits, args = [], []
-		
-		# Parse the text and build our silly query
-		words = shlex.split(findme)
-		for word in words:
-			# Negative
-			if word.startswith('-'):
-				word = word[1:]
-				crit = '%s NOT ILIKE %%s' % (field)
-				crits.append(crit)
-			# Positive
-			else:
-				if word.startswith('+'):
-					word = word[1:]
-				crit = '%s ILIKE %%s' % (field)
-				crits.append(crit)
-			
-			arg = '%%%s%%' % (word)
-			args.append(arg)
+		crits, args = ParseSearchString(column, findme)
 		
 		# Off we go
 		query = query % (' AND '.join(crits))

@@ -6,6 +6,7 @@
 
 import os
 import re
+import shlex
 import time
 import types
 import urllib
@@ -214,5 +215,51 @@ def CompileMask(mask):
 	mask = mask.replace('?', '.')
 	mask = mask.replace('*', '.*?')
 	return re.compile(mask, re.I)
+
+# -----------------------------------------------------------------------
+# Parse a search string and return data suitable for an SQL query
+def ParseSearchString(column, findme):
+	lexer = shlex.shlex(findme)
+	crits, args = [], []
+	sign = None
+	
+	while 1:
+		tok = lexer.get_token()
+		if not tok:
+			break
+		word = None
+		
+		# Remove quoted bits
+		if tok[0] == '"':
+			tok = tok[1:-1]
+		# Check signs?
+		if tok[0] == '+':
+			sign = '+'
+			tok = tok[1:]
+		elif tok[0] == '-':
+			sign = '-'
+			tok = tok[1:]
+		
+		# If we ate the whole token, nothing else to do
+		if not tok:
+			continue
+		
+		# Negative match
+		if sign and sign == '-':
+			sign = None
+			word = tok
+			crit = '%s NOT ILIKE %%s' % (column)
+			crits.append(crit)
+		else:
+			sign = None
+			word = tok
+			crit = '%s ILIKE %%s' % (column)
+			crits.append(crit)
+		
+		if word is not None:
+			arg = '%%%s%%' % (word)
+			args.append(arg)
+	
+	return crits, args
 
 # -----------------------------------------------------------------------
