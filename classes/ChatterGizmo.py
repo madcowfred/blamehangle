@@ -82,8 +82,6 @@ class ChatterGizmo(Child):
 	
 	def privmsg(self, conn, nick, text):
 		if self.Conns[conn].status == STATUS_CONNECTED:
-			tolog = "Saying \"%s\" to %s" % (text, nick)
-			self.putlog(LOG_DEBUG, tolog)
 			conn.privmsg(nick, text)
 	
 	def notice(self, conn, nick, text):
