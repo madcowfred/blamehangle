@@ -1,0 +1,17 @@
+critical:
+	* DataMonkey (fred)
+	* HTTPMonster (anyone)
+	* A way of converting "GoonNet" into a conn object for that connection
+	  (anyone)
+	* SmartyPants (zhar)
+
+important:
+	* finish News (anyone)
+	* Port the global ignore list from MCO? (fred)
+	* user/access list for the SmartyPants (zhar?)
+	* finalise the factoid table structure, and convert db.dump (both)
+
+whatever:
+	* testing! :) (anyone)
+	* Come up with more ideas for plugins (anyone)
+	* Come up with more stuff for the TODO list ;) (fred!)
