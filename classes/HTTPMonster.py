@@ -89,7 +89,7 @@ class HTTPMonster(Child):
 			
 			# Log an error
 			tolog = "Error while trying to fetch URL '%s': %s" % (url, 'DNS failure')
-			self.putlog(LOG_WARNING, tolog)
+			self.putlog(LOG_ALWAYS, tolog)
 			
 			# Build the response and return it
 			resp = HTTPResponse(url, None, None, None)
