@@ -2,7 +2,11 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
-'An implementation of an infobot, similar to... every other infobot.'
+"""
+An implementation of an infobot, similar to... every other infobot. This is
+the scariest plugin included with the bot, due to the mildly complicated
+database trickery.
+"""
 
 import copy
 import random
@@ -377,7 +381,7 @@ class SmartyPants(Plugin):
 	# Someone wants us to tell someone else about a factoid
 	def _trigger_FACT_TELL(self, trigger):
 		name = self.__Sane_Name(trigger)
-		self.dbQuery(trigger, self.__Fact_Tell, GET_QUERY, name)
+		self.dbQuery(trigger, self.__Fact_Get, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# A user asked to lookup a factoid. We've already dug it out of the
@@ -404,15 +408,16 @@ class SmartyPants(Plugin):
 		# Found it!
 		else:
 			row = result[0]
+			value = row['value']
 			
 			# <null> check
-			m = NULL_RE.match(row['value'])
+			m = NULL_RE.match(value)
 			if m:
 				return
 			
 			# If we have to, check for a redirected factoid
 			if redirect:
-				m = REDIRECT_RE.match(row['value'])
+				m = REDIRECT_RE.match(value)
 				if m:
 					factoid = m.group('factoid')
 					trigger.temp = (row['name'], factoid)
@@ -428,36 +433,58 @@ class SmartyPants(Plugin):
 			# expect this behaviour
 			# replace "$nick" with the nick of the guy that requested this
 			# factoid
-			row['value'] = re.sub(r'(?P<c>[^\\]|^)\$nick', \
-				'\g<c>' + trigger.userinfo.nick, row['value'])
+			value = re.sub(r'(?P<c>[^\\]|^)\$nick', \
+				'\g<c>' + trigger.userinfo.nick, value)
 			#row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
 			
 			# replace "$channel" with the target if this was public
 			if trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
-				row['value'] = re.sub(r'(?P<c>[^\\]|^)\$channel', \
-					'\g<c>' + trigger.target, row['value'])
+				value = re.sub(r'(?P<c>[^\\]|^)\$channel', \
+					'\g<c>' + trigger.target, value)
 				#row['value'] = row['value'].replace('$channel', trigger.target)
-				
+			
 			# replace "$date" with a shiny date
 			datebit = time.strftime('%a %d %b %Y %H:%M:%S')
 			shinydate = '%s %s GMT' % (datebit, GetTZ())
-			row['value'] = re.sub(r'(?P<c>[^\\]|^)\$date', \
-				'\g<c>' + shinydate, row['value'])
+			value = re.sub(r'(?P<c>[^\\]|^)\$date', \
+				'\g<c>' + shinydate, value)
 			#row['value'] = row['value'].replace('$date', shinydate)
 			
-			# <reply> and <action> check
-			m = REPLY_ACTION_RE.match(row['value'])
-			if m:
-				typ = m.group('type').lower()
-				if typ == 'reply':
-					replytext = m.group('value')
-				elif typ == 'action':
-					replytext = '\x01ACTION %s\x01' % m.group('value')
-				self.sendReply(trigger, replytext, process=0)
 			
-			else:
-				replytext = '%(name)s is %(value)s' % row
+			# If it's just a get, spit it out
+			if trigger.name == FACT_GET:
+				# <reply> and <action> check
+				m = REPLY_ACTION_RE.match(value)
+				if m:
+					typ = m.group('type').lower()
+					if typ == 'reply':
+						replytext = m.group('value')
+					elif typ == 'action':
+						replytext = '\x01ACTION %s\x01' % m.group('value')
+					self.sendReply(trigger, replytext, process=0)
+				
+				else:
+					replytext = '%s is %s' % (row['name'], value)
+					self.sendReply(trigger, replytext)
+			
+			# If it's really a tell, do some badness
+			elif trigger.name == FACT_TELL:
+				tellnick = trigger.match.group('nick')
+				
+				# We have to do a bit of hackery here.. we always send two /msgs in
+				# reply to this event; one to the guy being told, and one to the
+				# guy that triggered the event confirming that we have performed
+				# the telling
+				trigger.event.IRCType = IRCT_MSG
+				replytext = "Told %s that %s is %s" % (tellnick, row['name'], value)
 				self.sendReply(trigger, replytext)
+				
+				dupe = copy.copy(trigger)
+				dupe.userinfo = copy.deepcopy(trigger.userinfo)
+				replytext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, row['name'], value)
+				dupe.userinfo.nick = tellnick
+				self.sendReply(dupe, replytext)
+			
 			
 			# Update the request count and nick
 			requester_nick = trigger.userinfo.nick
@@ -908,46 +935,6 @@ class SmartyPants(Plugin):
 				replytext += ' \02;;\02 '.join(names)
 			
 			self.sendReply(trigger, replytext)
-	
-	# -----------------------------------------------------------------------
-	# Someone wants us to tell someone else about a factoid!
-	def __Fact_Tell(self, trigger, result):
-		name = self.__Sane_Name(trigger)
-		tellnick = trigger.match.group('nick')
-		
-		# Error!
-		if result is None:
-			self.sendReply(trigger, 'An unknown database error occurred.')
-		
-		# No result
-		elif result == ():
-			replytext = "No such factoid: '%s'" % name
-		
-		# A result!
-		else:
-			self.__requests += 1
-			row = result[0]
-			value = row['value']
-			
-			# We have to do a bit of hackery here.. we always send two /msgs in
-			# reply to this event; one to the guy being told, and one to the
-			# guy that triggered the event confirming that we have performed
-			# the telling
-			trigger.event.IRCType = IRCT_MSG
-			replytext = "Told %s that %s is %s" % (tellnick, name, value)
-			self.sendReply(trigger, replytext)
-			
-			dupe = copy.copy(trigger)
-			dupe.userinfo = copy.deepcopy(trigger.userinfo)
-			replytext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, name, value)
-			dupe.userinfo.nick = tellnick
-			self.sendReply(dupe, replytext)
-			
-			# update our stats in the db
-			requester_nick = trigger.userinfo.nick
-			requester_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
-			now = int(time.time())
-			self.dbQuery(trigger, None, REQUESTED_QUERY, requester_nick, requester_host, now, name)
 	
 	# -----------------------------------------------------------------------
 	def __Query_Handle(self, trigger, result, thing):
