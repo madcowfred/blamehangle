@@ -81,6 +81,10 @@ class Plugin(Child):
 		reply = PluginReply(trigger, replytext, process)
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
+	def connlog(self, wrap, level, text):
+		newtext = '(%s) %s' % (wrap.name, text)
+		self.putlog(level, newtext)
+	
 	# -----------------------------------------------------------------------
 	# Simple way to add text and timed events
 	def addTextEvent(self, method, regexp, IRCTypes=(IRCT_PUBLIC_D, IRCT_MSG), help=None, priority=10):
