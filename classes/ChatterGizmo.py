@@ -302,18 +302,18 @@ class ChatterGizmo(Child):
 	# This should include some sort of flood control or error checking or
 	# something. This is the quick hack version so I can see if shit is working
 	def _message_REQ_PRIVMSG(self, message):
-		conn, target, text = message.data
-		self.privmsg(conn, target, text)
-	
-	# Return the conn object for <foo> network
-	def _message_REQ_CONN(self, message):
-		netname, returnme = message.data
-		network = netname.lower()
-		found = None
+		maybe, target, text = message.data
+		conn = None
 		
-		for conn, wrap in self.Conns.items():
-			if wrap.options['name'].lower() == network:
-				found = conn
-				break
+		if isinstance(maybe, irclib.ServerConnection):
+			conn = maybe
 		
-		self.sendMessage(message.source, REPLY_CONN, [found, returnme])
+		else:
+			network = maybe.lower()
+			for wrap in self.Conns.values():
+				if wrap.options['name'].lower() == network:
+					conn = wrap.conn
+					break
+		
+		if conn:
+			self.privmsg(conn, target, text)
