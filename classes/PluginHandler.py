@@ -23,7 +23,8 @@ class PluginHandler(Child):
 	"""
 	
 	def setup(self):
-		self.Plugins = self.pluginList()
+		self.Plugins = self.Config.get('plugin', 'plugins').split()
+		self.Plugins.append('Helper')
 		self.__PUBLIC_Events = {}
 		self.__PUBLIC_D_Events = {}
 		self.__MSG_Events = {}

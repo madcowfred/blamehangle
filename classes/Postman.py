@@ -17,12 +17,13 @@ from exceptions import SystemExit
 from classes.Common import *
 from classes.Constants import *
 
-from Plugins import *
+#from Plugins import *
 
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
 from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
+from classes.Plugin import Plugin
 from classes.TimeKeeper import TimeKeeper
 from classes.Helper import Helper
 
@@ -35,13 +36,13 @@ class Postman:
 		
 		self.__Stopping = 0
 		
-		self.__logfile_filename = self.Config.get('logging', 'log_file')
-		self.__log_debug = self.Config.getboolean('logging', 'debug')
-		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
+		self.__Setup_From_Config()
 		
 		
 		# Install our signal handlers here
-		signal.signal(signal.SIGHUP, self.SIG_HUP)
+		# note, win32 has no SIGHUP signal
+		if hasattr(signal, 'SIGHUP'):
+			signal.signal(signal.SIGHUP, self.SIG_HUP)
 		signal.signal(signal.SIGTERM, self.SIG_TERM)
 		
 		
@@ -62,17 +63,48 @@ class Postman:
 		system = [ TimeKeeper, PluginHandler, ChatterGizmo, DataMonkey, HTTPMonster, Helper ]
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
-			self.__Log(LOG_DEBUG, tolog)
+			self.__Log(LOG_ALWAYS, tolog)
 			
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
 		
-		plugins = self.__Children['PluginHandler'].pluginList()
-		for clsname in plugins:
-			tolog = "Starting plugin object '%s'" % clsname
-			self.__Log(LOG_DEBUG, tolog)
+		for name in self.__plugin_list:
+			self.__import_plugin(name)
+
+		# add Helper to the list of plugins so that it can do its thing
+		self.__plugin_list.append('Helper')
+
+	# -----------------------------------------------------------------------
+
+	def __Setup_From_Config(self):
+		self.__logfile_filename = self.Config.get('logging', 'log_file')
+		self.__log_debug = self.Config.getboolean('logging', 'debug')
+		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
+		self.__plugin_list = self.Config.get('plugin', 'plugins').split()
+
+	# -----------------------------------------------------------------------
+
+	def __import_plugin(self, name):
+		#plugins = self.__Children['PluginHandler'].pluginList()
+		#for clsname in plugins:
+		#	tolog = "Starting plugin object '%s'" % clsname
+		#	self.__Log(LOG_DEBUG, tolog)
+		#	
+		#	cls = globals()[clsname]
+		#	instance = cls(cls.__name__, self.inQueue, self.Config)
+		#	self.__Children[cls.__name__] = instance
+
+		try:
+			module = __import__('plugins.%s' % name, globals(), locals(), [name])
+			globals()[name] = getattr(module, name)
+		except ImportError:
+			tolog = "No such plugin: %s" % name
+			self.__Log(LOG_WARNING, tolog)
+		else:
+			tolog = "Starting plugin object '%s'" % name
+			self.__Log(LOG_ALWAYS, tolog)
 			
-			cls = globals()[clsname]
+			cls = globals()[name]
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
 	
@@ -116,6 +148,13 @@ class Postman:
 						
 						elif message.ident == REQ_SHUTDOWN:
 							self.__Shutdown(message.data[0])
+
+						# A child just shut itself down. If it was a plugin,
+						# "unimport" it.
+						elif message.ident == REPLY_SHUTDOWN:
+							if issubclass(globals()[message.source], Plugin):
+								del self.__Children[message.source]
+								del globals()[message.source]
 					
 					else:
 						# Log the message if debug is enabled
@@ -133,8 +172,8 @@ class Postman:
 									self.__Children[name].inQueue.put(message)
 								
 								except KeyError:
-									tolog = "WARNING: invalid target for Message ('%s')" % name
-									self.__Log(LOG_ALWAYS, tolog)
+									tolog = "invalid target for Message ('%s') : %s" % (name, message)
+									self.__Log(LOG_WARNING, tolog)
 									
 									pass
 				
@@ -348,8 +387,32 @@ class Postman:
 		for section in self.Config.sections():
 			junk = self.Config.remove_section(section)
 		
+		old_plugin_list = self.__plugin_list
 		self.Config.read(self.ConfigFile)
+		self.__Setup_From_Config()
 		self.__Load_Configs()
+		
+		# re-add Helper to the plugin list, since it will have been clobbered
+		self.__plugin_list.append('Helper')
+
+		# Check if any plugins have been removed from the config.
+		# If so, shut them down
+		for plugin_name in old_plugin_list:
+			if plugin_name not in self.__plugin_list:
+				self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
+
+		# Check for any new plugins that have been added to the list
+		for plugin_name in self.__plugin_list:
+			if plugin_name not in old_plugin_list:
+				self.__import_plugin(plugin_name)
+				if hasattr(self.__Children[plugin_name], 'run_once'):
+					self.__Children[plugin_name].run_once()
+
+		# This is where you'd expect the code to remove any imported plugins
+		# that are no longer needed to go, but instead we put it in the handler
+		# for the REPLY_SHUTDOWN message we get.
+
+
 		
 		# Tell everyone we reloaded
 		self.sendMessage(None, REQ_REHASH, None)

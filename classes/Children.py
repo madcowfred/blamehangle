@@ -69,12 +69,13 @@ class Child:
 	# -----------------------------------------------------------------------
 	def _message_REQ_SHUTDOWN(self, message):
 		tolog = '%s shutting down' % self.__name
-		self.putlog(LOG_DEBUG, tolog)
+		self.putlog(LOG_ALWAYS, tolog)
 		
 		if hasattr(self, 'shutdown'):
 			self.shutdown(message)
-		else:
-			self.stopnow = 1
+
+		self.stopnow = 1
+		self.sendMessage('Postman', REPLY_SHUTDOWN, None)
 	
 	# -----------------------------------------------------------------------
 	# Send a message, takes the same arguments as Message()
