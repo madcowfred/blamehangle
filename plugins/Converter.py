@@ -22,7 +22,6 @@ DISTANCE = {
 	'miles': ('miles', 1609.34),
 	'ft': ('feet', 0.3048),
 	'in': ('inches', 0.0254),
-	'inches': ('inches', 0.0254),
 	'km': ('kilometers', 1000),
 	'm': ('meters', 1),
 	'cm': ('centimeters', 0.01),
