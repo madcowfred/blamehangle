@@ -425,12 +425,9 @@ class ChatterGizmo(Child):
 		
 		# Add each nick to the channel user list
 		for nick in event.arguments[2].split():
-			# Snarf any annoying mode characters
-			while 1:
-				if nick[0] in wrap.conn.features['user_modes_r']:
-					nick = nick[1:]
-				else:
-					break
+			# Snarf any annoying mode character
+			if nick[0] in wrap.conn.features['user_modes_r']:
+				nick = nick[1:]
 			
 			hostmask = '%s!@' % (nick)
 			wrap.ircul.user_joined(chan, hostmask=hostmask)
