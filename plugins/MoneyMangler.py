@@ -25,7 +25,7 @@ CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
 MONEY_EXCHANGE = 'MONEY_EXCHANGE'
 EXCHANGE_HELP = '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'
 EXCHANGE_RE = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
-EXCHANGE_URL = 'http://finance.yahoo.com/m5?a=%(amt)s&s=%(from)s&t=%(to)s&c=0'
+EXCHANGE_URL = 'http://finance.yahoo.com/currency/convert?amt=%(amt)s&from=%(from)s&to=%(to)s&submit=Convert'
 
 MONEY_QUOTE = 'MONEY_QUOTE'
 QUOTE_HELP = '\02quote\02 <symbol> : Look up a current stock price.'
@@ -203,19 +203,15 @@ class MoneyMangler(Plugin):
 		data = trigger.data
 		page_text = page_text.replace('&amp;', ' and ')
 		
-		# Find the table chunk
-		chunk = FindChunk(page_text, '<table border=1', '</table>')
+		# Find the data chunks
+		chunks = FindChunks(page_text, '<td class="yfnc_tabledata1">', '</td>')
+		if not chunks:
+			self.sendReply(trigger, 'Page parsing failed.')
+			return
 		
-		# Put each tag on a new line
-		chunk = chunk.replace('>', '>\n')
-		
-		# Split it into lines
-		lines = StripHTML(chunk)
-		
-		# If it's the right data, we have a winner
-		if len(lines) >= 3 and lines[0] == 'Symbol' and lines[2] == 'Exchange Rate':
-			replytext = '%s %s == %s %s' % (lines[8], data['from'], lines[11], data['to'])
-		# If it's not, we failed miserably
+		# And off we go
+		if len(chunks) == 7:
+			replytext = '%s %s == %s %s' % (chunks[1][3:-4], data['from'], chunks[4][3:-4], data['to'])
 		else:
 			replytext = 'Page parsing failed.'
 		
