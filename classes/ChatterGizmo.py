@@ -150,14 +150,14 @@ class ChatterGizmo(Child):
 		
 		# Us
 		if nick == conn.real_nickname:
-			self.Conns[conn].parted(chan)
+			self.Conns[conn].users.parted(chan)
 			
 			tolog = 'Left %s' % chan
 			self.connlog(conn, LOG_ALWAYS, tolog)
 		
 		# Not us
 		else:
-			self.Conns[conn].parted(chan, nick)
+			self.Conns[conn].users.parted(chan, nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone just quit (including ourselves? not sure)
