@@ -10,7 +10,7 @@ import os
 import re
 import time
 import types
-from urllib import quote
+import urllib
 
 from classes.Constants import REPLY_URL
 
@@ -170,6 +170,9 @@ def UnquoteHTML(text):
 	return re.sub(r'&([#A-Za-z0-9]+);', unquote_things, text)
 
 # ---------------------------------------------------------------------------
-# urllib.quote() for us!
+# urllib stuff
 def QuoteURL(url):
-	return quote(url)
+	return urllib.quote(url)
+
+def UnquoteURL(url):
+	return urllib.unquote(url)
