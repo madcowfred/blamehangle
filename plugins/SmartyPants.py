@@ -929,15 +929,15 @@ class SmartyPants(Plugin):
 		text = ""
 		
 		# a year
-		if seconds >= 3156000:
-			years = seconds / 3156000
-			seconds %= 3156000
+		if seconds >= 31536000:
+			years = seconds / 31536000
+			seconds %= 31536000
 			text += "%d year" % years
 			if years > 1:
 				text += "s, "
 			else:
 				text += ", "
-
+		
 		# a day
 		if seconds >= 86400:
 			days = seconds / 86400
