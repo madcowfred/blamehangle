@@ -64,7 +64,7 @@ class ChatterGizmo(Child):
 			
 			# Update any maybe changed ones
 			if network in new_nets:
-				options = self.OptionsDict(section)
+				options = self.OptionsDict(network)
 				self.Conns[connid].parse_options(options)
 			
 			# Quit and remove any 'gone' networks
