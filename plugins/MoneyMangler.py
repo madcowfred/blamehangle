@@ -74,20 +74,26 @@ class MoneyMangler(Plugin):
 		
 		if trigger.name == MONEY_CONVERT:
 			parser = YahooParser()
-			parser.feed(page_text)
-			
-			#currencies = {}
-			#for curr in parser.currs:
-			#	name = curr[:-6]
-			#	code = curr[-4:-1]
-			#	currencies[code] = name
-			#cPickle.dump(currencies, open('configs/currency.data', 'wb'), 1)
-			
-			if parser.result:
-				replytext = '%s %s == %s %s' % (data['amt'], data['from'], parser.result, data['to'])
+
+			try:
+				parser.feed(page_text)
+			except:
+				replytext = "Error parsing the html"
+				self.sendReply(trigger, replytext)
 			else:
-				replytext = 'No result returned.'
-			self.sendReply(trigger, replytext)
+			
+				#currencies = {}
+				#for curr in parser.currs:
+				#	name = curr[:-6]
+				#	code = curr[-4:-1]
+				#	currencies[code] = name
+				#cPickle.dump(currencies, open('configs/currency.data', 'wb'), 1)
+			
+				if parser.result:
+					replytext = '%s %s == %s %s' % (data['amt'], data['from'], parser.result, data['to'])
+				else:
+					replytext = 'No result returned.'
+				self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	
