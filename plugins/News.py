@@ -20,8 +20,6 @@ from classes.SimpleRSSParser import SimpleRSSParser
 
 # ---------------------------------------------------------------------------
 
-NEWS_SEARCH_MAX_RESULTS = 6
-
 MAX_TITLE_LENGTH = 200
 
 # ---------------------------------------------------------------------------
@@ -29,7 +27,7 @@ MAX_TITLE_LENGTH = 200
 NEWS_QUERY = 'SELECT title, url, description FROM news WHERE title IN (%s) OR url IN (%s)'
 INSERT_QUERY = 'INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)'
 TIME_QUERY = 'DELETE FROM news WHERE added < %s'
-SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
+SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s ORDER BY added DESC'
 
 # ---------------------------------------------------------------------------
 
@@ -225,18 +223,16 @@ class News(Plugin):
 	# Search for some news
 	def __Query_Search(self, trigger):
 		search_text = trigger.match.group('search_text')
-		if len(search_text) < 5:
-			self.sendReply(trigger, 'Search query is too short!')
-		elif len(search_text) > 50:
-			self.sendReply(trigger, 'Search query is too long!')
+		if len(search_text) < 4:
+			self.sendReply(trigger, 'Search query is too short (< 4)!')
+		elif len(search_text) > 100:
+			self.sendReply(trigger, 'Search query is too long (> 100!')
 		else:
 			search_text = search_text.replace("%", "\%")
-			search_text = search_text.replace('"', '\\\"')
-			search_text = search_text.replace("'", "\\\'")
 			
 			words = search_text.split()
 			
-			if len(words) > 8:
+			if len(words) > 10:
 				self.sendReply(trigger, 'Search query contains too many words!')
 			
 			else:
@@ -609,20 +605,22 @@ class News(Plugin):
 		elif result == ():
 			replytext = "No headlines in the last %d days found matching '\02%s\02'" % (self.__old_days, search_text)
 		
-		# Some matches
 		else:
-			# Too many matches
-			if len(result) > NEWS_SEARCH_MAX_RESULTS:
-				replytext = "Search for '\02%s\02' yielded too many results (%d > %d). Please refine your query." % (search_text, len(result), NEWS_SEARCH_MAX_RESULTS)
-			
-			# We found more than one and less than the max number of items
-			elif len(result) > 1:
+			# Some matches
+			if len(result) > 1:
+				search_items = self.News_Options.get('search_items', 5)
+				
+				if len(result) > search_items:
+					replytext = 'Found \02%d\02 headlines, first \02%d\02' % (len(result), search_items)
+				else:
+					replytext = 'Found \02%d\02 headlines' % (len(result))
+				
 				titles = []
 				for row in result:
 					title = '\02[\02%s\02]\02' % row['title']
 					titles.append(title)
 				
-				replytext = 'Found \02%d\02 headlines: %s' % (len(result), ' '.join(titles))
+				replytext = '%s :: %s' % (replytext, ' '.join(titles))
 			
 			# We found exactly one item
 			else:
