@@ -206,3 +206,13 @@ def NiceTime(seconds):
 		return '0s'
 
 # -----------------------------------------------------------------------
+# Compile a wildcard mask into a regexp
+def CompileMask(mask):
+	# Turn it into a regexp object
+	mask = '^%s$' % mask
+	mask = mask.replace('.', '\\.')
+	mask = mask.replace('?', '.')
+	mask = mask.replace('*', '.*?')
+	return re.compile(mask, re.I)
+
+# -----------------------------------------------------------------------
