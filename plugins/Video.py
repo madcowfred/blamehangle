@@ -12,11 +12,10 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-IMDB_URL = 'http://us.imdb.com/find?q=%s&type=fuzzy&tv=off&sort=smart;tt=1'
+IMDB_SEARCH_URL = 'http://us.imdb.com/find?q=%s;tt=on;mx=10'
 IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
-EXACT_RE = re.compile(r'href="/title/tt(\d+)/">')
-APPROX_RE = re.compile(r'href="/title/tt(\d+)/">(.+)')
+IMDB_RESULT_RE = re.compile(r'href="/title/tt(\d+)/[^>]+">(.*?)</a> \((\d+)\)')
 
 # ---------------------------------------------------------------------------
 
@@ -30,7 +29,7 @@ class Video(Plugin):
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_IMDb,
-			regexp = r'^imdb (.+)$',
+			regexp = r'^imdb (?P<findme>.+)$',
 			help = ('imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
 		)
 		self.addTextEvent(
@@ -42,7 +41,8 @@ class Video(Plugin):
 	# ---------------------------------------------------------------------------
 	
 	def __Fetch_IMDb(self, trigger):
-		url = IMDB_URL % QuoteURL(trigger.match.group(1))
+		findme = trigger.match.group(1)
+		url = IMDB_SEARCH_URL % QuoteURL(findme)
 		self.urlRequest(trigger, self.__Parse_IMDb, url)
 	
 	def __Fetch_TVTome(self, trigger):
@@ -57,69 +57,51 @@ class Video(Plugin):
 	# Parse an IMDb search results page
 	def __Parse_IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
-		if resp.data.find('title search</title>') < 0:
+		if resp.data.find('IMDb title search') < 0:
 			self.__IMDb_Title(trigger, resp)
 			return
 		
-		movie = trigger.match.group(1)
+		findme = trigger.match.group(1)
 		resp.data = UnquoteHTML(resp.data)
 		
-		# Woo, some exact matches. Assume the first one is correct.
-		if resp.data.find('<b>Exact Matches</b>') >= 0:
+		# We only care about Popular Titles for now
+		if resp.data.find('<b>Popular Titles</b>') >= 0:
 			# Get the chunk with the titles inside
-			chunk = FindChunk(resp.data, '<b>Exact Matches</b>', '</table>')
+			chunk = FindChunk(resp.data, '<b>Popular Titles</b>', '</p>')
 			if chunk is None:
-				replytext = 'Failed to parse page: no Exact Matches?'
-				self.sendReply(trigger, replytext)
-				return
-			
-			# Find the first title
-			title_chunk = FindChunk(chunk, '<a', '</a>')
-			if title_chunk is None:
-				replytext = 'Failed to parse page: no Exact Matches?'
-				self.sendReply(trigger, replytext)
-				return
-			
-			# Go fetch it?
-			m = EXACT_RE.search(title_chunk)
-			if not m:
-				replytext = 'Failed to parse page: no title number?'
-				self.sendReply(trigger, replytext)
-				return
-			
-			title = m.group(1)
-			url = IMDB_TITLE_URL % (int(title))
-			self.urlRequest(trigger, self.__IMDb_Title, url)
-		
-		# Some approximate matches.. use the first 5 results
-		elif resp.data.find('<b>Approximate Matches</b>') >= 0:
-			# Get the chunk with the titles inside
-			chunk = FindChunk(resp.data, '<b>Approximate Matches</b>', '</table>')
-			if chunk is None:
-				replytext = 'Failed to parse page: no Approximate Matches?'
+				replytext = 'Failed to parse page: no Popular Titles?'
 				self.sendReply(trigger, replytext)
 				return
 			
 			# Find the titles
-			titles = FindChunks(chunk, '<a', '</a>')
-			if titles == []:
-				replytext = 'Failed to parse page: no Approximate Matches?'
+			lis = FindChunks(chunk, '<li>', '</li>')
+			if lis == []:
+				replytext = 'Failed to parse page: no Popular Titles items?'
 				self.sendReply(trigger, replytext)
 				return
 			
 			# Get the info we need
 			parts = []
 			
-			for title in titles[:5]:
-				m = APPROX_RE.search(title)
+			for li in lis[:5]:
+				m = IMDB_RESULT_RE.search(li)
 				if not m:
 					continue
 				
-				part = '%s: %s' % (m.group(2), m.group(1))
+				# We probably found what we were after
+				if m.group(2).lower() == findme:
+					url = IMDB_TITLE_URL % (int(m.group(1)))
+					self.urlRequest(trigger, self.__IMDb_Title, url)
+					return
+				
+				part = '\x02[\x02tt%s: %s (%s)\x02]\x02' % m.groups()
 				parts.append(part)
 			
 			# Spit it out
-			replytext = ' - '.join(parts)
+			if parts == []:
+				replytext = 'Failed to parse page: no matching Popular Titles?'
+			else:
+				replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
 		
 		# FIXME: spit out some alternate matches
@@ -149,8 +131,8 @@ class Video(Plugin):
 			data['title'] = m.group(1)
 			data['year'] = m.group(2)
 			
-			# We need to use our URL
-			data['url'] = resp.url
+			# 'http://us.imdb.com/title/tt%07d/'
+			data['url'] = resp.url[:len(IMDB_SEARCH_URL)+4]
 			
 			# Find the movie's genre(s)
 			chunk = FindChunk(resp.data, 'Genre:</b>', '<br>')
