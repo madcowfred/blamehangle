@@ -61,7 +61,7 @@ class TorrentScraper(Plugin):
 		
 		# See if any are talking about torrents
 		items = []
-		now = time.time()
+		now = int(time.time())
 		
 		for chunk in chunks:
 			# Find the URL
