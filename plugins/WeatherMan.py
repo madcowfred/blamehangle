@@ -202,25 +202,29 @@ class WeatherMan(Plugin):
 			# Maybe find the forecast
 			chunk = FindChunk(resp.data, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
 			if chunk is not None:
+				data['forecast'] = None
 				lines = StripHTML(chunk)
 				
-				# Extract!
-				fcs = []
-				
-				for i in range(1, 5):
-					day = lines[i]
+				# If we have enough lines, extract
+				if len(lines) >= 32:
+					fcs = []
 					
-					first = i + (6 - i) + (i * 4)
-					conditions = lines[first]
-					high = lines[first+2]
-					low = lines[first+3][4:]
+					for i in range(5):
+						day = lines[i]
+						conditions = lines[i+7]
+						high = lines[11+(i*2)]
+						low = lines[21+(i*2)]
+						
+						if not (high.isdigit() and low.isdigit()):
+							continue
+						
+						forecast = '\x02[\x02%s: %s, High: %s, Low: %s\x02]\x02' % (day, conditions, self.GetTemp(trigger, high), self.GetTemp(trigger, low))
+						fcs.append(forecast)
 					
-					forecast = '%s: %s, High: %s, Low: %s' % (day, conditions, self.GetTemp(trigger, high), self.GetTemp(trigger, low))
-					fcs.append(forecast)
-				
-				data['forecast'] = ' - '.join(fcs)
+					if fcs:
+						data['forecast'] = ' '.join(fcs)
 			
-			
+			# Build our reply
 			chunks = []
 			
 			if trigger.name == '__Fetch_Weather_Short':
@@ -234,9 +238,13 @@ class WeatherMan(Plugin):
 						chunks.append(data[part])
 			
 			elif trigger.name == '__Fetch_Weather_Forecast':
+				# If we got no forecast data, cry here
+				if data['forecast'] is None:
+					self.sendReply(trigger, "Didn't find any forecast information!")
+					return
 				chunks.append(data['forecast'])
 			
-			
+			# And spit it out
 			if chunks == []:
 				self.sendReply(trigger, "Weather format is broken.")
 			else:
