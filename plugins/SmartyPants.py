@@ -815,9 +815,8 @@ class SmartyPants(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone just asked for our status
-	def __Fact_Status(self, trigger, results):
-		row = results[0][0]
-		num = row['total']
+	def __Fact_Status(self, trigger, result):
+		num = result[0]['total']
 		replytext = "Since %s, there have been \02%d\02 requests, \02%d\02 modifications, \02%d\02 new factoids, \02%d\02 deletions, and \02%d\02 dunnos. I currently reference \02%d\02 factoids." % (self.__start_time, self.__requests, self.__modifys, self.__sets, self.__dels, self.__dunnos, num)
 		self.sendReply(trigger, replytext)
 	
