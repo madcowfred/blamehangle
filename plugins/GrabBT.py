@@ -111,7 +111,7 @@ class GrabBT(Plugin):
 		else:
 			self.sendReply(trigger, "That URL is not allowed.")
 			
-			tolog = "%s (%s@%s) on %s/%s tried to get URL: %s" % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target, url)
+			tolog = "%s (%s@%s) on %s/%s tried to grab torrent: %s" % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target, url)
 			self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
@@ -156,7 +156,7 @@ class GrabBT(Plugin):
 			self.sendReply(trigger, "That doesn't seem to point to a torrent!")
 			return
 		
-		torrentpath = os.path.join(self._save_dir, torrentfile)
+		torrentpath = os.path.join(self._torrent_dir, torrentfile)
 		
 		# Don't overwrite
 		if os.path.exists(torrentpath):
