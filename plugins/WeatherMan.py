@@ -12,33 +12,49 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-WEATHER_WEATHER = 'WEATHER_WEATHER'
-
-WEATHER_RE = re.compile('^weather\s+(?P<location>.+)$')
-WEATHER_HELP = '\02weather\02 <location> : Retrieve weather information for location'
 WEATHER_URL = "http://search.weather.yahoo.com/search/weather2?p=%s"
+
+WEATHER_SHORT = 'WEATHER_SHORT'
+SHORT_RE = re.compile('^weather\s+(?P<location>.+)$')
+SHORT_HELP = '\02weather\02 <location> : Retrieve weather information for location (short format)'
+
+WEATHER_LONG = 'WEATHER_LONG'
+LONG_RE = re.compile('^weatherlong\s+(?P<location>.+)$')
+LONG_HELP = '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'
 
 # ---------------------------------------------------------------------------
 
 class WeatherMan(Plugin):
+	def setup(self):
+		self.rehash()
+	
+	def rehash(self):
+		self.__Short_Parts = self.Config.get('WeatherMan', 'short').split()
+		self.__Long_Parts = self.Config.get('WeatherMan', 'long').split()
+	
+	# -----------------------------------------------------------------------
+	
 	def _message_PLUGIN_REGISTER(self, message):
-		weather_dir = PluginTextEvent(WEATHER_WEATHER, IRCT_PUBLIC_D, WEATHER_RE)
-		weather_msg = PluginTextEvent(WEATHER_WEATHER, IRCT_MSG, WEATHER_RE)
-		self.register(weather_dir, weather_msg)
+		short_dir = PluginTextEvent(WEATHER_SHORT, IRCT_PUBLIC_D, SHORT_RE)
+		short_msg = PluginTextEvent(WEATHER_SHORT, IRCT_MSG, SHORT_RE)
+		long_dir = PluginTextEvent(WEATHER_LONG, IRCT_PUBLIC_D, LONG_RE)
+		long_msg = PluginTextEvent(WEATHER_LONG, IRCT_MSG, LONG_RE)
+		self.register(short_dir, short_msg, long_dir, long_msg)
 		
-		self.setHelp('weather', 'weather', WEATHER_HELP)
+		self.setHelp('weather', 'weather', SHORT_HELP)
+		self.setHelp('weather', 'weatherlong', LONG_HELP)
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		
-		if trigger.name == WEATHER_WEATHER:
+		if trigger.name in (WEATHER_SHORT, WEATHER_LONG):
 			url = WEATHER_URL % quote(trigger.match.group('location'))
 			self.urlRequest(trigger, url)
 	
 	def _message_REPLY_URL(self, message):
 		trigger, page_text = message.data
 		
-		if trigger.name == WEATHER_WEATHER:
+		if trigger.name in (WEATHER_SHORT, WEATHER_LONG):
 			# No results
 			if page_text.find('No match found') >= 0:
 				replytext = "No matches found for '%s'" % trigger.match.group('location')
@@ -60,7 +76,7 @@ class WeatherMan(Plugin):
 			# Only one result, hopefully?
 			else:
 				location = None
-				chunks = []
+				data = {}
 				
 				
 				# Find the chunk that tells us where we are
@@ -89,15 +105,15 @@ class WeatherMan(Plugin):
 						continue
 					elif re.match(r'^\d+$', line):
 						chunk = 'Currently: %s' % (CandF(line))
-						chunks.append(chunk)
+						data['current'] = chunk
 					elif line.startswith('Hi:'):
 						chunk = 'High: %s' % (CandF(line[3:]))
-						chunks.append(chunk)
+						data['high'] = chunk
 					elif line.startswith('Lo:'):
 						chunk = 'Low: %s' % (CandF(line[3:]))
-						chunks.append(chunk)
+						data['low'] = chunk
 					else:
-						chunks.insert(0, line)
+						data['conditions'] = line
 				
 				
 				# Find some more weather data
@@ -105,23 +121,23 @@ class WeatherMan(Plugin):
 				if lines != []:
 					# Extract!
 					chunk = 'Feels Like: %s' % (CandF(lines[2]))
-					chunks.append(chunk)
+					data['feels'] = chunk
 					
 					windbits = lines[-9].split()
 					if len(windbits) == 3:
 						chunk = 'Wind: %s %s kph (%s mph)' % (windbits[0], ToKilometers(windbits[1]), windbits[1])
 					else:
 						chunk = 'Wind: %s' % (windbits[0])
-					chunks.append(chunk)
+					data['wind'] = chunk
 					
 					chunk = 'Humidity: %s' % (lines[-7])
-					chunks.append(chunk)
+					data['humidity'] = chunk
 					chunk = 'Visibility: %s' % (lines[-3])
-					chunks.append(chunk)
+					data['visibility'] = chunk
 					chunk = 'Sunrise: %s' % (lines[-5])
-					chunks.append(chunk)
+					data['sunrise'] = chunk
 					chunk = 'Sunset: %s' % (lines[-1])
-					chunks.append(chunk)
+					data['sunset'] = chunk
 				
 				
 				#if broken:
@@ -129,8 +145,24 @@ class WeatherMan(Plugin):
 				
 				#else:
 				
-				replytext = '%s %s' % (location, ', '.join(chunks))
-				self.sendReply(trigger, replytext)
+				chunks = []
+				
+				if trigger.name == WEATHER_SHORT:
+					for part in self.__Short_Parts:
+						if data.has_key(part):
+							chunks.append(data[part])
+				
+				elif trigger.name == WEATHER_LONG:
+					for part in self.__Long_Parts:
+						if data.has_key(part):
+							chunks.append(data[part])
+				
+				
+				if chunks == []:
+					self.sendReply(trigger, "Weather format is broken.")
+				else:
+					replytext = '%s %s' % (location, ', '.join(chunks))
+					self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
 # Search through text, finding the text between start and end. Then run
