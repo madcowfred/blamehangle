@@ -257,7 +257,6 @@ class asyncIRC(buffered_dispatcher):
 		
 		# Possibly bind our socket to our vhost
 		if vhost:
-			print 'vhost: %r' % vhost
 			try:
 				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
 				family, socktype, proto, canonname, sa = res

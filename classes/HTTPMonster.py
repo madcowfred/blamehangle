@@ -118,8 +118,6 @@ class HTTPMonster(Child):
 			return
 		
 		# If we have a free connection, start it now. If not, queue it.
-		print hosts
-		
 		if self.active < self.max_conns:
 			async_http(self, hosts, origmsg, chunks, {})
 		else:
