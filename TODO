@@ -1,7 +1,6 @@
 critical:
 	* HTTPMonster - work on making the page fetching not block the entire
 	                app (anyone) (is this still blocking?)
-	* SmartyPants - is there any more to add? (anyone)
 	* News - think up a replacement for HTMLParser, since it seems to
 	         suck -- I may have fixed this, leave it be and see if it 
 			 breaks -- More HTMLParser woe, google news sometimes generates
@@ -10,10 +9,21 @@ critical:
 
 important:
 	* Port the global ignore list from MCO? (fred)
+	* SmartyPants - is there any more to add? (anyone)
 	* convert db.dump once the bot is ready for it, and we have a newer dump
-	  (both + dene)
+	  (both + dene) -- do we really need a newer dump? it's not like people
+	  have been setting new stuff on efnet
 	* Go through plugins and move hardcoded stuff out of them into files in
 	  the configs dir as appropriate
+
+not important but more than whatever:
+	* Config re-loading (via a HUP signal?) (anyone)
+	* admin interface? (fred, port from MCO?)
+	* Fix Karma so that it doesn't use KARMA_MOD hackery and instead uses the
+	  "if typ == types.TupleType:" form like in SmartyPants (anyone)
+	* spell plugin (anyone)
+	* dict plugin (anyone)
+	* calculator plugin? (anyone)
 
 whatever:
 	* testing! :) (anyone)
