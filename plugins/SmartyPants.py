@@ -461,7 +461,7 @@ class SmartyPants(Plugin):
 			# This factoid wasn't a <null>, so update stats and generate the
 			# reply
 			self.__requests += 1
-
+			
 			# XXX This is devinfo legacy, I'm not really sure I want to do this
 			# but the factoid database will have a bunch of factoids that
 			# expect this behaviour
@@ -549,7 +549,7 @@ class SmartyPants(Plugin):
 					return
 				replytext = self.__Random(OK)
 			self.sendReply(trigger, replytext)
-
+	
 	# -----------------------------------------------------------------------
 	# A user just tried to update a factoid by replacing the existing
 	# definition with a new one
@@ -558,12 +558,12 @@ class SmartyPants(Plugin):
 		typ = type(results[0])
 		name = trigger.match.group('name')
 		value = trigger.match.group('value')
-
+		
 		if len(value) > MAX_FACT_VAL_LENGTH:
 			replytext = "that's too long"
 			self.sendReply(trigger, replytext)
 			return
-
+		
 		# SELECT reply
 		if typ == types.TupleType:
 			if results == [()]:
@@ -574,7 +574,7 @@ class SmartyPants(Plugin):
 				created_time = int(time.time())
 				query = (SET_QUERY, name, value, author_nick, author_host, created_time)
 				self.dbQuery(trigger, query)
-
+			
 			else:
 				# This factoid was in our db
 				row = results[0][0]

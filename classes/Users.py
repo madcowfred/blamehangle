@@ -68,15 +68,14 @@ class HangleUserList:
 						hostmasks = parent.Config.get(ini_section, option).lower().split()
 						flags = parent.Config.get(ini_section, nick + ".flags").lower().split()
 						nick = nick.lower()
-	
+						
 						user = HangleUser(nick, hostmasks, flags)
 						
 						tolog = "<%s>: %s" % (ini_section, user)
 						parent.putlog(LOG_DEBUG, tolog)
-	
+						
 						self.__users[user.nick] = user
 
-						
 # ---------------------------------------------------------------------------
 
 # This class wraps up everything we need to know about a user's permissions
@@ -94,7 +93,7 @@ class HangleUser:
 			mask = mask.replace('*', '.*?')
 			
 			self.hostmasks.append(hostmask)
-			self.regexps.append(re.compile(mask))
+			self.regexps.append(re.compile(mask, re.I))
 	
 	def __str__(self):
 		text = "%s %s %s" % (self.nick, self.hostmasks, self.flags)
