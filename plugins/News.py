@@ -171,7 +171,7 @@ class News(Plugin):
 			parser.feed(page_text)
 			parser.close()
 
-		except HTMLParseError e:
+		except HTMLParseError, e:
 			tolog = "Error parsing ananova - %s" % e
 			self.putlog(LOG_WARNING, tolog)
 		
