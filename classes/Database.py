@@ -125,6 +125,7 @@ class MySQL(DatabaseWrapper):
 	def _manglesql(self, sql):
 		# MySQL uses RAND() instead of RANDOM(), grr
 		if sql.startswith('SELECT'):
+			sql = sql.replace(' ILIKE ', ' LIKE ')
 			sql = sql.replace('RANDOM()', 'RAND()')
 		
 		return sql
