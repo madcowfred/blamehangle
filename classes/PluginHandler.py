@@ -126,19 +126,6 @@ class PluginHandler(Child):
 		
 		if isinstance(reply.trigger, PluginTimedEvent):
 			self.privmsg(reply.trigger.targets, None, reply.replytext)
-			#for name in reply.trigger.targets:
-			#	self.sendMessage('ChatterGizmo', REQ_CONN, [name, (name, reply)])
-			
-			#for network, targets in reply.trigger.targets.items():
-			#	for target in targets:
-			#		self.privmsg(network, target, reply.replytext)
-			
-			#def _message_REPLY_CONN(self, message):
-			#	conn, (name, reply) = message.data
-			
-			#	if conn:
-			#		for target in reply.trigger.targets[name]:
-			#			self.privmsg(conn, target, reply.replytext)
 		
 		elif isinstance(reply.trigger, PluginTextTrigger):
 			nick = reply.trigger.userinfo.nick
