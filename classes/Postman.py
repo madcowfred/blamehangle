@@ -54,10 +54,11 @@ class Postman:
 		
 		plugins = self.__Children['PluginHandler'].pluginList()
 		
-		for cls in plugins:
-			tolog = "Starting plugin object '%s'" % cls.__name__
+		for clsname in plugins:
+			tolog = "Starting plugin object '%s'" % clsname
 			self.__Log(LOG_DEBUG, tolog)
 			
+			cls = globals()[clsname]
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
 	
@@ -124,8 +125,8 @@ class Postman:
 				# Check for messages, then run the main loops
 				for child in self.__Children.values():
 					child.handleMessages()
-					
-					child.run_always()
+					if hasattr(child, 'run_always'):
+						child.run_always()
 				
 				
 				# Do things that don't need to be done all that often
@@ -145,7 +146,8 @@ class Postman:
 					
 					# Run anything our children want done occasionally
 					for child in self.__Children.values():
-						child.run_sometimes(currtime)
+						if hasattr(child, 'run_sometimes'):
+							child.run_sometimes(currtime)
 				
 				
 				# Sleep for a while

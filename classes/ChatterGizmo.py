@@ -82,6 +82,8 @@ class ChatterGizmo(Child):
 	
 	def privmsg(self, conn, nick, text):
 		if self.Conns[conn].status == STATUS_CONNECTED:
+			tolog = "Saying \"%s\" to %s" % (text, nick)
+			self.putlog(LOG_DEBUG, tolog)
 			conn.privmsg(nick, text)
 	
 	def notice(self, conn, nick, text):
@@ -96,6 +98,7 @@ class ChatterGizmo(Child):
 	
 	def _handle_welcome(self, conn, event):
 		tolog = 'Connected to %s:%d' % self.Conns[conn].server
+		self.Conns[conn].status = STATUS_CONNECTED
 		self.connlog(conn, LOG_ALWAYS, tolog)
 		
 		# Start the stoned timer thing
@@ -276,3 +279,9 @@ class ChatterGizmo(Child):
 		else:
 			data = [conn, IRCT_CTCP, userinfo, None, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
+	
+	# This should include some sort of flood control or error checking or
+	# something. This is the quick hack version so I can see if shit is working
+	def _message_REQ_PRIVMSG(self, message):
+		conn, target, text = message.data
+		self.privmsg(conn, target, text)

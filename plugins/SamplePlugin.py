@@ -14,16 +14,6 @@ class SamplePlugin(Plugin):
 	A sample template for Blamehangle plugins
 	"""
 
-	SAMPLE_TOKEN1 = "SAMPLE_TOKEN1"
-	SAMPLE_TOKEN2 = "SAMPLE_TOKEN2"
-	SAMPLE_TOKEN3 = "SAMPLE_TOKEN3"
-
-	SAMPLE_RE1 = re.compile("abcdef$")
-	SAMPLE_RE2 = re.compile("zzz (?P<some_name>.+)$")
-
-	SAMPLE_TOKEN3_TARGETS = {'network1': ['#channel1','#channel2'],
-							'network2': ['#otherchannel', 'someguysnick']
-							}
 	
 	#------------------------------------------------------------------------
 
@@ -33,8 +23,16 @@ class SamplePlugin(Plugin):
 	def setup(self):
 		# If you don't have anything you need to do during initialisation
 		# for your plugin you can simply omit this method declaration entirely
-		# instead of passing, it is shown here just for completeness' sake.
-		pass
+		self.SAMPLE_TOKEN1 = "SAMPLE_TOKEN1"
+		self.SAMPLE_TOKEN2 = "SAMPLE_TOKEN2"
+		self.SAMPLE_TOKEN3 = "SAMPLE_TOKEN3"
+
+		self.SAMPLE_RE1 = re.compile("abcdef$")
+		self.SAMPLE_RE2 = re.compile("zzz (?P<some_name>.+)$")
+
+		self.SAMPLE_TOKEN3_TARGETS = {
+			'GoonNET': ['#grax','zharradan']
+			}
 	
 	#------------------------------------------------------------------------
 
@@ -90,11 +88,14 @@ class SamplePlugin(Plugin):
 	def _message_PLUGIN_REGISTER(self, message):
 		# the message from PluginHandler -> our plugin does not contain any
 		# data, so we don't need to worry about the contents of it here.
+		#
+		# XXX: this won't work until PluginHandler can turn strings into conns.
+		# .. this will cause a blamehangle crash due to the timed event.
 		reply = [
-		(IRCT_MSG, SAMPLE_RE1, [0], SAMPLE_TOKEN1),
-		(IRCT_PUBLIC, SAMPLE_RE2, ['some_name'], SAMPLE_TOKEN2)
-		(IRCT_TIMED, 900, SAMPLE_TOKEN3_TARGETS, SAMPLE_TOKEN3)
-		]
+			(IRCT_MSG, self.SAMPLE_RE1, [0], self.SAMPLE_TOKEN1),
+			(IRCT_PUBLIC, self.SAMPLE_RE2, ['some_name'], self.SAMPLE_TOKEN2),
+			(IRCT_TIMED, 15, self.SAMPLE_TOKEN3_TARGETS, self.SAMPLE_TOKEN3)
+			]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
 	#------------------------------------------------------------------------
@@ -127,11 +128,11 @@ class SamplePlugin(Plugin):
 		[text, token, conn, IRCtype, target, userinfo] = message.data
 
 		# Check which event this trigger came from
-		if token == SAMPLE_TOKEN1:
+		if token == self.SAMPLE_TOKEN1:
 			self.__do_event1(conn, IRCtype, target, userinfo)
-		elif token == SAMPLE_TOKEN2:
+		elif token == self.SAMPLE_TOKEN2:
 			self.__do_event2(text, conn, IRCtype, target, userinfo)
-		elif token == SAMPLE_TOKEN3:
+		elif token == self.SAMPLE_TOKEN3:
 			self.__do_event3(text, token, IRCtype)
 		else:
 			# This should never happen, we received an event that we didn't
@@ -172,7 +173,7 @@ class SamplePlugin(Plugin):
 	def __do_event2(self, text, conn, IRCtype, target, userinfo):
 		# We only asked for one group from the regexp match, so text will be
 		# a singleton list
-		data = [text]
+		[data] = text
 		replytext = "If this were a more complex plugin, I'd have something to say about %s" % data
 		reply = [replytext, conn, IRCtype, target, userinfo]
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
@@ -181,7 +182,7 @@ class SamplePlugin(Plugin):
 
 	# Handle a SAMPLE_TOKEN3 event, which is a time-delayd trigger
 	def __do_event3(self, targets, token, IRCtype):
-		replytext = "Wow, 900 seconds have passed"
+		replytext = "Wow, 15 seconds have passed"
 		reply = [replytext, None, IRCtype, targets, None]
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 

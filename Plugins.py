@@ -10,5 +10,6 @@
 # Put your plugins here
 #----------------------------------------------------------------------------#
 
+from plugins.SP2 import SamplePlugin
 #from plugins.Karma import Karma
 

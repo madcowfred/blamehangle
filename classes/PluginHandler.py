@@ -23,7 +23,7 @@ class PluginHandler(Child):
 	"""
 	
 	def setup(self):
-		self.__Plugins = self.pluginList()
+		self.Plugins = self.pluginList()
 		self.__PUBLIC_Events = {}
 		self.__PUBLIC_D_Events = {}
 		self.__MSG_Events = {}
@@ -36,7 +36,7 @@ class PluginHandler(Child):
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
 	def run_once(self):
-		for name in self.__Plugins:
+		for name in self.Plugins:
 			self.sendMessage(name, PLUGIN_REGISTER, [])
 	
 	#------------------------------------------------------------------------
@@ -48,7 +48,7 @@ class PluginHandler(Child):
 			delay, last, targets, plugin = self.__TIMED_Events[token]
 			# Is it time to trigger this TIMED event?
 			if currtime - last >= delay:
-				message = [targets, token, None, TIMED, None, None]
+				message = [targets, token, None, IRCT_TIMED, None, None]
 				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
 				# Update the last trigger time
 				self.__TIMED_Events[token] = (delay, currtime, targets, plugin)
@@ -133,19 +133,19 @@ class PluginHandler(Child):
 		if IRCtype == IRCT_PUBLIC:
 			# We are sending back to public, prepend the relevant nick
 			tosend = "%s: %s" % (userinfo.nick, text)
-			self.privmsg(tosend, conn, target)
+			self.privmsg(conn, target, tosend)
 		
 		elif IRCtype == IRCT_TIMED:
 			# We need to handle TIMED events differently, since they have a
 			# dictionary describing the intended targets for the message on
 			# each network
-			for network_name in targets:
+			for network_name in target:
 				conn = self.__getConn(network_name)
 				for target in targets[network_name]:
-					self.privmsg(text, conn, target)
+					self.privmsg(conn, target, text)
 		else:
 			# all other types are responded to with a /msg
-			self.privmsg(text, conn, userinfo.nick)
+			self.privmsg(conn, userinfo.nick, text)
 	
 	#------------------------------------------------------------------------		
 	def __getRelevantStore(self, type):
