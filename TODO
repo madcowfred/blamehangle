@@ -4,7 +4,9 @@ critical:
 	* SmartyPants (anyone)
 	* News - think up a replacement for HTMLParser, since it seems to
 	         suck -- I may have fixed this, leave it be and see if it 
-			 breaks (anyone)
+			 breaks -- More HTMLParser woe, google news sometimes generates
+			 broken html.. it wraps a href up in ' ' even if that href contains
+			 ' in its text. (anyone)
 
 important:
 	* Port the global ignore list from MCO? (fred)
