@@ -20,6 +20,13 @@ RE_STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,
 # regexp to see if people are addressing someone
 RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
 
+# for NAMES reply parsing
+USER_MODES = {
+	'+': 'v',
+	'%': 'h',
+	'@': 'o',
+}
+
 # ---------------------------------------------------------------------------
 
 class ChatterGizmo(Child):
@@ -362,10 +369,11 @@ class ChatterGizmo(Child):
 		
 		# Add each nick to the channel user list
 		for nick in event.arguments[2].split():
-			if nick[0] in '@+%':
-				nick = nick[1:]
-			
-			self.Conns[connid].users.joined(chan, nick)
+			if nick[0] in USER_MODES:
+				self.Conns[connid].users.joined(chan, nick[1:])
+				self.Conns[connid].users.add_mode(chan, '+', USER_MODES[nick[0]])
+			else:
+				self.Conns[connid].users.joined(chan, nick)
 	
 	# -----------------------------------------------------------------------
 	# Our nickname is in use!
