@@ -12,6 +12,8 @@ import traceback
 from Queue import *
 from exceptions import SystemExit
 
+import gc
+
 # ---------------------------------------------------------------------------
 
 from classes.Common import *
@@ -189,6 +191,8 @@ class Postman:
 				sometimes_counter += 1
 				if sometimes_counter == 10:
 					sometimes_counter = 0
+					
+					gc.collect()
 					
 					currtime = _time()
 					

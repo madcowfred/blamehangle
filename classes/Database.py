@@ -7,6 +7,7 @@
 
 import os
 import sys
+from Queue import *
 
 from classes.Common import *
 from classes.Constants import *
@@ -75,46 +76,61 @@ class Database:
 # parent  -- something with an outQueue attribute, so we can send
 #            a reply
 # db      -- a pre-made Database object
-# message -- a message object with the data we need inside
+# myindex -- an index into parent.threads for the item describing
+#            this thread
 # --------------------------------------------------------------
-def DataThread(parent, db, message):
-	results = []
+def DataThread(parent, db, myindex):
+	_sleep = time.sleep
+
+	while 1:
+		# check if we have been asked to die
+		if parent.threads[myindex][1]:
+			return
 	
-	toreturn, queries = message.data
-	
-	for chunk in queries:
-		query = chunk[0]
-		# If there's any args, use them
-		if len(chunk) >= 2:
-			if type(chunk[1]) in (types.ListType, types.TupleType):
-				args = chunk[1]
-			else:
-				args = chunk[1:]
-		# No args!
-		else:
-			args = []
-		
-		#tolog = 'Query: %s, Args: %s' % (query, args)
-		#parent.putlog(LOG_DEBUG, tolog)
-		
+		# check if there is a pending query for us to action
 		try:
-			result = db.query(query, *args)
+			message = parent.Requests.get_nowait()
+	
+		# if not, zzzzzz
+		except Empty:
+			_sleep(0.25)
 		
-		except OperationalError, msg:
-			tolog = 'Database error: %s' % msg[1]
-			parent.putlog(LOG_ALWAYS, tolog)
-			
-			results.append(())
-			
-			db.disconnect()
-		
+		# we have a query
 		else:
-			results.append(result)
-	
-	data = [toreturn, results]
-	
-	message = Message('DataMonkey', message.source, REPLY_QUERY, data)
-	parent.outQueue.put(message)
-	
-	# Make our db object usable again
-	parent.DBs.append(db)
+			parent.putlog(LOG_DEBUG, 'Actioning a request')
+			results = []
+			toreturn, queries = message.data
+			
+			for chunk in queries:
+				query = chunk[0]
+				# If there's any args, use them
+				if len(chunk) >= 2:
+					if type(chunk[1]) in (types.ListType, types.TupleType):
+						args = chunk[1]
+					else:
+						args = chunk[1:]
+				# No args!
+				else:
+					args = []
+				
+				#tolog = 'Query: %s, Args: %s' % (query, args)
+				#parent.putlog(LOG_DEBUG, tolog)
+				
+				try:
+					result = db.query(query, *args)
+				
+				except OperationalError, msg:
+					tolog = 'Database error: %s' % msg[1]
+					parent.putlog(LOG_ALWAYS, tolog)
+					
+					results.append(())
+					
+					db.disconnect()
+				
+				else:
+					results.append(result)
+			
+			data = [toreturn, results]
+			
+			message = Message('DataMonkey', message.source, REPLY_QUERY, data)
+			parent.outQueue.put(message)

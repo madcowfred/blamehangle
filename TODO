@@ -1,27 +1,21 @@
 critical:
-	* News - leave testbot running for ages to make sure that the news memory
-	  leak bloating has been fixed, and that HTMLParser is no longer causing
-	  any pain.
+	* Testing to make sure the new threading code for HTTPMonster and
+	  DataMonkey actually works
 
 important:
-	* SmartyPants - is there any more to add? (anyone)
 	* convert db.dump once the bot is ready for it, and we have a newer dump
 	  (both + dene) -- do we really need a newer dump? it's not like people
 	  have been setting new stuff on efnet
-	* Go through plugins and move hardcoded stuff out of them into files in
-	  the configs dir as appropriate -- I think this is mostly done
 
 not important but more than whatever:
 	* stuff from sey's emails (anyone)
-	* admin interface? (fred, port from MCO?) -- this probably isn't needed
-	* Fix Karma so that it doesn't use KARMA_MOD hackery and instead uses the
-	  "if typ == types.TupleType:" form like in SmartyPants (anyone)
-	* dict plugin (fred!)
 	* Mobygames/HOTU searches (fred?)
-	* Signal handler on SIGHUP to trigger a config rehash as well. (anyone)
 	* make Children.urlQuery(), much like Children.dbQuery() .. and go through
-	* everything and change all the sendMessage('HTTPMonster, blahblah) things
+	  everything and change all the sendMessage('HTTPMonster, blahblah) things
 	  to use urlQuery() (anyone)
+	* Do something about a <reply> or <action> in the middle of a factoid,
+	  maybe? (anyone)
+	* dict plugin (anyone)
 
 whatever:
 	* other plugins from Pinky that we care about (stuff like the quotes can
@@ -29,4 +23,3 @@ whatever:
 	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
 	* Speaking of random text spammer, random factoid spam? (anyone)
 	* testing! :) (anyone)
-	* Come up with more ideas for plugins (anyone)

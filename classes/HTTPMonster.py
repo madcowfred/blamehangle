@@ -11,10 +11,10 @@
 
 import time
 
-from Queue import Queue
+from Queue import *
 from select import select
-from thread import start_new_thread
-from threading import BoundedSemaphore
+#from thread import start_new_thread
+from threading import *
 # we have our own version so we can mess with the user-agent string
 from classes.urllib2 import urlopen
 
@@ -42,7 +42,7 @@ class HTTPMonster(Child):
 			# Default to Mozilla running in windows
 			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
 		
-		# Set up our semaphore
+		# Set up our threads
 		if self.Config.has_option('HTTP', 'connections'):
 			conns = self.Config.getint('HTTP', 'connections')
 			if conns < 1:
@@ -51,77 +51,112 @@ class HTTPMonster(Child):
 				conns = 10
 		else:
 			conns = 2
-		self.sem = BoundedSemaphore(conns)
+			
+		self.urls = Queue(0)
+		self.threads = []
+		for i in range(conns):
+			the_thread = Thread(target=URLThread, args=(self,i))
+			self.threads.append([the_thread,0])
+			the_thread.start()
+
+			tolog = "Started URL thread: %s" % the_thread.getName()
+			self.putlog(LOG_DEBUG, tolog)
+	
+	def rehash(self):
+		self.__stop_threads()
+		self.setup()
+	
+	def shutdown(self, message):
+		self.__stop_threads()
+	
+	def __stop_threads(self):
+		_sleep = time.sleep
+		for i in range(len(self.threads)):
+			self.threads[i][1] = 1
+
+		# wait until all our threads have exited
+		while [t for t,s in self.threads if t.isAlive()]:
+			_sleep(0.25)
+
+		tolog = "All URL threads shutdown"
+		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
-		start_new_thread(URLThread, (self, message))
+		self.urls.put(message)
+		#start_new_thread(URLThread, (self, message))
 
 # ---------------------------------------------------------------------------
 
-def URLThread(parent, message):
-	url, returnme = message.data
-	
-	tolog = 'Spawning thread to fetch URL: %s' % url
-	parent.putlog(LOG_DEBUG, tolog)
-	
-	# Acquire the semaphore. This will block if too many threads are already
-	# active.
-	parent.sem.acquire(1)
-	
+def URLThread(parent, myindex):
 	_sleep = time.sleep
 	_time = time.time
-	
-	the_page = None
-	last_read = _time()
-	
-	try:
-		# get the page
-		the_page = urlopen(url, parent.user_agent)
-		
-		pagetext = ''
-		while 1:
-			can_read = select([the_page], [], [], 1)[0]
-			if can_read:
-				data = the_page.read(1024)
-				if len(data) == 0:
-					break
-				pagetext += data
-				
-				last_read = _time()
-				
-				_sleep(0.05)
+
+	while 1:
+		# check if we have been asked to die
+		if parent.threads[myindex][1]:
+			return
+
+		# check if there is a url waiting for us to go and get
+		try:
+			message = parent.urls.get_nowait()
+
+		# if not, take a nap
+		except Empty:
+			_sleep(0.25)
+
+		# we have something to do
+		else:
+			url, returnme = message.data
 			
-			elif (_time() - last_read >= 30):
-				raise Exception,' connection timed out'
-	
-	except Exception, why:
-		# something borked
-		tolog = "Error while trying to fetch url: %s - %s" % (url, why)
-		parent.putlog(LOG_ALWAYS, tolog)
-	
-	else:
-		# we have the page, mangle the HTML so it's no longer dodgy
-		m = dodgy_html_check(pagetext)
-		while m:
-			pre = pagetext[:m.start()]
-			post = pagetext[m.end():]
-			start, end = m.span('href')
-			fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
-			pagetext = pre + 'href=' + fixed + post
-			m = dodgy_html_check(pagetext)
+			tolog = 'fetching URL: %s' % url
+			parent.putlog(LOG_DEBUG, tolog)
+			
+			last_read = _time()
+			
+			try:
+				# get the page
+				the_page = urlopen(url, parent.user_agent)
+				
+				pagetext = ''
+				while 1:
+					can_read = select([the_page], [], [], 1)[0]
+					if can_read:
+						data = the_page.read(1024)
+						if len(data) == 0:
+							break
+						pagetext += data
+						
+						last_read = _time()
+						
+						_sleep(0.05)
+					
+					elif (_time() - last_read >= 30):
+						raise Exception,' connection timed out'
 		
-		tolog = 'Finished fetching URL: %s' % url
-		parent.putlog(LOG_DEBUG, tolog)
-		
-		data = [pagetext, returnme]
-		message = Message('HTTPMonster', message.source, REPLY_URL, data)
-		parent.outQueue.put(message)
-	
-	# Ensure the page is closed
-	if the_page:
-		the_page.close()
-	
-	# Release the semaphore
-	parent.sem.release()
+				the_page.close()
+			
+			except Exception, why:
+				# something borked
+				tolog = "Error while trying to fetch url: %s - %s" % (url, why)
+				parent.putlog(LOG_ALWAYS, tolog)
+			
+			else:
+				# we have the page
+				m = dodgy_html_check(pagetext)
+				while m:
+					pre = pagetext[:m.start()]
+					post = pagetext[m.end():]
+					start, end = m.span('href')
+					fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
+					pagetext = pre + 'href=' + fixed + post
+					m = dodgy_html_check(pagetext)
+				
+				tolog = 'Finished fetching URL: %s' % url
+				parent.putlog(LOG_DEBUG, tolog)
+				
+				data = [pagetext, returnme]
+				message = Message('HTTPMonster', message.source, REPLY_URL, data)
+				parent.outQueue.put(message)
+

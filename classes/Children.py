@@ -25,8 +25,8 @@ class Child:
 		self.stopnow = 0
 		
 		# Rehash (usually read some Config items) if we have to
-		if hasattr(self, 'rehash'):
-			self.rehash()
+		#if hasattr(self, 'rehash'):
+		#	self.rehash()
 		
 		# Run our specific setup stuff if we have to
 		if hasattr(self, 'setup'):
@@ -59,10 +59,11 @@ class Child:
 	# -----------------------------------------------------------------------
 	def _message_REQ_REHASH(self, message):
 		if hasattr(self, 'rehash'):
-			self.rehash()
-			
 			tolog = '%s rehashing' % self.__name
 			self.putlog(LOG_DEBUG, tolog)
+
+			self.rehash()
+			
 	
 	# -----------------------------------------------------------------------
 	# Default REQ_SHUTDOWN handler

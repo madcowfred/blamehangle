@@ -91,6 +91,7 @@ class MoneyMangler(Plugin):
 
 			try:
 				parser.feed(page_text)
+				parser.close()
 			except:
 				replytext = "Error parsing the html"
 				self.sendReply(trigger, replytext)

@@ -199,6 +199,7 @@ class MapQuest(Plugin):
 
 
 		self.sendReply(trigger, replytext)
+		s.close()
 
 	# -----------------------------------------------------------------------
 	

@@ -246,6 +246,8 @@ class Airline(Plugin):
 		if not found:
 			replytext = "Error finding flight"
 			self.sendReply(trigger, replytext)
+
+		s.close()
 	
 	# -----------------------------------------------------------------------
 

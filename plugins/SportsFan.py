@@ -111,6 +111,7 @@ class SportsFan(Plugin):
 					replytext += "%s: %s - " % (home, home_score)
 					replytext += "%s: %s" % (away, away_score)
 					self.sendReply(trigger, replytext)
+					s.close()
 					return
 			
 			# Keep looping, looking for games
@@ -120,6 +121,7 @@ class SportsFan(Plugin):
 		# was looking for
 		replytext = "Couldn't find a %s game today for '%s'" % (league, team)
 		self.sendReply(trigger, replytext)
+		s.close()
 
 
 	# -----------------------------------------------------------------------

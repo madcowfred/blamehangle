@@ -153,6 +153,8 @@ class WordStuff(Plugin):
 			# we found nothing!
 			replytext = none_reply % word
 			self.sendReply(trigger, replytext)
+		
+		s.close()
 
 
 	# -----------------------------------------------------------------------
