@@ -9,7 +9,7 @@ import signal
 import sys
 import time
 import traceback
-from Queue import *
+#from Queue import *
 from exceptions import SystemExit
 
 # ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@ class Postman:
 		self.__Log_Rotate()
 		
 		# Initialise the global message queue
-		self.inQueue = Queue(0)
+		self.inQueue = []
 		
 		# Load all the configs supplied for plugins
 		self.__Load_Configs()
@@ -132,8 +132,10 @@ class Postman:
 		
 		while 1:
 			try:
-				if not self.inQueue.empty():
-					message = self.inQueue.get(0)
+				#if not self.inQueue.empty():
+				if self.inQueue:
+					#message = self.inQueue.get(0)
+					message = self.inQueue.pop(0)
 					
 					# If it's targeted at us, process it
 					if message.targets == ['Postman']:
@@ -163,13 +165,13 @@ class Postman:
 						# If it's a global message, send it to everyone
 						if message.targetstring == 'ALL':
 							for child in self.__Children.values():
-								child.inQueue.put(message)
+								child.inQueue.append(message)
 						
 						# If it's not, send it to each thread listed in targets
 						else:
 							for name in message.targets:
 								if name in self.__Children:
-									self.__Children[name].inQueue.put(message)
+									self.__Children[name].inQueue.append(message)
 								else:
 									tolog = "invalid target for Message ('%s') : %s" % (name, message)
 									self.__Log(LOG_WARNING, tolog)
@@ -254,14 +256,14 @@ class Postman:
 		if message.targets:
 			for name in message.targets:
 				if name in self.__Children:
-					self.__Children[name].inQueue.put(message)
+					self.__Children[name].inQueue.append(message)
 				else:
 					tolog = "WARNING: invalid target for Message ('%s')" % name
 					self.__Log(LOG_ALWAYS, tolog)
 		
 		else:
 			for child in self.__Children.values():
-				child.inQueue.put(message)
+				child.inQueue.append(message)
 	
 	#------------------------------------------------------------------------
 	# Initiates a shutdown of our children, and ourselves.
@@ -284,7 +286,7 @@ class Postman:
 		alive = [name for name, child in self.__Children.items() if child.stopnow == 0]
 		
 		# If our children are asleep, and we have no messages, die
-		if not alive and self.inQueue.empty():
+		if not alive and not self.inQueue:
 			self.__Log(LOG_ALWAYS, 'Shutdown complete')
 			
 			sys.exit(1)

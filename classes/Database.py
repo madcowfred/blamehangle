@@ -133,4 +133,4 @@ def DataThread(parent, db, myindex):
 			data = [toreturn, results]
 			
 			message = Message('DataMonkey', message.source, REPLY_QUERY, data)
-			parent.outQueue.put(message)
+			parent.outQueue.append(message)

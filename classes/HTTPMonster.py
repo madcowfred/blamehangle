@@ -194,4 +194,4 @@ def URLThread(parent, myindex):
 			
 			data = [returnme, pagetext]
 			message = Message('HTTPMonster', message.source, REPLY_URL, data)
-			parent.outQueue.put(message)
+			parent.outQueue.append(message)

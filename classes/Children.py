@@ -4,7 +4,7 @@
 # This file contains the objects for each 'component' of Blamehangle.
 # ---------------------------------------------------------------------------
 
-from Queue import *
+#from Queue import *
 
 from classes.Common import *
 from classes.Constants import *
@@ -18,7 +18,8 @@ class Child:
 		self.__name = name
 		
 		self.outQueue = outQueue
-		self.inQueue = Queue(0)
+		#self.inQueue = Queue(0)
+		self.inQueue = []
 		self.Config = Config
 		
 		self.stoperror = ''
@@ -37,22 +38,21 @@ class Child:
 	# handle the message.
 	# -----------------------------------------------------------------------
 	def handleMessages(self):
-		if self.stopnow:
+		if not self.inQueue or self.stopnow:
 			return
 		
-		if not self.inQueue.empty():
-			message = self.inQueue.get(0)
-			
-			try:
-				name = '_message_%s' % message.ident
-				method = getattr(self, name)
-			
-			except AttributeError:
-				tolog = 'Unhandled message in %s: %s' % (self.__name, message.ident)
-				self.putlog(LOG_DEBUG, tolog)
-			
-			else:
-				method(message)
+		message = self.inQueue.pop(0)
+		
+		try:
+			name = '_message_%s' % message.ident
+			method = getattr(self, name)
+		
+		except AttributeError:
+			tolog = 'Unhandled message in %s: %s' % (self.__name, message.ident)
+			self.putlog(LOG_DEBUG, tolog)
+		
+		else:
+			method(message)
 	
 	# -----------------------------------------------------------------------
 	# Default REQ_REHASH handler
@@ -83,7 +83,7 @@ class Child:
 	# -----------------------------------------------------------------------
 	def sendMessage(self, *args):
 		message = Message(self.__name, *args)
-		self.outQueue.put(message)
+		self.outQueue.append(message)
 	
 	# -----------------------------------------------------------------------
 	# Functions for a few messages that we use a lot
