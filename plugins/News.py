@@ -419,7 +419,7 @@ class News(Plugin):
 					print '^^STORY_TEXT^^'
 					description = ''
 				else:
-					description = n.group(1).strip()
+					description = m.group(1).strip()
 				
 				data = [title, url, description, time.time()]
 				articles.append(data)
