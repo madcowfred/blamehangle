@@ -3,29 +3,31 @@
 # ---------------------------------------------------------------------------
 # MapQuest.com travel distance checker
 
-# not our local urllib2!
 import re
-import cStringIO
 from urllib import urlencode
 
-from classes.Plugin import *
+from classes.Common import *
 from classes.Constants import *
+from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-MAPQUEST = "MAPQUEST"
-MAPQUEST_HELP = "'\02mapquest\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip>' : Look up the distance and approximate driving time between two places, using MapQuest. USA and Canada only."
-MAPQUEST_RE = re.compile("^ *mapquest (?P<source>.+?) +to +(?P<dest>.+)$")
+MAPQUEST_DISTANCE = 'MAPQUEST_DISTANCE'
+DISTANCE_HELP = "'\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip>' : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."
+DISTANCE_RE = re.compile(r'^distance (?P<source>.+?)(?:\s+to\s+|\s+)(?P<dest>.+)$')
+
+TOTAL_TIME_RE = re.compile(r'Total Est. Time:.*?</font>\s*(.*?)\s*</td>')
+TOTAL_DISTANCE_RE = re.compile(r'Total Est. Distance:.*?</font>\s*(.*?)\s*</td>')
 
 # ---------------------------------------------------------------------------
 
 class MapQuest(Plugin):
 	"""
-	"mapquest <[city, state] or zip> to <[city, state] or zip>"
+	"distance <[city, state] or zip> to <[city, state] or zip>"
 	Looks up the travel distance informtion between the given citys on
 	mapquest.com and replies with the distance and estimated travel time.
 	"""
-
+	
 	def setup(self):
 		self.__canada = [
 			'AB', 'BC', 'MB', 'NB', 'NF', 'NT', 'NS', 'NU', 'ON', 'PE', 'QC',
@@ -42,81 +44,20 @@ class MapQuest(Plugin):
 	# -----------------------------------------------------------------------
 
 	def _message_PLUGIN_REGISTER(self, message):
-		mq_dir = PluginTextEvent(MAPQUEST, IRCT_PUBLIC_D, MAPQUEST_RE)
-		mq_msg = PluginTextEvent(MAPQUEST, IRCT_MSG, MAPQUEST_RE)
-
-		self.register(mq_dir, mq_msg)
+		self.setTextEvent(MAPQUEST_DISTANCE, DISTANCE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
-		self.setHelp('travel', 'mapquest', MAPQUEST_HELP)
-		
+		self.setHelp('travel', 'distance', DISTANCE_HELP)
 		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == MAPQUEST:
-			self.__mapquest(trigger)
-		else:
-			errtext = "MapQuest got a bad event: %s" % trigger.name
-			raise ValueError, errtext
-	
-	# -----------------------------------------------------------------------
-	
-	# Someone wants us to do a mapquest lookup
-	def __mapquest(self, trigger):
+	# Someone wants us to do a distance lookup
+	def _trigger_MAPQUEST_DISTANCE(self, trigger):
 		source = trigger.match.group('source')
 		dest = trigger.match.group('dest')
 		
-		if ',' in source:
-			# This is a city, not a zip code
-			i = source.index(',')
-			source_city = source[:i]
-			source_zip = ""
-			source_state = source[i+1:].strip().upper()
-		else:
-			# This is a zip
-			source_city = ""
-			source_zip = source
-			source_state = ""
-		
-		if source_state:
-			if source_state in self.__canada:
-				source_country = "CA"
-			else:
-				source_country = "US"
-		
-		elif re.search("[a-zA-Z]", source_zip):
-			# Canadian zip codes have letters in them, US don't
-			source_country = "CA"
-		else:
-			source_country = "US"
-		
-		# same stuff, but for the destination string
-		if ',' in dest:
-			# This is a city, not a zip code
-			i = dest.index(',')
-			dest_city = dest[:i]
-			dest_zip = ""
-			dest_state = dest[i+1:].strip().upper()
-		else:
-			# This is a zip
-			dest_city = ""
-			dest_zip = dest
-			dest_state = ""
-		
-		if dest_state:
-			if dest_state in self.__canada:
-				dest_country = "CA"
-			else:
-				dest_country = "US"
-		
-		elif re.search("[a-zA-Z]", dest_zip):
-			# Canadian zip codes have letters in them, US don't
-			dest_country = "CA"
-		else:
-			dest_country = "US"
+		source_city, source_zip, source_state, source_country = self.__Get_Info(source)
+		dest_city, dest_zip, dest_state, dest_country = self.__Get_Info(dest)
 		
 		
 		tolog = "Source: %s %s %s %s" % (source_city, source_zip, source_state, source_country)
@@ -134,82 +75,102 @@ class MapQuest(Plugin):
 		mq_query_string = urlencode(mq_query_bits)
 		
 		url = "http://www.mapquest.com/directions/main.adp?go=1&do=nw&ct=NA&1ah=&1a=&1p=&"+mq_query_string+"&lr=2&x=61&y=11"
-		
-		self.urlRequest(trigger, url)
+		self.urlRequest(trigger, self.__Parse_Distance, url)
 	
 	# -----------------------------------------------------------------------
-	
-	# We heard back from mapquest. yay!
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		
-		# Search for our info in the page MapQuest gave us
-		s = cStringIO.StringIO(page_text)
-		distance = None
-		travel_time = None
-		source_city = None
-		source_state = None
-		dest_city = None
-		dest_state = None
-		line = s.readline()
-		while line:
-			if line.startswith("<input type=hidden name=1c value="):
-				# We found the name of the source city, according to MapQuest
-				source_city = line[34:-3]
-			
-			elif line.startswith("<input type=hidden name=1s value="):
-				# We found the name of the source state
-				source_state = line[34:-3]
-			
-			elif line.startswith("<input type=hidden name=2c value="):
-				# we found the name of the destination city
-				dest_city = line[34:-3]
-			
-			elif line.startswith("<input type=hidden name=2s value="):
-				dest_state = line[34:-3]
-			
-			index = line.find("Total Distance:</b> <nobr>")
-			if index != -1:
-				# we found the distance, yay
-				distance = self.__parse(line[index:])
-			
-			index = line.find("Total Estimated Time:</b><nobr>")
-			if index != -1:
-				# We found the time
-				travel_time = self.__parse(line[index:])
-			
-			line = s.readline()
-		
-		if not travel_time:
-			# We didn't get our answer
-			source = trigger.match.group('source')
-			dest = trigger.match.group('dest')
-			replytext = "Could not determine distance between %s and %s" % (source, dest)
+	# Take a wild guess at what location refers to
+	def __Get_Info(self, location):
+		if ',' in location:
+			# This is a city, not a zip code
+			i = location.index(',')
+			_city = location[:i]
+			_zip = ''
+			_state = location[i+1:].strip().upper()
+			if _state in self.__canada:
+				_country = 'CA'
+			else:
+				_country = 'US'
 		else:
-			# We have our info
-			source = "%s, %s" % (source_city, source_state)
-			dest = "%s, %s" % (dest_city, dest_state)
-			distance = distance[15:].strip()
-			distance = distance.replace(" miles", "\02 miles")
-			distance = distance.replace(" km", "\02 km")
-			travel_time = travel_time[21:].strip()
-			
-			replytext = "\02%s\02 is about \02%s" % (source, distance)
-			replytext += " from \02%s\02" % dest
-			replytext += " with an approximate driving time of \02%s\02"
-			replytext = replytext % travel_time
+			# This is a zip
+			_city = ''
+			_zip = location
+			_state = ''
+			_country = ''
 		
-		
-		self.sendReply(trigger, replytext)
-		s.close()
+		return (_city, _zip, _state, _country)
 	
 	# -----------------------------------------------------------------------
-	
-	def __parse(self, text):
-		text = re.sub("<.+?>", "", text)
-		text = text.replace("&nbsp;", " ")
-		if text.endswith("\n"):
-			text = text[:-1]
-		return text.strip()
+	# We heard back from mapquest. yay!
+	def __Parse_Distance(self, trigger, page_text):
+		# Can't find a route
+		if page_text.find('We are having trouble finding a route') >= 0:
+			self.sendReply(trigger, 'Unable to find a route between those places!')
+			return
+		
+		# Random errors
+		_error = None
+		
+		# Bad ZIP code
+		if page_text.find('Invalid ZIP code') >= 0:
+			_error = 'Invalid ZIP code'
+		
+		# Bad state/province
+		if page_text.find('Invalid state/province') >= 0:
+			_error = 'Invalid state/province'
+		
+		# If we have an error, spit something out
+		if _error is not None:
+			_start = page_text.find('Enter a starting address')
+			_end = page_text.find('Enter a destination address')
+			
+			if _start < 0 and _end < 0:
+				_check = 'source and destination.'
+			elif _start < 0:
+				_check = 'source.'
+			elif _end < 0:
+				_check = 'destination.'
+			else:
+				_check = 'hat? Something is fucked up here.'
+			
+			replytext = '%s: check your %s' % (_error, _check)
+			self.sendReply(trigger, replytext)
+			return
+		
+		# Find the source and destination info
+		chunks = FindChunks(page_text, 'valign=center align=left class=size12>', '</td>')
+		if not chunks:
+			self.sendReply(trigger, 'Failed to parse page: source/dest info.')
+			return
+		
+		# Did we find enough chunks?
+		if len(chunks) < 2:
+			self.sendReply(trigger, 'Failed to parse page: not enough chunks.')
+			return
+		
+		# Get our locations
+		source_loc = StripHTML(chunks[0])[0]
+		dest_loc = StripHTML(chunks[1])[0]
+		
+		# Find out the total time
+		m = TOTAL_TIME_RE.search(page_text)
+		if not m:
+			self.sendReply(trigger, 'Failed to parse page: total time.')
+			return
+		
+		total_time = m.group(1)
+		
+		# Find out the total distance
+		m = TOTAL_DISTANCE_RE.search(page_text)
+		if not m:
+			self.sendReply(trigger, 'Failed to parse page: total distance.')
+			return
+		
+		total_distance = m.group(1)
+		
+		# Build the output!
+		distance = total_distance.replace(' miles', '\02 miles')
+		replytext  = '\02%s\02 is about \02%s from \02%s\02' % (source_loc, distance, dest_loc)
+		replytext += ' with an approximate driving time of \02%s\02' % (total_time)
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
