@@ -276,7 +276,8 @@ class MoneyMangler(Plugin):
 				showme = symbol
 			
 			# Find the data we need
-			chunk = FindChunk(page_text, '<td class="yfnc_datamodoutline1"><table width="100%"', '</table>')
+			#chunk = FindChunk(page_text, '<td class="yfnc_datamodoutline1"><table width="100%"', '</table>')
+			chunk = FindChunk(page_text, 'class="yfnc_datamodoutline1"', '</table>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
 				self.sendReply(trigger, 'Failed to parse page.')
@@ -302,13 +303,15 @@ class MoneyMangler(Plugin):
 				if len(parts) == 2 and parts[1] != 'N/A':
 					if parts[0] in ('Last Trade', 'Index Value'):
 						info['Value'] = parts[1]
+					elif parts[0] == 'Change':
+						info['Value'] = '%s %s' % (info['Value'], parts[1])
 					else:
 						info[parts[0]] = parts[1]
 			
 			# Output something now :)
 			if info:
 				try:
-					replytext = '[%(Trade Time)s] %(Showme)s: %(Value)s %(Change)s' % info
+					replytext = '[%(Trade Time)s] %(Showme)s: %(Value)s' % info
 				except KeyError:
 					replytext = 'Some stock data missing, not good!'
 			else:
