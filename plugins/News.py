@@ -18,10 +18,10 @@ NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
 # All this crap should be moved into the config, and then dealt with during
 # setup()
 GOOGLE_WORLD_TARGETS = {
-						'GoonNET' : ['#grax,#myoffice']
+						'GoonNET' : ['#grax']
 				 		}
 GOOGLE_SCI_TARGETS = {
-						'GoonNET' : ['#grax,#myoffice']
+						'GoonNET' : ['#grax']
 						}
 						
 ANANOVA_TARGETS = {'GoonNET' : ['#grax']}
