@@ -550,17 +550,34 @@ class ChatterGizmo(Child):
 			rest = ''
 		
 		
-		if first == 'VERSION':
-			self.Conns[conn].ctcp_reply(userinfo.nick, "VERSION blamehangle v" + BH_VERSION)
+		tolog = None
 		
-		elif first == 'PING':
-			if len(rest) > 0:
-				reply = 'PING %s' % rest
-				self.Conns[conn].ctcp_reply(userinfo.nick, reply)
-		
-		elif first == 'CLIENTINFO':
+		# Someone wants to see what sort of CTCP stuff we can handle
+		if first == 'CLIENTINFO':
+			tolog = 'CTCP CLIENTINFO from %s' % userinfo.hostmask
+			self.connlog(conn, LOG_ALWAYS, tolog)
+			
 			self.Conns[conn].ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
 		
+		# Someone wants to see if we're lagged
+		elif first == 'PING':
+			tolog = 'CTCP PING from %s' % userinfo.hostmask
+			self.connlog(conn, LOG_ALWAYS, tolog)
+			
+			# We only actually reply if they gave us some data
+			if len(rest) > 0:
+				reply = 'PING %s' % rest[:50]
+				self.Conns[conn].ctcp_reply(userinfo.nick, reply)
+		
+		# Someone wants to know what we're running
+		elif first == 'VERSION':
+			tolog = 'CTCP VERSION from %s' % userinfo.hostmask
+			self.connlog(conn, LOG_ALWAYS, tolog)
+			
+			reply = 'VERSION blamehangle v%s - no space aliens were harmed in the making of this hangle.' % BH_VERSION
+			self.Conns[conn].ctcp_reply(userinfo.nick, reply)
+		
+		# Someone wants us to rehash... better make sure they're not evil
 		elif first == 'REHASH':
 			# If they have access, rehash
 			if self.Userlist.Has_Flag(userinfo, 'Global', 'admin'):
@@ -570,9 +587,9 @@ class ChatterGizmo(Child):
 			else:
 				tolog = "Unknown lamer '%s' (%s@%s) requested rehash!" % (userinfo.nick, userinfo.ident, userinfo.host)
 			
-			# Log it
 			self.connlog(conn, LOG_WARNING, tolog)
 		
+		# No idea, see if a plugin cares
 		else:
 			wrap = self.Conns[conn]
 			data = [wrap, IRCT_CTCP, userinfo, None, first + rest]
