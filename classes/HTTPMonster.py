@@ -49,10 +49,7 @@ class HTTPMonster(Child):
 	
 	def rehash(self):
 		# Set up our connection limit
-		if self.Config.has_option('HTTP', 'connections'):
-			self.max_conns = min(1, max(10, self.Config.getint('HTTP', 'connections')))
-		else:
-			self.max_conns = 1
+		self.max_conns = max(1, min(10, self.Config.getint('HTTP', 'connections')))
 		
 		# Set up our user-agent
 		if self.Config.has_option('HTTP', 'useragent'):
