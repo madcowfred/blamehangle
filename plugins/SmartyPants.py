@@ -47,23 +47,23 @@ STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%'"
 LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value LIKE '%%%s%%'"
 
-GET_D_RE = re.compile("^(?P<name>.+?)\??$")
-GET_RE = re.compile("^(?P<name>.+?)\?$")
-SET_RE = re.compile("^(?!no, +)(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
-NO_RE = re.compile("^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
-ALSO_RE = re.compile("^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$")
-DEL_RE = re.compile("^forget +(?P<name>.+)$")
-REP_RE = re.compile("^(?P<name>.+?) +=~ +(?P<modstring>.+)$")
-LOCK_RE = re.compile("^lock +(?P<name>.+)$")
-UNLOCK_RE = re.compile("^unlock +(?P<name>.+)$")
-INFO_RE = re.compile("^factinfo +(?P<name>.+)\??$")
-STATUS_RE = re.compile("^status$")
-LISTKEYS_RE = re.compile("^listkeys +(?P<name>.+)$")
-LISTVALUES_RE = re.compile("^listvalues +(?P<name>.+)$")
-TELL_RE = re.compile("^tell +(?P<nick>.+?) +about +(?P<name>.+)$")
+GET_D_RE = re.compile(r'^(?P<name>.+?)\??$')
+GET_RE = re.compile(r'^(?P<name>.+?)\?$')
+SET_RE = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$')
+NO_RE = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$')
+ALSO_RE = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$')
+DEL_RE = re.compile(r'^forget +(?P<name>.+)$')
+REP_RE = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$')
+LOCK_RE = re.compile(r'^lock +(?P<name>.+)$')
+UNLOCK_RE = re.compile(r'^unlock +(?P<name>.+)$')
+INFO_RE = re.compile(r'^factinfo +(?P<name>.+)\??$')
+STATUS_RE = re.compile(r'^status$')
+LISTKEYS_RE = re.compile(r'^listkeys +(?P<name>.+)$')
+LISTVALUES_RE = re.compile(r'^listvalues +(?P<name>.+)$')
+TELL_RE = re.compile(r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$')
 
-REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
-NULL_RE = re.compile("^<null>\s*$", re.I)
+REPLY_ACTION_RE = re.compile(r'^<(?P<type>reply|action)>\s*(?P<value>.+)$', re.I)
+NULL_RE = re.compile(r'^<null>\s*$', re.I)
 
 #----------------------------------------------------------------------------
 
@@ -1088,5 +1088,9 @@ class SmartyPants(Plugin):
 		newname = newname.translate(self.__trans)
 		# remove any bad chars now
 		newname = newname.replace('\x00', '')
+		
+		# un-escape escaped is/are
+		newname = newname.replace('\\is', 'is')
+		newname = newname.replace('\\are', 'are')
 		
 		return newname
