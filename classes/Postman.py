@@ -28,7 +28,7 @@ from classes.Helper import Helper
 # ---------------------------------------------------------------------------
 
 MAIL_TEXT =  "This is an automatic e-mail message from blamehangle. You are receiving this because "
-MAIL_TEXT += "someone has you listed in their config as an admin."
+MAIL_TEXT += "someone has you listed in their mail/tracebacks setting."
 
 # ---------------------------------------------------------------------------
 
