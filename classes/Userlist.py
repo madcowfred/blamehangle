@@ -44,8 +44,13 @@ class Userlist:
 	def has_mode(self, chan, nick, mode):
 		return mode in self.__u[chan][nick]
 	
+	def in_chan(self, chan, nick):
+		return nick in self.__u[chan]
+	
 	def in_any_chan(self, nick):
 		for nicks in self.__u.values():
 			if nick in nicks:
 				return 1
 		return 0
+
+# ---------------------------------------------------------------------------
