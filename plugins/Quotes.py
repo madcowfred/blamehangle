@@ -12,7 +12,7 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 QUOTES_ADDQUOTE = 'QUOTES_ADDQUOTE'
-ADDQUOTE_HELP = '\02addquote\02 <quote> : sends a quote to the configured e-mail address'
+ADDQUOTE_HELP = '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'
 ADDQUOTE_RE = re.compile('^addquote (?P<quote>.+)$')
 
 # ---------------------------------------------------------------------------
@@ -53,16 +53,21 @@ class Quotes(Plugin):
 			line = 'X-Mailer: blamehangle Quotes plugin'
 			lines.append(line)
 			
+			lines.append('\r\n')
+			
 			# Split the quote into lines
 			qlines = [l.strip() for l in trigger.match.group('quote').split('||')]
 			for qline in qlines:
 				if qline:
 					lines.append(qline)
 			
-			# Send it!
+			# Send the message!
 			message = '\r\n'.join(lines)
 			
-			# Send the message!
+			print '>>'
+			print message
+			print '<<'
+			
 			try:
 				server = smtplib.SMTP(self.__server)
 				server.sendmail(self.__from, self.__to, message)
