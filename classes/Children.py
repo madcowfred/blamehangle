@@ -13,7 +13,7 @@ from classes.Constants import *
 class Child:
 	def __init__(self, name, outQueue, Config, Userlist):
 		# Initialise our variables
-		self.__name = name
+		self._name = name
 		
 		self.outQueue = outQueue
 		self.inQueue = []
@@ -46,7 +46,7 @@ class Child:
 			method = getattr(self, name)
 		
 		except AttributeError:
-			tolog = 'Unhandled message in %s: %s' % (self.__name, message.ident)
+			tolog = 'Unhandled message in %s: %s' % (self._name, message.ident)
 			self.putlog(LOG_DEBUG, tolog)
 		
 		else:
@@ -57,7 +57,7 @@ class Child:
 	# -----------------------------------------------------------------------
 	def _message_REQ_REHASH(self, message):
 		if hasattr(self, 'rehash'):
-			tolog = '%s rehashing' % self.__name
+			tolog = '%s rehashing' % self._name
 			self.putlog(LOG_DEBUG, tolog)
 			
 			self.rehash()
@@ -66,7 +66,7 @@ class Child:
 	# Default REQ_SHUTDOWN handler
 	# -----------------------------------------------------------------------
 	def _message_REQ_SHUTDOWN(self, message):
-		tolog = '%s shutting down' % self.__name
+		tolog = '%s shutting down' % self._name
 		self.putlog(LOG_ALWAYS, tolog)
 		
 		if hasattr(self, 'shutdown'):
@@ -79,7 +79,7 @@ class Child:
 	# Send a message, takes the same arguments as Message()
 	# -----------------------------------------------------------------------
 	def sendMessage(self, *args):
-		message = Message(self.__name, *args)
+		message = Message(self._name, *args)
 		self.outQueue.append(message)
 	
 	# -----------------------------------------------------------------------

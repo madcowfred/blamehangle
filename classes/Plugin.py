@@ -20,8 +20,25 @@ class Plugin(Child):
 	def __init__(self, *args, **kwargs):
 		Child.__init__(self, *args, **kwargs)
 		
+		self.__setup_time = time.time()
+		
 		self.__Events = {}
 		self.__Help = {}
+	
+	# Default REQ_REHASH handler. We don't want to rehash just after we started!
+	def _message_REQ_REHASH(self, message):
+		if hasattr(self, 'rehash'):
+			interval = time.time() - self.__setup_time
+			
+			if interval > 5:
+				#tolog = '%s rehashing' % self._name
+				#self.putlog(LOG_DEBUG, tolog)
+				
+				self.rehash()
+			
+			else:
+				tolog = 'Not rehashing %s, started %.1fs ago!' % (self._name, interval)
+				self.putlog(LOG_DEBUG, tolog)
 	
 	# Default PLUGIN_REGISTER handler. We have to reset things here!
 	def _message_PLUGIN_REGISTER(self, message):
@@ -31,7 +48,7 @@ class Plugin(Child):
 			self.register()
 		
 		else:
-			raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self.__name
+			raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self._name
 	
 	# Default trigger handler, looks for _trigger_EVENT_NAME
 	def _message_PLUGIN_TRIGGER(self, message):
@@ -62,7 +79,7 @@ class Plugin(Child):
 		if method:
 			method(trigger, page_text)
 		else:
-			tolog = '%s got a URL reply, but method is invalid!' % self.__name
+			tolog = '%s got a URL reply, but method is invalid!' % self._name
 			self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------

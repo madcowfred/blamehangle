@@ -230,8 +230,8 @@ class Postman:
 									
 									# If it's really being reloaded, do that
 									if self.__reloadme.has_key(child):
-										self.__Plugin_Load(child, runonce=1)
 										del self.__reloadme[child]
+										self.__Plugin_Load(child, runonce=1)
 										
 										# If reloadme is empty, rehash now
 										if not self.__reloadme:
