@@ -49,32 +49,12 @@ TITLE_QUERY = "SELECT title FROM news WHERE title = %s"
 INSERT_QUERY = "INSERT INTO news (title, time) VALUES (%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE time < %s"
 
-# All this crap should be moved into the config, and then dealt with during
-# setup()
-GOOGLE_WORLD_TARGETS = {
-						'GoonNET' : ['#grax'],
-						'EFnet': ['#sausages']
-
-				 		}
-GOOGLE_SCI_TARGETS = {
-						'GoonNET' : ['#grax'],
-						'EFnet': ['#sausages']
-						}
-						
-ANANOVA_TARGETS = {
-	'GoonNET' : ['#grax'],
-	'EFnet': ['#sausages']
-}
 
 GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
 GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
 GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
 GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
-
-
-FEED_LIST = 'FEED_LIST'
-LIST_RE = re.compile('^listfeeds$')
 
 # ---------------------------------------------------------------------------
 
@@ -174,8 +154,6 @@ class News(Plugin):
 				feed['interval'] = self.__rss_interval
 			
 			feed['url'] = self.Config.get(section, 'url')
-			
-			feed['lastcheck'] = 0
 			
 			self.RSS_Feeds[name] = (feed)
 	
