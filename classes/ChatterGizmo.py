@@ -11,7 +11,8 @@ import select
 import time
 import types
 
-from classes import irclib
+#from classes import irclib
+from classes import asyncIRC
 
 from classes.Children import Child
 from classes.Common import *
@@ -28,16 +29,6 @@ RE_STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,
 RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
 
 # ---------------------------------------------------------------------------
-# Shiny way to look at a user.
-# ---------------------------------------------------------------------------
-class UserInfo:
-	def __init__(self, hostmask):
-		self.hostmask = hostmask
-		
-		self.nick, rest = hostmask.split('!')
-		self.ident, self.host = rest.split('@')
-
-# ---------------------------------------------------------------------------
 
 class ChatterGizmo(Child):
 	"""
@@ -46,13 +37,12 @@ class ChatterGizmo(Child):
 	"""
 	
 	def setup(self):
-		self.__ircobj = irclib.IRC()
 		# Add handlers for any event we're supposed to handle
-		for thing in dir(self):
-			if not thing.startswith('_handle_'):
-				continue
-			event = thing[8:]
-			self.__ircobj.add_global_handler(event, getattr(self, thing), -10)
+		#for thing in dir(self):
+		#	if not thing.startswith('_handle_'):
+		#		continue
+		#	event = thing[8:]
+		#	self.__ircobj.add_global_handler(event, getattr(self, thing), -10)
 		
 		self.Conns = {}
 		self.stopping = 0
@@ -204,10 +194,10 @@ class ChatterGizmo(Child):
 				for option in self.Config.options(network):
 					options[option] = self.Config.get(network, option)
 				
-				
+				# FIXME
 				conn = self.__ircobj.server()
 				self.Conns[conn] = WrapConn(self, network, conn, options)
-			
+				
 				self.Conns[conn].connect()
 	
 	# -----------------------------------------------------------------------
@@ -234,9 +224,6 @@ class ChatterGizmo(Child):
 		tolog = 'Connected to %s:%d' % wrap.server
 		self.connlog(conn, LOG_ALWAYS, tolog)
 		
-		# Tell FileMonster what our local IP is
-		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
-		
 		# If we're supposed to use NickServ, do so
 		_nick = wrap.options.get('nickserv_nick', None)
 		_pass = wrap.options.get('nickserv_pass', None)
@@ -248,8 +235,8 @@ class ChatterGizmo(Child):
 			text = 'IDENTIFY %s' % (_pass)
 			self.privmsg(conn, _nick, text)
 			
-			# Delay our joins so we're identified
-			badtime = time.time() - 15
+			# Delay our joins by 2 seconds so that we're (probably) identified
+			badtime = time.time() - 18
 			for chan in wrap.channels:
 				data = [badtime, wrap.conn, wrap.connect_id, chan]
 				self.__Rejoins.append(data)
@@ -277,8 +264,9 @@ class ChatterGizmo(Child):
 	
 	# It was bad.
 	def _handle_error(self, conn, event):
-		errormsg = event.target()
+		errormsg = event.target
 		
+		# FIXME - regexp sucks
 		m = re.match(r".* \((?P<error>.*?)\)$", errormsg)
 		if m:
 			errormsg = m.group('error')
@@ -290,11 +278,11 @@ class ChatterGizmo(Child):
 	# Someone just joined a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_join(self, conn, event):
-		chan = event.target().lower()
-		nick = irclib.nm_to_n(event.source())
+		chan = event.target.lower()
+		nick = event.userinfo.nick
 		
 		# Us
-		if nick == conn.real_nickname:
+		if nick == conn.getnick():
 			self.Conns[conn].users.joined(chan)
 			
 			tolog = "Joined %s" % chan
@@ -308,11 +296,11 @@ class ChatterGizmo(Child):
 	# Someone just parted a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_part(self, conn, event):
-		chan = event.target().lower()
-		nick = irclib.nm_to_n(event.source())
+		chan = event.target.lower()
+		nick = event.userinfo.nick
 		
 		# Us
-		if nick == conn.real_nickname:
+		if nick == conn.getnick():
 			self.Conns[conn].users.parted(chan)
 			
 			tolog = 'Left %s' % chan
@@ -326,9 +314,9 @@ class ChatterGizmo(Child):
 	# Someone just quit (including ourselves? not sure)
 	# -----------------------------------------------------------------------
 	def _handle_quit(self, conn, event):
-		nick = irclib.nm_to_n(event.source())
+		nick = event.userinfo.nick
 		
-		if nick != conn.real_nickname:
+		if nick != conn.getnick():
 			self.Conns[conn].users.quit(nick)
 			
 			# If it was our primary nickname, try and regain it
@@ -339,9 +327,11 @@ class ChatterGizmo(Child):
 	# Someone just changed the mode on a channel we're in
 	# -----------------------------------------------------------------------
 	def _handle_mode(self, conn, event):
-		chan = event.target().lower()
+		chan = event.target.lower()
+		# FIXME - mode parsing
+		return
 		
-		modestring = ' '.join(event.arguments())
+		modestring = ' '.join(event.arguments)
 		modes = irclib.parse_channel_modes(modestring)
 		
 		for sign, mode, arg in modes:
@@ -358,27 +348,26 @@ class ChatterGizmo(Child):
 	# Someone just invited us to a channel
 	# -----------------------------------------------------------------------
 	def _handle_invite(self, conn, event):
-		chan = event.arguments()[0].lower()
-		userinfo = UserInfo(event.source())
+		chan = event.arguments[0].lower()
 		
 		if chan in self.Conns[conn].channels:
-			tolog = '%s invited me to %s, joining...' % (userinfo.nick, chan)
+			tolog = '%s invited me to %s, joining...' % (event.userinfo, chan)
 			self.putlog(LOG_ALWAYS, tolog)
 			conn.join(chan)
 		else:
-			tolog = '%s invited me to %s, which is NOT in my channel list!' % (userinfo.nick, chan)
+			tolog = '%s invited me to %s, which is NOT in my channel list!' % (event.userinfo, chan)
 			self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone was just kicked from a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_kick(self, conn, event):
-		chan = event.target().lower()
-		kicker = irclib.nm_to_n(event.source())
-		kicked = event.arguments()[0]
+		chan = event.target.lower()
+		#kicker = irclib.nm_to_n(event.source())
+		#kicked = event.arguments[0]
 		
-		if kicked == conn.real_nickname:
-			tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, kicker)
+		if kicked == conn.getnick():
+			tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, event.userinfo)
 			self.connlog(conn, LOG_ALWAYS, tolog)
 			
 			self.Conns[conn].users.parted(chan)
@@ -391,11 +380,11 @@ class ChatterGizmo(Child):
 	# Someone just changed their name (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_nick(self, conn, event):
-		before = irclib.nm_to_n(event.source())
-		after = event.target()
+		before = event.userinfo.nick
+		after = event.target
 		
 		# If it wasn't us
-		if after != conn.real_nickname:
+		if after != conn.getnick():
 			self.Conns[conn].users.nick(before, after)
 			
 			# If it was our primary nickname, try and regain it
@@ -406,11 +395,11 @@ class ChatterGizmo(Child):
 	# Numeric 353 : list of names in channel
 	# -----------------------------------------------------------------------
 	def _handle_namreply(self, conn, event):
-		chan = event.arguments()[1].lower()
+		chan = event.arguments[1].lower()
 		
 		# Add each nick to the channel user list
-		for nick in event.arguments()[2].split():
-			if nick[0] in ('@', '+'):
+		for nick in event.arguments[2].split():
+			if nick[0] in '@+%':
 				nick = nick[1:]
 			
 			self.Conns[conn].users.joined(chan, nick)
@@ -419,17 +408,15 @@ class ChatterGizmo(Child):
 	# Our nickname is in use!
 	# -----------------------------------------------------------------------
 	def _handle_nicknameinuse(self, conn, event):
-		nick = event.arguments()[0]
+		nick = event.arguments[0]
 		
 		self.Conns[conn].nicknameinuse(nick)
 	
 	# -----------------------------------------------------------------------
 	# Various errors, all of which are saying that we can't join a channel.
 	# -----------------------------------------------------------------------
-	#for event in [	"unavailresource", "channelisfull", "inviteonlychan",
-	#	"bannedfromchan", "badchannelkey" ]:
 	def _joinerror(self, conn, event):
-		chan = event.arguments()[0].lower()
+		chan = event.arguments[0].lower()
 		
 		# Try to join again soon
 		data = [time.time(), conn, self.Conns[conn].connect_id, chan]
@@ -444,17 +431,15 @@ class ChatterGizmo(Child):
 	# Someone just said something in a channel we're in
 	# -----------------------------------------------------------------------
 	def _handle_pubmsg(self, conn, event):
-		chan = event.target().lower()
-		userinfo = UserInfo(event.source())
+		chan = event.target.lower()
 		wrap = self.Conns[conn]
 		
-		# Don't do anything for ignored lamers
-		#if self.__users.check_user_flags(userinfo, 'ignore'):
-		if self.Userlist.Has_Flag(userinfo, 'Global', 'ignore'):
+		# Skip ignored people
+		if self.Userlist.Has_Flag(event.userinfo, 'Global', 'ignore'):
 			return
 		
 		# Strip any codes from the text
-		text = RE_STRIP_CODES.sub('', event.arguments()[0])
+		text = RE_STRIP_CODES.sub('', event.arguments[0])
 		
 		# Strip leading and trailing spaces
 		text = text.strip()
@@ -467,7 +452,7 @@ class ChatterGizmo(Child):
 		m = RE_ADDRESSED.match(text)
 		if m:
 			to = m.group('nick')
-			if to.lower() != conn.real_nickname.lower():
+			if to.lower() != conn.getnick().lower():
 				return
 			
 			data = [wrap, IRCT_PUBLIC_D, userinfo, chan, m.group('text')]
@@ -481,7 +466,7 @@ class ChatterGizmo(Child):
 			# Look for exact commands
 			if len(parts) == 1 and parts[0] in self.__Public_Exact:
 				newtext = self.__Public_Exact[parts[0]]
-				data = [wrap, IRCT_PUBLIC_D, userinfo, chan, newtext]
+				data = [wrap, IRCT_PUBLIC_D, event.userinfo, chan, newtext]
 				
 				tolog = "Rewrote public command '%s' to '%s'" % (text, newtext)
 				self.putlog(LOG_DEBUG, tolog)
@@ -489,14 +474,14 @@ class ChatterGizmo(Child):
 			# Look for param commands
 			elif len(parts) == 2 and parts[0] in self.__Public_Param:
 				newtext = '%s %s' % (self.__Public_Param[parts[0]], parts[1])
-				data = [wrap, IRCT_PUBLIC_D, userinfo, chan, newtext]
+				data = [wrap, IRCT_PUBLIC_D, event.userinfo, chan, newtext]
 				
 				tolog = "Rewrote public command '%s' to '%s'" % (text, newtext)
 				self.putlog(LOG_DEBUG, tolog)
 			
 			# Oh well, guess it's just public text
 			else:
-				data = [wrap, IRCT_PUBLIC, userinfo, chan, text]
+				data = [wrap, IRCT_PUBLIC, event.userinfo, chan, text]
 			
 			# Send the event
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
@@ -505,29 +490,28 @@ class ChatterGizmo(Child):
 	# Someone just said something to us in private!
 	# -----------------------------------------------------------------------
 	def _handle_privmsg(self, conn, event):
-		userinfo = UserInfo(event.source())
 		wrap = self.Conns[conn]
 		
 		# Stoned check
-		if userinfo.nick == conn.real_nickname:
+		if userinfo.nick == conn.getnick():
 			wrap.stoned -= 1
 		
 		else:
 			# Skip ignored people
-			if self.Userlist.Has_Flag(userinfo, 'Global', 'ignore'):
+			if self.Userlist.Has_Flag(event.userinfo, 'Global', 'ignore'):
 				return
 			
 			# If we're ignoring strangers, skip them
-			if wrap.ignore_strangers == 1 and not wrap.users.in_any_chan(userinfo.nick):
+			if wrap.ignore_strangers == 1 and not wrap.users.in_any_chan(event.userinfo.nick):
 				return
 			
 			# Strip any codes from the text
-			text = RE_STRIP_CODES.sub('', event.arguments()[0])
+			text = RE_STRIP_CODES.sub('', event.arguments[0])
 			# Strip leading and trailing spaces
 			text = text.strip()
 			
 			if text != '':
-				data = [wrap, IRCT_MSG, userinfo, None, text]
+				data = [wrap, IRCT_MSG, event.userinfo, None, text]
 				self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
@@ -535,13 +519,11 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_ctcp(self, conn, event):
 		# Ignore channel CTCPs
-		if event.target() != conn.real_nickname:
+		if event.target != conn.getnick():
 			return
 		
-		
-		userinfo = UserInfo(event.source())
-		
-		if self.Userlist.Has_Flag(userinfo, 'Global', 'ignore'):
+		# Skip ignored people
+		if self.Userlist.Has_Flag(event.userinfo, 'Global', 'ignore'):
 			return
 		
 		# Ignore them if they're not on any of our channels
@@ -549,11 +531,11 @@ class ChatterGizmo(Child):
 		#	return
 		
 		
-		first = event.arguments()[0].upper()
+		first = event.arguments[0].upper()
 		
 		# Capitalise the arguments if there are any
-		if len(event.arguments()) == 2:
-			rest = event.arguments()[1].upper()
+		if len(event.arguments) == 2:
+			rest = event.arguments[1].upper()
 		else:
 			rest = ''
 		
@@ -562,49 +544,49 @@ class ChatterGizmo(Child):
 		
 		# Someone wants to see what sort of CTCP stuff we can handle
 		if first == 'CLIENTINFO':
-			tolog = 'CTCP CLIENTINFO from %s' % userinfo.hostmask
+			tolog = 'CTCP CLIENTINFO from %s' % (event.userinfo)
 			self.connlog(conn, LOG_ALWAYS, tolog)
 			
-			self.Conns[conn].ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
+			self.Conns[conn].ctcp_reply(event.userinfo.nick, 'CLIENTINFO PING VERSION')
 		
 		# Someone wants to see if we're lagged
 		elif first == 'PING':
-			tolog = 'CTCP PING from %s' % userinfo.hostmask
+			tolog = 'CTCP PING from %s' % (event.userinfo)
 			self.connlog(conn, LOG_ALWAYS, tolog)
 			
 			# We only actually reply if they gave us some data
 			if len(rest) > 0:
 				reply = 'PING %s' % rest[:50]
-				self.Conns[conn].ctcp_reply(userinfo.nick, reply)
+				self.Conns[conn].ctcp_reply(event.userinfo.nick, reply)
 		
 		# Someone wants to know what we're running
 		elif first == 'VERSION':
-			tolog = 'CTCP VERSION from %s' % userinfo.hostmask
+			tolog = 'CTCP VERSION from %s' % (event.userinfo)
 			self.connlog(conn, LOG_ALWAYS, tolog)
 			
 			reply = 'VERSION blamehangle v%s - no space aliens were harmed in the making of this hangle.' % BH_VERSION
-			self.Conns[conn].ctcp_reply(userinfo.nick, reply)
+			self.Conns[conn].ctcp_reply(event.userinfo.nick, reply)
 		
 		# Someone wants us to rehash... better make sure they're not evil
 		elif first == 'REHASH':
 			# If they have access, rehash
-			if self.Userlist.Has_Flag(userinfo, 'Global', 'admin'):
-				tolog = "Admin '%s' (%s@%s) requested a rehash." % (userinfo.nick, userinfo.ident, userinfo.host)
+			if self.Userlist.Has_Flag(event.userinfo, 'Global', 'admin'):
+				tolog = "Admin %s requested a rehash." % (event.userinfo)
 				self.connlog(conn, LOG_WARNING, tolog)
 				
-				self.Conns[conn].notice(userinfo.nick, 'Rehashing...')
+				self.Conns[conn].notice(event.userinfo.nick, 'Rehashing...')
 				
 				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
 			
 			# If not, cry
 			else:
-				tolog = "Unknown lamer '%s' (%s@%s) requested rehash!" % (userinfo.nick, userinfo.ident, userinfo.host)
+				tolog = "Unknown lamer %s (%s@%s) requested rehash!" % (event.userinfo)
 				self.connlog(conn, LOG_WARNING, tolog)
 		
 		# No idea, see if a plugin cares
 		else:
 			wrap = self.Conns[conn]
-			data = [wrap, IRCT_CTCP, userinfo, None, first + rest]
+			data = [wrap, IRCT_CTCP, event.userinfo, None, first + rest]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
@@ -612,7 +594,8 @@ class ChatterGizmo(Child):
 	def _message_REQ_PRIVMSG(self, message):
 		conn, target, text = message.data
 		
-		if isinstance(conn, irclib.ServerConnection):
+		#if isinstance(conn, irclib.ServerConnection):
+		if isinstance(conn, irclib.asyncIRC):
 			self.privmsg(conn, target, text)
 		
 		elif isinstance(conn, WrapConn):
@@ -639,6 +622,5 @@ class ChatterGizmo(Child):
 		else:
 			tolog = "Unknown REQ_PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
 			self.putlog(LOG_WARNING, tolog)
-			#raise TypeError, 'unknown parameter type'
 
 # ---------------------------------------------------------------------------
