@@ -1,5 +1,5 @@
 #!/bin/sh
-
+set -x
 #$Id$
 
 # A simple shell script to start the bot and make sure it keeps running
@@ -21,12 +21,11 @@
 #
 # Note, to restart the bot you will need to delete the STOP.mybot file.
 
+if [ $# -ne 1 ]
+then
 
-if [ $# -neq 2 ] then
-do
 	echo "Usage: $0 <config file>"
 	exit
-done
 fi
 
 CONFIG_FILE=$1
@@ -36,7 +35,8 @@ STOP_FILE=STOP.`basename $CONFIG_FILE .conf`
 
 while [ 1 -eq 1 ]
 do
-	if [ -e $STOP_FILE ] then
+	if [ -e $STOP_FILE ]
+	then
 		echo "$STOP_FILE exists, stopping"
 		exit
 	fi
