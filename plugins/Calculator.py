@@ -10,7 +10,6 @@ modulo, and exponentiation.
 Won't divide by zero or lame things like that.
 """
 
-
 import re
 
 from classes.Common import *
@@ -20,7 +19,9 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 CALC = "CALC"
-CALC_RE = re.compile("^ *[ ()0-9e.+\-*/%^]+$")
+CALC_RE = re.compile(r'^ *[ ()0-9e.+\-*/%^]+$')
+
+CALC_OP_RE = re.compile(r'(?P<op>[+\-/*%^()])')
 
 # ---------------------------------------------------------------------------
 
@@ -36,18 +37,16 @@ class Calculator(Plugin):
 		# mangle the string we have been given slightly.. remove any nasty
 		# attempts at **, and change every number into a float
 		calcstr = trigger.match.group(0)
-		op_re = re.compile("(?P<op>[+\-/*%^()])")
-		
 		calcstr = re.sub("\*+", "*", calcstr)
-		calcstr = op_re.sub(" \g<op> ", calcstr)
-		
-		pieces = calcstr.split()
-		newstr = ""
+		calcstr = CALC_OP_RE.sub(" \g<op> ", calcstr)
 		
 		# Loop through the input string, converting all numbers to floats, and
 		# any ^ characters to **, which is python's exponent operator.
+		pieces = calcstr.split()
+		newstr = ''
+		
 		for piece in pieces:
-			if op_re.match(piece):
+			if CALC_OP_RE.match(piece):
 				if piece == "^":
 					newstr += "**"
 				else:
@@ -64,19 +63,18 @@ class Calculator(Plugin):
 						newstr += "0"
 		
 		# Try to evaluate the expression!
-		# if it evals, give back the result, otherwise report an error
 		try:
 			result = eval(newstr)
 		except ZeroDivisionError:
-			replytext = "can't divide by zero"
+			replytext = "Can't divide by zero!"
 		except OverflowError, err:
 			replytext = err[1]
 		except ValueError, errtext:
 			replytext = errtext
 		except Exception:
-			replytext = 'not a valid mathematical expression!'
+			replytext = 'Not a valid mathematical expression!'
 		else:
-			replytext = "%s" % result
+			replytext = str(result)
 			if replytext.endswith(".0"):
 				replytext = replytext[:-2]
 		
