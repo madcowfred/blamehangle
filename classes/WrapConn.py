@@ -80,6 +80,8 @@ class WrapConn:
 				tolog = "Invalid server definition: '%s'" % (server)
 				self.connlog(LOG_WARNING, tolog)
 		
+		random.shuffle(self.servers)
+		
 		# Parse the channels
 		old_chans = self.channels
 		self.channels = {}
