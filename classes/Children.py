@@ -59,9 +59,8 @@ class Child:
 		if hasattr(self, 'rehash'):
 			tolog = '%s rehashing' % self.__name
 			self.putlog(LOG_DEBUG, tolog)
-
-			self.rehash()
 			
+			self.rehash()
 	
 	# -----------------------------------------------------------------------
 	# Default REQ_SHUTDOWN handler
