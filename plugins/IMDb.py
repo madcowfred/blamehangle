@@ -184,10 +184,7 @@ class IMDb(Plugin):
 			
 			# Find the rating
 			chunk = FindChunk(page_text, 'goldstar.gif', '<a')
-			if chunk:# is None:
-				#self.sendReply(trigger, 'Page parsing failed: rating.')
-				#return
-				
+			if chunk:
 				m = re.search(r'<b>(.+)</b> (\(.+ votes\))', chunk)
 				if not m:
 					self.sendReply(trigger, 'Page parsing failed: rating.')
@@ -207,5 +204,3 @@ class IMDb(Plugin):
 			
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
-			
-			print 'replytext:', replytext
