@@ -150,7 +150,7 @@ class PluginHandler(Child):
 		
 		elif isinstance(reply.trigger, PluginFakeTrigger):
 			tolog = "PluginFakeTrigger: '%s'" % reply.replytext
-			self.putlog(LOG_ALWAYS, tolog)
+			self.putlog(LOG_DEBUG, tolog)
 		
 		else:
 			# wtf
