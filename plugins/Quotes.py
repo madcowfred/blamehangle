@@ -11,14 +11,20 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
+SELECT_QUOTE = 'SELECT quote FROM quotes ORDER BY seen, RANDOM() LIMIT 1'
+UPDATE_QUOTE = 'UPDATE quotes SET seen = seen + 1 WHERE quote = %s'
+
+# ---------------------------------------------------------------------------
+
 class Quotes(Plugin):
 	_HelpSection = 'misc'
+	_UsesDatabase = 'Quotes'
 	
 	def setup(self):
 		self.rehash()
 	
 	def rehash(self):
-		self.Options = self.OptionsDict('Quotes')
+		self.Options = self.OptionsDict('Quotes', autosplit=True)
 	
 	# ---------------------------------------------------------------------------
 	
@@ -28,6 +34,12 @@ class Quotes(Plugin):
 			regexp = r'^addquote (?P<quote>.+)$',
 			help = ('addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
 		)
+		if self.Options.get('spam_interval', 0) > 0:
+			self.addTimedEvent(
+				method = self.__Query_Spam,
+				interval = self.Options['spam_interval'],
+				targets = self.Options['spam_targets']
+			)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to add a quote
@@ -78,5 +90,31 @@ class Quotes(Plugin):
 				self.putlog(LOG_ALWAYS, tolog)
 			
 			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Time to get a new quote to spam
+	def __Query_Spam(self, trigger):
+		self.dbQuery(trigger, self.__Spam_Quote, SELECT_QUOTE)
+	
+	def __Spam_Quote(self, trigger, result):
+		# Error!
+		if result is None:
+			replytext = 'An unknown database error occurred.'
+		
+		# No result!
+		elif result == ():
+			replytext = 'No quotes in database, someone sucks!'
+		
+		# Spam it!
+		else:
+			if self.Options['spam_prefix']:
+				replytext = '%s %s' % (self.Options['spam_prefix'], result[0]['quote'])
+			else:
+				replytext = result[0]['quote']
+			
+			# And update the seen count
+			self.dbQuery(trigger, None, UPDATE_QUOTE, result[0]['quote'])
+		
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
