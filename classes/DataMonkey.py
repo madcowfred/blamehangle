@@ -10,7 +10,7 @@ other things to happen at the same time.
 """
 
 import time
-from Queue import *
+from Queue import Empty, Queue
 from threading import Thread
 
 from classes import Database
@@ -52,7 +52,8 @@ class DataMonkey(Child):
 		
 		for i in range(self.conns):
 			db = DBclass(self.Config)
-			t = Thread(target=Database.DataThread, args=(self,db,i))
+			t = Thread(target=DatabaseThread, args=(self,db,i))
+			t.setDaemon(1)
 			t.setName('Database %d' % i)
 			self.threads.append([t, 0])
 			t.start()
@@ -88,5 +89,50 @@ class DataMonkey(Child):
 		message.data['db_queries'] = self.__queries
 		
 		self.sendMessage('HTTPMonster', GATHER_STATS, message.data)
+
+
+# ---------------------------------------------------------------------------
+
+def DatabaseThread(parent, db, myindex):
+	_sleep = time.sleep
+	
+	while 1:
+		# check if we have been asked to die
+		if parent.threads[myindex][1]:
+			return
+		
+		# check if there is a pending query for us to action
+		try:
+			message = parent.Requests.get_nowait()
+		except Empty:
+			_sleep(0.25)
+			continue
+		
+		# we have a query
+		trigger, method, query, args = message.data
+		
+		tolog = 'Query: "%s", Args: %s' % (query, repr(args))
+		parent.putlog(LOG_QUERY, tolog)
+		
+		try:
+			result = db.query(query, *args)
+		
+		except:
+			# Log the error
+			t, v = sys.exc_info()[:2]
+			
+			tolog = '%s - %s' % (t, v)
+			parent.putlog(LOG_WARNING, tolog)
+			
+			result = None
+			
+			db.disconnect()
+		
+		# Return our results
+		data = [trigger, method, result]
+		parent.sendMessage(message.source, REPLY_QUERY, data)
+		
+		# Clean up
+		del trigger, method, query, args, result
 
 # ---------------------------------------------------------------------------

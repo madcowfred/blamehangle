@@ -11,7 +11,6 @@ import os
 import sys
 import time
 import types
-from Queue import Empty, Queue
 
 from classes.Constants import *
 from classes.Message import Message
@@ -136,60 +135,5 @@ class SQLite(DatabaseWrapper):
 		module = __import__('sqlite', globals(), locals(), [])
 		
 		self.db = module.connect(self.Config.get('database', 'database'))
-
-# ---------------------------------------------------------------------------
-# A thread wrapper around the Database object.
-#
-# parent  -- something with an outQueue attribute, so we can send
-#            a reply
-# db      -- a pre-made Database object
-# myindex -- an index into parent.threads for the item describing
-#            this thread
-# ---------------------------------------------------------------------------
-def DataThread(parent, db, myindex):
-	myname = parent.threads[myindex][0].getName()
-	_sleep = time.sleep
-	
-	while 1:
-		# check if we have been asked to die
-		if parent.threads[myindex][1]:
-			return
-		
-		# check if there is a pending query for us to action
-		try:
-			message = parent.Requests.get_nowait()
-		
-		# if not, zzzzzz
-		except Empty:
-			_sleep(0.25)
-			continue
-		
-		# we have a query
-		trigger, method, query, args = message.data
-		
-		tolog = 'Query: "%s", Args: %s' % (query, repr(args))
-		parent.putlog(LOG_QUERY, tolog)
-		
-		try:
-			result = db.query(query, *args)
-		
-		except:
-			# Log the error
-			t, v = sys.exc_info()[:2]
-			
-			tolog = '%s - %s' % (t, v)
-			parent.putlog(LOG_WARNING, tolog)
-			
-			result = None
-			
-			db.disconnect()
-		
-		# Return our results
-		data = [trigger, method, result]
-		message = Message('DataMonkey', message.source, REPLY_QUERY, data)
-		parent.outQueue.append(message)
-		
-		# Clean up
-		del trigger, method, query, args, result
 
 # ---------------------------------------------------------------------------
