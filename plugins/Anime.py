@@ -108,7 +108,7 @@ class Anime(Plugin):
 					# If it's an exact match for what we're looking for, grab it
 					if name.lower() == findme:
 						url = AID_URL % m.group(1)
-						self.urlRequest(trigger, url)
+						self.urlRequest(trigger, self.__Parse_AniDB, url)
 						return
 					
 					result = '\x02[\x02%s\x02]\x02' % m.group(2)
