@@ -612,6 +612,7 @@ class News(Plugin):
 				
 				if len(result) > search_items:
 					replytext = 'Found \02%d\02 headlines, first \02%d\02' % (len(result), search_items)
+					result = result[:search_items]
 				else:
 					replytext = 'Found \02%d\02 headlines' % (len(result))
 				
