@@ -429,17 +429,19 @@ class SmartyPants(Plugin):
 				m = REDIRECT_RE.match(value)
 				if m:
 					factoid = self.__Sane_Name(m.group('factoid'))
-					# Not much use going somewhere for an empty redirect
-					if factoid  == '':
-						replytext = "'%s' redirects to nothing!" % (row['name'])
-						self.sendReply(trigger, replytext)
-					
-					else:
-						seen = [row['name']]
-						trigger.temp = (seen, factoid)
-						self.dbQuery(trigger, self.__Fact_Redirect, GET_QUERY, factoid)
-					
-					return
+					# We don't want ones with commas!
+					if ',' not in factoid:
+						# Not much use going somewhere for an empty redirect
+						if factoid  == '':
+							replytext = "'%s' redirects to nothing!" % (row['name'])
+							self.sendReply(trigger, replytext)
+						
+						else:
+							seen = [row['name']]
+							trigger.temp = (seen, factoid)
+							self.dbQuery(trigger, self.__Fact_Redirect, GET_QUERY, factoid)
+						
+						return
 			
 			# This factoid wasn't a <null>, so update stats and generate the
 			# reply
