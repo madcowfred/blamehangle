@@ -111,6 +111,7 @@ class Postman:
 	# -----------------------------------------------------------------------
 	# Load a plugin
 	def __Plugin_Load(self, name, runonce=0):
+		# Try to import
 		try:
 			module = __import__('plugins.' + name, globals(), locals(), [name])
 			globals()[name] = getattr(module, name)
@@ -119,24 +120,30 @@ class Postman:
 			tolog = "No such plugin: %s" % name
 			self.__Log(LOG_WARNING, tolog)
 		
-		else:
-			pluginpath = '%s.py' % os.path.join('plugins', name)
-			self.__mtimes[name] = os.stat(pluginpath).st_mtime
-			
-			tolog = "Starting plugin object '%s'" % name
-			self.__Log(LOG_ALWAYS, tolog)
-			
+		# Start it up
+		tolog = "Starting plugin object '%s'" % name
+		self.__Log(LOG_ALWAYS, tolog)
+		
+		try:
 			cls = globals()[name]
 			instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
-			self.__Children[cls.__name__] = instance
 			
 			if runonce and hasattr(instance, 'run_once'):
 				instance.run_once()
-			
+		
+		except:
+			self.__Log_Exception()
+		
+		else:
 			if hasattr(instance, 'run_always'):
 				self.__run_always.append(instance.run_always)
 			if hasattr(instance, 'run_sometimes'):
 				self.__run_sometimes.append(instance.run_sometimes)
+			
+			self.__Children[cls.__name__] = instance
+			
+			pluginpath = '%s.py' % os.path.join('plugins', name)
+			self.__mtimes[name] = os.stat(pluginpath).st_mtime
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
@@ -303,94 +310,7 @@ class Postman:
 				self.__Shutdown('Ctrl-C pressed')
 			
 			except:
-				_type, _value, _tb = sys.exc_info()
-				
-				# If it's a SystemExit exception, we're really meant to die now
-				if _type == SystemExit:
-					raise
-				
-				# Extract then delete, to avoid a circular reference thing
-				entries = traceback.extract_tb(_tb)
-				del _tb
-				
-				# Log these lines
-				logme = []
-				
-				# Remember the last filename
-				last_file = ''
-				
-				logme.append('*******************************************************')
-				
-				logme.append('Traceback (most recent call last):')
-				
-				for entry in entries:
-					last_file = entry[:-1][0]
-					tolog = '  File "%s", line %d, in %s' % entry[:-1]
-					logme.append(tolog)
-					tolog = '    %s' % entry[-1]
-					logme.append(tolog)
-				
-				for line in traceback.format_exception_only(_type, _value):
-					tolog = line.replace('\n', '')
-					logme.append(tolog)
-				
-				logme.append('*******************************************************')
-				
-				# Log all that stuff now
-				for line in logme:
-					self.__Log(LOG_ALWAYS, line)
-				
-				# Maybe e-mail our bosses
-				if self.__mail_tracebacks:
-					lines = []
-					
-					line = 'From: %s' % self.__mail_from
-					lines.append(line)
-					
-					mailto = ', '.join(self.__mail_tracebacks)
-					line = 'To: %s' % mailto
-					lines.append(line)
-					
-					line = 'Subject: blamehangle error message'
-					lines.append(line)
-					
-					line = 'X-Mailer: blamehangle Postman'
-					lines.append(line)
-					
-					lines.append('')
-					lines.append(MAIL_TEXT)
-					lines.append('')
-					lines.extend(logme)
-					
-					# Send it!
-					message = '\r\n'.join(lines)
-					
-					try:
-						server = smtplib.SMTP(self.__mail_server)
-						server.sendmail(self.__mail_from, self.__mail_tracebacks, message)
-						server.quit()
-					
-					except Exception, msg:
-						tolog = 'Error sending mail: %s' % msg
-						self.__Log(LOG_WARNING, tolog)
-					
-					else:
-						tolog = 'Sent error mail to: %s' % mailto
-						self.__Log(LOG_ALWAYS, tolog)
-				
-				# We crashed during shutdown? Not Good.
-				if self.__Stopping == 1:
-					self.__Log(LOG_ALWAYS, "Exception during shutdown, I'm outta here.")
-					sys.exit(-1)
-				
-				else:
-					# Was it a plugin? If so, we can try shutting it down
-					head, tail = os.path.split(last_file)
-					if head.endswith('plugins'):
-						root, ext = os.path.splitext(tail)
-						self.sendMessage(root, REQ_SHUTDOWN, None)
-					else:
-						self.__Shutdown('Crashed!')
+				self.__Log_Exception()
 	
 	#------------------------------------------------------------------------
 	# Our own mangled version of sendMessage
@@ -457,8 +377,8 @@ class Postman:
 		try:
 			self.__logfile = open(self.__logfile_filename, 'a+')
 		
-		except:
-			print "Failed to open our log file!"
+		except Exception, msg:
+			print "Failed to open our log file: %s" % (msg)
 			sys.exit(-1)
 		
 		else:
@@ -529,7 +449,98 @@ class Postman:
 		self.__logfile.flush()
 	
 	# -----------------------------------------------------------------------
+	# Log an exception nicely
+	def __Log_Exception(self):
+		_type, _value, _tb = sys.exc_info()
+		
+		# If it's a SystemExit exception, we're really meant to die now
+		if _type == SystemExit:
+			raise
+		
+		# Extract then delete, to avoid a circular reference thing
+		entries = traceback.extract_tb(_tb)
+		del _tb
+		
+		# Log these lines
+		logme = []
+		
+		# Remember the last filename
+		last_file = ''
+		
+		logme.append('*******************************************************')
+		
+		logme.append('Traceback (most recent call last):')
+		
+		for entry in entries:
+			last_file = entry[:-1][0]
+			tolog = '  File "%s", line %d, in %s' % entry[:-1]
+			logme.append(tolog)
+			tolog = '    %s' % entry[-1]
+			logme.append(tolog)
+		
+		for line in traceback.format_exception_only(_type, _value):
+			tolog = line.replace('\n', '')
+			logme.append(tolog)
+		
+		logme.append('*******************************************************')
+		
+		# Log all that stuff now
+		for line in logme:
+			self.__Log(LOG_ALWAYS, line)
+		
+		# Maybe e-mail our bosses
+		if self.__mail_tracebacks:
+			lines = []
+			
+			line = 'From: %s' % self.__mail_from
+			lines.append(line)
+			
+			mailto = ', '.join(self.__mail_tracebacks)
+			line = 'To: %s' % mailto
+			lines.append(line)
+			
+			line = 'Subject: blamehangle error message'
+			lines.append(line)
+			
+			line = 'X-Mailer: blamehangle Postman'
+			lines.append(line)
+			
+			lines.append('')
+			lines.append(MAIL_TEXT)
+			lines.append('')
+			lines.extend(logme)
+			
+			# Send it!
+			message = '\r\n'.join(lines)
+			
+			try:
+				server = smtplib.SMTP(self.__mail_server)
+				server.sendmail(self.__mail_from, self.__mail_tracebacks, message)
+				server.quit()
+			
+			except Exception, msg:
+				tolog = 'Error sending mail: %s' % msg
+				self.__Log(LOG_WARNING, tolog)
+			
+			else:
+				tolog = 'Sent error mail to: %s' % mailto
+				self.__Log(LOG_ALWAYS, tolog)
+		
+		# We crashed during shutdown? Not Good.
+		if self.__Stopping == 1:
+			self.__Log(LOG_ALWAYS, "Exception during shutdown, I'm outta here.")
+			sys.exit(-1)
+		
+		else:
+			# Was it a plugin? If so, we can try shutting it down
+			head, tail = os.path.split(last_file)
+			if head.endswith('plugins'):
+				root, ext = os.path.splitext(tail)
+				self.sendMessage(root, REQ_SHUTDOWN, None)
+			else:
+				self.__Shutdown('Crashed!')
 	
+	# -----------------------------------------------------------------------
 	# Load config info
 	def __Load_Configs(self):
 		config_dir = self.Config.get('plugin', 'config_dir')
