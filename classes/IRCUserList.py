@@ -4,6 +4,8 @@
 
 "Stores all sorts of information about IRC users."
 
+# ---------------------------------------------------------------------------
+
 # Shiny way to look at a channel.
 class ChanInfo:
 	def __init__(self, modelist):
@@ -45,6 +47,18 @@ class IRCUserList:
 		self._c = {}
 		self._u = {}
 		self._modelist = ['', '', '', '']
+	
+	# -----------------------------------------------------------------------
+	# Remove a userinfo object if the user is no longer on any channels
+	def __cleanup_user(self, ui):
+		still_here = False
+		for chan, ci in self._c.items():
+			if ui in ci.users:
+				still_here = True
+				break
+		
+		if not still_here:
+			del self._u[ui.nick]
 	
 	# -----------------------------------------------------------------------
 	
@@ -98,22 +112,21 @@ class IRCUserList:
 	def user_parted(self, chan, nick=None):
 		# Us
 		if nick is None:
+			uis = self._c[chan].users.keys()
 			del self._c[chan]
+			
+			_clean = self.__cleanup_user
+			for ui in uis:
+				_clean(ui)
+			
 		# Someone else
 		else:
 			ui = self._u.get(nick, None)
 			assert ui is not None and ui in self._c[chan].users
 			
 			del self._c[chan].users[ui]
-			# Now see if they're still on a channel
-			still_here = 0
-			for chan, ci in self._c.items():
-				if ui in ci.users:
-					still_here = 1
-					break
 			
-			if not still_here:
-				del self._u[nick]
+			self.__cleanup_user(ui)
 	
 	def user_quit(self, hostmask=None, nick=None):
 		if nick is None:
