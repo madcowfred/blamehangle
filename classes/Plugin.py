@@ -50,7 +50,7 @@ class Plugin(Child):
 		
 		else:
 			raise NameError, 'need to define register() in %s' % self._name
-		
+	
 	# Default trigger handler
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
@@ -68,9 +68,9 @@ class Plugin(Child):
 	
 	# Default DNS reply handler, eek
 	def _message_REPLY_DNS(self, message):
-		trigger, method, hosts = message.data
+		trigger, method, hosts, args = message.data
 		if method is not None:
-			method(trigger, hosts)
+			method(trigger, hosts, args)
 	
 	# Default query reply handler, eek
 	def _message_REPLY_QUERY(self, message):
