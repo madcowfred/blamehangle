@@ -16,7 +16,6 @@ class Child:
 		self.__name = name
 		
 		self.outQueue = outQueue
-		#self.inQueue = Queue(0)
 		self.inQueue = []
 		self.Config = Config
 		
