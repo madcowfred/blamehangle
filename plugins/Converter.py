@@ -56,7 +56,7 @@ class Converter(Plugin):
 			if useme:
 				value = '%.1f' % useme[0][1](data['amt'])
 				result = '%s%s' % (value, MAPPINGS[data['to']][0])
-				replytext = '%s %s == %s %s' % (data['amt'], MAPPINGS[data['from']][0], result, data['to'])
+				replytext = '%s %s == %s' % (data['amt'], MAPPINGS[data['from']][0], result)
 			
 			else:
 				replytext = 'Unable to convert between %(from)s and %(to)s' % data
