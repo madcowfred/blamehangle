@@ -29,7 +29,7 @@ class PluginHandler(Child):
 		self.Plugins = self.Config.get('plugin', 'plugins').split()
 		
 		self.__Events = {}
-		for IRCType in [IRCT_PUBLIC, IRCT_PUBLIC_D, IRCT_MSG, IRCT_NOTICE, IRCT_CTCP, IRCT_TIMED]:
+		for IRCType in IRCT_ALL:
 			self.__Events[IRCType] = {}
 		self.__Help = {}
 		
@@ -39,6 +39,11 @@ class PluginHandler(Child):
 		event = PluginTextEvent('_HELPER_', (IRCT_PUBLIC_D, IRCT_MSG), re.compile('^help(.*?)$'), None, 10)
 		self.__Events[IRCT_PUBLIC_D]['_HELPER_'] = (event, self)
 		self.__Events[IRCT_MSG]['_HELPER_'] = (event, self)
+		
+		# Generic "Invalid command" handler
+		event = PluginTextEvent('_INVALID_', (IRCT_PUBLIC_D, IRCT_MSG), re.compile('^.*$'), None, -100)
+		self.__Events[IRCT_PUBLIC_D]['_INVALID_'] = (event, self)
+		self.__Events[IRCT_MSG]['_INVALID_'] = (event, self)
 	
 	# -----------------------------------------------------------------------
 	# Upon startup, we send a message out to every plugin asking them for
@@ -144,7 +149,11 @@ class PluginHandler(Child):
 			for plugin, event, m in triggered[priorities[-1]]:
 				trigger = PluginTextTrigger(event, m, IRCType, conn, target, userinfo)
 				if plugin is self:
-					self.__Helper(trigger)
+					if event.name == '_HELPER_':
+						self.__Helper(trigger)
+					elif event.name == '_INVALID_':
+						reply = PluginReply(trigger, 'Invalid command, try "help".', 1)
+						self._message_PLUGIN_REPLY(reply)
 				else:
 					self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 			
