@@ -264,9 +264,9 @@ class News(Plugin):
 	def _trigger_NEWS_SEARCH(self, trigger):
 		search_text = trigger.match.group('search_text')
 		if len(search_text) < 5:
-			self.sendReply(event, 'Search query is too short!')
+			self.sendReply(trigger, 'Search query is too short!')
 		elif len(search_text) > 50:
-			self.sendReply(event, 'Search query is too long!')
+			self.sendReply(trigger, 'Search query is too long!')
 		else:
 			search_text = search_text.replace("%", "\%")
 			search_text = search_text.replace('"', '\\\"')
@@ -275,7 +275,7 @@ class News(Plugin):
 			words = search_text.split()
 			
 			if len(words) > 8:
-				self.sendReply(event, 'Search query contains too many words!')
+				self.sendReply(trigger, 'Search query contains too many words!')
 			else:
 				crits = []
 				for word in words:
