@@ -85,7 +85,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	# An event happened, off we go
 	def __trigger_event(self, *args):
-		print self.connid, 'EVENT:', repr(args)
+		#print self.connid, 'EVENT:', repr(args)
 		event = IRCEvent(*args)
 		for method in self.__handlers:
 			method(self.connid, event)
@@ -139,8 +139,6 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		self.__read_buf = lines.pop()
 		
 		for line in lines:
-			print '<', repr(line)
-			
 			prefix = command = target = userinfo = None
 			arguments = []
 			
@@ -160,8 +158,6 @@ class asyncIRC(asyncore.dispatcher_with_send):
 				arguments = a[0].split()
 				if len(a) == 2:
 					arguments.append(a[1])
-			
-			#print 'prefix:', prefix, 'command:', command, 'args:', arguments
 			
 			
 			# Keep our nickname up to date
@@ -206,10 +202,6 @@ class asyncIRC(asyncore.dispatcher_with_send):
 					
 					# Trigger the event
 					self.__trigger_event(prefix, userinfo, command, target, arguments)
-					#if DEBUG:
-					#	print "command: %s, source: %s, target: %s, arguments: %s" % (
-					#		command, prefix, target, [m])
-					#self._handle_event(Event(command, prefix, target, [m]))
 			
 			else:
 				if command not in ('quit', 'ping'):
