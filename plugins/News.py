@@ -285,15 +285,21 @@ class News(Plugin):
 			
 			if len(words) > 8:
 				self.sendReply(trigger, 'Search query contains too many words!')
+			
 			else:
+				# We need to build a bit of a crazy query here
 				crits = []
-				for word in words:
-					crit = 'title like "%%%s%%"' % word
-					crits.append(crit)
-				critstr = ' and '.join(crits)
+				args = []
 				
-				query = SEARCH_QUERY % critstr
-				self.dbQuery(trigger, self.__News_Searched, query)
+				for word in words:
+					crit = 'title LIKE %s'
+					crits.append(crit)
+					arg = '%%%s%%' % word
+					args.append(arg)
+				
+				# Off we go
+				query = SEARCH_QUERY % (' AND '.join(crits))
+				self.dbQuery(trigger, self.__News_Searched, query, *args)
 	
 	# Spam some news
 	def __Spam_News(self, trigger):
