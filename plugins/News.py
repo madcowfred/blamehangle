@@ -7,16 +7,15 @@ Gathers news from Ananova Quirkies, Google News or any RSS feeds you might
 want to use.
 """
 
+import random
 import re
 import time
 import types
 import urlparse
 
-from random import Random
-
 from classes.Common import *
 from classes.Constants import *
-from classes.Plugin import *
+from classes.Plugin import Plugin
 from classes.SimpleRSSParser import SimpleRSSParser
 
 # ---------------------------------------------------------------------------
@@ -60,16 +59,14 @@ class News(Plugin):
 	
 	def setup(self):
 		# Load our outgoing queue
-		self.__outgoing = self.loadPickle('.news.outgoing') or []
+		self.__outgoing = self.loadPickle('.news_queue') or []
 		if self.__outgoing:
 			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
 			self.putlog(LOG_ALWAYS, tolog)
 		
-		currtime = time.time()
-		self.__Last_Clearout_Time = currtime
-		self.__rand_gen = Random(currtime)
+		self.__Last_Clearout_Time = time.time()
 		
-		self.RSS_Feeds = {}
+		self._RSS_Feeds = {}
 		
 		self.rehash()
 	
@@ -95,10 +92,10 @@ class News(Plugin):
 		self.__old_threshold = self.__old_days * 86400
 		
 		# Set up our targets dict
-		self.__Targets = {}
+		self._Targets = {}
 		for target in ('ananova_quirkies', 'google_business', 'google_health', 'google_science', 'google_sport', 'google_world'):
-			self.__Targets[target] = self.News_Options.pop(target, {})
-		self.__Targets['rss_default'] = self.RSS_Options.pop('default_targets', {})
+			self._Targets[target] = self.News_Options.pop(target, {})
+		self._Targets['rss_default'] = self.RSS_Options.pop('default_targets', {})
 		
 		# Update our RSS feed list
 		currtime = time.time()
@@ -113,29 +110,29 @@ class News(Plugin):
 				'interval': feedopts.get('interval', self.RSS_Options['default_interval']),
 				'maximum_new': feedopts.get('maximum_new', self.RSS_Options['default_maximum_new']),
 				'find_real_url': feedopts.get('find_real_url', 0),
-				'targets': feedopts.get('targets', self.__Targets['rss_default']),
+				'targets': feedopts.get('targets', self._Targets['rss_default']),
 				'checked': currtime,
 				'last-modified': None,
 			}
 			
 			# If the feed is new, just add it to the list
-			if name not in self.RSS_Feeds:
-				self.RSS_Feeds[name] = feed
+			if name not in self._RSS_Feeds:
+				self._RSS_Feeds[name] = feed
 			# It's already there, just update the bits we need to update
 			else:
 				for k in feed.keys():
 					if k not in ('checked', 'last-modified'):
-						self.RSS_Feeds[name][k] = feed[k]
+						self._RSS_Feeds[name][k] = feed[k]
 		
 		# And remove any that are no longer around
-		for name in self.RSS_Feeds.keys():
+		for name in self._RSS_Feeds.keys():
 			section = 'RSS.%s' % name
 			if section not in sections:
-				del self.RSS_Feeds[name]
+				del self._RSS_Feeds[name]
 	
 	# Make extra sure our news queue is saved
 	def shutdown(self, message):
-		self.savePickle('.news.outgoing', self.__outgoing)
+		self.savePickle('.news_queue', self.__outgoing)
 	
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check
@@ -145,37 +142,37 @@ class News(Plugin):
 			self.addTimedEvent(
 				method = self.__Fetch_Ananova_Quirkies,
 				interval = self.News_Options['ananova_quirkies_interval'],
-				targets = self.__Targets['ananova_quirkies'],
+				targets = self._Targets['ananova_quirkies'],
 			)
 		if self.News_Options['google_business_interval']:
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Business,
 				interval = self.News_Options['google_business_interval'],
-				targets = self.__Targets['google_business'],
+				targets = self._Targets['google_business'],
 			)
 		if self.News_Options['google_health_interval']:
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Health,
 				interval = self.News_Options['google_health_interval'],
-				targets = self.__Targets['google_health'],
+				targets = self._Targets['google_health'],
 			)
 		if self.News_Options['google_science_interval']:
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Science,
 				interval = self.News_Options['google_science_interval'],
-				targets = self.__Targets['google_science'],
+				targets = self._Targets['google_science'],
 			)
 		if self.News_Options['google_sport_interval']:
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Sport,
 				interval = self.News_Options['google_sport_interval'],
-				targets = self.__Targets['google_sport'],
+				targets = self._Targets['google_sport'],
 			)
 		if self.News_Options['google_world_interval']:
 			self.addTimedEvent(
 				method = self.__Fetch_Google_World,
 				interval = self.News_Options['google_world_interval'],
-				targets = self.__Targets['google_world'],
+				targets = self._Targets['google_world'],
 			)
 		# News search
 		self.addTextEvent(
@@ -195,12 +192,12 @@ class News(Plugin):
 			help = ('news', 'showfeed', "\02showfeed\02 <feed name> : Show some information about an RSS feed."),
 		)
 		# RSS feeds should be checked for readiness every 30 seconds
-		if self.RSS_Feeds:
+		if self._RSS_Feeds:
 			self.addTimedEvent(
 				method = self.__RSS_Check,
 				interval = 10,
 			)
-			tolog = 'Registered %d RSS feed(s)' % (len(self.RSS_Feeds))
+			tolog = 'Registered %d RSS feed(s)' % (len(self._RSS_Feeds))
 			self.putlog(LOG_ALWAYS, tolog)
 		# Timed event for cleaning up the database once an hour
 		self.addTimedEvent(
@@ -261,21 +258,38 @@ class News(Plugin):
 		if not self.__outgoing:
 			return
 		
-		# We pull out a random item from our outgoing list so that we
-		# don't end up posting slabs of stories from the same site.
-		index = self.__rand_gen.randint(0, len(self.__outgoing) - 1)
-		reply = self.__outgoing.pop(index)
+		# We pull out a random item from our outgoing list to try and avoid
+		# posting slabs of stories from the same site.
+		index = random.randint(0, len(self.__outgoing) - 1)
+		source, replytext = self.__outgoing.pop(index)
+		
+		# See if we can find some targets
+		targets = {}
+		if source in self._Targets:
+			targets = self._Targets[source]
+		elif source in self._RSS_Feeds:
+			targets = self._RSS_Feeds[source]['targets']
+		
+		# No targets... kill everything for that feed and try again
+		if not targets:
+			tolog = "Found news item for '%s' but it has no targets!" % (source)
+			self.putlog(LOG_DEBUG, tolog)
+			
+			self.__outgoing = [i for i in self.__outgoing if i[0] != source]
+			if self.__outgoing:
+				self.__Spam_News(trigger)
+			return
 		
 		# Spit it out
-		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
+		self.privmsg(targets, None, replytext)
 		
-		tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
+		tolog = "%s news item(s) remaining in outgoing queue" % (len(self.__outgoing))
 		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	# List of feeds
 	def __Feed_List(self, trigger):
-		names = self.RSS_Feeds.keys()
+		names = self._RSS_Feeds.keys()
 		if names:
 			names.sort()
 			replytext = 'I currently check \x02%d\x02 RSS feeds: %s' % (len(names), ', '.join(names))
@@ -286,9 +300,9 @@ class News(Plugin):
 	# Show info about an RSS feed
 	def __Feed_Show(self, trigger):
 		findme = trigger.match.group('feed').lower()
-		matches = [name for name in self.RSS_Feeds.keys() if name.lower() == findme]
+		matches = [name for name in self._RSS_Feeds.keys() if name.lower() == findme]
 		if matches:
-			feed = self.RSS_Feeds[matches[0]]
+			feed = self._RSS_Feeds[matches[0]]
 			replytext = "'%s' is %s every %d seconds" % (matches[0], feed['url'], feed['interval'])
 		else:
 			replytext = 'Sorry, no feed by that name.'
@@ -297,42 +311,46 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def __Fetch_Ananova_Quirkies(self, trigger):
+		trigger.source = 'ananova_quirkies'
 		self.urlRequest(trigger, self.__Parse_Ananova, ANANOVA_QUIRKIES_URL)
 	
 	def __Fetch_Google_Business(self, trigger):
+		trigger.source = 'google_business'
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_BUSINESS_URL)
 	
 	def __Fetch_Google_Health(self, trigger):
+		trigger.source = 'google_health'
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_HEALTH_URL)
 	
 	def __Fetch_Google_Science(self, trigger):
+		trigger.source = 'google_science'
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SCIENCE_URL)
 	
 	def __Fetch_Google_Sport(self, trigger):
+		trigger.source = 'google_sport'
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SPORT_URL)
 	
 	def __Fetch_Google_World(self, trigger):
+		trigger.source = 'google_world'
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
 	
 	# See if any feeds should be triggering around about now
 	def __RSS_Check(self, trigger):
 		currtime = time.time()
 		
-		ready = [(feed['checked'], name, feed) for name, feed in self.RSS_Feeds.items() if currtime - feed['checked'] >= feed['interval']]
+		ready = [(feed['checked'], name, feed) for name, feed in self._RSS_Feeds.items() if currtime - feed['checked'] >= feed['interval']]
 		ready.sort()
 		
 		for checked, name, feed in ready[:1]:
+			trigger.source = name
 			feed['checked'] = currtime
-			
-			# Build a fake timed event trigger
-			new_trigger = PluginTimedTrigger('__FAKE__RSS__', 1, feed['targets'], [name])
 			
 			# Maybe send a If-Modified-Since header
 			if feed['last-modified'] is not None:
 				headers = {'If-Modified-Since': feed['last-modified']}
-				self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'], headers=headers)
+				self.urlRequest(trigger, self.__Parse_RSS, feed['url'], headers=headers)
 			else:
-				self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
+				self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
@@ -368,7 +386,7 @@ class News(Plugin):
 			articles.append(data)
 		
 		# Go for it!
-		self.__News_New(trigger, articles)
+		self.__News_New(trigger, 'ananova_quirkies', articles)
 	
 	# -----------------------------------------------------------------------
 	# Parse Google News!
@@ -425,8 +443,8 @@ class News(Plugin):
 		#resp.data = UnquoteHTML(resp.data)
 		
 		# Get our feed info
-		name = trigger.args[0]
-		feed = self.RSS_Feeds[name]
+		name = trigger.source
+		feed = self._RSS_Feeds[name]
 		
 		# Try to parse it
 		try:
@@ -524,10 +542,11 @@ class News(Plugin):
 			self.putlog(LOG_WARNING, '__News_Reply: A DB error occurred!')
 			return
 		
+		source = trigger.source
 		articles = trigger.articles
-		del trigger.articles
+		del trigger.source, trigger.articles
 		
-		# This way is anywhere from 2 to 20 times faster than the old way.
+		# Work out which articles are actually new ones
 		newarticles = []
 		
 		ltitles = dict([(row['title'].lower(), None) for row in result])
@@ -546,7 +565,6 @@ class News(Plugin):
 		# Add the new articles to our outgoing queue, then start adding them
 		# to the database.
 		ctime = time.time()
-		new = 0
 		
 		for title, url, description in newarticles:
 			replytext = '%s - %s' % (title, url)
@@ -560,16 +578,14 @@ class News(Plugin):
 				replytext = '%s : %s' % (replytext, description)
 			
 			# Stick it in the outgoing queue
-			reply = PluginReply(trigger, replytext)
-			self.__outgoing.append(reply)
+			item = (source, replytext)
+			self.__outgoing.append(item)
 			
 			# And insert it into the DB
 			self.dbQuery(trigger, None, INSERT_QUERY, title, url, description, ctime)
-			new += 1
 		
-		if new:
-			tolog = "Added %d news item(s) to the outgoing queue" % (new)
-			self.putlog(LOG_DEBUG, tolog)
+		tolog = "Added %d news item(s) to the outgoing queue" % (len(newarticles))
+		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title
