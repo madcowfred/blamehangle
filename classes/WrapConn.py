@@ -70,7 +70,8 @@ class WrapConn:
 		self.channels = self.options['channels'].split()
 		self.nicks = self.options['nicks'].split()
 		
-		self.realname = self.options.get('realname', 'blamehangle!')
+		self.realname = self.options.get('realname', 'blamehangle!').strip() or 'blamehangle!'
+		self.username = self.options.get('username', 'blamehangle').strip() or 'blamehangle'
 		self.vhost = self.options.get('vhost', None)
 		if self.vhost and not hasattr(socket, 'gaierror'):
 			self.parent.connlog("vhost is set, but socket module doesn't have getaddrinfo()!")
@@ -99,7 +100,7 @@ class WrapConn:
 		
 		
 		self.conn.connect_to_server(host, port, nick,
-									username=self.options.get('username'),
+									username=self.username,
 									ircname=self.realname,
 									vhost=self.vhost
 									)
