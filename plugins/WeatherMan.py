@@ -7,6 +7,7 @@
 import re
 from urllib import quote
 
+from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
@@ -87,11 +88,12 @@ class WeatherMan(Plugin):
 				
 				
 				# Find the chunk that tells us where we are
-				lines = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<script')
-				if lines == []:
+				chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<script')
+				if chunk is None:
 					self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
 					self.sendReply(trigger, 'Failed to parse page properly')
 					return
+				lines = StripHTML(chunk)
 				
 				# Extract location!
 				loc1 = lines[-1]
@@ -100,11 +102,12 @@ class WeatherMan(Plugin):
 				
 				
 				# Find the chunk with the weather data we need
-				lines = FindChunk(page_text, '<!--CURCON-->', '<!--END CURCON-->')
-				if lines == []:
+				chunk = FindChunk(page_text, '<!--CURCON-->', '<!--END CURCON-->')
+				if chunk is None:
 					self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
 					self.sendReply(trigger, 'Failed to parse page properly')
 					return
+				lines = StripHTML(chunk)
 				
 				# Extract current conditions!
 				for line in lines:
@@ -123,9 +126,11 @@ class WeatherMan(Plugin):
 						data['conditions'] = line
 				
 				
-				# Find some more weather data
-				lines = FindChunk(page_text, '<!--MORE CC-->', '<!--ENDMORE CC-->')
-				if lines != []:
+				# Maybe find some more weather data
+				chunk = FindChunk(page_text, '<!--MORE CC-->', '<!--ENDMORE CC-->')
+				if chunk is not None:
+					lines = StripHTML(chunk)
+					
 					# Extract!
 					chunk = 'Feels Like: %s' % (CandF(lines[2]))
 					data['feels'] = chunk
@@ -147,9 +152,11 @@ class WeatherMan(Plugin):
 					data['sunset'] = chunk
 				
 				
-				# Find the forecast
-				lines = FindChunk(page_text, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
-				if lines != []:
+				# Maybe find the forecast
+				chunk = FindChunk(page_text, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
+				if chunk is not None:
+					lines = StripHTML(chunk)
+					
 					# Extract!
 					fcs = []
 					
@@ -188,33 +195,6 @@ class WeatherMan(Plugin):
 				else:
 					replytext = '%s %s' % (location, ', '.join(chunks))
 					self.sendReply(trigger, replytext)
-
-# ---------------------------------------------------------------------------
-# Search through text, finding the text between start and end. Then run
-# StripHTML on it and return it.
-def FindChunk(text, start, end):
-	# Can we find the start?
-	startpos = text.find(start)
-	if startpos < 0:
-		return []
-	
-	# Can we find the end?
-	endpos = text.find(end, startpos)
-	if endpos <= startpos:
-		return []
-	
-	# No (or null range) text?
-	startspot = startpos + len(start)
-	if endpos <= startspot:
-		return []
-	
-	# Ok, we have some text now
-	chunk = text[startspot:endpos]
-	if len(chunk) == 0:
-		return []
-	
-	# Return some mangled text!
-	return StripHTML(chunk)
 
 # ---------------------------------------------------------------------------
 

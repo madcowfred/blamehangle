@@ -99,9 +99,8 @@ def Safe_Filename(filename):
 	
 	return safe_filename
 
+# Sort out the wacky timezone into something we can use
 def GetTZ():
-	'Sort out the wacky timezone into something we can use'
-	
 	# Use DST if it's there
 	if time.daylight:
 		tz = time.altzone
@@ -122,3 +121,29 @@ def GetTZ():
 	# Construct the time zone
 	hours, mins = divmod(tz / 60, 60)
 	return '%s%02d%02d' % (sign, hours, mins)
+
+# ---------------------------------------------------------------------------
+# Search through text, finding the chunk between start and end.
+def FindChunk(text, start, end):
+	# Can we find the start?
+	startpos = text.find(start)
+	if startpos < 0:
+		return None
+	
+	# Can we find the end?
+	endpos = text.find(end, startpos)
+	if endpos <= startpos:
+		return None
+	
+	# No (or null range) text?
+	startspot = startpos + len(start)
+	if endpos <= startspot:
+		return None
+	
+	# Ok, we have some text now
+	chunk = text[startspot:endpos]
+	if len(chunk) == 0:
+		return None
+	
+	# Return!
+	return chunk
