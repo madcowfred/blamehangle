@@ -63,11 +63,12 @@ class GetBotOps(Plugin):
 				if wrap.ircul.user_has_mode(chan, ournick, 'o'):
 					continue
 				
-				tries = 0
+				# See if we have any matching bots
 				for regexp in data['bots']:
 					matches = wrap.ircul.user_matches(chan, regexp)
 					found = 0
 					for ui in matches:
+						# If he's opped, ask him for ops
 						if wrap.ircul.user_has_mode(chan, ui.nick, 'o'):
 							self.privmsg(wrap, ui.nick, 'OP %s' % data['pass'])
 							
@@ -77,6 +78,8 @@ class GetBotOps(Plugin):
 							found = 1
 							break
 					
+					# If we found one, rearrange the bot list a bit so we try
+					# a different bot next time.
 					if found:
 						data['bots'] = data['bots'][1:] + data['bots'][:1]
 						break
