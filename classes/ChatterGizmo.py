@@ -247,8 +247,16 @@ class ChatterGizmo(Child):
 			
 			text = 'IDENTIFY %s' % (_pass)
 			self.privmsg(conn, _nick, text)
+			
+			# Delay our joins so we're identified
+			badtime = time.time() - 15
+			for chan in wrap.channels:
+				data = [badtime, wrap.conn, wrap.connect_id, chan]
+				self.__Rejoins.append(data)
 		
-		wrap.join_channels()
+		# Normal joining
+		else:
+			wrap.join_channels()
 	
 	# -----------------------------------------------------------------------
 	# We just got disconnected from the server
@@ -604,7 +612,7 @@ class ChatterGizmo(Child):
 		
 		if isinstance(conn, irclib.ServerConnection):
 			self.privmsg(conn, target, text)
-
+		
 		elif isinstance(conn, WrapConn):
 			for server_conn in self.Conns:
 				if self.Conns[server_conn] == conn:
@@ -615,9 +623,18 @@ class ChatterGizmo(Child):
 				net = network.lower()
 				for wrap in self.Conns.values():
 					if wrap.options['name'].lower() == net:
-						for target in targets:
+						# If we combine targets for this network, do that
+						if wrap.options.get('combine_targets', 1):
+							target = ','.join(targets)
 							self.privmsg(wrap.conn, target, text)
+						# Oh well, do it the slow way
+						else:
+							for target in targets:
+								self.privmsg(wrap.conn, target, text)
+						
 						break
 		
 		else:
 			raise TypeError, 'unknown parameter type'
+
+# ---------------------------------------------------------------------------
