@@ -230,7 +230,7 @@ class TorrentScraper(Plugin):
 		builddate = ISODate(time.time())
 		
 		print >>rssfile, """<?xml version="1.0" encoding="iso-8859-1"?>
-<rss version="2.0" xmlns="http://backend.userland.com/rss2">
+<rss version="2.0">
 <channel>
 <title>TorrentScraper</title>
 <link>http://www.nowhere.com</link>
