@@ -15,11 +15,6 @@ from urllib import quote
 from classes.Constants import REPLY_URL
 
 # ---------------------------------------------------------------------------
-# An empty class!
-class EmptyClass:
-	pass
-
-# ---------------------------------------------------------------------------
 # Generic Message object that gets passed around the queues.
 # ---------------------------------------------------------------------------
 class Message:
@@ -63,43 +58,6 @@ class Message:
 		return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, data)
 
 # ---------------------------------------------------------------------------
-# Returns a nicely formatted size for display.
-# ---------------------------------------------------------------------------
-def Nice_Size(bytes):
-	bytes = float(bytes)
-	
-	if bytes < 1024:
-		return '<1KB'
-	elif bytes < (1024 * 1024):
-		return '%dKB' % (bytes / 1024)
-	else:
-		return '%.1fMB' % (bytes / 1024.0 / 1024.0)
-
-# ---------------------------------------------------------------------------
-# Strip all non-numeric characters from a number
-# ---------------------------------------------------------------------------
-def Number(num):
-	p = re.compile("\D")
-	sanenum = p.sub('', str(num))
-	
-	if sanenum:
-		return long(sanenum)
-	else:
-		return 0
-
-# ---------------------------------------------------------------------------
-# Make a "safe" filename that is valid on most systems (Windows at least).
-#
-# Replaces the following characters with an underscore (_):
-#   <space> \ | / : * ? < >
-# ---------------------------------------------------------------------------
-def Safe_Filename(filename):
-	safe_filename = os.path.basename(filename)
-	for char in [' ', "\\", '|', '/', ':', '*', '?', '<', '>']:
-		safe_filename = safe_filename.replace(char, '_')
-	
-	return safe_filename
-
 # Sort out the wacky timezone into something we can use
 def GetTZ():
 	# Use DST if it's there
