@@ -7,12 +7,11 @@ import errno
 import re
 import select
 
-from classes.Common import *
-from classes.Constants import *
-
 from classes import irclib
 
 from classes.Children import Child
+from classes.Common import *
+from classes.Constants import *
 from classes.Userlist import Userlist
 from classes.WrapConn import *
 
@@ -36,7 +35,7 @@ class ChatterGizmo(Child):
 		# Add handlers for each event in this array to call handle_event
 		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
 		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
-		for event in [ 'welcome', 'namreply', 'join', 'part', 'kick', 'quit',
+		for event in [ 'welcome', 'disconnect', 'namreply', 'join', 'part', 'kick', 'quit',
 			'pubmsg', 'privmsg', 'ctcp' ]:
 			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
 	
@@ -44,6 +43,15 @@ class ChatterGizmo(Child):
 	
 	def run_once(self):
 		self.connect()
+	
+	def run_sometimes(self, currtime):
+		for conn, wrap in self.Conns.items():
+			if wrap.status == STATUS_DISCONNECTED and (currtime - wrap.last_connect) >= 5:
+				wrap.jump_server()
+			
+			elif wrap.status == STATUS_CONNECTING and (currtime - wrap.last_connect) >= 30:
+				self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
+				wrap.jump_server()
 	
 	def run_always(self):
 		try:
@@ -91,7 +99,8 @@ class ChatterGizmo(Child):
 		self.putlog(level, newtext)
 	
 	# -----------------------------------------------------------------------
-	
+	# Raw 001 - Welcome to the server, foo
+	# -----------------------------------------------------------------------
 	def _handle_welcome(self, conn, event):
 		tolog = 'Connected to %s:%d' % self.Conns[conn].server
 		self.Conns[conn].status = STATUS_CONNECTED
@@ -104,6 +113,15 @@ class ChatterGizmo(Child):
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
 		self.Conns[conn].join_channels()
+	
+	# -----------------------------------------------------------------------
+	# We just got disconnected from the server
+	# -----------------------------------------------------------------------
+	def _handle_disconnect(self, conn, event):
+		self.Conns[conn].status = STATUS_DISCONNECTED
+		self.Conns[conn].last_connect = time.time()
+		
+		self.connlog(conn, LOG_ALWAYS, 'Disconnected from server')
 	
 	# -----------------------------------------------------------------------
 	# Someone just joined a channel (including ourselves)
@@ -277,6 +295,8 @@ class ChatterGizmo(Child):
 			data = [conn, IRCT_CTCP, userinfo, None, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
+	# -----------------------------------------------------------------------
+	
 	# This should include some sort of flood control or error checking or
 	# something. This is the quick hack version so I can see if shit is working
 	def _message_REQ_PRIVMSG(self, message):
@@ -286,10 +306,11 @@ class ChatterGizmo(Child):
 	# Return the conn object for <foo> network
 	def _message_REQ_CONN(self, message):
 		network = message.data.lower()
-		conn = None
-		for wrap in self.Conns:
+		found = None
+		
+		for conn, wrap in self.Conns.items():
 			if wrap.options['name'].lower() == network:
-				conn = wrap.conn
+				found = conn
 				break
 		
-		self.sendMessage(message.source, REPLY_CONN, conn)
+		self.sendMessage(message.source, REPLY_CONN, found)
