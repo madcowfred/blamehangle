@@ -89,8 +89,8 @@ class async_http(asyncore.dispatcher_with_send):
 		self.method = message.data[1]
 		# we need '+' instead of ' '
 		self.url = re.sub(r'\s+', '+', message.data[2])
-		# See if we have POST parameters
-		if message.data[3]:
+		# POST parameters, but only if we're NOT redirecting!s
+		if message.data[3] and not seen:
 			self.post_data = urllib.urlencode(message.data[3])
 		else:
 			self.post_data = None
