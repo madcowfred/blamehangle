@@ -283,7 +283,7 @@ class SmartyPants(Plugin):
 				self.sendReply(trigger, 'Factoid name is too long!')
 		else:
 			self.dbQuery(trigger, self.__Fact_Set, GET_QUERY, name)
-		
+	
 	# -----------------------------------------------------------------------
 	# Somone wants to replace a factoid definition
 	def _trigger_FACT_NO(self, trigger):
@@ -361,63 +361,6 @@ class SmartyPants(Plugin):
 		self.dbQuery(trigger, self.__Fact_Tell, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
-	
-	def asdf_message_REPLY_QUERY(self, message):
-		trigger, results = message.data
-		
-		if 1:
-			return
-		
-		elif trigger.name == FACT_REDIRECT:
-			self.__Fact_Redirect(trigger, results)
-		
-		elif trigger.name == FACT_SET:
-			self.__Fact_Set(trigger, results)
-		
-		elif trigger.name == FACT_NO:
-			self.__Fact_No(trigger, results)
-		
-		elif trigger.name == FACT_ALSO:
-			self.__Fact_Also(trigger, results)
-		
-		elif trigger.name == FACT_DEL:
-			self.__Fact_Del(trigger, results)
-		
-		elif trigger.name == FACT_REPLACE:
-			self.__Fact_Replace(trigger, results)
-		
-		elif trigger.name == FACT_LOCK:
-			self.__Fact_Lock(trigger, results)
-		
-		elif trigger.name == FACT_UNLOCK:
-			self.__Fact_Unlock(trigger, results)
-		
-		elif trigger.name == FACT_INFO:
-			self.__Fact_Info(trigger, results)
-			
-		elif trigger.name == FACT_STATUS:
-			self.__Fact_Status(trigger, results)
-		
-		elif trigger.name == FACT_LISTKEYS:
-			self.__Fact_Search(trigger, results, "key")
-		
-		elif trigger.name == FACT_LISTVALUES:
-			self.__Fact_Search(trigger, results, "value")
-		
-		elif trigger.name == FACT_TELL:
-			self.__Fact_Tell(trigger, results)
-		
-		elif trigger.name == FACT_UPDATEDB:
-			# The database just made our requested modifications, so we just
-			# pass.
-			pass
-		
-		else:
-			# We got a wrong message, what the fuck?
-			errtext = "Database sent SmartyPants an erroneous %s" % trigger
-			raise ValueError, errtext
-	
-	# -----------------------------------------------------------------------
 	# A user asked to lookup a factoid. We've already dug it out of the
 	# database, so all we need to do is formulate a reply and send it out.
 	# -----------------------------------------------------------------------
@@ -427,16 +370,18 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply('An unknown database error occurred.')
+		
 		# No result
 		elif result == ():
 			# The factoid wasn't in our database
 			if trigger.event.IRCType == IRCT_PUBLIC:
 				return
-			else:
-				replytext = random.choice(DUNNO)
-				self.sendReply(trigger, replytext)
-				
-				self.__dunnos += 1
+			
+			self.__dunnos += 1
+			
+			replytext = random.choice(DUNNO)
+			self.sendReply(trigger, replytext)
+		
 		# Found it!
 		else:
 			row = result[0]
@@ -496,9 +441,6 @@ class SmartyPants(Plugin):
 				self.sendReply(trigger, replytext)
 			
 			# Update the request count and nick
-			trigger.name = FACT_UPDATEDB
-			
-			#name = row['name']
 			requester_nick = trigger.userinfo.nick
 			requester_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
 			now = int(time.time())
@@ -511,16 +453,17 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply('An unknown database error occurred.')
+		
 		# No result, redirect failed
 		elif result == ():
 			# Don't say anything if it was a public request
 			if trigger.event.IRCType == IRCT_PUBLIC:
 				return
-			else:
-				replytext = "'%s' redirects to '%s', which doesn't exist" % trigger.temp
-				self.sendReply(trigger, replytext)
-				
-				self.__dunnos += 1
+			
+			self.__dunnos += 1
+			
+			replytext = "'%s' redirects to '%s', which doesn't exist" % trigger.temp
+			self.sendReply(trigger, replytext)
 		
 		# Result.. yay
 		else:
@@ -531,6 +474,7 @@ class SmartyPants(Plugin):
 			if m:
 				replytext = "'%s' redirects too many times!" % trigger.temp[0]
 				self.sendReply(trigger, replytext)
+			
 			# Otherwise, do the normal GET stuff
 			else:
 				self.__Fact_Get(trigger, result, redirect=0)
@@ -564,7 +508,7 @@ class SmartyPants(Plugin):
 				return
 			
 			row = result[0]
-			replytext = "...but '%(name)s' is already set to something else..." % row
+			replytext = "...but '%s' is already set to something else!" % row['name']
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
@@ -581,7 +525,6 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
 		
 		# No result, insert it
 		elif result == ():
@@ -601,11 +544,9 @@ class SmartyPants(Plugin):
 			
 			# If it's locked, make sure the user has the lock flag
 			row = result[0]
-			if row['locker_nick']:
-				if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
-					replytext = "You don't have permission to alter locked factoids."
-					self.sendReply(trigger, replytext)
-					return
+			if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
+				self.sendReply(trigger, "You don't have permission to alter locked factoids.")
+				return
 			
 			self.__modifys += 1
 			
@@ -624,7 +565,6 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
 		
 		# No result, insert it (cheat a bit)
 		elif result == ():
@@ -633,10 +573,9 @@ class SmartyPants(Plugin):
 		# Already in our database
 		else:
 			row = result[0]
-			if row['locker_nick']:
-				if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
-					self.sendReply(trigger, "You are not allowed to alter locked factoids.")
-					return
+			if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
+				self.sendReply(trigger, "You are not allowed to alter locked factoids.")
+				return
 			
 			new_value = "%s, or %s" % (row['value'], value)
 			self.__Fact_Update(trigger, new_value)
@@ -665,29 +604,24 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
 		
 		# No result
 		elif result == ():
 			replytext = "No such factoid: '%s'" % name
 			self.sendReply(trigger, replytext)
-			return
 		
 		# It was in our database, delete it!
 		else:
 			row = result[0]
 			if row['locker_nick']:
-				if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
-					replytext = "The factoid '%s' is locked, unlock it before deleting." % name
-				else:
-					replytext = "You don't have permission to alter locked factoids."
-				
+				replytext = "The factoid '%s' is locked, unlock it before deleting." % name
 				self.sendReply(trigger, replytext)
 				return
 			
 			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'delete'):
 				replytext = "You don't have permission to delete factoids."
 				self.sendReply(trigger, replytext)
+				return
 			
 			self.__dels += 1
 			self.dbQuery(trigger, self.__Query_DELETE, DEL_QUERY, name)
@@ -700,13 +634,11 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
 		
 		# No result
 		elif result == ():
 			replytext = "No such factoid: '%s'" % name
 			self.sendReply(trigger, replytext)
-			return
 		
 		# It was in our database, modify it!
 		else:
@@ -714,8 +646,7 @@ class SmartyPants(Plugin):
 			value = row['value']
 			
 			if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
-				replytext = "You don't have permission to alter locked factoids."
-				self.sendReply(trigger, replytext)
+				self.sendReply(trigger, "You don't have permission to alter locked factoids.")
 				return
 			
 			modstring = trigger.match.group('modstring')
@@ -783,13 +714,11 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
 		
 		# No result
 		elif result == ():
 			replytext = "No such factoid: '%s'" % name
 			self.sendReply(trigger, replytext)
-			return
 		
 		# It was in our database, lock it!
 		else:
@@ -803,8 +732,7 @@ class SmartyPants(Plugin):
 			
 			# Check user permissions
 			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
-				replytext = "You don't have permission to lock factoids."
-				self.sendReply(trigger, replytext)
+				self.sendReply(trigger, "You don't have permission to lock factoids.")
 				return
 			
 			# Lock it
@@ -823,13 +751,11 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
 		
 		# No result
 		elif result == ():
 			replytext = "No such factoid: '%s'" % name
 			self.sendReply(trigger, replytext)
-			return
 		
 		# It was in our database, lock it!
 		else:
@@ -842,8 +768,7 @@ class SmartyPants(Plugin):
 			
 			# Check user permissions
 			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
-				replytext = "You don't have permission to unlock factoids."
-				self.sendReply(trigger, replytext)
+				self.sendReply(trigger, "You don't have permission to lock factoids.")
 				return
 			
 			# Unlock it
@@ -857,10 +782,11 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
+		
 		# No result
 		elif result == ():
 			replytext = "No such factoid: '%s'" % name
+		
 		# A result!
 		else:
 			row = result[0]
@@ -907,11 +833,12 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
+		
 		# No result
 		elif result == ():
 			replytext = "Factoid search of '\02%s\02' by %s returned no results." % (findme, what)
 			self.sendReply(trigger, replytext)
+		
 		# Some results!
 		else:
 			# Too many!
@@ -935,10 +862,11 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
-			return
+		
 		# No result
 		elif result == ():
 			replytext = "No such factoid: '%s'" % name
+		
 		# A result!
 		else:
 			self.__requests += 1
@@ -970,9 +898,11 @@ class SmartyPants(Plugin):
 		# Error!
 		if result is None:
 			replytext = 'An unknown database error occurred.'
+		
 		# Insert failed
 		elif result == 0:
 			replytext = 'Factoid %s failed, eek!' % thing
+		
 		# Insert succeeded
 		elif result == 1:
 			if trigger.event.IRCType == IRCT_PUBLIC:
@@ -1025,41 +955,21 @@ class SmartyPants(Plugin):
 		if years:
 			part = '%dy' % years
 			parts.append(part)
-			#text += "%d year" % years
-			#if years > 1:
-			#	text += "s, "
-			#else:
-			#	text += ", "
 		
 		# a day
 		if days:
 			part = '%dd' % days
 			parts.append(part)
-			#text += "%d day" % days
-			#if days > 1:
-			#	text += "s, "
-			#else:
-			#	text += ", "
 		
 		# an hour
 		if hours:
 			part = '%dh' % hours
 			parts.append(part)
-			#text += "%d hour" % hours
-			#if hours > 1:
-			#	text += "s, "
-			#else:
-			#	text += ", "
 		
 		# a minute
 		if minutes:
 			part = '%dm' % minutes
 			parts.append(part)
-			#text += "%d minute" % minutes
-			#if minutes > 1:
-			#	text += "s, "
-			#else:
-			#	text += ", "
 		
 		# any leftover seconds
 		if seconds:
