@@ -117,7 +117,13 @@ class Postgres(DatabaseWrapper):
 		if self.db:
 			return
 		
-		module = __import__('pgdb', globals(), locals(), [])
+		try:
+			module = __import__('pgdb', globals(), locals(), [])
+		except ImportError:
+			try:
+				module = __import__('psycopg', globals(), locals(), [])
+			except ImportError:
+				raise ImportError, "No module named pgdb or psycopg"
 		
 		self.db = module.connect(	host=self.Config.get('database', 'hostname'),
 									database=self.Config.get('database', 'database'),
