@@ -34,7 +34,7 @@ class TorrentScraper(Plugin):
 			self.URLs[self.Config.get('TorrentScraper-URLs', option)] = 0
 	
 	def register(self):
-		self.setTimedEvent(SCRAPE_TIMER, 10, None)
+		self.setTimedEvent(SCRAPE_TIMER, 60, None)
 		
 		self.registerEvents()
 	
