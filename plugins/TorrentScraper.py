@@ -35,7 +35,7 @@ class TorrentScraper(Plugin):
 	
 	def rehash(self):
 		# Easy way to get general options
-		self.SetupOptions('TorrentScraper')
+		self.Options = self.SetupOptions('TorrentScraper')
 		
 		# Get the list of URLs from our config
 		newurls = {}
@@ -53,20 +53,18 @@ class TorrentScraper(Plugin):
 				del self.URLs[url]
 	
 	def register(self):
-		self.setTimedEvent(SCRAPE_TIMER, int(self.Options['request_interval']), None)
+		self.setTimedEvent(SCRAPE_TIMER, self.Options['request_interval'], None)
 		if self.Options['rss_path']:
-			self.setTimedEvent(RSS_TIMER, int(self.Options['rss_interval']) * 60, None)
-			#self.setTimedEvent(RSS_TIMER, 10, None)
+			self.setTimedEvent(RSS_TIMER, self.Options['rss_interval'], None)
 		
 		self.registerEvents()
 	
 	# -----------------------------------------------------------------------
 	# Get some URLs that haven't been checked recently
 	def _trigger_SCRAPE_TIMER(self, trigger):
-		interval = int(self.Options['scrape_interval']) * 60
 		now = time.time()
 		
-		ready = [k for k, v in self.URLs.items() if now - v > interval]
+		ready = [k for k, v in self.URLs.items() if now - v > self.Options['scrape_interval']]
 		if ready:
 			self.URLs[ready[0]] = now
 			self.urlRequest(trigger, self.__Parse_Page, ready[0])
@@ -219,7 +217,7 @@ class TorrentScraper(Plugin):
 <language>en-us</language>
 <lastBuildDate>%s</lastBuildDate>
 <generator>blamehangle</generator>
-<ttl>%s</ttl>""" % (builddate, int(self.Options['rss_interval']) * 60)
+<ttl>%s</ttl>""" % (builddate, self.Options['rss_interval'])
 		
 		# Items!
 		for row in result:
