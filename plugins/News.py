@@ -166,7 +166,7 @@ class News(Plugin):
 				feed['maximum_new'] = self.RSS_Options['maximum_new']
 			
 			if self.Config.has_option(section, 'interval'):
-				feed['interval'] = self.Config.getint(section, 'interval') * 60
+				feed['interval'] = self.Config.getint(section, 'interval')
 			else:
 				feed['interval'] = self.RSS_Options['default_interval']
 			feed['checked'] = currtime
