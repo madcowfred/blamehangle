@@ -33,7 +33,7 @@ class GrabBT(Plugin):
 			self.__files = None
 		
 		if not self.Options['commands'] and not self.Options['newfiles']:
-			self.putlog(LOG_4, "No channels configured!")
+			self.putlog(LOG_WARNING, "GrabBT has no channels configured!")
 		
 		# Compile our regexps
 		self.__grab_res = []
@@ -61,7 +61,7 @@ class GrabBT(Plugin):
 		
 		self.addTextEvent(
 			method = self.__Torrent_Grab,
-			regexp = re.compile(r'^grab (http://\S+)$'),
+			regexp = re.compile(r'^grab (http://.+)$'),
 			IRCTypes = (IRCT_PUBLIC_D,),
 		)
 		self.addTextEvent(
@@ -133,9 +133,10 @@ class GrabBT(Plugin):
 		# See if the URL matches any of our regexps
 		else:
 			found = 0
+			uq_url = UnquoteURL(url)
 			
 			for r in self.__grab_res:
-				if r.match(url):
+				if r.match(uq_url):
 					found = 1
 					break
 		
