@@ -181,24 +181,24 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	# Check google news every 5 minutes, and ananova every 6 hours
+	# Register all our news pages that we want to check
 	def _message_PLUGIN_REGISTER(self, message):
-		#gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
-		#gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
-		#gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
-		#gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
-		#anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
-		
-		#if self.__gwn_interval:
-		#	self.register(gwn)
-		#if self.__gsci_interval:
-		#	self.register(gsci)
-		#if self.__gh_interval:
-		#	self.register(gh)
-		#if self.__gbiz_interval:
-		#	self.register(gbiz)
-		#if self.__anaq_interval:
-		#	self.register(anaq)
+		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
+		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
+		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
+		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
+		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
+	
+		if self.__gwn_interval:
+			self.register(gwn)
+		if self.__gsci_interval:
+			self.register(gsci)
+		if self.__gh_interval:
+			self.register(gh)
+		if self.__gbiz_interval:
+			self.register(gbiz)
+		if self.__anaq_interval:
+			self.register(anaq)
 		
 		for name in self.RSS_Feeds:
 			feed = self.RSS_Feeds[name]
