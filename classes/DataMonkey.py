@@ -26,6 +26,8 @@ class DataMonkey(Child):
 		self.threads = []
 		self.Last_Status = time.time()
 		
+		self.__queries = 0
+		
 		self.conns = min(1, max(10, self.Config.getint('database', 'connections')))
 	
 	def rehash(self):
@@ -76,9 +78,16 @@ class DataMonkey(Child):
 		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
-	
 	# A database query, be afraid
 	def _message_REQ_QUERY(self, message):
 		# stuff the request into the request queue, which will be looked at
 		# next time around the _sometimes loop
 		self.Requests.put(message)
+		self.__queries += 1
+	
+	# -----------------------------------------------------------------------
+	# Someone wants some stats
+	def _message_GATHER_STATS(self, message):
+		message.data['db_queries'] = self.__queries
+		
+		self.sendMessage('HTTPMonster', GATHER_STATS, message.data)

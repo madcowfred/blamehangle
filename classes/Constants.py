@@ -57,6 +57,8 @@ REQ_URL = 'REQ_URL'
 REQ_LOAD_CONFIG = 'REQ_LOAD_CONFIG'
 REQ_REHASH = 'REQ_REHASH'
 
+GATHER_STATS = 'GATHER_STATS'
+
 # ---------------------------------------------------------------------------
 # Reply constants
 # ---------------------------------------------------------------------------

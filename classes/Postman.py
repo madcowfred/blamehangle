@@ -53,6 +53,7 @@ class Postman:
 		self.__run_always = []
 		self.__run_sometimes = []
 		
+		self.__Started = time.time()
 		self.__Stopping = 0
 		
 		# We can't recreate this all the time or children lose the reference
@@ -226,6 +227,11 @@ class Postman:
 						# Die!
 						elif message.ident == REQ_SHUTDOWN:
 							self.__Shutdown(message.data[0])
+						
+						# Someone wants some stats
+						elif message.ident == GATHER_STATS:
+							message.data['started'] = self.__Started
+							self.sendMessage('BotStatus', GATHER_STATS, message.data)
 						
 						# A child just shut itself down. If it was a plugin,
 						# "unimport" it.

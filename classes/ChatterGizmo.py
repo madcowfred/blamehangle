@@ -632,5 +632,19 @@ class ChatterGizmo(Child):
 		else:
 			tolog = "Unknown REQ_PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
 			self.putlog(LOG_WARNING, tolog)
+	
+	# Someone wants some stats
+	def _message_GATHER_STATS(self, message):
+		nets = 0
+		chans = 0
+		
+		for wrap in self.Conns.values():
+			nets += 1
+			chans += len(wrap.users.channels())
+		
+		message.data['irc_nets'] = nets
+		message.data['irc_chans'] = chans
+		
+		self.sendMessage('DataMonkey', GATHER_STATS, message.data)
 
 # ---------------------------------------------------------------------------

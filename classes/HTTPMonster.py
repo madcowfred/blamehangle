@@ -46,6 +46,8 @@ class HTTPMonster(Child):
 		self.active = 0
 		self.urls = []
 		
+		self._requests = 0
+		
 		self.rehash()
 	
 	def rehash(self):
@@ -70,6 +72,8 @@ class HTTPMonster(Child):
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
+		self._requests += 1
+		
 		# We need to quote spaces
 		url = re.sub(r'\s+', '%20', message.data[2])
 		
@@ -105,6 +109,12 @@ class HTTPMonster(Child):
 			async_http(self, hosts[0][1], origmsg, chunks, {})
 		else:
 			self.urls.append((hosts[0][1], origmsg, chunks))
+	
+	# Someone wants some stats
+	def _message_GATHER_STATS(self, message):
+		message.data['http_reqs'] = self._requests
+		
+		self.sendMessage('Postman', GATHER_STATS, message.data)
 
 # ---------------------------------------------------------------------------
 
