@@ -22,3 +22,4 @@ plugins:
 	* Leave notes for people (possibly combined with above)
 	* SmartyPants: Add/remove/ignore users via ctcp for admin. Possibly
 	  move user list to database?
+	* World time/date display
