@@ -576,8 +576,10 @@ class ChatterGizmo(Child):
 					if wrap.name.lower() == net:
 						# If we combine targets for this network, do that
 						if wrap.combine_targets:
-							target = ','.join(targets)
-							self.privmsg(wrap.conn.connid, target, text)
+							max_targets = wrap.conn.features['max_targets']
+							for i in range(0, len(targets), max_targets):
+								target = ','.join(targets[i:i+max_targets])
+								self.privmsg(wrap.conn.connid, target, text)
 						# Oh well, do it the slow way
 						else:
 							for target in targets:

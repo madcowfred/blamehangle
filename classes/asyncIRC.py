@@ -81,10 +81,11 @@ class asyncIRC(buffered_dispatcher):
 		self.status = STATUS_DISCONNECTED
 		self.welcomed = 0
 		
-		# Default features
+		# Sane defaults for features
 		self.features = {
-			'nicklen': 9,
 			'channel_types': ['#'],
+			'max_targets': 3,
+			'nicklen': 9,
 		}
 	
 	# Is this a channel?
@@ -217,6 +218,8 @@ class asyncIRC(buffered_dispatcher):
 					
 					if k == 'CHANTYPES':
 						self.features['channel_types'] = [c for c in v]
+					elif k == 'MAXTARGETS':
+						self.features['max_targets'] = int(v)
 					elif k == 'NICKLEN':
 						self.features['nicklen'] = int(v)
 			
