@@ -6,12 +6,53 @@
 
 import os
 import re
+import socket
+
+from classes.async_buffered import buffered_dispatcher
 
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
+# Some hosts are stupid
+WHOIS_HOSTS = {
+	'com': 'whois.crsnic.net',
+	'net': 'whois.crsnic.net',
+	'org': 'whois.publicinterestregistry.net',
+}
+
+# Originally borrowed from supybot
+WHOIS_LINES = {
+	'created': (
+		'Created On',
+		'Domain Registration Date',
+		'Creation Date',
+		'Domain registered',
+		'Registered on',
+	),
+	'updated': (
+		'Last Updated On',
+		'Domain Last Updated Date',
+		'Updated Date',
+		'Last Modified',
+		'changed',
+		'Last updated',
+	),
+	'expires': (
+		'Expiration Date',
+		'Domain Expiration Date',
+		'Record will expire on',
+		'Renewal Date',
+	),
+	'status': (
+		'Status',
+		'Domain Status',
+		'status',
+	),
+}
+    	
+
 
 class NetStuff(Plugin):
 	def setup(self):
@@ -39,6 +80,11 @@ class NetStuff(Plugin):
 			method = self.__ccTLD,
 			regexp = re.compile('^cctld (.+)$'),
 			help = ('net', 'cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
+		)
+		self.addTextEvent(
+			method = self.__Resolve_WHOIS,
+			regexp = re.compile('^whois (?P<domain>[A-Za-z0-9-\.]+)$'),
+			help = ('net', 'whois', '\02whois\02 <domain> : Look up <domain> in the WHOIS database.'),
 		)
 	
 	# ---------------------------------------------------------------------------
@@ -82,5 +128,127 @@ class NetStuff(Plugin):
 		
 		# Spit something out
 		self.sendReply(trigger, replytext)
+	
+	# ---------------------------------------------------------------------------
+	# Someone wants to WHOIS a domain! Resolve the whois server.
+	def __Resolve_WHOIS(self, trigger):
+		domain = trigger.match.group('domain').lower()
+		parts = domain.split('.')
+		if not (2 <= len(parts) <= 3 and 2 <= len(parts[-1]) <= 4):
+			self.sendReply(trigger, "That doesn't look like a domain!")
+			return
+		
+		wsn = '%s.whois-servers.net' % (parts[-1])
+		host = WHOIS_HOSTS.get(parts[-1], wsn)
+		
+		self.dnsLookup(trigger, self.__Fetch_WHOIS, host, domain, parts)
+	
+	# Go fetch the data we need!
+	def __Fetch_WHOIS(self, trigger, hosts, args):
+		domain, parts = args
+		
+		# We only want IPv4 hosts.
+		hosts = [h for h in hosts if h[0] == 4]
+		if not hosts:
+			replytext = "%s doesn't seem to be a valid TLD!" % (parts[-1])
+			self.sendReply(trigger, replytext)
+			return
+		
+		# Spawn the WHOIS client
+		async_whois(self, trigger, domain, hosts[0][1])
+	
+	# Parse the result!
+	def _Parse_WHOIS(self, trigger, domain, lines):
+		# Beep, fail
+		if not lines:
+			replytext = "No WHOIS data for '%s' found." % (domain)
+			self.sendReply(trigger, replytext)
+			return
+		
+		# Off we go
+		updated = created = expires = status = None
+		
+		for line in lines:
+			line = line.strip()
+			#print '>', repr(line)
+			if not line or ':' not in line:
+				continue
+			
+			if not created and [i for i in WHOIS_LINES['created'] if line.startswith(i)]:
+				created = line.split(':', 1)[1].strip()
+			elif not updated and [i for i in WHOIS_LINES['updated'] if line.startswith(i)]:
+				updated = line.split(':', 1)[1].strip()
+			elif not expires and [i for i in WHOIS_LINES['expires'] if line.startswith(i)]:
+				expires = line.split(':', 1)[1].strip()
+			elif not status and [i for i in WHOIS_LINES['status'] if line.startswith(i)]:
+				status = line.split(':', 1)[1].strip()
+			
+		
+		# See if we got some data
+		parts = []
+		
+		if status:
+			part = '\x02[\x02Status: %s\x02]\x02' % (status)
+			parts.append(part)
+		if created:
+			part = '\x02[\x02Created: %s\x02]\x02' % (created)
+			parts.append(part)
+		if updated:
+			part = '\x02[\x02Updated: %s\x02]\x02' % (updated)
+			parts.append(part)
+		if expires:
+			part = '\x02[\x02Expires: %s\x02]\x02' % (expires)
+			parts.append(part)
+		
+		# And spit something out
+		if parts:
+			replytext = "WHOIS data for '%s': %s" % (domain, ' '.join(parts))
+		else:
+			replytext = "No WHOIS data, or unable to parse result for '%s'." % (domain)
+		self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------
+
+class async_whois(buffered_dispatcher):
+	def __init__(self, parent, trigger, domain, host):
+		buffered_dispatcher.__init__(self)
+		
+		self.data = []
+		self.status = 0
+		
+		self.parent = parent
+		self.trigger = trigger
+		self.domain = domain
+		
+		# Create the socket
+		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		
+		# Try to connect.
+		try:
+			self.connect((host, 43))
+		except socket.gaierror, msg:
+			tolog = "Error while trying to WHOIS: %s" % (msg)
+			self.parent.putlog(LOG_WARNING, tolog)
+			self.close()
+	
+	def handle_connect(self):
+		# Nasty hack for stupid german server
+		if self.domain.endswith('.de'):
+			tosend = '-T dn,ace -C US-ASCII %s\r\n' % (self.domain)
+		else:
+			tosend = '%s\r\n' % self.domain
+		
+		self.send(tosend)
+	
+	def handle_read(self):
+		data = self.recv(4096)
+		#print repr(data)
+		self.data.append(data)
+	
+	def handle_close(self):
+		lines = ''.join(self.data).splitlines()
+		self.parent._Parse_WHOIS(self.trigger, self.domain, lines)
+		
+		self.close()
 
 # ---------------------------------------------------------------------------
