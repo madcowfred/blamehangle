@@ -1,6 +1,9 @@
 critical:
 
 important:
+	* Generic DB-backed way of storing/verifying user data. Needs to
+	  have a way for plugins to add their own flags. There are currently
+	  at least two seperate user settings (both for SmartyPants?).
 
 not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
@@ -23,3 +26,4 @@ plugins:
 	* SmartyPants: Add/remove/ignore users via ctcp for admin. Possibly
 	  move user list to database?
 	* World time/date display
+	* News: admin command to flush news queue.
