@@ -13,11 +13,11 @@ STATUS_DISCONNECTED = 'Disconnected'
 STATUS_CONNECTING = 'Connecting'
 STATUS_CONNECTED = 'Connected'
 
-CONNECT_TIMEOUT = 2
+CONNECT_TIMEOUT = 40
 CONNECT_HOLDOFF = 5
 
-STONED_INTERVAL = 5
-STONED_COUNT = 2
+STONED_INTERVAL = 40
+STONED_COUNT = 3
 
 # ---------------------------------------------------------------------------
 
