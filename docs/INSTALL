@@ -3,7 +3,8 @@ Requirements
 ------------
 * Python 2.2.x or greater
 * For some plugins, you will need a database of some kind. We currently support
-  MySQL and Postgres, via the MySQLdb and PyGreSQL modules respectively.
+  MySQL, Postgres and SQLite via the MySQLdb, PyGreSQL and PySQLite modules
+  respectively.
 
 
 ------------
@@ -32,6 +33,10 @@ Installation
     And for PostgreSQL:
     
     $ psql database < SomePlugin.sql
+    
+    And for SQLite:
+    
+    $ sqlite my.db < SomePlugin.sql
  
  5. Start the bot (preferably under screen):
     
