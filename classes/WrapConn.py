@@ -142,6 +142,4 @@ class WrapConn:
 			else:
 				return
 			
-			print 'sent stuff'
-			
 			self.last_output = currtime
