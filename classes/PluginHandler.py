@@ -36,8 +36,7 @@ class PluginHandler(Child):
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
 	def run_once(self):
-		for name in self.Plugins:
-			self.sendMessage(name, PLUGIN_REGISTER, [])
+		self.sendMessage(self.Plugins, PLUGIN_REGISTER, [])
 	
 	#------------------------------------------------------------------------
 
