@@ -3,6 +3,7 @@
 'Script to generate a useful HTML page from plugin information.'
 
 import os
+import re
 import sys
 
 sys.path.append('.')
@@ -53,7 +54,7 @@ tr.desc {
 	
 	for plugin in plugins:
 		# Nothing to see here
-		if plugin in ('__init__', 'SamplePlugin'):
+		if plugin in ('__init__', 'NFOrce', 'SamplePlugin'):
 			continue
 		
 		module = __import__('plugins.' + plugin, globals(), locals(), [plugin])
@@ -72,27 +73,54 @@ tr.desc {
 <td colspan="2">%s</td>
 </tr>""" % (plugin, module_doc))
 		
-		cmds = [c for c in dir(module) if c.endswith('_HELP')]
-		cmds.sort()
+		# Parse the plugin file looking for help. This is an ugly hack.
+		pname = os.path.join('plugins', plugin) + '.py'
+		lines = open(pname).read().splitlines()
 		
 		realcmds = []
 		
-		for command in cmds:
-			# Don't want these
-			if command in ('SET_HELP', 'UNSET_HELP'):
-				continue
-			
-			# Eat silly characters
-			help_text = getattr(module, command)
-			
-			help_text = help_text.replace('\02', '')
-			help_text = help_text.replace('<', '&lt;')
-			help_text = help_text.replace('>', '&gt;')
-			
-			# Split it into useful bits
-			command, help = help_text.split(' : ', 1)
-			
-			realcmds.append((command, help))
+		#bold_re = re.compile(r'\02(.+?)\02')
+		
+		for line in lines:
+			line = line.strip()
+			if line.startswith('help = ('):
+				help_text = eval(line[7:-1])[2]
+				
+				# Strip stupid junk
+				help_text = help_text.replace('\02', '')
+				help_text = help_text.replace('<', '&lt;')
+				help_text = help_text.replace('>', '&gt;')
+				#help_text = bold_re.sub(r'<b>\1</b>', help_text)
+				
+				# Split it into useful bits
+				command, help = help_text.split(' : ', 1)
+				
+				realcmds.append((command, help))
+				
+				
+		
+		
+		#cmds = [c for c in dir(module) if c.endswith('_HELP')]
+		#cmds.sort()
+		#
+		#realcmds = []
+		
+		#for command in cmds:
+		#	# Don't want these
+		#	if command in ('SET_HELP', 'UNSET_HELP'):
+		#		continue
+		#	
+		#	# Eat silly characters
+		#	help_text = getattr(module, command)
+		#	
+		#	help_text = help_text.replace('\02', '')
+		#	help_text = help_text.replace('<', '&lt;')
+		#	help_text = help_text.replace('>', '&gt;')
+		#	
+		#	# Split it into useful bits
+		#	command, help = help_text.split(' : ', 1)
+		#	
+		#	realcmds.append((command, help))
 		
 		# Really spit it out now
 		realcmds.sort()
