@@ -519,12 +519,12 @@ class SmartyPants(Plugin):
 		# Result.. yay
 		else:
 			row = result[0]
+			seen.append(row['name'])
 			
 			# If it's another redirect...
 			m = REDIRECT_RE.match(row['value'])
 			if m:
 				factoid = self.__Sane_Name(m.group('factoid'))
-				seen.append(row['name'])
 				
 				if factoid  == '':
 					replytext = "'%s' redirects to nothing!" % (row['name'])
