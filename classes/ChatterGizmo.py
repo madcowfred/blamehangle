@@ -22,6 +22,9 @@ from classes.Users import *
 
 TIMER_RECONNECT = 'TIMER_RECONNECT'
 TIMER_TIMED_OUT = 'TIMER_TIMED_OUT'
+TIMER_STONED_CHECK = 'TIMER_STONED_CHECK'
+
+INTERVAL_STONED_CHECK = 10
 
 # ---------------------------------------------------------------------------
 
@@ -194,19 +197,21 @@ class ChatterGizmo(Child):
 	# Raw 001 - Welcome to the server, foo
 	# -----------------------------------------------------------------------
 	def _handle_welcome(self, conn, event):
-		tolog = 'Connected to %s:%d' % self.Conns[conn].server
-		self.Conns[conn].status = STATUS_CONNECTED
+		wrap = self.Conns[conn]
+		
+		wrap.connect_id += 1
+		wrap.status = STATUS_CONNECTED
+		
+		tolog = 'Connected to %s:%d' % wrap.server
 		self.connlog(conn, LOG_ALWAYS, tolog)
 		
 		# Start the stoned timer thing
-		#self.__Stoned_Check()
+		self.addTimer(TIMER_STONED_CHECK, INTERVAL_STONED_CHECK, conn, wrap.connect_id)
 		
 		# Tell FileMonster what our local IP is
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
-		self.Conns[conn].connect_id += 1
-		
-		self.Conns[conn].join_channels()
+		wrap.join_channels()
 	
 	# -----------------------------------------------------------------------
 	# We just got disconnected from the server
@@ -422,7 +427,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_privmsg(self, conn, event):
 		userinfo = UserInfo(event.source())
-
+		
 		if self.__users.check_user_flags(userinfo, 'ignore'):
 			return
 		
@@ -436,20 +441,27 @@ class ChatterGizmo(Child):
 			return
 		
 		wrap = self.Conns[conn]
-		data = [wrap, IRCT_MSG, userinfo, None, text]
-		self.sendMessage('PluginHandler', IRC_EVENT, data)
+		
+		# Stoned check
+		if userinfo.nick == conn.real_nickname:
+			wrap.stoned -= 1
+		
+		# Not a stoned check
+		else:
+			data = [wrap, IRCT_MSG, userinfo, None, text]
+			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
 	# Someone is sending us a CTCP
 	# -----------------------------------------------------------------------
 	def _handle_ctcp(self, conn, event):
 		# Ignore channel CTCPs
-		if event.target().startswith('#'):
+		if event.target() != self.Conns[conn].real_nickname:
 			return
 		
 		
 		userinfo = UserInfo(event.source())
-
+		
 		if self.__users.check_user_flags(userinfo, 'ignore'):
 			return
 		
@@ -519,6 +531,20 @@ class ChatterGizmo(Child):
 		if ident == TIMER_RECONNECT:
 			conn = data[0]
 			self.Conns[conn].jump_server()
+		
+		elif ident == TIMER_STONED_CHECK:
+			conn, connect_id = data
+			wrap = self.Conns[conn]
+			
+			# Same connection, do the increment check
+			if connect_id == wrap.connect_id:
+				wrap.stoned += 1
+				if wrap.stoned >= 4:
+					conn.disconnect()
+					return
+			
+			self.addTimer(TIMER_STONED_CHECK, INTERVAL_STONED_CHECK, conn, wrap.connect_id)
+			self.privmsg(conn, conn.real_nickname, 'stoned check!')
 		
 		#elif ident == TIMER_TIMED_OUT:
 		#	conn = data[0]

@@ -163,7 +163,7 @@ class WrapConn:
 				self.conn.nick(self.nicks[0])
 		
 		# Send some stuff from our output queues if we have to
-		if currtime - self.last_output >= 1:
+		if (currtime - self.last_output) >= 1:
 			if self.__ctcp_reply:
 				target, text = self.__ctcp_reply.pop(0)
 				self.conn.ctcp_reply(target, text)
