@@ -16,7 +16,8 @@ from select import select
 #from thread import start_new_thread
 from threading import *
 # we have our own version so we can mess with the user-agent string
-from classes.urllib2 import urlopen
+#from classes.urllib2 import urlopen
+import urllib2
 
 from classes.Children import Child
 from classes.Constants import *
@@ -40,7 +41,9 @@ class HTTPMonster(Child):
 			self.user_agent = self.Config.get('HTTP', 'useragent')
 		else:
 			# Default to Mozilla running in windows
-			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
+			#self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
+			# Default to FireBird instead
+			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4b) Gecko/20030516 Mozilla Firebird/0.6"
 		
 		# Set up our threads
 		if self.Config.has_option('HTTP', 'connections'):
@@ -51,14 +54,14 @@ class HTTPMonster(Child):
 				conns = 10
 		else:
 			conns = 2
-			
+		
 		self.urls = Queue(0)
 		self.threads = []
 		for i in range(conns):
 			the_thread = Thread(target=URLThread, args=(self,i))
 			self.threads.append([the_thread,0])
 			the_thread.start()
-
+			
 			tolog = "Started URL thread: %s" % the_thread.getName()
 			self.putlog(LOG_DEBUG, tolog)
 	
@@ -73,11 +76,11 @@ class HTTPMonster(Child):
 		_sleep = time.sleep
 		for i in range(len(self.threads)):
 			self.threads[i][1] = 1
-
+		
 		# wait until all our threads have exited
 		while [t for t,s in self.threads if t.isAlive()]:
 			_sleep(0.25)
-
+		
 		tolog = "All URL threads shutdown"
 		self.putlog(LOG_DEBUG, tolog)
 	
@@ -92,20 +95,20 @@ class HTTPMonster(Child):
 def URLThread(parent, myindex):
 	_sleep = time.sleep
 	_time = time.time
-
+	
 	while 1:
 		# check if we have been asked to die
 		if parent.threads[myindex][1]:
 			return
-
+		
 		# check if there is a url waiting for us to go and get
 		try:
 			message = parent.urls.get_nowait()
-
+		
 		# if not, take a nap
 		except Empty:
 			_sleep(0.25)
-
+		
 		# we have something to do
 		else:
 			returnme, url = message.data
@@ -117,7 +120,12 @@ def URLThread(parent, myindex):
 			
 			try:
 				# get the page
-				the_page = urlopen(url, parent.user_agent)
+				request = urllib2.Request()
+				#request.add_header("If-Modified-Since", format_http_date(modified))
+				request.add_header("User-Agent", parent.user_agent)
+				request.add_header("Accept-encoding", "gzip")
+				
+				the_page = urllib2.urlopen(request)
 				
 				pagetext = ''
 				while 1:
@@ -133,8 +141,8 @@ def URLThread(parent, myindex):
 						_sleep(0.05)
 					
 					elif (_time() - last_read >= 30):
-						raise Exception,' connection timed out'
-		
+						raise Exception, 'connection timed out'
+				
 				the_page.close()
 				
 				# XXX This shouldn't be needed, but I suspect these are hanging
