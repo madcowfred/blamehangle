@@ -116,11 +116,42 @@ class ChatterGizmo:
 		
 		# Us
 		if nick == conn.real_nickname:
-			self.Conns[conn].users.self_join(chan)
+			self.Conns[conn].users.joined(chan)
 			
 			#tolog = "Joined %s" % chan
 			#self.putlog(LOG_ALWAYS, tolog)
 		
 		# Not us
 		else:
-			self.Conns[conn].users.user_join(chan, nick)
+			self.Conns[conn].users.joined(chan, nick)
+	
+	# -----------------------------------------------------------------------
+	# Someone just parted a channel (including ourselves)
+	# -----------------------------------------------------------------------
+	def _handle_part(self, conn, event):
+		chan = event.target().lower()
+		nick = nm_to_n(event.source())
+		
+		# Us
+		if nick == connection.real_nickname:
+			self.Conns[conn].parted(chan)
+			
+			#tolog = 'Left %s' % chan
+			#self.putlog(LOG_ALWAYS, tolog)
+		
+		# Not us
+		else:
+			self.Conns[conn].parted(chan, nick)
+	
+	# -----------------------------------------------------------------------
+	# Numeric 353 : list of names in channel
+	# -----------------------------------------------------------------------
+	def _handle_namreply(self, conn, event):
+		chan = event.arguments()[1].lower()
+		
+		# Add each nick to the channel user list
+		for nick in event.arguments()[2].split():
+			if nick[0] in ('@', '+'):
+				nick = nick[1:]
+			
+			self.Conns[conn].joined(chan, nick)
