@@ -24,7 +24,7 @@ AIRLINE_HELP = "'\02airline\02 <code>' OR '\02airline\02 <partial name>' : looku
 AIRLINE_RE = re.compile(r'^airline\s+(?P<airline>.+)$')
 
 AIRLINE_AIRPORT = 'AIRLINE_AIRPORT'
-AIRPORT_HELP = "\02airport\02 <code> : look up an airport by it's IATA code"
+AIRPORT_HELP = "\02iata\02 <code> : look up an airport by it's IATA code"
 AIRPORT_RE = re.compile(r'^airport\s+(?P<code>\w+)$')
 AIRPORT_URL = 'http://www.flymig.com/iata/r/%s.htm'
 
@@ -125,7 +125,7 @@ class Airline(Plugin):
 		
 		# Someone is stupid
 		else:
-			replytext = "'%s' is not a valid IATA code!"
+			replytext = "'%s' is not a valid IATA code!" % code
 			self.sendReply(trigger, replytext)
 	
 	# Site replied
@@ -161,7 +161,10 @@ class Airline(Plugin):
 			data[key] = line[n+2:]
 		
 		# Build our output
-		loctext = '%s, %s' % (data['Country'], data['Airport'])
+		if 'Country' in data:
+			loctext = '%s, %s' % (data['Country'], data['Airport'])
+		else:
+			loctext = data['Airport']
 		
 		parts = []
 		for key in ('IATA', 'ICAO', 'Latitude', 'Longitude', 'Elevation'):
