@@ -170,6 +170,7 @@ def StripHTML(text):
 QUOTED = {
 	'amp': '&',
 	'nbsp': ' ',
+	'ordm': '°',
 	'quot': '"',
 }
 
