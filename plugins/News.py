@@ -612,12 +612,11 @@ class News(Plugin):
 				
 				if len(result) > search_items:
 					replytext = 'Found \02%d\02 headlines, first \02%d\02' % (len(result), search_items)
-					result = result[:search_items]
 				else:
 					replytext = 'Found \02%d\02 headlines' % (len(result))
 				
 				titles = []
-				for row in result:
+				for row in result[:search_items]:
 					title = '\02[\02%s\02]\02' % row['title']
 					titles.append(title)
 				
