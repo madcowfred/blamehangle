@@ -391,7 +391,7 @@ class News(Plugin):
 			articles.append(data)
 		
 		# Go for it!
-		self.__News_New(trigger, 'ananova_quirkies', articles)
+		self.__News_New(trigger, articles)
 	
 	# -----------------------------------------------------------------------
 	# Parse Google News!
