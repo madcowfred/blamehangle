@@ -4,6 +4,7 @@
 
 'Asks configured eggdrop bots for ops.'
 
+import random
 import re
 
 from classes.Common import CompileMask
@@ -30,8 +31,13 @@ class GetBotOps(Plugin):
 					'pass': chanopts['password'],
 				}
 				
+				# Keep a compiled version of the mask around
 				for mask in chanopts['bot'].values():
 					self.__Bots[network][chan]['bots'].append(CompileMask(mask))
+				
+				# Randomly shuffle the bot list so we don't always try the same
+				# bot first.
+				random.shuffle(self.__Bots[network][chan]['bots'])
 	
 	def register(self):
 		if self.Options['channels']:
