@@ -461,20 +461,21 @@ class News(Plugin):
 		
 		for item in r.items[:feed['maximum_new']]:
 			item_title = item.get('title', '<No Title>').strip() or '<No Title>'
+			article_title = '%s: %s' % (feed_title, item_title)
 			
 			# If we're ignoring items with no links, log and move on
-			if self.__rss_ignore_no_link:
-				if not item.has_key('link'):
+			if not item.has_key('link'):
+				if self.__rss_ignore_no_link:
 					tolog = "RSS item '%s' has no link!" % item_title
 					self.putlog(LOG_DEBUG, tolog)
 					continue
-				article_link = item['link'].replace('&amp;', '&')
-			else:
 				article_link = '<No Link>'
+			else:
+				article_link = item['link'].replace('&amp;', '&')
 			
 			description = item.get('description', '')
 			
-			article_title = '%s: %s' % (feed_title, item_title)
+			# Keep the article for later
 			data = [article_title, article_link, description, currtime]
 			articles.append(data)
 		
