@@ -25,8 +25,10 @@ GOOGLE_SCI_TARGETS = {
 						}
 						
 ANANOVA_TARGETS = {'GoonNET' : ['#grax']}
+
 GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
 GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
+ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
 
 
 class News(Plugin):
@@ -58,7 +60,7 @@ class News(Plugin):
 		reply = [
 		(IRCT_TIMED, 300, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
 		(IRCT_TIMED, 300, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
-		(IRCT_TIMED, 21600, ANANOVA_TARGETS, NEWS_ANANOVA)
+		(IRCT_TIMED, 3600, ANANOVA_TARGETS, NEWS_ANANOVA)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
@@ -68,11 +70,14 @@ class News(Plugin):
 		targets, token, _, IRCtype, _, _ = message.data
 
 		if token == NEWS_GOOGLE_WORLD:
+			#pass
 			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_WORLD, [targets, token, IRCtype]])
 		elif token == NEWS_GOOGLE_SCI:
+			#pass
 			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_SCI, [targets, token, IRCtype]])
 		elif token == NEWS_ANANOVA:
-			pass
+			#pass
+			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, [targets, token, IRCtype]])
 		else:
 			errstring = "News has no event: %s" % token
 			raise ValueError, errstring
@@ -81,11 +86,11 @@ class News(Plugin):
 
 	def run_sometimes(self, currtime):
 		# Periodically check if we need to send some text out to IRC
-		if currtime - self.__Last_Spam_Time > 30:
+		if currtime - self.__Last_Spam_Time >= 30:
 			if self.__outgoing:
-				reply = self.__outgoing[0]
+				reply = self.__outgoing.pop(0)
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
-				del self.__outgoing[0]
+				
 				self.__Last_Spam_Time = currtime
 
 			# This is also an appropriate place to check to see if any news
@@ -117,7 +122,8 @@ class News(Plugin):
 			store = self.__google_sci_news
 			self.__do_google(page_text, store, targets, token, IRCtype)
 		elif token == NEWS_ANANOVA:
-			self.__do_ananova(page_text, targets, token, IRCtype)
+			store = self.__ananova_news
+			self.__do_ananova(page_text, store, targets, token, IRCtype)
 	
 	# -----------------------------------------------------------------------
 
@@ -137,8 +143,19 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	
 	# haven't looked at ananova yet
-	def __do_ananova(self, page_text, targets, token, IRCtype):
-		pass
+	def __do_ananova(self, page_text, store, targets, token, IRCtype):
+		parser = Ananova()
+		parser.feed(page_text)
+		parser.close()
+		
+		for title in parser.news:
+			if not title in store:
+				# this is a new item!
+				store[title] = (parser.news[title], time.time())
+				replytext = "%s - %s" % (title, parser.news[title])
+				reply = [replytext, None, IRCtype, targets, None]
+				self.__outgoing.append(reply)
+		#pass
 	
 	# -----------------------------------------------------------------------
 
@@ -195,9 +212,7 @@ class News(Plugin):
 
 # A parser for google's news pages. Looks for the main story titles.
 class Google(HTMLParser):
-	def __init__(self):
-		HTMLParser.__init__(self)
-		self.news = {}
+	news = {}
 	
 	# If we come across an anchor tag, check to see if it has a "title"
 	# attribute. If it does, we have found a news story.
@@ -211,4 +226,25 @@ class Google(HTMLParser):
 				elif attr == 'title':
 					title = value
 			if title:
+				self.news[title] = href
+
+# ---------------------------------------------------------------------------
+
+# A parser for ananov'a news pages. Looks for story titles?
+class Ananova(HTMLParser):
+	news = {}
+	
+	def handle_starttag(self, tag, attributes):
+		if tag == 'a':
+			href = None
+			title = None
+			for attr, value in attributes:
+				if attr == 'href' and value.startswith('./story'):
+					# chop off the starting . and the ending ?menu=
+					realvalue = value[1:-6]
+					href = 'http://www.ananova.com/news' + realvalue
+				elif attr == 'title':
+					title = value
+			
+			if href and title:
 				self.news[title] = href
