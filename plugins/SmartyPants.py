@@ -108,24 +108,26 @@ MAX_FACT_SEARCH_RESULTS = 40
 
 # ---------------------------------------------------------------------------
 
-OK = [
+OK = (
 	"OK",
 	"you got it",
 	"done",
 	"okay",
 	"okie",
 	"as you wish",
-	"by your command"
-]
+	"by your command",
+	"yes sir",
+)
 
-DUNNO = [
+DUNNO = (
 	"no idea",
 	"I don't know",
 	"you got me",
 	"not a clue",
 	"nfi",
-	"I dunno"
-]
+	"I dunno",
+	"I'm not an encyclopedia",
+)
 
 # ---------------------------------------------------------------------------
 
