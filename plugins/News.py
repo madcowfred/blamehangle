@@ -63,8 +63,6 @@ class News(Plugin):
 			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
 			self.putlog(LOG_ALWAYS, tolog)
 		
-		self.__Last_Clearout_Time = time.time()
-		
 		self._RSS_Feeds = {}
 		
 		self.rehash()
@@ -214,10 +212,7 @@ class News(Plugin):
 	def __Query_Cleanup(self, trigger):
 		self.putlog(LOG_DEBUG, 'Purging old news')
 		
-		now = time.time()
-		old = now - self.__old_threshold
-		self.__Last_Clearout_Time = now
-		
+		old = int(time.time()) - self.__old_threshold
 		self.dbQuery(trigger, None, TIME_QUERY, old)
 	
 	# Search for some news
