@@ -230,7 +230,7 @@ class Postman:
 							self.__Log(*message.data)
 						
 						# Reload our config
-						elif message.ident == REQ_LOAD_CONFIG:
+						elif message.ident == REQ_REHASH:
 							self.__Reload_Config()
 						
 						# Die!

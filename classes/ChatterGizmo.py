@@ -535,7 +535,7 @@ class ChatterGizmo(Child):
 				
 				self.Conns[connid].notice(event.userinfo.nick, 'Rehashing...')
 				
-				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
+				self.sendMessage('Postman', REQ_REHASH, [])
 			
 			# If not, cry
 			else:
