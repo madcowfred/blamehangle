@@ -1,0 +1,28 @@
+------------
+Requirements
+------------
+* Python 2.2.x or greater
+* For some plugins, you will need a database of some kind. We currently support
+  MySQL and Postgres, via the MySQLdb and PyGreSQL modules respectively.
+
+
+------------
+Installation
+------------
+ 1. Since you're reading this, you've probably already extracted the files from
+    the .tar.gz. For the first step, you need to make a copy of the 'configs/'
+    directory:
+    
+    $ cp -R configs newname
+ 
+ 2. Copy 'sample.conf' to a new file, and open it up. There are quite a few
+    important options to set here, so follow the comments and get to it :)
+    Make sure you change the 'plugin/config_dir' option to the name you chose
+    for newname in the previous step.
+ 
+ 3. If any plugins that you plan to use have their own configuration file, edit
+    'newname/Plugin.conf'.
+ 
+ 4. Start the bot:
+    
+    $ ./start-blamehangle 'new.conf'
