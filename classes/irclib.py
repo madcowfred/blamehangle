@@ -66,7 +66,7 @@ please contact me (Joel Rosdahl <joel@rosdahl.net>).
 """
 
 import bisect
-import errno
+import os
 import re
 import select
 import socket
@@ -77,6 +77,13 @@ import types
 
 VERSION = 0, 3, 4
 DEBUG = 0
+
+# Some socket constants
+if os.name == 'nt':
+	EWOULDBLOCK = 10035
+	EINPROGRESS = 10036
+else:
+	from errno import EWOULDBLOCK, EINPROGRESS
 
 # TODO
 # ----
@@ -434,12 +441,10 @@ class ServerConnection(Connection):
 		try:
 			self.sock.connect((self.server, self.port))
 		except socket.error, msg:
-			# 10035 is the Winsock way of saying EINPROGRESS :\
-			if msg[0] in (errno.EINPROGRESS, 10035):
+			if msg[0] in (EWOULDBLOCK, EINPROGRESS):
 				self.status = STATUS_CONNECTING
 				pass
 			else:
-				print msg
 				raise ServerConnectionError, msg[0]
 		
 		return self
