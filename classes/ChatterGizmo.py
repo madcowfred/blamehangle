@@ -292,7 +292,7 @@ class ChatterGizmo(Child):
 		
 		for sign, mode, arg in modes:
 			# We don't care about non-user modes
-			if arg is None:
+			if arg is None or mode not in 'ovh':
 				continue
 			
 			if sign == '+':
