@@ -149,17 +149,7 @@ class asyncIRC(buffered_dispatcher):
 	
 	# An exception occured somewhere
 	def handle_error(self):
-		_type, _value = sys.exc_info()[:2]
-		
-		# ^C = die now please, let Postman handle it
-		if _type == 'KeyboardInterrupt':
-			raise
-		# Otherwise, do disconnect stuff
-		else:
-			if hasattr(_value, 'args'):
-				self.really_close([_value.args[-1]])
-			else:
-				self.really_close(str([_value]))
+		raise
 	
 	# There is some data waiting to be read
 	def handle_read(self):
