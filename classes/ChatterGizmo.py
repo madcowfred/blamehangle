@@ -21,7 +21,10 @@ from classes.Users import *
 # ---------------------------------------------------------------------------
 
 # bold | codes off | reverse | underline | 3 forms of colours
-STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,2}|\x03)')
+RE_STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,2}|\x03)')
+
+# regexp to see if people are addressing someone
+RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
 
 # ---------------------------------------------------------------------------
 
@@ -368,38 +371,28 @@ class ChatterGizmo(Child):
 	def _handle_pubmsg(self, conn, event):
 		chan = event.target().lower()
 		userinfo = UserInfo(event.source())
+		wrap = self.Conns[conn]
 		
+		# Don't do anything for ignored lamers
 		if self.__users.check_user_flags(userinfo, 'ignore'):
 			return
 		
 		# Strip any codes from the text
-		text = STRIP_CODES.sub('', event.arguments()[0])
+		text = RE_STRIP_CODES.sub('', event.arguments()[0])
 		
 		# Strip leading and trailing spaces
 		text = text.strip()
 		
+		# No text? Booo.
 		if text == '':
 			return
 		
 		# See if it's addressed to anyone
-		addr = 0
-		end = len(text)
-		for i in range(1, end):
-			if text[i] in (':;,'):
-				if (i + 1) < end and text[i+1] == ' ':
-					addr = i+2
-				else:
-					addr = i+1
-				break
-		
-		wrap = self.Conns[conn]
-		
-		# It's probably addressed to someone, see if it's us
-		if addr:
-			if not text[:addr-2].lower() == conn.real_nickname.lower():
+		m = RE_ADDRESSED.match(text)
+		if m:
+			to = m.group('nick')
+			if to.lower() != conn.real_nickname.lower():
 				return
-			
-			text = text[addr:].strip()
 			
 			data = [wrap, IRCT_PUBLIC_D, userinfo, chan, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
@@ -408,6 +401,26 @@ class ChatterGizmo(Child):
 		else:
 			data = [wrap, IRCT_PUBLIC, userinfo, chan, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
+		
+		#addr = 0
+		#end = len(text)
+		#for i in range(1, end):
+		#	if text[i] in (':;,'):
+		#		if (i + 1) < end and text[i+1] == ' ':
+		#			addr = i+2
+		#		else:
+		#			addr = i+1
+		#		break
+		
+		# It's probably addressed to someone, see if it's us
+		#if addr:
+		#	if not text[:addr-2].lower() == conn.real_nickname.lower():
+		#		return
+		#	
+		#	text = text[addr:].strip()
+		#	
+		#	data = [wrap, IRCT_PUBLIC_D, userinfo, chan, text]
+		#	self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
 	# Someone just said something to us in private!
@@ -425,7 +438,7 @@ class ChatterGizmo(Child):
 				return
 			
 			# Strip any codes from the text
-			text = STRIP_CODES.sub('', event.arguments()[0])
+			text = RE_STRIP_CODES.sub('', event.arguments()[0])
 			# Strip leading and trailing spaces
 			text = text.strip()
 			
