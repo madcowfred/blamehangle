@@ -13,10 +13,11 @@ from sgmllib import SGMLParseError
 
 # ---------------------------------------------------------------------------
 
+from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
-from classes.feedparser import FeedParser
 
+from classes.feedparser import FeedParser
 from classes.HTMLParser import HTMLParser, HTMLParseError
 
 # ---------------------------------------------------------------------------
@@ -368,6 +369,9 @@ class News(Plugin):
 			self.__do_rss(page_text, event, name)
 		
 		else:
+			# Remove annoying quoted bits
+			page_text = UnquoteHTML(page_text)
+			
 			if event.name in (NEWS_GOOGLE_WORLD, NEWS_GOOGLE_SCI, NEWS_GOOGLE_HEALTH,
 				NEWS_GOOGLE_BIZ):
 				
