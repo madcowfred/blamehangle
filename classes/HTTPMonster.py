@@ -25,6 +25,7 @@ from classes.Common import *
 
 dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
+HTTP_TIMEOUT = 5
 REDIRECT_LIMIT = 3
 
 # ---------------------------------------------------------------------------
@@ -63,6 +64,10 @@ class HTTPMonster(Child):
 		if self.urls and self.active < self.max_conns:
 			async_http(self, self.urls.pop(0), {})
 	
+	def run_sometimes(self, currtime):
+		for a in [a for a in asyncore.socket_map.values() if isinstance(a, async_http)]:
+			a.timeout_check(currtime)
+	
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
@@ -79,6 +84,7 @@ class async_http(asyncore.dispatcher_with_send):
 		
 		self.closed = 0
 		self.data = ''
+		self._error = None
 		self.header = ''
 		
 		self.parent = parent
@@ -135,9 +141,12 @@ class async_http(asyncore.dispatcher_with_send):
 			self.close()
 		else:
 			self.parent.active += 1
+			self.last_activity = time.time()
 	
 	# Connection succeeded
 	def handle_connect(self):
+		self.last_activity = time.time()
+		
 		# POST is a bit more complimicated
 		if self.post_data:
 			text = 'POST %s HTTP/1.0\r\n' % (self.path)
@@ -166,6 +175,8 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# Connection has data to read
 	def handle_read(self):
+		self.last_activity = time.time()
+		
 		self.data += self.recv(4096)
 		
 		if not self.header:
@@ -249,8 +260,22 @@ class async_http(asyncore.dispatcher_with_send):
 		if _type == 'KeyboardInterrupt':
 			raise
 		else:
-			tolog = "Error while trying to fetch url: %s - %s" % (self.url, _value)
-			self.parent.putlog(LOG_ALWAYS, tolog)
+			self.failed(_value)
+	
+	# See if we've timed out
+	def timeout_check(self, currtime):
+		print currtime, self.last_activity
+		
+		if currtime - self.last_activity > HTTP_TIMEOUT:
+			self.failed('Connection timed out')
+	
+	# Failed!
+	def failed(self, errormsg):
+		tolog = "Error while trying to fetch url: %s - %s" % (self.url, errormsg)
+		self.parent.putlog(LOG_ALWAYS, tolog)
+		
+		data = [self.trigger, self.method, None]
+		self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
 		if not self.closed:
