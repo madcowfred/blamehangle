@@ -123,9 +123,9 @@ class TorrentScraper(Plugin):
 			# See if any are talking about torrents
 			for chunk in chunks:
 				# Find the URL
-				href = FindChunk(chunk, 'href="', '"')
-				if not href:
-					href = FindChunk(chunk, 'HREF="', '"')
+				href = FindChunk(chunk, 'href="', '"') or \
+					FindChunk(chunk, "href='", "'") or \
+					FindChunk(chunk, 'HREF="', '"')
 				
 				if not href or href.find('.torrent') < 0:
 					continue
