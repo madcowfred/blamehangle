@@ -115,6 +115,10 @@ class TorrentScraper(Plugin):
 			self.putlog(LOG_WARNING, '__DB_Check: A DB error occurred!')
 			return
 		
+		if not hasattr(trigger, 'items'):
+			self.putlog(LOG_WARNING, 'items has gone missing again! ARGH!')
+			return
+		
 		items = trigger.items
 		del trigger.items
 		
@@ -133,7 +137,7 @@ class TorrentScraper(Plugin):
 		
 		# Start adding the items to our database
 		for item in items:
-			self.dbQuery(trigger, self.__DB_Inserted, INSERT_QUERY, *item)
+			self.dbQuery(trigger, None, INSERT_QUERY, *item)
 	
 	# An item has been inserted, try the next one if we have to
 	def __DB_Inserted(self, trigger, result):
