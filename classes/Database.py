@@ -66,10 +66,10 @@ class Database:
 # --------------------------------------------------------------
 # A thread wrapper around the Database object.
 #
-# Config   -- a ConfigParser object
-# outQueue -- a Queue object where we will place the query results
-#             for distribution
-# message  -- a message object with the query data inside
+# parent  -- something with an outQueue attribute, so we can send
+#            a reply
+# db      -- a pre-made Database object
+# message -- a message object with the data we need inside
 # --------------------------------------------------------------
 def DataThread(parent, db, message):
 	results = []
