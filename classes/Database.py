@@ -34,20 +34,21 @@ class DatabaseWrapper:
 			self.db.close()
 			self.db = None
 	
-	def query(self, sqlquery, *args):
+	def query(self, putlog, sqlquery, *args):
 		self._connect()
 		
 		cursor = self.db.cursor()
 		
-		sqlquery = self._manglesql(sqlquery)
-		
+		newquery = self._manglesql(sqlquery)
 		if args:
-			newquery = self._escape(sqlquery, args)
-			cursor.execute(newquery)
-		else:
-			cursor.execute(sqlquery)
+			newquery = self._escape(newquery, args)
 		
-		if sqlquery.startswith('SELECT'):
+		tolog = '"%s"' % (newquery)
+		putlog(LOG_QUERY, tolog)
+		
+		cursor.execute(newquery)
+		
+		if newquery.startswith('SELECT'):
 			result = self._makedict(cursor.description, cursor.fetchall())
 		else:
 			result = long(cursor.rowcount)

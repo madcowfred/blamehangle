@@ -113,11 +113,8 @@ def DatabaseThread(parent, db, myindex):
 		# we have a query
 		trigger, method, query, args = message.data
 		
-		tolog = 'Query: "%s", Args: %s' % (query, repr(args))
-		parent.putlog(LOG_QUERY, tolog)
-		
 		try:
-			result = db.query(query, *args)
+			result = db.query(parent.putlog, query, *args)
 		
 		except:
 			# Log the error
