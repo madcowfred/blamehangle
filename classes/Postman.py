@@ -46,17 +46,18 @@ class Postman:
 		# Create our children
 		self.__Children = {}
 
-		system = [ ChatterGizmo, PluginHandler, WhateverTheDatabaseIs ]
+		#system = [ ChatterGizmo, PluginHandler, WhateverTheDatabaseIs ]
+		system = [ ChatterGizmo ]
 		
 		for cls in system:
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
-
-		plugins = self.__Children['PluginHandler'].pluginList()
-
-		for cls in plugins:
-			instance = cls(cls.__name__, self.inQueue, self.Config)
-			self.__Children[cls.__name__] = instance
+		
+		#plugins = self.__Children['PluginHandler'].pluginList()
+		#
+		#for cls in plugins:
+		#	instance = cls(cls.__name__, self.inQueue, self.Config)
+		#	self.__Children[cls.__name__] = instance
 	
 	# -----------------------------------------------------------------------
 	
@@ -122,7 +123,7 @@ class Postman:
 				for child in self.__Children.values():
 					child.handleMessages()
 					
-					child.main_loop()
+					child.run_always()
 				
 				
 				# Do things that don't need to be done all that often

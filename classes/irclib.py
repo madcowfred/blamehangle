@@ -215,10 +215,9 @@ class IRC:
 		sockets = map(lambda x: x._get_socket(), self.connections)
 		sockets = filter(lambda x: x != None, sockets)
 		
-		if sock:
+		if sockets:
 			(i, o, e) = select.select(sockets, [], [], timeout)
-			if i:
-				self.connections[0].process_data()
+			self.process_data(i)
 		
 		elif timeout:
 			time.sleep(timeout)
@@ -438,12 +437,6 @@ class ServerConnection(Connection):
 		"""[Internal]"""
 		if self.connected:
 			return self.sock
-		else:
-			return None
-
-	def fileno(self):
-		if self.connected:
-			return self.sock.fileno()
 		else:
 			return None
 

@@ -6,14 +6,17 @@ __version__ = '$Id$'
 import errno
 import select
 
+from classes.Constants import *
+
 from classes import irclib
 
+from classes.Children import Child
 from classes.Userlist import Userlist
 from classes.WrapConn import *
 
 # ---------------------------------------------------------------------------
 
-class ChatterGizmo:
+class ChatterGizmo(Child):
 	"""
 	The IRC class. Does various exciting things, like the multiple IRC
 	server handling, and so on.
@@ -21,12 +24,19 @@ class ChatterGizmo:
 	
 	Conns = {}
 	
-	def __init__(self, Config):
-		self.Config = Config
-		
+	def setup(self):
+		print 'setup'
+
 		self.__ircobj = irclib.IRC()
-	
-	def main_loop(self):
+		# Add handlers for each event in this array to call handle_event
+		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
+		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
+		for event in [	"welcome", "namreply", "join", "part", "kick", "quit" ]:
+			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
+		
+		self.connect()
+
+	def run_always(self):
 		try:
 			self.__ircobj.process_once()
 		
@@ -34,17 +44,19 @@ class ChatterGizmo:
 			if msg[0] == errno.EINTR:
 				pass
 	
+	def run_sometimes(self, currtime):
+		pass
+	
 	# -----------------------------------------------------------------------
 	
 	def connect(self):
 		networks = []
 		for section in self.Config.sections():
 			if section.startswith('network.'):
-				networks.push(section)
+				networks.append(section)
 		
 		if not networks:
-			#putlog(no networks? how can this be?!)
-			print 'erk, no networks'
+			self.putlog(LOG_ALWAYS, 'no networks? how can this be?!')
 			return
 		
 		for network in networks:
@@ -52,10 +64,14 @@ class ChatterGizmo:
 			for option in self.Config.options(network):
 				options[option] = self.Config.get(network, option)
 			
+			tolog = "Found network: %s" % network
+			self.putlog(LOG_DEBUG, tolog)
+			
+			
 			conn = self.__ircobj.server()
 			self.Conns[conn] = WrapConn(conn, options)
 			
-			self.Conns[conn].do_connect()
+			self.Conns[conn].connect()
 	
 	# -----------------------------------------------------------------------
 	
@@ -67,11 +83,15 @@ class ChatterGizmo:
 		if self.Conns[conn].status == STATUS_CONNECTED:
 			conn.notice(nick, text)
 	
+	def connlog(self, conn, level, text):
+		newtext = '(%s) %s' % (self.Conns[conn].options['name'], text)
+		self.putlog(level, newtext)
+	
 	# -----------------------------------------------------------------------
 	
 	def _handle_welcome(self, conn, event):
-		#tolog = 'Connected to %s' % self.server_list[0]
-		#self.putlog(LOG_ALWAYS, tolog)
+		tolog = '[%s] Connected to %s' % (self.Conns[conn].options['name'], self.Conns[conn].server[0])
+		self.putlog(LOG_ALWAYS, tolog)
 		
 		# Start the stoned timer thing
 		#self.__Stoned_Check()
@@ -92,8 +112,8 @@ class ChatterGizmo:
 		if nick == conn.real_nickname:
 			self.Conns[conn].users.joined(chan)
 			
-			#tolog = "Joined %s" % chan
-			#self.putlog(LOG_ALWAYS, tolog)
+			tolog = "Joined %s" % chan
+			self.connlog(conn, LOG_ALWAYS, tolog)
 		
 		# Not us
 		else:
@@ -110,8 +130,8 @@ class ChatterGizmo:
 		if nick == conn.real_nickname:
 			self.Conns[conn].parted(chan)
 			
-			#tolog = 'Left %s' % chan
-			#self.putlog(LOG_ALWAYS, tolog)
+			tolog = 'Left %s' % chan
+			self.connlog(conn, LOG_ALWAYS, tolog)
 		
 		# Not us
 		else:
@@ -143,8 +163,8 @@ class ChatterGizmo:
 		kicked = event.arguments()[0]
 		
 		if kicked == connection.real_nickname:
-			#tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, kicker)
-			#self.putlog(LOG_ALWAYS, tolog)
+			tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, kicker)
+			self.connlog(conn, LOG_ALWAYS, tolog)
 			
 			self.Conns[conn].users.parted(chan)
 			conn.join(chan)
@@ -167,4 +187,4 @@ class ChatterGizmo:
 			if nick[0] in ('@', '+'):
 				nick = nick[1:]
 			
-			self.Conns[conn].joined(chan, nick)
+			self.Conns[conn].users.joined(chan, nick)

@@ -7,7 +7,8 @@ import time
 
 from ConfigParser import ConfigParser
 
-from ChatterGizmo import ChatterGizmo
+#from classes.ChatterGizmo import ChatterGizmo
+from classes.Postman import Postman
 
 # ---------------------------------------------------------------------------
 
@@ -33,15 +34,9 @@ def main():
 	Config = ConfigParser()
 	Config.read(ConfigFile)
 	
-	# Start up the ChatterGizmo
-	Gizmo = ChatterGizmo(Config)
-	
-	# Shortcut!
-	_sleep = time.sleep
-	
-	while 1:
-		Gizmo.main_loop()
-		_sleep(0.05)
+	# Start up the Postman, and run him forever
+	Post = Postman(ConfigFile, Config)
+	Post.run_forever()
 
 # ---------------------------------------------------------------------------
 	
