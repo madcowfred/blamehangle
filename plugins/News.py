@@ -5,18 +5,26 @@
 # news, and reports it.
 # exciting stuff.
 
-from classes.Plugin import *
+from random import Random
+import cPickle
+import time
+import types
+
 from classes.Constants import *
+from classes.Plugin import *
+from classes.rssparser import RSSParser
 
 from classes.HTMLParser import HTMLParser, HTMLParseError
-from random import Random
-import cPickle, time
+
+# ---------------------------------------------------------------------------
 
 NEWS_GOOGLE_WORLD = "NEWS_CHECK_GOOGLE"
 NEWS_GOOGLE_SCI = "NEWS_GOOGLE_SCI"
 NEWS_GOOGLE_HEALTH = "NEWS_GOOGLE_HEALTH"
 NEWS_GOOGLE_BIZ = "NEWS_GOOGLE_BIZ"
 NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
+
+NEWS_RSS = "NEWS_RSS"
 
 TITLE_INSERT = "TITLE_INSERT"
 TIME_CHECK = "TIME_CHECK"
@@ -63,6 +71,7 @@ GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
 GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
 
+# ---------------------------------------------------------------------------
 
 class News(Plugin):
 	"""
@@ -71,29 +80,31 @@ class News(Plugin):
 	This will search for updated news stories on Google News and Ananova
 	Quirkies (!), and reply with the title of and link to any that it finds.
 	"""
-
+	
+	RSS_Feeds = []
+	
 	def setup(self):
 		self.__outgoing = self.__unpickle('.news.out_pickle') or []
-
+		
 		self.__to_process = {}
 		
 		self.__Last_Spam_Time = time.time()
 		self.__Last_Clearout_Time = time.time()
-
+		
 		self.__rand_gen = Random(time.time())
-
+		
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
 		
 		old_days = self.Config.getint('News', 'old_threshold')
 		self.__old_threshold = old_days * 86400
-
+		
 		self.__gwn_targets = {}
 		self.__gsci_targets = {}
 		self.__gh_targets = {}
 		self.__gbiz_targets = {}
 		self.__anaq_targets = {}
 		self.__setup_targets()
-
+		
 		if self.Config.getboolean('News', 'verbose'):
 			tolog = "Using verbose mode for news"
 			self.__google = GoogleVerbose()
@@ -104,15 +115,20 @@ class News(Plugin):
 			self.__ananova = AnanovaBrief()
 		self.putlog(LOG_DEBUG, tolog)
 		
-
+		
 		self.__gwn_interval = self.Config.getint('News', 'google_world_interval')
 		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval')
 		self.__gh_interval = self.Config.getint('News', 'google_health_interval')
 		self.__gbiz_interval = self.Config.getint('News', 'google_business_interval')
 		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')
+		
+		# Do RSS feed setup
+		self.__rss_interval = self.Config.getint('RSS', 'interval') * 60
+		
+		self.__Setup_RSS_Feeds()
 	
 	# -----------------------------------------------------------------------
-
+	
 	def __setup_targets(self):
 		for option in self.Config.options('News'):
 			if option.startswith('google_world.'):
@@ -130,28 +146,61 @@ class News(Plugin):
 		network = option.split('.')[1]
 		targets = self.Config.get('News', option).split()
 		target_store[network] = targets
-		
 	
 	# -----------------------------------------------------------------------
-
+	# Do stuff
+	def __Setup_RSS_Feeds(self):
+		for section in self.Config.sections():
+			if not section.startswith('RSS.'):
+				continue
+			
+			feed = {}
+			
+			if self.Config.has_option(section, 'title'):
+				feed['title'] = self.Config.get(section, 'title')
+			else:
+				feed['title'] = None
+			
+			if self.Config.has_option(section, 'interval'):
+				feed['interval'] = self.Config.getint(section, 'interval') * 60
+			else:
+				feed['interval'] = self.__rss_interval
+			
+			feed['url'] = self.Config.get(section, 'url')
+			
+			feed['lastcheck'] = 0
+			
+			self.RSS_Feeds.append(feed)
+	
+	# -----------------------------------------------------------------------
+	
 	# Check google news every 5 minutes, and ananova every 6 hours
 	def _message_PLUGIN_REGISTER(self, message):
-		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
-		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
-		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
-		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
-		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
-
-		if self.__gwn_interval:
-			self.register(gwn)
-		if self.__gsci_interval:
-			self.register(gsci)
-		if self.__gh_interval:
-			self.register(gh)
-		if self.__gbiz_interval:
-			self.register(gbiz)
-		if self.__anaq_interval:
-			self.register(anaq)
+		#gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
+		#gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
+		#gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
+		#gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
+		#anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
+		
+		#if self.__gwn_interval:
+		#	self.register(gwn)
+		#if self.__gsci_interval:
+		#	self.register(gsci)
+		#if self.__gh_interval:
+		#	self.register(gh)
+		#if self.__gbiz_interval:
+		#	self.register(gbiz)
+		#if self.__anaq_interval:
+		#	self.register(anaq)
+		
+		for i in range(len(self.RSS_Feeds)):
+			feed = self.RSS_Feeds[i]
+			
+			tolog = 'Registering RSS feed %d: %s' % (i+1, feed['url'])
+			self.putlog(LOG_DEBUG, tolog)
+			
+			event = PluginTimedEvent(NEWS_RSS, feed['interval'], {'GoonNET':['#grax']}, i)
+			self.register(event)
 	
 	# -----------------------------------------------------------------------
 	
@@ -168,12 +217,25 @@ class News(Plugin):
 			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_BIZ, event])
 		elif event.name == NEWS_ANANOVA:
 			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, event])
+		elif event.name == NEWS_RSS:
+			self.__Check_RSS(event)
 		else:
 			errstring = "News has no event: %s" % event.name
 			raise ValueError, errstring
 	
 	# -----------------------------------------------------------------------
-
+	
+	def __Check_RSS(self, event):
+		currtime = time.time()
+		
+		i = event.args[0]
+		feed = self.RSS_Feeds[i]
+		
+		data = [feed['url'], (event, i)]
+		self.sendMessage('HTTPMonster', REQ_URL, data)
+	
+	# -----------------------------------------------------------------------
+	
 	def run_sometimes(self, currtime):
 		# Periodically check if we need to send some text out to IRC
 		if currtime - self.__Last_Spam_Time >= self.__spam_delay:
@@ -202,25 +264,33 @@ class News(Plugin):
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 	# -----------------------------------------------------------------------
-
+	
 	def _message_REPLY_URL(self, message):
 		page_text, event = message.data
-
-		if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI \
-			or event.name == NEWS_GOOGLE_HEALTH or event.name == NEWS_GOOGLE_BIZ:
-
-			parser = self.__google
-		elif event.name == NEWS_ANANOVA:
-			parser = self.__ananova
+		
+		# RSS feed
+		if type(event) == types.TupleType:
+			event, i = event
+			self.__do_rss(page_text, event, i)
+		
 		else:
-			errtext = "Unknown: %s" % event.name
-			raise ValueError, errtext
-
-		parser.reset_news()
-		self.__do_news(page_text, parser, event)
+			if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI \
+				or event.name == NEWS_GOOGLE_HEALTH or event.name == NEWS_GOOGLE_BIZ:
+				
+				parser = self.__google
+			
+			elif event.name == NEWS_ANANOVA:
+				parser = self.__ananova
+			
+			else:
+				errtext = "Unknown: %s" % event.name
+				raise ValueError, errtext
+			
+			parser.reset_news()
+			self.__do_news(page_text, parser, event)
 	
 	# -----------------------------------------------------------------------
-
+	
 	def __do_news(self, page_text, parser, event):
 		try:
 			parser.feed(page_text)
@@ -236,7 +306,23 @@ class News(Plugin):
 				data = [(event, title), (TITLE_QUERY, [title])]
 				self.__to_process[title] = parser.news[title]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
-				
+	
+	def __do_rss(self, page_text, event, i):
+		feed = self.RSS_Feeds[i]
+		
+		r = RSSParser()
+		r.feed(page_text)
+		
+		if feed['title']:
+			title = feed['title']
+		else:
+			title = r.channel['title']
+		
+		for item in r.items:
+			replytext = '%s: %s - %s' % (title, item['title'], item['link'])
+			reply = PluginReply(event, replytext)
+			self.__outgoing.append(reply)
+	
 	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_QUERY(self, message):
@@ -253,20 +339,20 @@ class News(Plugin):
 				# add it to the db!
 				data = [(TITLE_INSERT, title), (INSERT_QUERY, [title, time.time()])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
-				
+		
 		elif event == TITLE_INSERT:
 			# we just added a new item to our db
 			pass
 		elif event == TIME_CHECK:
 			# we just did an hourly check for old news
 			pass
-
+		
 		else:
 			errtext = "Unknown event: %s" % event
 			raise ValueError, errtext
 	
 	# -----------------------------------------------------------------------
-
+	
 	# Pickle an object into the given file
 	def __pickle(self, obj, pickle):
 		try:
@@ -297,8 +383,7 @@ class News(Plugin):
 			obj = cPickle.load(f)
 			f.close()
 			return obj
-				
-				
+
 # ---------------------------------------------------------------------------
 
 # A parser for google's news pages. Looks for the main story titles.
