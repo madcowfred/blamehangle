@@ -165,7 +165,7 @@ class ChatterGizmo(Child):
 		
 		# If we're supposed to use NickServ, do so
 		if wrap.nickserv_nick and wrap.nickserv_pass:
-			tolog = 'Identifying with %s' % (wrap.nicksev_nick)
+			tolog = 'Identifying with %s' % (wrap.nickserv_nick)
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
 			text = 'IDENTIFY %s' % (wrap.nickserv_pass)
