@@ -5,10 +5,12 @@
 'Karma. Someone put a useful description here.'
 
 import re
+import time
 
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
+from classes.SimpleCacheDict import SimpleCacheDict
 
 #----------------------------------------------------------------------------
 
@@ -35,14 +37,22 @@ class Karma(Plugin):
 	_UsesDatabase = 'Karma'
 	
 	def setup(self):
-		# build our translation string
 		self.__Build_Translation()
+		
+		self.HostCache = SimpleCacheDict(1)
+		self.NameCache = SimpleCacheDict(1)
+		self.LastRequests = []
 		
 		self.rehash()
 	
 	def rehash(self):
-		# Load our options
 		self.Options = self.OptionsDict('Karma')
+		
+		# Update our cache lengths and expire them
+		self.HostCache.cachesecs = self.Options['host_request_delay']
+		self.HostCache.expire()
+		self.NameCache.cachesecs = self.Options['key_request_delay']
+		self.NameCache.expire()
 		
 		# Set up our combines
 		self.__Combines = {}
@@ -112,6 +122,29 @@ class Karma(Plugin):
 		
 		return newname
 	
+	def __Check_Spam(self, host, name):
+		# User host
+		if host in self.HostCache:
+			#print 'still in HostCache'
+			return True
+		self.HostCache[host] = 1
+		
+		# Key name
+		if name in self.NameCache:
+			#print 'still in NameCache'
+			return True
+		self.NameCache[name] = 1
+		
+		# Recent requests
+		now = time.time()
+		self.LastRequests = [t for t in self.LastRequests if now - t < self.Options['total_request_delay']]
+		if len(self.LastRequests) >= self.Options['total_request_count']:
+			#print 'too many recent requests'
+			return True
+		self.LastRequests.append(now)
+		
+		return False
+	
 	#------------------------------------------------------------------------
 	
 	def __Query_Lookup(self, trigger):
@@ -122,10 +155,11 @@ class Karma(Plugin):
 			if name in self.__Combines:
 				combo = 1
 			else:
-				ks = [k for k, v in self.__Combines.items() if name in v]
-				if ks:
-					combo = 1
-					name = ks[0]
+				for k, v in self.__Combines.items():
+					if name in v:
+						combo = 1
+						name = v[0]
+						break
 			
 			# Looks like it does
 			if combo:
@@ -146,6 +180,9 @@ class Karma(Plugin):
 	def __Query_Plus(self, trigger):
 		name = self.__Sane_Name(trigger)
 		if name:
+			if self.__Check_Spam(trigger.userinfo.host, name):
+				return
+			
 			self.dbQuery(trigger, self.__Karma_Plus, SELECT_QUERY, name)
 		else:
 			self.sendReply(trigger, 'Invalid key name!')
@@ -153,6 +190,9 @@ class Karma(Plugin):
 	def __Query_Minus(self, trigger):
 		name = self.__Sane_Name(trigger)
 		if name:
+			if self.__Check_Spam(trigger.userinfo.host, name):
+				return
+			
 			self.dbQuery(trigger, self.__Karma_Minus, SELECT_QUERY, name)
 		else:
 			self.sendReply(trigger, 'Invalid key name!')
