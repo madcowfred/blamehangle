@@ -389,7 +389,7 @@ class MoneyMangler(Plugin):
 				country = chunk[vn+12:-6]
 				if code and country:
 					self.__Currencies[code] = country
-					print 'yep:', code, '=', country
+					#print 'yep:', code, '=', country
 				#else:
 				#	print 'nope:', repr(chunk), repr(code), repr(country)
 			#else:
