@@ -52,9 +52,9 @@ class News(Plugin):
 	# Check google news every 4 minutes, and ananova every 6 hours
 	def _message_PLUGIN_REGISTER(self, message):
 		reply = [
-		(TIMED, 2400, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
-		(TIMED, 2400, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
-		(TIMED, 18000, ANANOVA_TARGETS, NEWS_ANANOVA)
+		(IRCT_TIMED, 2400, GOOGLE_WORLD_TARGETS, NEWS_GOOGLE_WORLD),
+		(IRCT_TIMED, 2400, GOOGLE_SCI_TARGETS, NEWS_GOOGLE_SCI),
+		(IRCT_TIMED, 18000, ANANOVA_TARGETS, NEWS_ANANOVA)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	

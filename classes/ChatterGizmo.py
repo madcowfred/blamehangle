@@ -7,6 +7,7 @@ import errno
 import re
 import select
 
+from classes.Common import *
 from classes.Constants import *
 
 from classes import irclib
@@ -201,8 +202,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_pubmsg(self, conn, event):
 		chan = event.target().lower
-		nick = irclib.nm_to_n(event.source())
-		#userinfo = UserInfo(event.source())
+		userinfo = UserInfo(event.source())
 		
 		# Strip any codes from the text
 		text = STRIP_CODES.sub('', event.arguments()[0])
@@ -221,12 +221,13 @@ class ChatterGizmo(Child):
 		
 		# It's probably addressed to someone, see if it's us
 		if addr:
-			ournick = conn.real_nickname
-			if not text.startswith(ournick):
+			if not text.startswith(conn.real_nickname):
 				return
 			
 			text = text[addr:]
+			
+			self.sendMessage('PluginHandler', PUBLIC_D, [conn, userinfo, text])
 		
 		# It's not addressed to anyone, so do whatever we do here
 		else:
-			a = 'b'
+			self.sendMessage('PluginHandler', PUBLIC, [conn, userinfo, text])

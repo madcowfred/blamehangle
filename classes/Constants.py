@@ -29,12 +29,12 @@ PLUGIN_REPLY = 'PLUGIN_REPLY'
 # IRCtype constants
 # ---------------------------------------------------------------------------
 
-PUBLIC = 'IRCT_PUBLIC'
-PUBLIC_D = 'IRCT_PUBLIC_D' # public lines directed to the bot, "Blamhangle: blah"
-MSG = 'IRCT_MSG'
-NOTICE = 'IRCT_NOTICE'
-CTCP = 'IRCT_CTCP'
-TIMED = 'IRCT_TIMED'
+IRCT_PUBLIC = 'IRCT_PUBLIC'
+IRCT_PUBLIC_D = 'IRCT_PUBLIC_D' # public lines directed to the bot, "Blamhangle: blah"
+IRCT_MSG = 'IRCT_MSG'
+IRCT_NOTICE = 'IRCT_NOTICE'
+IRCT_CTCP = 'IRCT_CTCP'
+IRCT_TIMED = 'IRCT_TIMED'
 
 # ---------------------------------------------------------------------------
 # Request constants

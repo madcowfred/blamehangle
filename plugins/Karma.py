@@ -45,10 +45,10 @@ class Karma(Plugin):
 
 	def _message_PLUGIN_REGISTER(self, message):
 		reply = [
-		(PUBLIC, PLUS_RE, [0], KARMA_PLUS),
-		(PUBLIC, MINUS_RE, [0], KARMA_MINUS),
-		(PUBLIC_D, LOOKUP_RE, ['name'], KARMA_LOOKUP),
-		(MSG, LOOKUP_RE, ['name'], KARMA_LOOKUP)
+		(IRCT_PUBLIC, PLUS_RE, [0], KARMA_PLUS),
+		(IRCT_PUBLIC, MINUS_RE, [0], KARMA_MINUS),
+		(IRCT_PUBLIC_D, LOOKUP_RE, ['name'], KARMA_LOOKUP),
+		(IRCT_MSG, LOOKUP_RE, ['name'], KARMA_LOOKUP)
 		]
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
