@@ -150,7 +150,7 @@ class ChatterGizmo(Child):
 	def _handle_quit(self, conn, event):
 		nick = irclib.nm_to_n(event.source())
 		
-		if nick != connection.real_nickname:
+		if nick != conn.real_nickname:
 			self.Conns[conn].users.quit(nick)
 			
 			# If the user has left all our channels, tell FileMonster
@@ -169,7 +169,7 @@ class ChatterGizmo(Child):
 		kicker = irclib.nm_to_n(event.source())
 		kicked = event.arguments()[0]
 		
-		if kicked == connection.real_nickname:
+		if kicked == conn.real_nickname:
 			tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, kicker)
 			self.connlog(conn, LOG_ALWAYS, tolog)
 			
@@ -202,13 +202,10 @@ class ChatterGizmo(Child):
 	def _handle_pubmsg(self, conn, event):
 		chan = event.target().lower
 		nick = irclib.nm_to_n(event.source())
+		#userinfo = UserInfo(event.source())
 		
 		# Strip any codes from the text
 		text = STRIP_CODES.sub('', event.arguments()[0])
-		#userinfo = UserInfo(event.source())
-		
-		if text != event.arguments()[0]:
-			print 'text: %s - orig: %s' % (text, event.arguments()[0])
 		
 		if text == '':
 			return
