@@ -13,9 +13,9 @@ import random
 import re
 import time
 
-from classes.Plugin import *
 from classes.Common import *
 from classes.Constants import *
+from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 

@@ -11,7 +11,7 @@ from classes.async_buffered import buffered_dispatcher
 
 from classes.Common import *
 from classes.Constants import *
-from classes.Plugin import *
+from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 

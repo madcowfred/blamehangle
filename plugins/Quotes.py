@@ -7,7 +7,7 @@ import re
 import smtplib
 
 from classes.Constants import *
-from classes.Plugin import *
+from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 

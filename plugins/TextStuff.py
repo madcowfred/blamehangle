@@ -12,7 +12,7 @@ import zlib
 
 from classes.Common import *
 from classes.Constants import *
-from classes.Plugin import *
+from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
