@@ -78,7 +78,7 @@ REDIRECT_RE = re.compile(r'^see(: *| +)(?P<factoid>.+)$')
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
-MAX_FACT_SEARCH_RESULTS = 15
+MAX_FACT_SEARCH_RESULTS = 40
 
 # ---------------------------------------------------------------------------
 
@@ -843,7 +843,7 @@ class SmartyPants(Plugin):
 		else:
 			# Too many!
 			if len(result) > MAX_FACT_SEARCH_RESULTS:
-				replytext = "Factoid search of '\02%s\02' by %s yielded too many results (%d). Please refine your query." % (findme, what, len(results))
+				replytext = "Factoid search of '\02%s\02' by %s yielded too many results (%d). Please refine your query." % (findme, what, len(result))
 			# Enough
 			else:
 				replytext = "Factoid search of '\02%s\02' by %s (\02%d\02 results): " % (findme, what, len(result))
