@@ -275,15 +275,32 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_mode(self, connid, conn, event):
 		chan = event.target.lower()
-		# FIXME - mode parsing
-		return
 		
-		modestring = ' '.join(event.arguments)
-		modes = irclib.parse_channel_modes(modestring)
+		# Parse the mode list
+		modes = []
+		#parts = ' '.join(event.arguments).split()
+		if not event.arguments:
+			return
 		
+		mode_part, args = event.arguments[0], event.arguments[1:]
+		if mode_part[0] not in '-+':
+			return
+		
+		for char in mode_part:
+			if char in '-+':
+				sign = char
+			elif char in 'behklvo':
+				if args:
+					modes.append([sign, char, args.pop(0)])
+				else:
+					modes.append([sign, char, None])
+			else:
+				modes.append([sign, char, None])
+		
+		# Now do something with them
 		for sign, mode, arg in modes:
-			# We don't care about non-user modes
-			if arg is None or mode not in 'ovh':
+			# We don't care about non-user modes right now
+			if arg is None or mode not in 'hov':
 				continue
 			
 			if sign == '+':
