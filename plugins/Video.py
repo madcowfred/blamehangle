@@ -64,25 +64,24 @@ class Video(Plugin):
 		findme = trigger.match.group(1)
 		resp.data = UnquoteHTML(resp.data)
 		
-		# We only care about Popular Titles for now
-		if resp.data.find('<b>Popular Titles</b>') >= 0:
-			# Get the chunk with the titles inside
-			chunk = FindChunk(resp.data, '<b>Popular Titles</b>', '</p>')
-			if chunk is None:
-				replytext = 'Failed to parse page: no Popular Titles?'
-				self.sendReply(trigger, replytext)
-				return
-			
-			# Find the titles
-			lis = FindChunks(chunk, '<li>', '</li>')
-			if lis == []:
-				replytext = 'Failed to parse page: no Popular Titles items?'
-				self.sendReply(trigger, replytext)
-				return
-			
+		parts = []
+		
+		# Find some chunks to look at
+		chunks = [
+			FindChunk(resp.data, '<b>Titles (Exact Matches)</b>', '</ol>'),
+			FindChunk(resp.data, '<b>Popular Titles</b>', '</ol>'),
+			FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</ol>'),
+		]
+		
+		# Find the titles
+		lis = []
+		for chunk in chunks:
+			if chunk is not None:
+				lis += FindChunks(chunk, '<li>', '</li>')
+		
+		# We found something!
+		if lis:
 			# Get the info we need
-			parts = []
-			
 			for li in lis[:5]:
 				m = IMDB_RESULT_RE.search(li)
 				if not m:
@@ -99,14 +98,14 @@ class Video(Plugin):
 			
 			# Spit it out
 			if parts == []:
-				replytext = 'Failed to parse page: no matching Popular Titles?'
+				replytext = 'Failed to parse page: no results!'
 			else:
 				replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
 		
-		# FIXME: spit out some alternate matches
+		# No we didn't :<
 		else:
-			replytext = 'Found no matches at all, you suck.'
+			replytext = 'Found no matches at all!'
 			self.sendReply(trigger, replytext)
 	
 	# ---------------------------------------------------------------------------
