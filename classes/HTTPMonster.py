@@ -25,7 +25,7 @@ from classes.Common import *
 
 dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
-HTTP_TIMEOUT = 5
+HTTP_TIMEOUT = 20
 REDIRECT_LIMIT = 3
 
 # ---------------------------------------------------------------------------
