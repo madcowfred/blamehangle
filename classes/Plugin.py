@@ -110,7 +110,7 @@ class Plugin(Child):
 		filename = os.path.join(config_dir, filename)
 		
 		try:
-			f = open(filename, "wb")
+			f = open(filename, 'wb')
 		except:
 			# We couldn't open our file :(
 			tolog = "Unable to open %s for writing" % filename
@@ -128,16 +128,22 @@ class Plugin(Child):
 		filename = os.path.join(config_dir, filename)
 		
 		try:
-			f = open(filename, "rb")
+			f = open(filename, 'rb')
 		except:
 			# Couldn't open the pickle file, so don't try to unpickle
 			return None
-		else:
-			# We have a pickle!
-			tolog = "Loading pickle from %s" % filename
-			self.putlog(LOG_DEBUG, tolog)
+		
+		# We have a pickle!
+		tolog = "Loading pickle from %s" % filename
+		self.putlog(LOG_DEBUG, tolog)
+		
+		try:
 			obj = cPickle.load(f)
-			f.close()
+		except:
+			# Failed to read the pickle file
+			self.putlog(LOG_DEBUG, 'Pickle load failed!')
+			return None
+		else:
 			return obj
 
 # ---------------------------------------------------------------------------
