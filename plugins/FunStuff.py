@@ -38,6 +38,11 @@ class FunStuff(Plugin):
 	
 	def register(self):
 		self.addTextEvent(
+			method = self.__Coin,
+			regexp = re.compile(r'^coin$'),
+			help = ('fun', 'coin', '\02coin\02 : Flip a coin!'),
+		)
+		self.addTextEvent(
 			method = self.__Dice,
 			regexp = re.compile(r'^dice (?P<num>\d{1,3})d(?P<sides>\d{1,3})$'),
 			help = ('fun', 'dice', '\02dice\02 <n>\02d\02<s> : Roll <n> dice of <s> sides and return the results.'),
@@ -69,6 +74,13 @@ class FunStuff(Plugin):
 			regexp = re.compile(r'^horo (?P<sign>\S+)$'),
 			help = ('fun', 'horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
 		)
+	
+	# -----------------------------------------------------------------------
+	# Flip a coin
+	def __Coin(self, trigger):
+		result = ['heads', 'tails'][random.randint(0, 1)]
+		replytext = 'The coin lands on \02%s\02!' % (result)
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Roll some dice
