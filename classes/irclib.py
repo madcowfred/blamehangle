@@ -221,8 +221,9 @@ class IRC:
 		incoming data, if there are any.  If that seems boring, look
 		at the process_forever method.
 		"""
-		sockets = map(lambda x: x._get_socket(), self.connections)
-		sockets = filter(lambda x: x != None, sockets)
+		sockets = [x.sock for x in self.connections if x.sock and x.status != STATUS_DISCONNECTED]
+		#sockets = map(lambda x: x._get_socket(), self.connections)
+		#sockets = filter(lambda x: x != None, sockets)
 		
 		if sockets:
 			(i, o, e) = select.select(sockets, sockets, [], timeout)
@@ -231,7 +232,7 @@ class IRC:
 		elif timeout:
 			time.sleep(timeout)
 		
-		self.process_timeout()
+		#self.process_timeout()
 
 	def process_forever(self, timeout=0.2):
 		"""Run an infinite loop, processing data from connections.

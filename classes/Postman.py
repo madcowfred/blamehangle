@@ -37,6 +37,9 @@ class Postman:
 		self.__mtimes = {}
 		# these plugins really want to be reloaded
 		self.__reloadme = {}
+		# lists of methods to run always/sometimes
+		self.__run_always = []
+		self.__run_sometimes = []
 		
 		self.__Stopping = 0
 		
@@ -67,9 +70,15 @@ class Postman:
 			
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
+			
+			if hasattr(instance, 'run_always'):
+				self.__run_always.append(instance.run_always)
+			if hasattr(instance, 'run_sometimes'):
+				self.__run_sometimes.append(instance.run_sometimes)
 		
+		# Import plugins
 		for name in self.__plugin_list:
-			self.__import_plugin(name)
+			self.__Plugin_Load(name)
 		
 		# add Helper to the list of plugins so that it can do its thing
 		self.__plugin_list.append('Helper')
@@ -83,10 +92,10 @@ class Postman:
 		self.__plugin_list = self.Config.get('plugin', 'plugins').split()
 	
 	# -----------------------------------------------------------------------
-	
-	def __import_plugin(self, name):
+	# Load a plugin
+	def __Plugin_Load(self, name, runonce=0):
 		try:
-			module = __import__('plugins.%s' % name, globals(), locals(), [name])
+			module = __import__('plugins.' + name, globals(), locals(), [name])
 			globals()[name] = getattr(module, name)
 		
 		except ImportError:
@@ -103,6 +112,42 @@ class Postman:
 			cls = globals()[name]
 			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
+			
+			if runonce and hasattr(instance, 'run_once'):
+				instance.run_once()
+			
+			if hasattr(instance, 'run_always'):
+				self.__run_always.append(instance.run_always)
+			if hasattr(instance, 'run_sometimes'):
+				self.__run_sometimes.append(instance.run_sometimes)
+	
+	# Unload a plugin, making sure we unload the module too
+	def __Plugin_Unload(self, name):
+		if self.__Children.has_key(name):
+			# Remove them from the run_* lists
+			child = self.__Children[name]
+			if hasattr(child, 'run_always'):
+				for meth in self.__run_always:
+					if meth == child.run_always:
+						print 'Found run_always: %s' % meth
+						self.__run_always.remove(meth)
+						break
+			if hasattr(child, 'run_sometimes'):
+				for meth in self.__run_sometimes:
+					if meth == child.run_sometimes:
+						print 'Found run_sometimes: %s' % meth
+						self.__run_sometimes.remove(meth)
+						break
+			
+			del self.__Children[name]
+		
+		if globals().has_key(name):
+			del globals()[name]
+		
+		try:
+			del sys.modules['plugins.' + name]
+		except KeyError:
+			pass
 	
 	# -----------------------------------------------------------------------
 	
@@ -149,20 +194,11 @@ class Postman:
 						elif message.ident == REPLY_SHUTDOWN:
 							child = message.source
 							if issubclass(globals()[child], Plugin):
-								del self.__Children[child]
-								del globals()[child]
-								# 'unimport' it
-								try:
-									del sys.modules['plugins.'+child]
-								except KeyError:
-									pass
+								self.__Plugin_Unload(child)
 								
 								# If it's really being reloaded, do that
 								if self.__reloadme.has_key(child):
-									self.__import_plugin(child)
-									if hasattr(self.__Children[child], 'run_once'):
-										self.__Children[child].run_once()
-									
+									self.__Plugin_Load(child, runonce=1)
 									del self.__reloadme[child]
 					
 					else:
@@ -188,15 +224,29 @@ class Postman:
 				children = self.__Children.values()
 				
 				for child in children:
-					child.handleMessages()
+					if child.inQueue == []:
+						continue
 					
-					if hasattr(child, 'run_always'):
-						child.run_always()
+					message = child.inQueue.pop(0)
+					
+					methname = '_message_%s' % message.ident
+					if hasattr(child, methname):
+						getattr(child, methname)(message)
+					else:
+						tolog = 'Unhandled message in %s: %s' % (name, message.ident)
+						self.__Log(LOG_DEBUG, tolog)
+					
+					#child.handleMessages()
+					
+					for meth in self.__run_always:
+						meth()
+					#if hasattr(child, 'run_always'):
+					#	child.run_always()
 				
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
-				if sometimes_counter == 4:
+				if sometimes_counter == 5:
 					sometimes_counter = 0
 					
 					# See if our log file has to rotate
@@ -211,8 +261,10 @@ class Postman:
 					currtime = _time()
 					
 					for child in children:
-						if hasattr(child, 'run_sometimes'):
-							child.run_sometimes(currtime)
+						for meth in self.__run_sometimes:
+							meth(currtime)
+						#if hasattr(child, 'run_sometimes'):
+						#	child.run_sometimes(currtime)
 				
 				# Sleep for a while
 				_sleep(0.05)
@@ -415,9 +467,7 @@ class Postman:
 		for plugin_name in self.__plugin_list:
 			# New plugin, load it
 			if plugin_name not in old_plugin_list:
-				self.__import_plugin(plugin_name)
-				if hasattr(self.__Children[plugin_name], 'run_once'):
-					self.__Children[plugin_name].run_once()
+				self.__Plugin_Load(plugin_name, runonce=1)
 			# Check the mtime, and possibly reload
 			else:
 				pluginpath = '%s.py' % os.path.join('plugins', plugin_name)
