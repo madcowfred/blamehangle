@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains the factoid resolver.
+
+'An implementation of an infobot, similar to... every other infobot.'
 
 import copy
 import random

@@ -2,12 +2,13 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This plugin does some stuff regarding flights and airlines.
-# You can lookup an airline's code, or get details on a flight number.
-#
 # FIXME: At some point, rewrite this to be less hideous. Too scared to do so
 #        now.
-# ---------------------------------------------------------------------------
+
+"""
+This plugin does some stuff regarding flights and airlines. You can lookup
+an airline's code, or get details on a flight number.
+"""
 
 import re
 import time
@@ -30,7 +31,7 @@ AIRPORT_RE = re.compile(r'^airport\s+(?P<code>\w+)$')
 AIRPORT_URL = 'http://www.flymig.com/iata/r/%s.htm'
 
 AIRLINE_FLIGHT = 'AIRLINE_FLIGHT'
-FLIGHT_HELP = "'\02flight\02 <code> <flight number> <date>' : look up the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)"
+FLIGHT_HELP = "\02flight\02 <code> <flight number> <date> : look up the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)"
 # what a bastard this was to get right. god damn i hate regexps.
 f1 = "^ *flight +"
 f2 = "(?P<code>[^ ]+)"

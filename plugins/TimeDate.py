@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# A huge plugin to see what the time is in various places.
+
+'A huge plugin to see what the time is in various places.'
 
 import os
 import re

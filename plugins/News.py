@@ -1,8 +1,11 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This is the news-gatherer plugin for Blamehangle. It scours the web for
-# news, and reports it. Exciting stuff.
+
+"""
+Gathers news from Ananova Quirkies, Google News or any RSS feeds you might
+want to use.
+"""
 
 import re
 import time
@@ -33,17 +36,17 @@ NEWS_SPAM = 'NEWS_SPAM'
 # ---------------------------------------------------------------------------
 
 NEWS_SEARCH = "NEWS_SEARCH"
-NEWS_SEARCH_HELP = "'\02news\02 <partial headline>' : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given"
+NEWS_SEARCH_HELP = "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."
 NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
 
 NEWS_SEARCH_MAX_RESULTS = 6
 
 RSS_LIST = 'RSS_LIST'
-RSS_LIST_HELP = "'\x02listfeeds\x02' : List the RSS feeds currently configured"
+RSS_LIST_HELP = "\02listfeeds\02 : List the RSS feeds currently configured."
 RSS_LIST_RE = re.compile(r'^listfeeds$')
 
 RSS_SHOW = 'RSS_SHOW'
-RSS_SHOW_HELP = "'\x02showfeed\x02 <feed name>' : Show some information about an RSS feed"
+RSS_SHOW_HELP = "\02showfeed\02 <feed name> : Show some information about an RSS feed."
 RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
 
 # ---------------------------------------------------------------------------

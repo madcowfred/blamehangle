@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Interface to Google, for extremely lazy people
+
+'Lets lazy people use Google from IRC.'
 
 import re
 from urllib import quote

@@ -2,6 +2,8 @@
 # $Id$
 #----------------------------------------------------------------------------
 
+'Commands for playing with money.'
+
 import os
 import re
 
@@ -12,16 +14,16 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 MONEY_ASX = 'MONEY_ASX'
-ASX_HELP = "\02asx\02 <symbol> : Look up a current stock price on the ASX."
+ASX_HELP = '\02asx\02 <symbol> : Look up a current stock price on the ASX.'
 ASX_RE = re.compile('^asx (?P<symbol>.+)$')
 ASX_URL = 'http://www.asx.com.au/asx/markets/EquitySearchResults.jsp?method=get&template=F1001&ASXCodes=%s'
 
 MONEY_CURRENCY = 'MONEY_CURRENCY'
-CURRENCY_HELP = "'\02currency\02 <code OR partial name>' : Look up the currency code and name, given the specified information"
+CURRENCY_HELP = '\02currency\02 <code OR partial name> : Look up an ISO 4217 currency code and name, given the specified information.'
 CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
 
 MONEY_EXCHANGE = 'MONEY_EXCHANGE'
-EXCHANGE_HELP = "'\02exchange\02 <amount> <currency 1> \02to\02 <currency 2>' : Convert currency using current exchange rates. Currencies are specified using their three letter code."
+EXCHANGE_HELP = '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'
 EXCHANGE_RE = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 EXCHANGE_URL = 'http://finance.yahoo.com/m5?a=%(amt)s&s=%(from)s&t=%(to)s&c=0'
 

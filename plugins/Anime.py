@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Various bits and pieces for looking up anime information.
+
+'Various bits and pieces for looking up anime information.'
 
 import asyncore
 import re
@@ -25,7 +26,7 @@ RESULT_RE = re.compile(r'^(\d+)">(?:<i>|)(.*?)(?:</i>|)$')
 # ---------------------------------------------------------------------------
 
 ANIME_ANIMENFO = 'ANIME_ANIMENFO'
-ANIMENFO_HELP = '\02animenfo\02 <name> : Retrieve info about anime.'
+ANIMENFO_HELP = '\02animenfo\02 <name> : Search for anime information on AnimeNFO.'
 ANIMENFO_RE = re.compile(r'^animenfo (?P<findme>.+)$')
 
 ANIMENFO_FIELDS = {

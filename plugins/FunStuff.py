@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# A collection of silly things for people to play with.
+
+'A collection of silly things for people to play with.'
 
 import random
 import re

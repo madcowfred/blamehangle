@@ -2,7 +2,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Converts between different things
+
+'Converts between various distance/volume/weight measurements.'
 
 import re
 

@@ -1,10 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Lookup rhymes, synonyms, or antonyms of words using rhymezone.com
-# Look up dictionary meanings via the DICT protocol (RFC 2229)
-# Check the spelling of a word with aspell/ispell
-# Look up words on urbandictionary.com
+
+'Various commands for playing with words.'
 
 import asyncore
 import os
@@ -19,22 +17,22 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-wordbit = "(?P<word>\S+)$"
+wordbit = '(?P<word>\S+)$'
 
-WORD_ANTONYM = "WORD_ANTONYM"
-ANTONYM_HELP = "'\02antonyms\02 <word>' : Search for words that have the exact opposite meaning of <word>"
+WORD_ANTONYM = 'WORD_ANTONYM'
+ANTONYM_HELP = '\02antonyms\02 <word> : Search for words that have the exact opposite meaning of <word>.'
 ANTONYM_RE = re.compile("antonyms? +" + wordbit)
-ANTONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=ant&org1=let&org2=l"
+ANTONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=ant&org1=let&org2=l'
 
-WORD_RHYME = "WORD_RHYME"
-RHYME_HELP = "'\02rhyme\02 <word>' : Search for other words that rhyme with <word>"
-RHYME_RE = re.compile("rhyme +" + wordbit)
-RHYME_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&org1=let&org2=sl"
+WORD_RHYME = 'WORD_RHYME'
+RHYME_HELP = '\02rhyme\02 <word> : Search for words that rhyme with <word>.'
+RHYME_RE = re.compile('rhyme +' + wordbit)
+RHYME_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&org1=let&org2=sl'
 
-WORD_SYNONYM = "WORD_SYNONYM"
-SYNONYM_HELP = "'\02synonyms\02 <word>' : Search for words that have the same meaning as <word>"
+WORD_SYNONYM = 'WORD_SYNONYM'
+SYNONYM_HELP = '\02synonyms\02 <word> : Search for words that have the same meaning as <word>.'
 SYNONYM_RE = re.compile("synonyms? +" + wordbit)
-SYNONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l"
+SYNONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l'
 
 # Match the results line
 RESULTS_RE = re.compile(r'^\((\d+) res')

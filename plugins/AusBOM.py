@@ -2,7 +2,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Plugin to parse the Australian Bureau of Meteorology current observations.
+
+'Retrieve current weather data from the Australian Bureau of Meteorology.'
 
 import re
 import time

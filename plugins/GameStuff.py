@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This plugin does KLOV lookups, and probably MobyGames at some point.
-# ---------------------------------------------------------------------------
+
+'Gets information on video games from various sites.'
 
 import re
 

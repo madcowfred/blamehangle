@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# MapQuest.com travel distance checker
+
+'MapQuest.com travel distance checker.'
 
 import re
 from urllib import urlencode

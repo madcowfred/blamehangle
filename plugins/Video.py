@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Interface to IMDb, for moderately lazy people
-# Interface to TVTome, for moderately lazy people
+
+'Look up information on movies/TV shows.'
 
 import re
 

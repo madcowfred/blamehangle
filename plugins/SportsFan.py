@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Yahoo Sports game result lookup
+
+'Yahoo Sports game result lookup.'
 
 import re
 
@@ -11,10 +12,10 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-SCORES = "SCORES"
-SCORES_HELP = "'\02score\02 <league> <team>' : Search for a score for <team> playing in <league> today. <league> can be one of NFL, MLB, NBA, NHL. <team> is identified by location, not nickname."
-SCORES_RE = re.compile(r'^score\s+(?P<league>NFL|MLB|NBA|NHL)\s+(?P<team>.+)$', re.I)
-SCORES_URL = "http://sports.yahoo.com/%s/"
+SPORTS_SCORES = 'SPORTS_SCORES'
+SCORES_HELP = '\02score\02 <league> <team> : Search for a score for <team> playing in <league> today. <league> can be one of NFL, MLB, NBA, NHL. <team> is identified by location, not nickname.'
+SCORES_RE = re.compile(r'^score +(?P<league>NFL|MLB|NBA|NHL) +(?P<team>.+)$', re.I)
+SCORES_URL = 'http://sports.yahoo.com/%s/'
 
 SCORE_RE = re.compile(r'(\d+)<br>(\d+)')
 
@@ -30,7 +31,7 @@ class SportsFan(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		self.setTextEvent(SCORES, SCORES_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(SPORTS_SCORES, SCORES_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		
 		self.setHelp('sports', 'score', SCORES_HELP)
@@ -38,7 +39,7 @@ class SportsFan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to lookup a sports score
-	def _trigger_SCORES(self, trigger):
+	def _trigger_SPORTS_SCORES(self, trigger):
 		url = SCORES_URL % trigger.match.group('league').lower()
 		self.urlRequest(trigger, self.__Parse_Scores, url)
 	
