@@ -75,14 +75,17 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
 	def __Parse_Page(self, trigger, resp):
+		t1 = time.time()
+		
 		items = {}
-		now = int(time.time())
 		
 		# We don't want stupid HTML entities
 		resp.data = UnquoteHTML(resp.data)
 		
 		# But we do want to quote the damn ampersands properly
 		resp.data = ENTITY_RE.sub('&amp;', resp.data)
+		
+		t2 = time.time()
 		
 		# If it's a BNBT page, we have to do some yucky searching
 		if resp.data.find('POWERED BY BNBT') >= 0:
@@ -108,12 +111,10 @@ class TorrentScraper(Plugin):
 					continue
 				
 				# Keep it for a bit
-				items[newurl] = (now, newurl, description)
+				items[newurl] = (newurl, description)
 		
 		# Otherwise, go the easy way
  		else:
- 			_case = 0
- 			
 			# Find all of our URLs
 			chunks = FindChunks(resp.data, '<a ', '</a>') + FindChunks(resp.data, '<A ', '</A>')
 			if not chunks:
@@ -147,7 +148,7 @@ class TorrentScraper(Plugin):
  					continue
 				
 				# Keep it for a bit
-				items[newurl] = (now, newurl, lines[0])
+				items[newurl] = (newurl, lines[0])
 		
 		# If we found nothing, bug out
 		if items == {}:
@@ -155,17 +156,23 @@ class TorrentScraper(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
+		t3 = time.time()
+		
 		# Switch back to a list
 		items = items.values()
-		items.sort()
+		#items.sort()
 		
 		# Build our query
 		trigger.items = items
 		
-		args = [item[1] for item in items] + [item[2] for item in items]
+		args = [item[0] for item in items] + [item[1] for item in items]
 		querybit = ', '.join(['%s'] * len(items))
 		
 		query = SELECT_QUERY % (querybit, querybit)
+		
+		t4 = time.time()
+		
+		#print 't1-t2: %.4fs, t2-t3: %.4fs, t3-t4: %.4fs' % (t2-t1, t3-t2, t4-t3)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
@@ -199,9 +206,11 @@ class TorrentScraper(Plugin):
 		lurls = dict([(row['url'].lower(), None) for row in result])
 		
 		#newitems = []
+		now = int(time.time())
 		for item in items:
-			if item[1].lower() not in lurls and item[2].lower() not in ldescs:
-				self.dbQuery(trigger, None, INSERT_QUERY, *item)
+			#if item[1].lower() not in lurls and item[2].lower() not in ldescs:
+			if item[0].lower() not in lurls and item[1].lower() not in ldescs:
+				self.dbQuery(trigger, None, INSERT_QUERY, now, item[0], item[1])
 				#newitems.append(item)
 		
 		#print newitems == items,
