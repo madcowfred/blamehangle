@@ -15,16 +15,26 @@ class DataMonkey(Child):
 	"""
 	
 	DBs = []
+	Requests = []
 	
 	def setup(self):
-		options = []
-		for option in ('hostname', 'username', 'password', 'database'):
-			options.append(self.Config.get('database', option))
-		
-		for i in range(self.Config.getint('database', 'connections')):
-			db = Database(*options)
-			self.DBs.append(db)
+		self.Num_Connections = self.Config.getint('database', 'connections')
+		if self.Num_Connections > 0:
+			for i in range(self.Num_Connections):
+				db = Database(self)
+				self.DBs.append(db)
+			
+			print self.DBs
+	
+	def run_sometimes(self, currtime):
+		# If we have any pending requests, and a spare DB thread, action a
+		# request.
+		pass
 	
 	# A database query, be afraid
 	def _message_REQ_QUERY(self, message):
 		stuff = message.data
+		
+		# stuff the request into the request queue, which will be looked at
+		# next time around the _sometimes loop
+		#?

@@ -38,7 +38,7 @@ class Child:
 		if hasattr(self, 'setup'):
 			self.setup()
 	
-	def empty(self, *args):
+	def empty(self, *args, **kwargs):
 		pass
 	
 	# -----------------------------------------------------------------------

@@ -5,7 +5,8 @@
 # communication and most of the abstraction.
 # --------------------------------------------------------------
 
-import os, string, sys
+import os
+import sys
 
 from classes.Common import *
 
@@ -15,6 +16,7 @@ sys.path.append(os.path.expanduser('~/lib/python'))
 
 import MySQLdb
 from _mysql_exceptions import OperationalError
+from MySQLdb.cursors import DictCursor
 
 # --------------------------------------------------------------
 
@@ -24,9 +26,10 @@ MYSQL_ERROR_LOST_CONNECTION = 2013
 # Wrapper class for 'simple' database access.
 # --------------------------------------------------------------
 class Database:
-	def __init__(self, Config):
-		# Initialise our variables
-		self.__Config = Config
+	db = None
+	
+	def __init__(self, parent):
+		self.parent = parent
 		
 		self.db = None
 		self.done = 0
@@ -35,10 +38,10 @@ class Database:
 		if self.db:
 			return
 		
-		self.db = MySQLdb.connect(	host=self.__Config.get('database', 'hostname'),
-									user=self.__Config.get('database', 'username'),
-									passwd=self.__Config.get('database', 'password'),
-									db=self.__Config.get('database', 'database'),
+		self.db = MySQLdb.connect(	host=self.parent.Config.get('database', 'hostname'),
+									user=self.parent.get('database', 'username'),
+									passwd=self.parent.Config.get('database', 'password'),
+									db=self.parent.Config.get('database', 'database'),
 									connect_timeout=30,
 									compress=1
 									)
@@ -54,7 +57,7 @@ class Database:
 	def query(self, query, *args):
 		self.__connect()
 		
-		cursor = self.db.cursor()
+		cursor = self.db.cursor(DictCursor)
 		if args:
 			cursor.execute(query, args)
 		else:
