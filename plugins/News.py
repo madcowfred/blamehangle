@@ -312,8 +312,6 @@ class News(Plugin):
 				reply = self.__outgoing.pop(index)
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
-				self.putlog(LOG_DEBUG, reply)
-				
 				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)
 				
