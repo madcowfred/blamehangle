@@ -580,7 +580,7 @@ class ChatterGizmo(Child):
 			
 			# If not, cry
 			else:
-				tolog = "Unknown lamer %s (%s@%s) requested rehash!" % (event.userinfo)
+				tolog = "Unknown lamer %s requested rehash!" % (event.userinfo)
 				self.connlog(connid, LOG_WARNING, tolog)
 		
 		# No idea, see if a plugin cares
