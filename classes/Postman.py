@@ -308,9 +308,9 @@ class Postman:
 		tolog = '%s %s\n' % (timelong, text)
 		self.__logfile.write(tolog)
 		self.__logfile.flush()
-
+	
 	# -----------------------------------------------------------------------
-
+	
 	# Load config info
 	def __Load_Configs(self):
 		config_dir = self.Config.get('plugin', 'config_dir')
