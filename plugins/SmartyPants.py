@@ -476,11 +476,13 @@ class SmartyPants(Plugin):
 			
 			# If it's really a 'tell', msg the requester and his target
 			elif trigger.name == FACT_TELL:
+				tellnick = trigger.match.group('nick')
+				
 				msgtext = "Told %s that %s is %s" % (tellnick, row['name'], value)
 				self.privmsg(trigger.conn, trigger.userinfo.nick, msgtext)
 				
 				msgtext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, row['name'], value)
-				self.privmsg(trigger.conn, trigger.match.group('nick'), msgtext)
+				self.privmsg(trigger.conn, tellnick, msgtext)
 			
 			
 			# Update the request count and nick
