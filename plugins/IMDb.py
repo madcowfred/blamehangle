@@ -118,7 +118,6 @@ class IMDb(Plugin):
 			parts = []
 			
 			for title in titles[:5]:
-				print title
 				m = APPROX_RE.search(title)
 				if not m:
 					continue
@@ -176,11 +175,12 @@ class IMDb(Plugin):
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot outline
-			chunk = FindChunk(page_text, 'Plot Outline:</b> ', ' <a')
-			if chunk:# is None:
-				#self.sendReply(trigger, 'Page parsing failed: plot outline.')
-				#return
-				data['outline'] = chunk
+			chunk = FindChunk(page_text, 'Plot Outline:</b>', '<br>')
+			if chunk:
+				n = chunk.find('<a')
+				if n >= 0:
+					chunk = chunk[:n]
+				data['outline'] = chunk.strip()
 			
 			# Find the rating
 			chunk = FindChunk(page_text, 'goldstar.gif', '<a')
@@ -207,3 +207,5 @@ class IMDb(Plugin):
 			
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
+			
+			print 'replytext:', replytext
