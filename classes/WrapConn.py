@@ -315,12 +315,12 @@ class WrapConn:
 	def notice(self, target, text):
 		lines = self.__Split_Text(text)
 		for line in lines[:self.max_split_lines]:
-			self.__outgoing.priority_insert(PRIORITY_NOTICE, target, text)
+			self.__outgoing.priority_insert(PRIORITY_NOTICE, target, line)
 	
 	def privmsg(self, target, text):
 		lines = self.__Split_Text(text)
 		for line in lines[:self.max_split_lines]:
-			self.__outgoing.priority_insert(PRIORITY_PRIVMSG, target, text)
+			self.__outgoing.priority_insert(PRIORITY_PRIVMSG, target, line)
 	
 	# -----------------------------------------------------------------------
 	# Split text into lines if it's too long
