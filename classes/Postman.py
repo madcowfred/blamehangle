@@ -513,15 +513,16 @@ class Postman:
 		# Log these lines
 		logme = []
 		
-		# Remember the last filename
-		last_file = ''
+		# Remember the filenames
+		crash_files = []
 		
 		logme.append('*******************************************************')
 		
 		logme.append('Traceback (most recent call last):')
 		
 		for entry in entries:
-			last_file = entry[:-1][0]
+			crash_files.insert(0, entry[:-1][0])
+			
 			tolog = '  File "%s", line %d, in %s' % entry[:-1]
 			logme.append(tolog)
 			tolog = '    %s' % entry[-1]
@@ -537,7 +538,7 @@ class Postman:
 		for line in logme:
 			self.__Log(LOG_ALWAYS, line)
 		
-		# Maybe e-mail our bosses
+		# Maybe e-mail our boss(es)
 		if self.__mail_tracebacks:
 			lines = []
 			
@@ -582,14 +583,18 @@ class Postman:
 		
 		else:
 			# Was it a plugin? If so, we can try shutting it down
-			head, tail = os.path.split(last_file)
-			if head.endswith('plugins'):
-				root, ext = os.path.splitext(tail)
-				if root in self.__Children:
-					self.sendMessage(root, REQ_SHUTDOWN, None)
+			was_plugin = 0
+			for filename in crash_files:
+				head, tail = os.path.split(filename)
+				if head.endswith('plugins'):
+					root, ext = os.path.splitext(tail)
+					if root in self.__Children:
+						self.sendMessage(root, REQ_SHUTDOWN, None)
+						was_plugin = 1
+						break
 			
-			# If we're supposed to crash, do that
-			elif not dontcrash:
+			# If it wasn't, and we're supposed to crash, do that
+			if not was_plugin and not dontcrash:
 				self.__Shutdown('Crashed!')
 	
 	# -----------------------------------------------------------------------

@@ -114,7 +114,7 @@ class Child:
 				method(trigger, hosts, args)
 			except:
 				if hasattr(self, 'sendReply'):
-					replytext = '%s crashed in %s()!' % (self._name, methname)
+					replytext = 'unhandled exception in %s.%s()!' % (self._name, methname)
 					self.sendReply(trigger, replytext)
 				raise
 		else:
@@ -132,7 +132,7 @@ class Child:
 				method(trigger, result)
 			except:
 				if hasattr(self, 'sendReply'):
-					replytext = '%s crashed in %s()!' % (self._name, methname)
+					replytext = 'unhandled exception in %s.%s()!' % (self._name, methname)
 					self.sendReply(trigger, replytext)
 				raise
 		else:
@@ -163,7 +163,7 @@ class Child:
 				method(trigger, resp)
 			except:
 				if hasattr(self, 'sendReply'):
-					replytext = '%s crashed in %s()!' % (self._name, methname)
+					replytext = 'unhandled exception in %s.%s()!' % (self._name, methname)
 					self.sendReply(trigger, replytext)
 				raise
 		else:

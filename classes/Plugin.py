@@ -64,7 +64,7 @@ class Plugin(Child):
 			try:
 				method(trigger)
 			except:
-				replytext = '%s crashed in %s()!' % (self._name, trigger.name)
+				replytext = 'unhandled exception in %s.%s()!' % (self._name, trigger.name)
 				self.sendReply(trigger, replytext)
 				raise
 		else:
