@@ -11,6 +11,7 @@ Largely a refactor of irclib.py (Joel Roshdal).
 import re
 import socket
 import sys
+import time
 import types
 
 from classes.async_buffered import buffered_dispatcher
@@ -110,8 +111,6 @@ class asyncIRC(buffered_dispatcher):
 	
 	# An event happened, off we go
 	def __trigger_event(self, *args):
-		#print self.connid, 'EVENT:', repr(args)
-		#event = IRCEvent(*args)
 		for method in self.__handlers:
 			method(self.connid, *args)
 	
@@ -123,7 +122,7 @@ class asyncIRC(buffered_dispatcher):
 		if args:
 			line = line % args
 		
-		#print '>', repr(line)
+		#print time.time(), '>', repr(line)
 		
 		self.send(line + '\r\n')
 	
@@ -177,7 +176,7 @@ class asyncIRC(buffered_dispatcher):
 		self.__read_buf = lines.pop()
 		
 		for line in lines:
-			#print '<', repr(line)
+			#print time.time(), '<', repr(line)
 			
 			prefix = command = target = hostmask = None
 			arguments = []
