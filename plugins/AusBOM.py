@@ -13,24 +13,30 @@ from classes.Constants import *
 from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
-
+# Tuples of 'products'. Should be (product name, page code, priority). If a
+# location is listed on more than one page, the _lowest_ priority one will be
+# used. Useful for the big pages that only update hourly.
 PRODUCTS = (
 	# NSW
-	('Sydney', 'IDN65066'),
+	('Sydney', 'IDN65066', 0),
+	('NSW', 'IDN65091', 1),
 	# QLD
-	('Brisbane', 'IDQ65113'),
-	('North Queensland', 'IDQ60600'),
-	('Western Queensland', 'IDQ60601'),
-	('Central Queensland', 'IDQ60602'),
-	('Southeast Queensland', 'IDQ60603'),
+	('Brisbane', 'IDQ65113', 0),
+	('North Queensland', 'IDQ60600', 1),
+	('Western Queensland', 'IDQ60601', 1),
+	('Central Queensland', 'IDQ60602', 1),
+	('Southeast Queensland', 'IDQ60603', 1),
 	# SA
-	('Adelaide', 'IDS65012'),
+	('Adelaide', 'IDS65012', 0),
+	('South Australian', 'IDS65013', 1),
 	# TAS
-	('Hobart', 'IDT65012'),
+	('Hobart', 'IDT65012', 0),
 	# VIC
-	('Melbourne', 'IDV60034'),
+	('Melbourne', 'IDV60034', 0),
+	('Victoria', 'IDV65119', 1),
 	# WA
-	('Perth', 'IDW60034'),
+	('Perth', 'IDW60034', 0),
+	('Western Australian', 'IDW60199', 1),
 )
 
 TITLE_RE = re.compile('<title>(.*?)</title>', re.I)
@@ -38,6 +44,8 @@ TITLE_RE = re.compile('<title>(.*?)</title>', re.I)
 TITLE_REs = (
 	re.compile('^Current (.+) Observations.*$'),
 	re.compile('^Current Observations for (.+) Forecast Districts$'),
+	re.compile('^Hourly Data from (\S+) AWS$'),
+	re.compile('^Hourly AWS Observations - (.+)$'),
 )
 
 MONTH = 60 * 60 * 24 * 30
@@ -55,7 +63,10 @@ AUSBOM_UPDATE = 'AUSBOM_UPDATE'
 # ---------------------------------------------------------------------------
 
 class AusBOM(Plugin):
-	def setup(self):
+	#def setup(self):
+	#	self.rehash()
+	
+	def rehash(self):
 		# Load our location data from the pickle.
 		self.__Locations = self.__Unpickle('ausbom.data')
 		# If there isn't any, trigger an update.
@@ -139,17 +150,21 @@ class AusBOM(Plugin):
 	# -----------------------------------------------------------------------
 	# Find the right 'product' for a location
 	def __Find_Product(self, trigger, location):
-		partials = []
+		exacts = []
+		partials = {}
 		
-		for area, product in PRODUCTS:
+		for area, product, priority in PRODUCTS:
 			if area not in self.__Locations:
 				tolog = 'AusBOM: %s not in area data?!' % area
 				self.putlog(LOG_WARNING, tolog)
 				continue
 			
-			# Exact match, we're done
+			# Exact match, don't need dodgy matching
 			if location in self.__Locations[area]:
-				return product
+				exact = (priority, product)
+				exacts.append(exact)
+				continue
+			
 			# Look for other matches
 			else:
 				lowloc = location.lower()
@@ -157,17 +172,26 @@ class AusBOM(Plugin):
 				# Wrong case
 				blurf = [l for l in self.__Locations[area] if l.lower() == lowloc]
 				if blurf:
-					return product
+					exact = (priority, product)
+					exacts.append(exact)
+					continue
 				
 				# Partial matches
-				blurf = [l for l in self.__Locations[area] if l.lower().find(lowloc) >= 0]
-				if blurf:
-					partials.extend(blurf)
+				for l in self.__Locations[area]:
+					if l.lower().find(lowloc) >= 0:
+						partials[l] = 1
+		
+		# If we had any exact matches, return the highest priority one
+		if exacts:
+			exacts.sort()
+			return exacts[0][1]
 		
 		# If we had any partials, maybe spit those out
-		if partials:
+		elif partials:
 			# We only want the first 10
-			partials = partials[:10]
+			pks = partials.keys()
+			pks.sort()
+			partials = pks[:10]
 			
 			parts = []
 			
@@ -219,6 +243,9 @@ class AusBOM(Plugin):
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: data.')
 			return
+		
+		# Remove any 'empty' rows
+		chunk = chunk.replace('<tr></tr>', '')
 		
 		# Find the rows in it
 		chunks = FindChunks(chunk, '<tr>', '</tr>')
