@@ -7,6 +7,7 @@
 # describe
 #----------------------------------------------------------------------------
 
+import os
 import time
 
 from classes.Children import Child
@@ -39,6 +40,12 @@ class Plugin(Child):
 		trigger, method, result = message.data
 		if method is not None:
 			method(trigger, result)
+	
+	# Default URL reply handler, eek
+	def _message_REPLY_URL(self, message):
+		trigger, method, page_text = message.data
+		if method is not None:
+			method(trigger, page_text)
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
@@ -75,8 +82,8 @@ class Plugin(Child):
 			self.__Events[ident] = event
 	
 	# Shorthand way of setting timed events
-	def setTimedEvent(self, name, interval, targets):
-		event = PluginTimedEvent(name, interval, targets)
+	def setTimedEvent(self, name, interval, targets, *args):
+		event = PluginTimedEvent(name, interval, targets, *args)
 		ident = '__%s__%s__' % (name, interval)
 		self.__Events[ident] = event
 	
@@ -94,6 +101,40 @@ class Plugin(Child):
 	
 	def unregisterHelp(self):
 		self.sendMessage('Helper', UNSET_HELP, self.__Help)
+	
+	# -----------------------------------------------------------------------
+	# Pickle stuff
+	def savePickle(self, filename, obj):
+		config_dir = self.Config.get('plugin', 'config_dir')
+		filename = os.path.join(config_dir, filename)
+		
+		try:
+			f = open(filename, "wb")
+		except:
+			# We couldn't open our file :(
+			tolog = "Unable to open %s for writing" % filename
+			self.putlog(LOG_WARNING, tolog)
+		else:
+			tolog = "Saving pickle to %s" % filename
+			self.putlog(LOG_DEBUG, tolog)
+			# the 1 turns on binary-mode pickling
+			cPickle.dump(obj, f, 1)
+			f.flush()
+			f.close()
+	
+	def loadPickle(self, filename):
+		try:
+			f = open(filename, "rb")
+		except:
+			# Couldn't open the pickle file, so don't try to unpickle
+			return None
+		else:
+			# We have a pickle!
+			tolog = "Loading pickle from %s" % filename
+			self.putlog(LOG_DEBUG, tolog)
+			obj = cPickle.load(f)
+			f.close()
+			return obj
 
 # ---------------------------------------------------------------------------
 
