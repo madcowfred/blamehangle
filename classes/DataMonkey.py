@@ -38,8 +38,8 @@ class DataMonkey(Child):
 		if (currtime - self.Last_Status) > 5:
 			self.Last_Status = currtime
 			
-			tolog = 'Requests: %d, DBs: %d' % (len(self.Requests), len(self.DBs))
-			self.putlog(LOG_DEBUG, tolog)
+			#tolog = 'Requests: %d, DBs: %d' % (len(self.Requests), len(self.DBs))
+			#self.putlog(LOG_DEBUG, tolog)
 		
 		# If we have any pending requests, and a spare DB connection, action
 		# a request.
