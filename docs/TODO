@@ -3,11 +3,12 @@ critical:
 important:
 
 not important but more than whatever:
-	* NickServ GHOST command support (kill people with our nick, or timed
-	  out versions of ourselves)
+	* Proper NickServ support, including the GHOST command (kill people with
+	  our nick), and waiting until we're identified before joining channels.
 
 whatever:
 	* testing! :) (anyone)
+	* script to import infobot.org factpacks (someone)
 
 
 plugins:
