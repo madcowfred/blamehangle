@@ -101,14 +101,16 @@ tr.desc {
 """<tr>
 <td width="300">%s</td>
 <td>%s</td>
-</tr>""" % (command, help))
+</tr>
+""" % (command, help))
 		
-		html.write("</table>")
+		html.write("</table>\n")
 	
 	# Spit out the footer
 	html.write(\
 """</body>
-</html>""")
+</html>
+""")
 	
 	# And done
 	html.close()
