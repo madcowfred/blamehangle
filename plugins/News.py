@@ -139,7 +139,7 @@ class News(Plugin):
 			for option in self.Config.options('RSS'):
 				if option.startswith('default_targets.'):
 					self.__setup_target(feed['targets'], 'RSS', option)
-
+	
 	# -----------------------------------------------------------------------
 	
 	def __setup_target(self, target_store, section, option):
@@ -232,9 +232,10 @@ class News(Plugin):
 	
 	def run_sometimes(self, currtime):
 		# Periodically check if we need to send some text out to IRC
-		if currtime - self.__Last_Spam_Time >= self.__spam_delay:
-			self.__Last_Spam_Time = currtime
-			if self.__outgoing:
+		if self.__outgoing:
+			if currtime - self.__Last_Spam_Time >= self.__spam_delay:
+				self.__Last_Spam_Time = currtime
+				
 				# We pull out a random item from our outgoing list so that
 				# we don't end up posting slabs of stories from the same
 				# site in a row
@@ -243,10 +244,12 @@ class News(Plugin):
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 				self.putlog(LOG_DEBUG, reply)
-
+				
 				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)
-			self.__pickle(self.__outgoing, '.news.out_pickle')
+				
+				# Re-pickle the current outgoing queue
+				self.__pickle(self.__outgoing, '.news.out_pickle')
 		
 		# Once an hour, go and check for old news and purge it from the
 		# db
@@ -259,8 +262,6 @@ class News(Plugin):
 			
 			query = (TIME_QUERY, old_time)
 			self.dbQuery(TIME_CHECK, query)
-			#data = [(TIME_CHECK, None), (TIME_QUERY, [old_time])]
-			#self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	# -----------------------------------------------------------------------
 	
@@ -273,8 +274,8 @@ class News(Plugin):
 			self.__do_rss(page_text, event, name)
 		
 		else:
-			if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI \
-				or event.name == NEWS_GOOGLE_HEALTH or event.name == NEWS_GOOGLE_BIZ:
+			if event.name in (NEWS_GOOGLE_WORLD, NEWS_GOOGLE_SCI, NEWS_GOOGLE_HEALTH,
+				NEWS_GOOGLE_BIZ):
 				
 				parser = self.__google
 			
@@ -371,9 +372,12 @@ class News(Plugin):
 			
 			if queries:
 				self.dbQuery(TITLE_INSERT, *queries)
+				
+				tolog = '%s: added %d items to outgoing queue' % (event.name, len(queries))
+				self.putlog(LOG_DEBUG, tolog)
 		
 		elif event == TITLE_INSERT:
-			# we just added a new item to our db
+			# we just added some new items to our db
 			pass
 		
 		elif event == TIME_CHECK:
