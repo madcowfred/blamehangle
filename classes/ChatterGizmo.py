@@ -202,6 +202,21 @@ class ChatterGizmo(Child):
 				conn.nick(nick)
 	
 	# -----------------------------------------------------------------------
+	# Someone just invited us to a channel
+	# -----------------------------------------------------------------------
+	def _handle_invite(self, conn, event):
+		chan = event.arguments()[0].lower()
+		userinfo = UserInfo(event.source())
+		
+		if chan in self.Conns[conn].channels:
+			tolog = '%s invited me to %s, joining...' % (userinfo.nick, chan)
+			self.putlog(LOG_ALWAYS, tolog)
+			conn.join(chan)
+		else:
+			tolog = '%s invited me to %s, which is NOT in my channel list!' % (userinfo.nick, chan)
+			self.putlog(LOG_WARNING, tolog)
+	
+	# -----------------------------------------------------------------------
 	# Someone was just kicked from a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_kick(self, conn, event):
