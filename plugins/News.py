@@ -438,7 +438,6 @@ class News(Plugin):
 		resp.data = UnquoteHTML(resp.data)
 		
 		# Find some tables
-		#tables = FindChunks(resp.data, '<table', '</table>')
 		tables = FindChunks(resp.data, '<table border=0 width=75% valign=top', '</table>')
 		if not tables:
 			self.putlog(LOG_WARNING, 'Google News parsing failed: no artice tables.')
@@ -454,6 +453,9 @@ class News(Plugin):
 				continue
 			
 			url, title = m.groups()
+			
+			# Remove any annoying bold tags
+			title = title.replace(' <b>...', '...')
 			
 			# Look for the story text
 			m = GOOGLE_STORY_TEXT_RE.search(table)
