@@ -40,6 +40,9 @@ IRCT_NOTICE = 'IRCT_NOTICE'
 IRCT_CTCP = 'IRCT_CTCP'
 IRCT_TIMED = 'IRCT_TIMED'
 
+# used to get the raw events, ugh
+REQ_ALL_IRC_EVENTS = 'REQ_ALL_IRC_EVENTS'
+
 # ---------------------------------------------------------------------------
 # Request constants
 # ---------------------------------------------------------------------------

@@ -38,6 +38,7 @@ class ChatterGizmo(Child):
 		self.Conns = {}
 		self.stopping = 0
 		
+		self.__Handlers = {}
 		self.__Rejoins = []
 		
 		# Set up our public commands, if there are any
@@ -214,6 +215,9 @@ class ChatterGizmo(Child):
 		method = getattr(self, name, None)
 		if method is not None:
 			method(connid, self.Conns[connid].conn, event)
+		
+		for name in self.__Handlers.keys():
+			self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
 	
 	# -----------------------------------------------------------------------
 	# Raw 001 - Welcome to the server
@@ -595,7 +599,11 @@ class ChatterGizmo(Child):
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
+	# Something wants to receive all IRC events, crazy
+	def _message_REQ_ALL_IRC_EVENTS(self, message):
+		self.__Handlers[message.source] = 1
 	
+	# Something wants to send a privmsg
 	def _message_REQ_PRIVMSG(self, message):
 		conn, target, text = message.data
 		
