@@ -88,9 +88,9 @@ class TorrentScraper(Plugin):
 		t2 = time.time()
 		
 		# If it's a BNBT page, we have to do some yucky searching
-		if resp.data.find('POWERED BY BNBT') >= 0:
+		if resp.data.find('BNBT') >= 0:
 			# Find the URL bits we want
-			chunks = FindChunks(resp.data, '<td class="name">', 'DL')
+			chunks = FindChunks(resp.data, '<td class="name">', '</tr>')
 			if not chunks:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
