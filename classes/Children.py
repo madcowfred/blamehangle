@@ -74,7 +74,7 @@ class Child:
 		
 		if hasattr(self, 'shutdown'):
 			self.shutdown(message)
-
+		
 		self.stopnow = 1
 		self.sendMessage('Postman', REPLY_SHUTDOWN, None)
 	
