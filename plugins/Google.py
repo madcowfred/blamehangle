@@ -135,6 +135,9 @@ class Google(Plugin):
 			m = CALC_RE.search(resp.data)
 			if m:
 				calc = '%s' % NOFONT_RE.sub('', m.group('result'))
+				calc = calc.replace('&times;', '*')
+				calc = calc.replace('<sup>', '^')
+				calc = calc.replace('</sup>', '')
 			else:
 				calc = None
 			
