@@ -19,6 +19,18 @@ from classes.Plugin import Plugin
 from classes.SimpleCacheDict import SimpleCacheDict
 
 # ---------------------------------------------------------------------------
+# Range for factoid name
+MIN_FACT_NAME_LENGTH = 16
+DEF_FACT_NAME_LENGTH = 32
+MAX_FACT_NAME_LENGTH = 64
+# Range for factoid value
+MIN_FACT_VALUE_LENGTH = 200
+DEF_FACT_VALUE_LENGTH = 800
+MAX_FACT_VALUE_LENGTH = 2000
+# Search limit
+SEARCH_LIMIT = 100
+
+# ---------------------------------------------------------------------------
 
 GET_QUERY = "SELECT name, value, locker_nick FROM factoids WHERE name = %s"
 
@@ -43,8 +55,8 @@ INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
-LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%' ORDER BY request_count DESC"
-LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE '%%%s%%' ORDER BY request_count DESC"
+LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%' ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
+LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE '%%%s%%' ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -56,16 +68,6 @@ REPLY_ACTION_RE = re.compile(r'^<(?P<type>reply|action)>\s*(?P<value>.+)$', re.I
 NULL_RE = re.compile(r'^<null>\s*$', re.I)
 # match redirected factoids
 REDIRECT_RE = re.compile(r'^see(: *| +)(?P<factoid>.{1,64})$')
-
-# ---------------------------------------------------------------------------
-# Range for factoid name
-MIN_FACT_NAME_LENGTH = 16
-DEF_FACT_NAME_LENGTH = 32
-MAX_FACT_NAME_LENGTH = 64
-# Range for factoid value
-MIN_FACT_VALUE_LENGTH = 200
-DEF_FACT_VALUE_LENGTH = 800
-MAX_FACT_VALUE_LENGTH = 2000
 
 # ---------------------------------------------------------------------------
 
@@ -948,12 +950,17 @@ class SmartyPants(Plugin):
 			# TEMP: fix this once people update their configs
 			max_search_results = self.Options.get('max_search_results', 25)
 			
-			if len(result) > max_search_results:
-				replytext = "Factoid %s search for '\02%s\02' found \02%d\02 results, first \02%d\02" % (
-					what, findme, len(result), max_search_results)
+			if len(result) == SEARCH_LIMIT:
+				results = '\02%d\02 (or more)' % (len(result))
 			else:
-				replytext = "'Factoid %s search for '\02%s\02' found \02%d\02 results" % (
-					what, findme, len(result))
+				results = '\02%d\02' % (len(result))
+			
+			if len(result) > max_search_results:
+				replytext = "Factoid %s search for '\02%s\02' found %s results, first \02%d\02" % (
+					what, findme, results, max_search_results)
+			else:
+				replytext = "'Factoid %s search for '\02%s\02' found %s results" % (
+					what, findme, results)
 			
 			names = [row['name'] for row in result[:max_search_results]]
 			replytext = '%s: %s' % (replytext, ' \02;\02 '.join(names))
