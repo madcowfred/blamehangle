@@ -243,6 +243,8 @@ class News(Plugin):
 		self.setHelp('news', 'news', NEWS_HELP)
 		self.setHelp('news', 'listfeeds', RSS_LIST_HELP)
 		self.setHelp('news', 'showfeed', RSS_SHOW_HELP)
+		
+		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
 	

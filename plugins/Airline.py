@@ -78,6 +78,8 @@ class Airline(Plugin):
 		
 		self.setHelp('travel', 'airline', AIRLINE_HELP)
 		self.setHelp('travel', 'flight', FLIGHT_HELP)
+		
+		self.registerHelp()
 	
 	# --------------------------------------------------------------------------
 	

@@ -45,8 +45,11 @@ class Karma(Plugin):
 	def __set_help_msgs(self):
 		KARMA_CHANGE_HELP = "'<something>\02++\02' OR '<something>\02--\02' : Increment or decrement karma for <something>"
 		KARMA_HELP = "'\02karma\02 <something>' : Look up <something>'s karma level"
+		
 		self.setHelp('karma', 'karma', KARMA_HELP)
 		self.setHelp('karma', 'modify', KARMA_CHANGE_HELP)
+		
+		self.registerHelp()
 	
 	#------------------------------------------------------------------------
 

@@ -37,6 +37,8 @@ class Converter(Plugin):
 		self.register(convert_dir, convert_msg)
 		
 		self.setHelp('convert', 'convert', CONVERT_HELP)
+		
+		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data

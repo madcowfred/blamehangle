@@ -51,6 +51,8 @@ class WeatherMan(Plugin):
 		self.setHelp('weather', 'weather', SHORT_HELP)
 		self.setHelp('weather', 'weatherlong', LONG_HELP)
 		self.setHelp('weather', 'forecast', FORECAST_HELP)
+		
+		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data

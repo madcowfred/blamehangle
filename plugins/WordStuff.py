@@ -61,6 +61,8 @@ class WordStuff(Plugin):
 		self.setHelp('words', 'rhyme', WORD_RHYME_HELP)
 		self.setHelp('words', 'synonyms', WORD_SYNONYM_HELP)
 		self.setHelp('words', 'antonyms', WORD_ANTONYM_HELP)
+		
+		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
 

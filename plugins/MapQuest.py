@@ -48,6 +48,8 @@ class MapQuest(Plugin):
 		MAPQUEST_HELP = "'\02mapquest\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip>' : Look up the distance and approximate driving time between two places, using MapQuest. USA and Canada only."
 
 		self.setHelp('travel', 'mapquest', MAPQUEST_HELP)
+		
+		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
 

@@ -67,6 +67,8 @@ class MoneyMangler(Plugin):
 		
 		self.setHelp('money', 'currency', MONEY_CURRENCY_HELP)
 		self.setHelp('money', 'exchange', MONEY_EXCHANGE_HELP)
+		
+		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
 

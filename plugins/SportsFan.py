@@ -35,6 +35,8 @@ class SportsFan(Plugin):
 		SCORES_HELP = "'\02score\02 <league> <team>' : Search for a score for <team> playing in <league> today. <league> can be one of NFL, MLB, NBA, NHL. <team> is identified by location, not nickname."
 		
 		self.setHelp('sports', 'score', SCORES_HELP)
+		
+		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
 	

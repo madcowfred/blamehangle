@@ -46,7 +46,10 @@ class SpellingBee(Plugin):
 			spell_dir = PluginTextEvent(BEE_SPELL, IRCT_PUBLIC_D, SPELL_RE)
 			spell_msg = PluginTextEvent(BEE_SPELL, IRCT_MSG, SPELL_RE)
 			self.register(spell_dir, spell_msg)
+			
 			self.setHelp('words', 'spell', SPELL_HELP)
+			
+			self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data

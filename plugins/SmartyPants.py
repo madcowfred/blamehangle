@@ -211,6 +211,8 @@ class SmartyPants(Plugin):
 		self.setHelp('infobot', 'listvalues', FACT_LISTVALUES_HELP)
 		self.setHelp('infobot', 'factinfo', FACT_INFO_HELP)
 		self.setHelp('infobot', 'status', FACT_STATUS_HELP)
+		
+		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
