@@ -22,15 +22,14 @@ class Plugin(Child):
 		
 		self.__setup_time = time.time()
 		
-		self.__Events = {}
-		self.__Help = {}
+		self.__Events = []
 	
 	# Default REQ_REHASH handler. We don't want to rehash just after we started!
 	def _message_REQ_REHASH(self, message):
 		if hasattr(self, 'rehash'):
 			interval = time.time() - self.__setup_time
 			
-			if interval > 5:
+			if interval > 2:
 				#tolog = '%s rehashing' % self._name
 				#self.putlog(LOG_DEBUG, tolog)
 				
@@ -43,22 +42,29 @@ class Plugin(Child):
 	# Default PLUGIN_REGISTER handler. We have to reset things here!
 	def _message_PLUGIN_REGISTER(self, message):
 		if hasattr(self, 'register'):
-			self.__Events = {}
-			self.__Help = {}
+			self.__Events = []
 			self.register()
+			# If we have some events, send them in
+			if self.__Events:
+				self.sendMessage('PluginHandler', PLUGIN_REGISTER, self.__Events)
 		
 		else:
-			raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self._name
-	
-	# Default trigger handler, looks for _trigger_EVENT_NAME
+			raise NameError, 'need to define register() in %s' % self._name
+		
+	# Default trigger handler
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
-		method_name = '_trigger_%s' % trigger.name
 		
-		if hasattr(self, method_name):
-			getattr(self, method_name)(trigger)
+		method = self._Get_Method(trigger.name)
+		if method is not None:
+			try:
+				method(trigger)
+			except:
+				replytext = '%s crashed while trying to handle %s!' % (self.__class__.__name__, trigger.name)
+				self.sendReply(trigger, replytext)
+				raise
 		else:
-			raise Exception, 'either make %s or overwrite _message_PLUGIN_TRIGGER' % method_name
+			raise NameError, 'define %s.%s or override _message_PLUGIN_TRIGGER' % (self.__class__.__name__, trigger.name)
 	
 	# Default DNS reply handler, eek
 	def _message_REPLY_DNS(self, message):
@@ -95,13 +101,8 @@ class Plugin(Child):
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
-	def _message_REQ_SHUTDOWN(self, message):
-		Child._message_REQ_SHUTDOWN(self, message)
-		
-		# Only unset our help if we're being shut down without a reason. We
-		# should only get a reason when the entire bot is shutting down.
-		if message.data is None and self.__Help:
-			self.unregisterHelp()
+	#def _message_REQ_SHUTDOWN(self, message):
+	#	Child._message_REQ_SHUTDOWN(self, message)
 	
 	# -----------------------------------------------------------------------
 	
@@ -109,44 +110,16 @@ class Plugin(Child):
 		reply = PluginReply(trigger, replytext, process)
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
-	def register(self, *events):
-		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)
-	
 	# -----------------------------------------------------------------------
-	# Shorthand way of setting text events
-	def setTextEvent(self, name, regexp, *IRCTypes):
-		for IRCType in IRCTypes:
-			event = PluginTextEvent(name, IRCType, regexp)
-			ident = '__%s__%s__' % (name, IRCType)
-			self.__Events[ident] = event
+	# New way of setting text events
+	def addTextEvent(self, method, regexp, IRCTypes=(IRCT_PUBLIC_D, IRCT_MSG), help=None, priority=10):
+		event = PluginTextEvent(method.__name__, IRCTypes, regexp, help, priority)
+		self.__Events.append(event)
 	
-	# Shorthand way of setting text events with a different priority
-	def setTextEventPriority(self, priority, name, regexp, *IRCTypes):
-		for IRCType in IRCTypes:
-			event = PluginTextEvent(name, IRCType, regexp, priority)
-			ident = '__%s__%s__' % (name, IRCType)
-			self.__Events[ident] = event
-	
-	# Shorthand way of setting timed events
-	def setTimedEvent(self, name, interval, targets, *args):
-		event = PluginTimedEvent(name, interval, targets, *args)
-		ident = '__%s__%s__' % (name, interval)
-		self.__Events[ident] = event
-	
-	# Quick way to register our events
-	def registerEvents(self):
-		self.sendMessage('PluginHandler', PLUGIN_REGISTER, self.__Events.values())
-	
-	# -----------------------------------------------------------------------
-	# Help stuff
-	def setHelp(self, topic, command, help_text):
-		self.__Help.setdefault(topic, {})[command] = help_text
-	
-	def registerHelp(self):
-		self.sendMessage('Helper', SET_HELP, self.__Help)
-	
-	def unregisterHelp(self):
-		self.sendMessage('Helper', UNSET_HELP, self.__Help)
+	# New way of setting timed events
+	def addTimedEvent(self, method, interval, targets=None, *args):
+		event = PluginTimedEvent(method.__name__, interval, targets, args)
+		self.__Events.append(event)
 	
 	# -----------------------------------------------------------------------
 	# Pickle stuff
@@ -212,25 +185,55 @@ class PluginTextEvent:
 	"""
 	This class encapsulates all the data regarding an event that triggers off
 	text from IRC.
+	
 	name     : a unique name for this event
-	IRCType  : the IRCType this event should trigger on
-	regexp   : a compiled re object that will be used to match against lines of
-	           the appropriate IRCType
+	IRCTypes : the IRCTypes that this event should trigger on
+	regexp   : a compiled re object that will be used to match against lines
+	help     : (topic, command, text) tuple with help for this command
 	priority : a priority value for this event. Events with higher priorities
 	           will be preferred over low priorities.
 	"""
 	
-	def __init__(self, name, IRCType, regexp, priority=10):
+	def __init__(self, name, IRCTypes, regexp, help, priority):
 		self.name = name
-		self.IRCType = IRCType
+		self.IRCTypes = IRCTypes
 		self.regexp = regexp
+		self.help = help
 		self.priority = priority
 	
 	def __str__(self):
-		return "%s: %s" % (self.IRCType, self.name)
+		return "%s: %s" % (self.IRCTypes, self.name)
 	
 	def __repr__(self):
-		return "<class PluginTextEvent:" + self.__str__() + ">"
+		return "<class PluginTextEvent: %s>" % (self.__str__())
+
+class PluginTextTrigger:
+	"""
+	This class holds all the information regarding the triggering of a text
+	event.
+	
+	event    : the event that caused this trigger
+	match    : the match object that was returned by the event's regexp
+	IRCType  : the IRCType FIXME
+	conn     : the IRC connection this trigger came from
+	target   : the target of the line that caused this trigger (eg, channel)
+	userinfo : a userinfo object for the source of the event
+	"""
+	
+	def __init__(self, event, match, IRCType, conn, target, userinfo):
+		self.event = event
+		self.match = match
+		self.IRCType = IRCType
+		self.conn = conn
+		self.target = target
+		self.userinfo = userinfo
+		self.name = self.event.name
+	
+	def __str__(self):
+		return "%s, %s: %s, %s" % (self.name, self.IRCType, self.userinfo.nick, self.target)
+	
+	def __repr__(self):
+		return "<class PluginTextTrigger:" + self.__str__() + ">"
 
 # ---------------------------------------------------------------------------
 
@@ -251,19 +254,20 @@ class PluginTimedEvent:
 	IRCType            : This will always be IRCT_TIMED
 	last_trigger       : the time this event last triggered
 	"""
-	def __init__(self, name, interval, targets, *args):
+	def __init__(self, name, interval, targets, args):
 		self.name = name
 		self.interval = interval
 		self.targets = targets
-		self.IRCType = IRCT_TIMED
+		self.IRCTypes = (IRCT_TIMED,)
 		self.last_trigger = time.time()
+		self.help = None
 		self.args = args
 	
 	def __str__(self):
 		return "%s: %s" % (IRCT_TIMED, self.name)
 	
 	def __repr__(self):
-		return "<class PluginTimedEvent:" + self.__str__() + ">"
+		return "<class PluginTimedEvent: %s>" % (self.name)
 
 class PluginTimedTrigger:
 	def __init__(self, name, interval, targets, args):
@@ -274,57 +278,17 @@ class PluginTimedTrigger:
 		self.args = args
 	
 	def __str__(self):
-		return '%s: %s' % (IRCT_TIMED, self.name)
+		return '%s' % (self.name)
 	
 	def __repr__(self):
 		return "<class PluginTimedTrigger: %s>" % self.__str__()
-
-# ---------------------------------------------------------------------------
-
-class PluginTextTrigger:
-	"""
-	This class holds all the information regarding the triggering of a text
-	event.
-	The following attributes are available:
-		event    : the event that caused this trigger
-		match    : the match object that was returned by the event's regexp
-		conn     : the IRC connection this trigger came from
-		target   : the target of the line that caused this trigger (eg, chan
-			name)
-		userinfo : a userinfo object describing the guy that sent the line
-			that caused this match
-	"""
-	
-	def __init__(self, event, match, conn, target, userinfo):
-		self.event = event
-		self.match = match
-		self.conn = conn
-		self.target = target
-		self.userinfo = userinfo
-		self.name = self.event.name
-	
-	def __str__(self):
-		name = self.name
-		try:
-			nick = self.userinfo.nick
-		except AttributeError:
-			nick = 'None'
-		try:
-			IRCType = self.event.IRCType
-		except AttributeError:
-			IRCType = 'None'
-		target = self.target
-		return "%s, %s: %s, %s" % (name, IRCType, nick, target)
-	
-	def __repr__(self):
-		return "<class PluginTextTrigger:" + self.__str__() + ">"
 
 # ---------------------------------------------------------------------------
 # Needed sometimes for URL stuff, yeck
 class PluginFakeTrigger:
 	def __init__(self, name):
 		self.name = name
-		self.event = PluginTextEvent(name, None, None)
+		self.event = PluginTextEvent(name, None, None, None, 0)
 
 # ---------------------------------------------------------------------------
 

@@ -18,21 +18,8 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-wordbit = '(?P<word>\S+)$'
-
-WORD_ANTONYM = 'WORD_ANTONYM'
-ANTONYM_HELP = '\02antonyms\02 <word> : Search for words that have the exact opposite meaning of <word>.'
-ANTONYM_RE = re.compile("antonyms? +" + wordbit)
 ANTONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=ant&org1=let&org2=l'
-
-WORD_RHYME = 'WORD_RHYME'
-RHYME_HELP = '\02rhyme\02 <word> : Search for words that rhyme with <word>.'
-RHYME_RE = re.compile('rhyme +' + wordbit)
 RHYME_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&org1=let&org2=sl'
-
-WORD_SYNONYM = 'WORD_SYNONYM'
-SYNONYM_HELP = '\02synonyms\02 <word> : Search for words that have the same meaning as <word>.'
-SYNONYM_RE = re.compile("synonyms? +" + wordbit)
 SYNONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l'
 
 # Match the results line
@@ -45,22 +32,7 @@ RHYMEZONE_LIMIT = 40
 
 # ---------------------------------------------------------------------------
 
-WORD_ACRONYM = 'WORD_ACRONYM'
-ACRONYM_HELP = '\02acro\02 [n] <acronym> : Look up <acronym>, possibly getting definition [n].'
-ACRONYM_RE = re.compile('^acronym(?P<n>\s+\d+\s+|\s+)(?P<acronym>.+)$')
 ACRONYM_URL = 'http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=%s&Find=Find'
-
-WORD_DICT = 'WORD_DICT'
-DICT_HELP = '\02dict\02 <word> : Look up the dictionary meaning of a word.'
-DICT_RE = re.compile(r'^dict (?P<word>\S+)$')
-
-WORD_SPELL = 'WORD_SPELL'
-SPELL_HELP = '\02spell\02 <word> : Check spelling of a word.'
-SPELL_RE = re.compile('^spell\s+(?P<word>\S+)$')
-
-WORD_URBAN = 'WORD_URBAN'
-URBAN_HELP = '\02urban\02 [n] <term> : Look up <term> on urbandictionary.com, possibly getting definition [n].'
-URBAN_RE = re.compile('^urban(?P<n>\s+\d+\s+|\s+)(?P<term>.+)$')
 URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 # ---------------------------------------------------------------------------
@@ -98,50 +70,50 @@ class WordStuff(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def register(self):
-		# RhymeZone
-		self.setTextEvent(WORD_ANTONYM, ANTONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(WORD_RHYME, RHYME_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(WORD_SYNONYM, SYNONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# AcronymFinder
-		self.setTextEvent(WORD_ACRONYM, ACRONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		# DICT
-		self.setTextEvent(WORD_DICT, DICT_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		# Spell
-		self.setTextEvent(WORD_SPELL, SPELL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Fetch_Acronyms,
+			regexp = re.compile('^acronyms?(?P<n>\s+\d+\s+|\s+)(?P<acronym>\S+)$'),
+			help = ('words', 'acronyms', '\02acronyms\02 [n] <acronym> : Look up <acronym>, possibly getting definition [n].'),
+		)
+		# RhymeZone
+		self.addTextEvent(
+			method = self.__Fetch_Antonyms,
+			regexp = re.compile('antonyms? (?P<word>\S+)$'),
+			help = ('words', 'antonyms', '\02antonyms\02 <word> : Search for words that have the opposite meaning to <word>.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Rhymes,
+			regexp = re.compile('rhymes? (?P<word>\S+)$'),
+			help = ('words', 'rhymes', '\02rhymes\02 <word> : Search for words that rhyme with <word>.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Synonyms,
+			regexp = re.compile('synonyms? (?P<word>\S+)$'),
+			help = ('words', 'synonyms', '\02synonyms\02 <word> : Search for words that have the same meaning of <word>.'),
+		)
 		# UrbanDictionary
-		self.setTextEvent(WORD_URBAN, URBAN_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		
-		self.registerEvents()
-		
-		self.setHelp('words', 'antonyms', ANTONYM_HELP)
-		self.setHelp('words', 'rhyme', RHYME_HELP)
-		self.setHelp('words', 'synonyms', SYNONYM_HELP)
-		self.setHelp('words', 'acronym', ACRONYM_HELP)
-		self.setHelp('words', 'dict', DICT_HELP)
-		self.setHelp('words', 'spell', SPELL_HELP)
-		self.setHelp('words', 'urban', URBAN_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_Urban,
+			regexp = re.compile('^urban(?P<n>\s+\d+\s+|\s+)(?P<term>.+)$'),
+			help = ('words', 'urban', '\02urban\02 [n] <term> : Look up <term> on urbandictionary.com, possibly getting definition [n].'),
+		)
+		# DICT
+		self.addTextEvent(
+			method = self.__DICT,
+			regexp = re.compile(r'^dict (?P<word>\S+)$'),
+			help = ('words', 'dict', '\02dict\02 <word> : Look up the dictionary meaning of a word.'),
+		)
+		# Spell
+		self.addTextEvent(
+			method = self.__Spell,
+			regexp = re.compile('^spell\s+(?P<word>\S+)$'),
+			help = ('words', 'spell', '\02spell\02 <word> : Check spelling of a word.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	
-	def _trigger_WORD_ANTONYM(self, trigger):
-		word = quote(trigger.match.group('word').lower())
-		url = ANTONYM_URL % word
-		self.urlRequest(trigger, self.__RhymeZone, url)
-	
-	def _trigger_WORD_RHYME(self, trigger):
-		word = quote(trigger.match.group('word').lower())
-		url = RHYME_URL % word
-		self.urlRequest(trigger, self.__RhymeZone, url)
-	
-	def _trigger_WORD_SYNONYM(self, trigger):
-		word = quote(trigger.match.group('word').lower())
-		url = SYNONYM_URL % word
-		self.urlRequest(trigger, self.__RhymeZone, url)
-	
-	# -----------------------------------------------------------------------
-	
-	def _trigger_WORD_ACRONYM(self, trigger):
+	def __Fetch_Acronyms(self, trigger):
 		acronym = trigger.match.group('acronym').upper()
 		if len(acronym) > 10:
 			self.sendReply(trigger, "That's too long!")
@@ -160,25 +132,22 @@ class WordStuff(Plugin):
 			url = ACRONYM_URL % QuoteURL(acronym)
 			self.urlRequest(trigger, self.__AcronymFinder, url)
 	
-	def _trigger_WORD_DICT(self, trigger):
-		word = trigger.match.group('word').lower()
-		if len(word) > 30:
-			tolog = 'Dictionary: %s asked me to look up a very long word!' % (trigger.userinfo.nick)
-			self.sendReply(trigger, "That's too long!")
-		
-		else:
-			tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, word)
-			async_dict(self, trigger)
-		
-		self.putlog(LOG_ALWAYS, tolog)
-		
-	def _trigger_WORD_SPELL(self, trigger):
-		if self.__spell_bin:
-			self.__Spell(trigger)
-		else:
-			self.sendReply(trigger, 'spell is broken until my owner fixes it.')
+	def __Fetch_Antonyms(self, trigger):
+		word = quote(trigger.match.group('word').lower())
+		url = ANTONYM_URL % word
+		self.urlRequest(trigger, self.__RhymeZone, url)
 	
-	def _trigger_WORD_URBAN(self, trigger):
+	def __Fetch_Rhymes(self, trigger):
+		word = quote(trigger.match.group('word').lower())
+		url = RHYME_URL % word
+		self.urlRequest(trigger, self.__RhymeZone, url)
+	
+	def __Fetch_Synonyms(self, trigger):
+		word = quote(trigger.match.group('word').lower())
+		url = SYNONYM_URL % word
+		self.urlRequest(trigger, self.__RhymeZone, url)
+	
+	def __Fetch_Urban(self, trigger):
 		term = trigger.match.group('term').lower()
 		if len(term) > 30:
 			self.sendReply(trigger, "That's too long!")
@@ -196,6 +165,20 @@ class WordStuff(Plugin):
 			# Fetch a new one
 			url = URBAN_URL % QuoteURL(term)
 			self.urlRequest(trigger, self.__Urban, url)
+	
+	# -----------------------------------------------------------------------
+	
+	def __DICT(self, trigger):
+		word = trigger.match.group('word').lower()
+		if len(word) > 30:
+			tolog = 'Dictionary: %s asked me to look up a very long word!' % (trigger.userinfo.nick)
+			self.sendReply(trigger, "That's too long!")
+		
+		else:
+			tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, word)
+			async_dict(self, trigger)
+		
+		self.putlog(LOG_ALWAYS, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of an AcronymFinder page
@@ -277,17 +260,17 @@ class WordStuff(Plugin):
 			return
 		
 		# Set up some stuff here
-		if trigger.name == WORD_ANTONYM:
+		if trigger.name == '__Fetch_Antonyms':
 			findme = "Words and phrases that can mean exactly the opposite as"
 			some_reply = "Antonyms for '%s' (\02%s\02 results shown): %s"
 			none_reply = "Found no antonyms of '%s'"
 		
-		if trigger.name == WORD_RHYME:
+		if trigger.name == '__Fetch_Rhymes':
 			findme = 'Words that rhyme with'
 			some_reply = "Words that rhyme with '%s' (\02%s\02 results shown): %s"
 			none_reply = "Found no words that rhyme with '%s'"
 		
-		elif trigger.name == WORD_SYNONYM:
+		elif trigger.name == '__Fetch_Synonyms':
 			findme = "Words and phrases that can mean the same thing as"
 			some_reply = "Synonyms for '%s' (\02%s\02 results shown): %s"
 			none_reply = "Found no synonyms of '%s'"
@@ -331,6 +314,10 @@ class WordStuff(Plugin):
 	# -----------------------------------------------------------------------
 	# Look up the spelling of a word using ispell or (preferably) aspell
 	def __Spell(self, trigger):
+		if not self.__spell_bin:
+			self.sendReply(trigger, 'spell is broken until my owner fixes it.')
+			return
+		
 		word = trigger.match.group('word').lower()
 		
 		# Returns 

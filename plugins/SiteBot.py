@@ -67,10 +67,12 @@ class SiteBot(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
-		regexp = '^%s(.+)$' % self.__command_prefix
-		self.setTextEvent(SITEBOT_COMMAND, re.compile(regexp), IRCT_PUBLIC)
-		self.registerEvents()
+	def register(self):
+		self.addTextEvent(
+			method = self.__Parse_Command,
+			regexp = re.compile('^%s(.+)$' % self.__command_prefix),
+			IRCTypes = (IRCT_PUBLIC,),
+		)
 	
 	# -----------------------------------------------------------------------
 	# See if our log file has any new lines
@@ -207,7 +209,7 @@ class SiteBot(Plugin):
 	
 	# ----------------------------------------------------------------------------
 	
-	def _trigger_SITEBOT_COMMAND(self, trigger):
+	def __Parse_Command(self, trigger):
 		# Don't talk to people not in our channels
 		if trigger.target.lower() not in self.__channels:
 			return

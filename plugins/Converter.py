@@ -12,12 +12,6 @@ from classes.Constants import *
 from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
-
-CONVERT_CONVERT = 'CONVERT_CONVERT'
-CONVERT_HELP = '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?' 
-CONVERT_RE = re.compile('^convert (?P<amt>-?[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
-
-# ---------------------------------------------------------------------------
 # Mapping of distance measurements to SI units (meters)
 DISTANCE = {
 	'in': ('inches', 0.0254),
@@ -55,15 +49,15 @@ WEIGHT = {
 
 class Converter(Plugin):
 	def register(self):
-		self.setTextEvent(CONVERT_CONVERT, CONVERT_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('convert', 'convert', CONVERT_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Convert,
+			regexp = re.compile('^convert (?P<amt>-?[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$'),
+			help = ('math', 'convert', '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?'),
+		)
 	
 	# -----------------------------------------------------------------------
 	
-	def _trigger_CONVERT_CONVERT(self, trigger):
+	def __Convert(self, trigger):
 		data = {}
 		data['amt'] = float(trigger.match.group('amt'))
 		data['from'] = trigger.match.group('from').lower()

@@ -1,9 +1,11 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains the Postman class, which handles inter-object messages
-# and logging. Try not to touch this :)
-# ---------------------------------------------------------------------------
+
+"""
+This is the main loop of blamehangle, which handles inter-object messages and
+logging. Don't mess with it.
+"""
 
 import asyncore
 import os
@@ -24,7 +26,6 @@ from classes.Users import *
 
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
-from classes.Helper import Helper
 from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
 from classes.Resolver import Resolver
@@ -82,7 +83,7 @@ class Postman:
 		# Create our children
 		self.__Children = {}
 		
-		system = [ PluginHandler, Resolver, ChatterGizmo, DataMonkey, HTTPMonster, Helper ]
+		system = [ PluginHandler, Resolver, ChatterGizmo, DataMonkey, HTTPMonster ]
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
 			self.__Log(LOG_ALWAYS, tolog)
@@ -98,9 +99,6 @@ class Postman:
 		# Import plugins
 		for name in self.__plugin_list:
 			self.__Plugin_Load(name)
-		
-		# add Helper to the list of plugins so that it can do its thing
-		self.__plugin_list.append('Helper')
 	
 	# -----------------------------------------------------------------------
 	
@@ -230,6 +228,7 @@ class Postman:
 						
 						# Someone wants some stats
 						elif message.ident == GATHER_STATS:
+							message.data['plugins'] = len([v for v in self.__Children.values() if isinstance(v, Plugin)])
 							message.data['started'] = self.__Started
 							self.sendMessage('BotStatus', GATHER_STATS, message.data)
 						
@@ -276,10 +275,8 @@ class Postman:
 				del self.inQueue[:]
 				
 				
-				# Check for messages
-				children = self.__Children.values()
-				
-				for child in children:
+				# Deliver any waiting messages to children
+				for name, child in self.__Children.items():
 					if not child.inQueue:
 						continue
 					
@@ -291,8 +288,6 @@ class Postman:
 					else:
 						tolog = 'Unhandled message in %s: %s' % (name, message.ident)
 						self.__Log(LOG_DEBUG, tolog)
-					
-					#child.handleMessages()
 				
 				
 				# Poll our sockets
@@ -610,9 +605,6 @@ class Postman:
 		self.Config.read(self.ConfigFile)
 		self.__Setup_From_Config()
 		self.__Load_Configs()
-		
-		# re-add Helper to the plugin list, since it will have been clobbered
-		self.__plugin_list.append('Helper')
 		
 		# Check if any plugins have been removed from the config.
 		# If so, shut them down

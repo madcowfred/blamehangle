@@ -15,20 +15,12 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-ANIME_ANIDB = 'ANIME_ANIDB'
-ANIDB_HELP = '\02anidb\02 <name> : Search for anime information on AniDB.'
-ANIDB_RE = re.compile(r'^anidb (?P<findme>.+)$')
-
 ANIDB_URL = "http://anidb.ath.cx/perl-bin/animedb.pl?show=animelist&noalias=1&adb.search=%s"
 AID_URL = 'http://anidb.ath.cx/perl-bin/animedb.pl?show=anime&aid=%s'
 
 RESULT_RE = re.compile(r'^(\d+)">(?:<i>|)(.*?)(?:</i>|)$')
 
 # ---------------------------------------------------------------------------
-
-ANIME_ANIMENFO = 'ANIME_ANIMENFO'
-ANIMENFO_HELP = '\02animenfo\02 <name> : Search for anime information on AnimeNFO.'
-ANIMENFO_RE = re.compile(r'^animenfo (?P<findme>.+)$')
 
 ANIMENFO_FIELDS = {
 	'TITLE': 'Title',
@@ -56,21 +48,24 @@ ANIMENFO_SEND = '<ANIME><TITLE>%s</TITLE><FIELD>TITLE CATEGORY TOTAL GENRE YEAR 
 
 class Anime(Plugin):
 	def register(self):
-		self.setTextEvent(ANIME_ANIDB, ANIDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(ANIME_ANIMENFO, ANIMENFO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('anime', 'anidb', ANIDB_HELP)
-		self.setHelp('anime', 'animenfo', ANIMENFO_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_AniDB,
+			regexp = re.compile(r'^anidb (?P<findme>.+)$'),
+			help = ('video', 'anidb', '\02anidb\02 <name> : Search for anime information on AniDB.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_AnimeNFO,
+			regexp = re.compile(r'^animenfo (?P<findme>.+)$'),
+			help = ('video', 'animenfo', '\02animenfo\02 <name> : Search for anime information on AnimeNFO.'),
+		)
 	
 	# ---------------------------------------------------------------------------
 	
-	def _trigger_ANIME_ANIDB(self, trigger):
+	def __Fetch_AniDB(self, trigger):
 		url = ANIDB_URL % QuoteURL(trigger.match.group('findme').lower())
 		self.urlRequest(trigger, self.__Parse_AniDB, url)
 	
-	def _trigger_ANIME_ANIMENFO(self, trigger):
+	def __Fetch_AnimeNFO(self, trigger):
 		async_animenfo(self, trigger)
 	
 	# ---------------------------------------------------------------------------
@@ -141,6 +136,10 @@ class Anime(Plugin):
 						info = '?'
 				else:
 					info = '?'
+				
+				# Eat stupid [graph] on the Rating field
+				if thing == 'Rating' and info.endswith(' [graph]'):
+					info = info[:-8]
 				
 				part = '\x02[\x02%s: %s\x02]\x02' % (thing, info)
 				parts.append(part)

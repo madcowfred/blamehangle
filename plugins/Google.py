@@ -13,9 +13,6 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-GOOGLE_GOOGLE = 'GOOGLE_GOOGLE'
-GOOGLE_HELP = '\02google\02 <search term> : Search via Google!'
-GOOGLE_RE = re.compile(r'^google (?P<findme>.+)$')
 GOOGLE_URL = 'http://www.google.com/search?q=%s&num=5'
 
 RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
@@ -25,15 +22,7 @@ NOBOLD_RE = re.compile('</?b>')
 NOFONT_RE = re.compile('</?font[^<>]*?>')
 
 # ---------------------------------------------------------------------------
-
-GOOGLE_TRANSLATE = 'GOOGLE_TRANSLATE'
-TRANSLATE_HELP = '\02translate\02 <from> \02to\02 <to> <text> : Translate some text via Google Translate.'
-TRANSLATE_RE = re.compile('^translate (?P<from>\S+)(?: to | )(?P<to>\S+) (?P<text>.+)$')
 TRANSLATE_URL = 'http://translate.google.com/translate_t?langpair=%s|%s&text=%s'
-
-GOOGLE_TRANSMANGLE = 'GOOGLE_TRANSMANGLE'
-TRANSMANGLE_HELP = '\02transmangle\02 <lang> <text> : Mangle text by translating from English to lang and back again.'
-TRANSMANGLE_RE = re.compile('^transmangle (?P<lang>\S+) (?P<text>.+)$')
 
 # A mapping of language translations we can do
 LANG_MAP = {
@@ -49,23 +38,29 @@ LANG_MAP = {
 
 class Google(Plugin):
 	def register(self):
-		self.setTextEvent(GOOGLE_GOOGLE, GOOGLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(GOOGLE_TRANSLATE, TRANSLATE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(GOOGLE_TRANSMANGLE, TRANSMANGLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('google', 'google', GOOGLE_HELP)
-		self.setHelp('google', 'translate', TRANSLATE_HELP)
-		self.setHelp('google', 'transmangle', TRANSMANGLE_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_Google,
+			regexp = re.compile(r'^google (?P<findme>.+)$'),
+			help = ('google', 'google', '\02google\02 <search term> : Search via Google!'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Translate,
+			regexp = re.compile('^translate (?P<from>\S+)(?: to | )(?P<to>\S+) (?P<text>.+)$'),
+			help = ('google', 'translate', '\02translate\02 <from> \02to\02 <to> <text> : Translate some text via Google Translate.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Transmangle,
+			regexp = re.compile('^transmangle (?P<lang>\S+) (?P<text>.+)$'),
+			help = ('google', 'transmangle', '\02transmangle\02 <lang> <text> : Mangle text by translating from English to lang and back again.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	
-	def _trigger_GOOGLE_GOOGLE(self, trigger):
+	def __Fetch_Google(self, trigger):
 		url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
 		self.urlRequest(trigger, self.__Google, url)
 	
-	def _trigger_GOOGLE_TRANSLATE(self, trigger):
+	def __Fetch_Translate(self, trigger):
 		_from = trigger.match.group('from').lower()
 		_to = trigger.match.group('to').lower()
 		_text = trigger.match.group('text')
@@ -91,7 +86,7 @@ class Google(Plugin):
 		url = TRANSLATE_URL % (_from, _to, quote(_text))
 		self.urlRequest(trigger, self.__Translate, url)
 		
-	def _trigger_GOOGLE_TRANSMANGLE(self, trigger):
+	def __Fetch_Transmangle(self, trigger):
 		_lang = trigger.match.group('lang').lower()
 		_text = trigger.match.group('text')
 		
@@ -176,7 +171,7 @@ class Google(Plugin):
 					
 					# If that user is trustworthy, or we're in private, spam the rest
 					if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam') or \
-						trigger.event.IRCType == IRCT_MSG:
+						trigger.IRCType == IRCT_MSG:
 						
 						for title, url in results[1:]:
 							replytext = '%s - %s' % (title, url)

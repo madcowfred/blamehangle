@@ -13,9 +13,6 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-SCRAPE_TIMER = 'SCRAPE_TIMER'
-RSS_TIMER = 'RSS_TIMER'
-
 SELECT_QUERY = "SELECT url, description FROM torrents WHERE url IN (%s) OR description IN (%s)"
 RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
@@ -56,15 +53,19 @@ class TorrentScraper(Plugin):
 				del self.URLs[url]
 	
 	def register(self):
-		self.setTimedEvent(SCRAPE_TIMER, self.Options['request_interval'], None)
+		self.addTimedEvent(
+			method = self.__Scrape_Check,
+			interval = self.Options['request_interval'],
+		)
 		if self.Options['rss_path']:
-			self.setTimedEvent(RSS_TIMER, self.Options['rss_interval'], None)
-		
-		self.registerEvents()
+			self.addTimedEvent(
+				method = self.__Query_RSS,
+				interval = self.Options['rss_interval'],
+			)
 	
 	# -----------------------------------------------------------------------
 	# Get some URLs that haven't been checked recently
-	def _trigger_SCRAPE_TIMER(self, trigger):
+	def __Scrape_Check(self, trigger):
 		now = time.time()
 		
 		ready = [(v['checked'], v, k) for k, v in self.URLs.items() if now - v['checked'] > self.Options['scrape_interval']]
@@ -79,7 +80,7 @@ class TorrentScraper(Plugin):
 			else:
 				self.urlRequest(trigger, self.__Parse_Page, url)
 	
-	def _trigger_RSS_TIMER(self, trigger):
+	def __Query_RSS(self, trigger):
 		self.dbQuery(trigger, self.__Generate_RSS, RECENT_QUERY)
 	
 	# -----------------------------------------------------------------------

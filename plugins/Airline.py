@@ -2,8 +2,6 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# FIXME: At some point, rewrite this to be less hideous. Too scared to do so
-#        now.
 
 """
 This plugin does some stuff regarding flights and airlines. You can lookup
@@ -21,29 +19,8 @@ from classes.Plugin import Plugin
 
 MAX_AIRLINE_MATCHES = 5
 
-AIRLINE_AIRLINE = 'AIRLINE_AIRLINE'
-AIRLINE_HELP = "\02airline\02 <code> OR <partial name> : Look up the name for a carrier given the code, or look up the code for a carrier given the name (or part of the name)."
-AIRLINE_RE = re.compile(r'^airline\s+(?P<airline>.+)$')
-
-AIRLINE_AIRPORT = 'AIRLINE_AIRPORT'
-AIRPORT_HELP = "\02airport\02 <code> : Look up an airport by it's IATA code."
-AIRPORT_RE = re.compile(r'^airport\s+(?P<code>\w+)$')
-AIRPORT_URL = 'http://www.flymig.com/iata/r/%s.htm'
-
-AIRLINE_FLIGHT = 'AIRLINE_FLIGHT'
-FLIGHT_HELP = "\02flight\02 <code> <flight number> <date> : Look up the details of the specified flight. Date is in YYYY-MM-DD format, and is optional (defaults to today's date if omitted)."
-# what a bastard this was to get right. god damn i hate regexps.
-f1 = "^ *flight +"
-f2 = "(?P<code>[^ ]+)"
-f3 = " +(?P<flight>[^ ]+)"
-f4 = "(( *$)|( +%s *$))"
-f5 = "(?P<year>20[0-9][0-9])-"
-f6 = "(?P<month>(0[1-9])|(1[0-2]))-"
-f7 = "(?P<day>(0[1-9])|([12][0-9])|(3[0-1]))"
-f8 = f5+f6+f7
-f9 = f4 % f8
-
-FLIGHT_RE = re.compile(f1+f2+f3+f9)
+FLIGHT_URL = "http://dps1.travelocity.com/dparflifo.ctl?CMonth=%s&CDayOfMonth=%s&CYear=%s&LANG=EN&last_pgd_page=dparrqst.pgd&dep_arpname=&arr_arp_name=&dep_dt_mn_1=%s&dep_dt_dy_1=%s&dep_tm1=12%%3A00pm&aln_name=%s&flt_num=%s&Search+Now.x=89&Search+Now.y=4"
+IATA_URL = 'http://www.flymig.com/iata/r/%s.htm'
 
 # ---------------------------------------------------------------------------
 
@@ -75,32 +52,49 @@ class Airline(Plugin):
 	# --------------------------------------------------------------------------
 	
 	def register(self):
-		self.setTextEvent(AIRLINE_AIRLINE, AIRLINE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(AIRLINE_AIRPORT, AIRPORT_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(AIRLINE_FLIGHT, FLIGHT_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
+		self.addTextEvent(
+			method = self.__Airline_Search,
+			regexp = re.compile(r'^airline\s+(?P<airline>.+)$'),
+			help = ('travel', 'airline', "\02airline\02 <code> OR <partial name> : Look up the name for a carrier given the code, or look up the code for a carrier given the name (or part of the name)."),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_IATA,
+			regexp = re.compile(r'^iata\s+(?P<code>\w+)$'),
+			help = ('travel', 'iata', "\02airport\02 <code> : Look up an airport by it's IATA code."),
+		)
+		# This is really quite horrible :(
+		f1 = "^ *flight +"
+		f2 = "(?P<code>[^ ]+)"
+		f3 = " +(?P<flight>[^ ]+)"
+		f4 = "(( *$)|( +%s *$))"
+		f5 = "(?P<year>20[0-9][0-9])-"
+		f6 = "(?P<month>(0[1-9])|(1[0-2]))-"
+		f7 = "(?P<day>(0[1-9])|([12][0-9])|(3[0-1]))"
+		f8 = f5+f6+f7
+		f9 = f4 % f8
 		
-		self.setHelp('travel', 'airline', AIRLINE_HELP)
-		self.setHelp('travel', 'airport', AIRPORT_HELP)
-		self.setHelp('travel', 'flight', FLIGHT_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_Flight,
+			regexp = re.compile(f1+f2+f3+f9),
+			help = ('travel', 'flight', "\02flight\02 <code> <flight number> <date> : Look up the details of the specified flight. Date is in YYYY-MM-DD format, and is optional (defaults to today's date if omitted)."),
+		)
 	
 	# --------------------------------------------------------------------------
 	# Someone wants to lookup an airline. If they gave us the code, we'll find
 	# the name string, if they gave us a name string, we'll try to find codes
 	# that match it
-	def _trigger_AIRLINE_AIRLINE(self, trigger):
-		match = self.__Airline_Search(trigger)
+	def __Airline_Search(self, trigger):
+		matches = self.__Airline_Lookup(trigger)
 		replytext = "Airline search for '%s'" % trigger.match.group('airline')
-		if match:
-			if len(match) > MAX_AIRLINE_MATCHES:
+		if matches:
+			if len(matches) > MAX_AIRLINE_MATCHES:
 				replytext += " returned too many results. Please refine your query"
 			else:
-				if len(match) > 1:
-					replytext += " (\02%d\02 results): " % len(match)
+				if len(matches) > 1:
+					replytext += " (\02%d\02 results): " % len(matches)
 				else:
 					replytext += ": "
-				replytext += ", ".join(["\02%s\02 - \02%s\02" % (code, name) for code, name in match])
+				replytext += ", ".join(["\02%s\02 - \02%s\02" % (code, name) for code, name in matches])
 		else:
 			replytext += " returned no results"
 		self.sendReply(trigger, replytext)
@@ -108,7 +102,7 @@ class Airline(Plugin):
 	# --------------------------------------------------------------------------
 	# Lookup the given carrier name or code. If a partial name is supplied,
 	# return all the carriers that matched.
-	def __Airline_Search(self, trigger):
+	def __Airline_Lookup(self, trigger):
 		airtext = trigger.match.group('airline')
 		if len(airtext) == 2:
 			airtext = airtext.upper()
@@ -127,12 +121,12 @@ class Airline(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to look up an IATA code
-	def _trigger_AIRLINE_AIRPORT(self, trigger):
+	def __Fetch_IATA(self, trigger):
 		code = trigger.match.group('code').upper()
 		
 		# IATA codes are 3 letters
 		if len(code) == 3:
-			url = AIRPORT_URL % code
+			url = IATA_URL % code
 			self.urlRequest(trigger, self.__Parse_IATA, url)
 		
 		# Someone is stupid
@@ -194,7 +188,7 @@ class Airline(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to look up info on a flight.
-	def _trigger_AIRLINE_FLIGHT(self, trigger):
+	def __Fetch_Flight(self, trigger):
 		code = trigger.match.group('code').upper()
 		flight = trigger.match.group('flight')
 		
@@ -230,7 +224,7 @@ class Airline(Plugin):
 		monthtxt = mon[month-1]
 		
 		# Make the query url to send to travelocity.
-		url = "http://dps1.travelocity.com/dparflifo.ctl?CMonth=%s&CDayOfMonth=%s&CYear=%s&LANG=EN&last_pgd_page=dparrqst.pgd&dep_arpname=&arr_arp_name=&dep_dt_mn_1=%s&dep_dt_dy_1=%s&dep_tm1=12%%3A00pm&aln_name=%s&flt_num=%s&Search+Now.x=89&Search+Now.y=4" % (month, day, year, monthtxt, day, code, flight)
+		url = FLIGHT_URL % (month, day, year, monthtxt, day, code, flight)
 		self.urlRequest(trigger, self.__Parse_Travelocity, url)
 	
 	# -----------------------------------------------------------------------

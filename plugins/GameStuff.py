@@ -12,31 +12,28 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-GAMESTUFF_KLOV = 'GAMESTUFF_KLOV'
-KLOV_HELP = '\02klov\02 <title> : Look up title in the Killer List Of Video Games (KLOVG?!)'
-KLOV_RE = re.compile(r'^klov (?P<title>.+)$')
 KLOV_URL = 'http://www.klov.com/results.php?search_desc=0&boolean=AND&q=%s'
-
-GAMESTUFF_MOBYGAMES = 'GAMESTUFF_MOBYGAMES'
-MOBYGAMES_HELP = '\02moby\02 <title> : Look up title at MobyGames (DISABLED).'
-MOBYGAMES_RE = re.compile(r'^mobygames (?P<title>.+)$')
 MOBYGAMES_URL = 'http://www.mobygames.com/search/quick?q=%s'
 
 # ---------------------------------------------------------------------------
 
 class GameStuff(Plugin):
 	def register(self):
-		self.setTextEvent(GAMESTUFF_KLOV, KLOV_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		#self.setTextEvent(GAMESTUFF_MOBYGAMES, MOBYGAMES_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
+		self.addTextEvent(
+			method = self.__Fetch_KLOV,
+			regexp = re.compile(r'^klov (?P<title>.+)$'),
+			help = ('gamestuff', 'klov', '\02klov\02 <title> : Look up <title> in the Killer List Of Video Games (KLOVG?!)'),
+		)
 		
-		self.setHelp('gamestuff', 'klov', KLOV_HELP)
-		#self.setHelp('gamestuff', 'mobygames', MOBYGAMES_HELP)
-		self.registerHelp()
+		#self.addTextEvent(
+		#	method = self.__Fetch_MobyGames,
+		#	regexp = re.compile(r'^mobygames (?P<title>.+)$'),
+		#	help = ('gamestuff', 'mobygames', '\02mobygames\02 <title> : Look up <title> at MobyGames.'),
+		#)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to do a KLOV lookup, woo
-	def _trigger_GAMESTUFF_KLOV(self, trigger):
+	def __Fetch_KLOV(self, trigger):
 		title = trigger.match.group('title').lower()
 		
 		if len(title) > 40:
@@ -116,7 +113,7 @@ class GameStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to do a MobyGames lookup, woo
-	def _trigger_GAMESTUFF_MOBYGAMES(self, trigger):
+	def __Fetch_MobyGames(self, trigger):
 		title = trigger.match.group('title').lower()
 		
 		if len(title) > 40:

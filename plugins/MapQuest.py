@@ -13,10 +13,6 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-MAPQUEST_DISTANCE = 'MAPQUEST_DISTANCE'
-DISTANCE_HELP = "\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip> : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."
-DISTANCE_RE = re.compile(r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$')
-
 TOTAL_TIME_RE = re.compile(r'Total Est. Time:.*?</font>\s*(.*?)\s*</td>')
 TOTAL_DISTANCE_RE = re.compile(r'Total Est. Distance:.*?</font>\s*(.*?)\s*</td>')
 
@@ -43,17 +39,17 @@ class MapQuest(Plugin):
 			]
 	
 	# -----------------------------------------------------------------------
-
+	
 	def register(self):
-		self.setTextEvent(MAPQUEST_DISTANCE, DISTANCE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('travel', 'distance', DISTANCE_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_Distance,
+			regexp = re.compile(r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$'),
+			help = ('travel', 'distance', "\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip> : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to do a distance lookup
-	def _trigger_MAPQUEST_DISTANCE(self, trigger):
+	def __Fetch_Distance(self, trigger):
 		source = trigger.match.group('source')
 		dest = trigger.match.group('dest')
 		

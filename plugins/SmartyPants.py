@@ -19,83 +19,31 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-FACT_GET = 'FACT_GET'
-GET_HELP = "<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>."
-GET_RE = re.compile(r'^(?P<name>.+?)\?$')
-GET_D_RE = re.compile(r'^(?P<name>.+?)\??$')
 GET_QUERY = "SELECT name, value, locker_nick FROM factoids WHERE name = %s"
 
 SUB_CHAN_RE = re.compile(r'(?<!\\)\$channel\b')
 SUB_DATE_RE = re.compile(r'(?<!\\)\$date\b')
 SUB_NICK_RE = re.compile(r'(?<!\\)\$nick\b')
 
-FACT_REDIRECT = "FACT_REDIRECT"
-
-FACT_SET = 'FACT_SET'
-SET_HELP = "<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic."
 SET_QUERY = "INSERT INTO factoids (name, value, author_nick, author_host, created_time) VALUES (%s, %s, %s, %s, %s)"
-SET_RE = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$')
 
-FACT_ALSO = 'FACT_ALSO'
-ALSO_RE = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$')
-
-FACT_RAW = 'FACT_RAW'
-RAW_HELP = "\02rawfactoid\02 <factoid name> : Ask the bot for the definition of <factoid name>. Doesn't do variable substituion or factoid redirection."
-RAW_RE = re.compile(r'^rawfactoid (?P<name>.+?)$')
-
-FACT_NO = 'FACT_NO'
-NO_RE = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$')
 # Build the giant 'no, ' query
 NO_QUERY  = "UPDATE factoids SET value = %s, author_nick = %s, author_host = %s, created_time = %s"
 NO_QUERY += ", modifier_nick = '', modifier_host = '', modified_time = NULL, requester_nick = ''"
 NO_QUERY += ", requester_host = '', requested_time = NULL, request_count = 0, locker_nick = ''"
 NO_QUERY += ", locker_host = '', locked_time = NULL WHERE name = %s"
 
-FACT_DEL = 'FACT_DEL'
-DEL_HELP = "\02forget\02 <factoid name> : Remove a factoid from the bot."
-DEL_RE = re.compile(r'^forget +(?P<name>.+)$')
-DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
+FORGET_QUERY = "DELETE FROM factoids WHERE name = %s"
 
-FACT_REPLACE = 'FACT_REPLACE'
-REPLACE_HELP = "<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02 : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."
-REPLACE_RE = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$')
-
-FACT_LOCK = 'FACT_LOCK'
-LOCK_HELP = "\02lock\02 <factoid name> : Lock a factoid definition, so most users cannot alter it."
-LOCK_RE = re.compile(r'^lock +(?P<name>.+)$')
 LOCK_QUERY = "UPDATE factoids SET locker_nick = %s, locker_host = %s, locked_time = %s WHERE name = %s"
-
-FACT_UNLOCK = 'FACT_UNLOCK'
-UNLOCK_HELP = "\02unlock\02 <factoid name> : Unlock a locked factoid definition, so it can be edited by anyone"
-UNLOCK_RE = re.compile(r'^unlock +(?P<name>.+)$')
 UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, locked_time = NULL WHERE name = %s"
 
-FACT_INFO = 'FACT_INFO'
-INFO_HELP = "\02factinfo\02 <factoid name> : View some statistics about the given factoid."
-INFO_RE = re.compile(r'^factinfo +(?P<name>.+)\??$')
 INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
-FACT_STATUS = 'FACT_STATUS'
-STATUS_HELP = "\02status\02 : Generate some brief stats about the bot."
-STATUS_RE = re.compile(r'^status$')
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
-FACT_LISTKEYS = 'FACT_LISTKEYS'
-LISTKEYS_HELP = "\02listkeys\02 <search text> : Search through all the factoid names, and return a list of any that contain <search text>"
-LISTKEYS_RE = re.compile(r'^listkeys +(?P<name>.+)$')
 LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%'"
-
-FACT_LISTVALUES = 'FACT_LISTVALUES'
-LISTVALUES_HELP = "\02listvalues\02 <search text> : Search through all the factoid definitions, and return the names of any that contain <search text>"
-LISTVALUES_RE = re.compile(r'^listvalues +(?P<name>.+)$')
 LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value LIKE '%%%s%%'"
-
-FACT_TELL = 'FACT_TELL'
-TELL_HELP = "\02tell\02 <someone> \02about\02 <factoid name> : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."
-TELL_RE = re.compile(r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$')
-
-
-OVERWRITE_HELP = "\02no,\02 <factoid name> \02is\02 <whatever> : Replace the existing definition of <factoid name> with the new value <whatever>."
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -204,44 +152,95 @@ class SmartyPants(Plugin):
 	
 	def register(self):
 		# Gets are lowest priority (default = 10)
-		self.setTextEventPriority(0, FACT_GET, GET_D_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Query_Get,
+			regexp = re.compile(r'^(?P<name>.+?)\??$'),
+			priority = 0,
+			help = ('infobot', 'get',  '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
+		)
 		if self.__get_pub:
-			self.setTextEventPriority(0, FACT_GET, GET_RE, IRCT_PUBLIC)
+			self.addTextEvent(
+				method = self.__Query_Get,
+				regexp = re.compile(r'^(?P<name>.+?)\?$'),
+				priority = 0,
+				IRCTypes = (IRCT_PUBLIC,),
+				help = ('infobot', 'get',  '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
+			)
 		# Sets aren't much better
-		self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Query_Set,
+			regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
+			priority = 1,
+			help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic."'),
+		)
 		if self.__set_pub:
-			self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC)
-		self.setTextEvent(FACT_ALSO, ALSO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		# Rest are normal
-		self.setTextEvent(FACT_RAW, RAW_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_NO, NO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_DEL, DEL_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_REPLACE, REPLACE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_LOCK, LOCK_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_UNLOCK, UNLOCK_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_INFO, INFO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_STATUS, STATUS_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_LISTKEYS, LISTKEYS_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_LISTVALUES, LISTVALUES_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FACT_TELL, TELL_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		
-		self.registerEvents()
-		
-		self.setHelp('infobot', 'get', GET_HELP)
-		self.setHelp('infobot', 'set', SET_HELP)
-		self.setHelp('infobot', 'rawfactoid', RAW_HELP)
-		self.setHelp('infobot', '=~', REPLACE_HELP)
-		self.setHelp('infobot', 'overwrite', OVERWRITE_HELP)
-		self.setHelp('infobot', 'forget', DEL_HELP)
-		self.setHelp('infobot', 'lock', LOCK_HELP)
-		self.setHelp('infobot', 'unlock', UNLOCK_HELP)
-		self.setHelp('infobot', 'tell', TELL_HELP)
-		self.setHelp('infobot', 'listkeys', LISTKEYS_HELP)
-		self.setHelp('infobot', 'listvalues', LISTVALUES_HELP)
-		self.setHelp('infobot', 'factinfo', INFO_HELP)
-		self.setHelp('infobot', 'status', STATUS_HELP)
-		
-		self.registerHelp()
+			self.addTextEvent(
+				method = self.__Query_Set,
+				regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
+				priority = 1,
+				IRCTypes = (IRCT_PUBLIC,),
+				help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic."'),
+			)
+		# And the rest are normalish
+		self.addTextEvent(
+			method = self.__Query_Also,
+			regexp = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$'),
+		)
+		self.addTextEvent(
+			method = self.__Query_Raw,
+			regexp = re.compile(r'^rawfactoid (?P<name>.+?)$'),
+			help = ('infobot', 'rawfactoid', "\02rawfactoid\02 <factoid name> : Ask the bot for the definition of <factoid name>. Doesn't do variable substituion or factoid redirection."),
+		)
+		self.addTextEvent(
+			method = self.__Query_No,
+			regexp = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$'),
+			help = ('infobot', 'overwrite', "\02no,\02 <factoid name> \02is\02 <whatever> : Replace the existing definition of <factoid name> with the new value <whatever>."),
+		)
+		self.addTextEvent(
+			method = self.__Query_Forget,
+			regexp = re.compile(r'^forget +(?P<name>.+)$'),
+			help = ('infobot', 'forget', '\02forget\02 <factoid name> : Remove a factoid from the bot.'),
+		)
+		self.addTextEvent(
+			method = self.__Query_Replace,
+			regexp = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$'),
+			help = ('infobot', 'replace', "<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02 : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."),
+		)
+		self.addTextEvent(
+			method = self.__Query_Lock,
+			regexp = re.compile(r'^lock +(?P<name>.+)$'),
+			help = ('infobot', 'lock', "\02lock\02 <factoid name> : Lock a factoid definition, so most users cannot alter it."),
+		)
+		self.addTextEvent(
+			method = self.__Query_Unlock,
+			regexp = re.compile(r'^unlock +(?P<name>.+)$'),
+			help = ('infobot', 'unlock', "\02unlock\02 <factoid name> : Unlock a locked factoid definition, so it can be edited by anyone"),
+		)
+		self.addTextEvent(
+			method = self.__Query_Info,
+			regexp = re.compile(r'^factinfo +(?P<name>.+)\??$'),
+			help = ('infobot', 'factinfo', "\02factinfo\02 <factoid name> : View some statistics about the given factoid."),
+		)
+		self.addTextEvent(
+			method = self.__Query_Status,
+			regexp = re.compile(r'^status$'),
+			help = ('infobot', 'status', "\02status\02 : Generate some brief stats about the bot."),
+		)
+		self.addTextEvent(
+			method = self.__Query_Tell,
+			regexp = re.compile(r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$'),
+			help = ('infobot', 'tell', "\02tell\02 <someone> \02about\02 <factoid name> : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."),
+		)
+		self.addTextEvent(
+			method = self.__Query_List_Keys,
+			regexp = re.compile(r'^listkeys +(?P<name>.+)$'),
+			help = ('infobot', 'listkeys', "\02listkeys\02 <search text> : Search through all the factoid names, and return a list of any that contain <search text>."),
+		)
+		self.addTextEvent(
+			method = self.__Query_List_Values,
+			regexp = re.compile(r'^listvalues +(?P<name>.+)$'),
+			help = ('infobot', 'listvalues', "\02listvalues\02 <search text> : Search through all the factoid definitions, and return the names of any that contain <search text>."),
+		)
 	
 	# -----------------------------------------------------------------------
 	# We're doing the ignore check here, just because it's stupid to have
@@ -254,10 +253,10 @@ class SmartyPants(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to look up a factoid
-	def _trigger_FACT_GET(self, trigger):
+	def __Query_Get(self, trigger):
 		# check to see if it was a public, and abort if we are not replying
 		# to public requests for this server/channel
-		if trigger.event.IRCType == IRCT_PUBLIC:
+		if trigger.IRCType == IRCT_PUBLIC:
 			network = trigger.conn.options['name'].lower()
 			try:
 				if trigger.target.lower() not in self.__get_pub[network]:
@@ -272,13 +271,20 @@ class SmartyPants(Plugin):
 		self.dbQuery(trigger, self.__Fact_Get, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
+	# Someone wants to look up a factoid, but they don't want variable substituion
+	# or redirects.
+	def __Query_Raw(self, trigger):
+		name = self.__Sane_Name(trigger)
+		self.dbQuery(trigger, self.__Fact_Raw, GET_QUERY, name)
+	
+	# -----------------------------------------------------------------------
 	# Someone wants to set a factoid.
-	def _trigger_FACT_SET(self, trigger):
+	def __Query_Set(self, trigger):
 		name = self.__Sane_Name(trigger)
 		
 		# check to see if it was a public, and abort if we are not replying
 		# to public requests for this server/channel
-		if trigger.event.IRCType == IRCT_PUBLIC:
+		if trigger.IRCType == IRCT_PUBLIC:
 			network = trigger.conn.options['name'].lower()
 			try:
 				if trigger.target.lower() not in self.__set_pub[network]:
@@ -293,71 +299,64 @@ class SmartyPants(Plugin):
 		
 		# Too long
 		if len(name) > self.max_fact_name_length:
-			if not trigger.event.IRCType == IRCT_PUBLIC:
+			if not trigger.IRCType == IRCT_PUBLIC:
 				self.sendReply(trigger, 'Factoid name is too long!')
 		else:
 			self.dbQuery(trigger, self.__Fact_Set, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
-	# Someone wants to look up a factoid, but they don't want variable substituion
-	# or redirects.
-	def _trigger_FACT_RAW(self, trigger):
-		name = self.__Sane_Name(trigger)
-		self.dbQuery(trigger, self.__Fact_Raw, GET_QUERY, name)
-	
-	# -----------------------------------------------------------------------
 	# Somone wants to replace a factoid definition
-	def _trigger_FACT_NO(self, trigger):
+	def __Query_No(self, trigger):
 		name = self.__Sane_Name(trigger)
 		self.dbQuery(trigger, self.__Fact_No, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to add to the definition of a factoid
-	def _trigger_FACT_ALSO(self, trigger):
+	def __Query_Also(self, trigger):
 		name = self.__Sane_Name(trigger)
 		if len(name) > self.max_fact_name_length:
 			self.sendReply(trigger, 'Factoid name is too long!')
 		else:
 			self.dbQuery(trigger, self.__Fact_Also, GET_QUERY, name)
-		
+	
 	# -----------------------------------------------------------------------
 	# Someone wants to delete a factoid
-	def _trigger_FACT_DEL(self, trigger):
+	def __Query_Forget(self, trigger):
 		name = self.__Sane_Name(trigger)
-		self.dbQuery(trigger, self.__Fact_Del, GET_QUERY, name)
+		self.dbQuery(trigger, self.__Fact_Forget, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to do a search/replace on a factoid
-	def _trigger_FACT_REPLACE(self, trigger):
+	def __Query_Replace(self, trigger):
 		name = self.__Sane_Name(trigger)
 		self.dbQuery(trigger, self.__Fact_Replace, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to lock a factoid
-	def _trigger_FACT_LOCK(self, trigger):
+	def __Query_Lock(self, trigger):
 		name = self.__Sane_Name(trigger)
 		self.dbQuery(trigger, self.__Fact_Lock, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to unlock a factoid
-	def _trigger_FACT_UNLOCK(self, trigger):
+	def __Query_Unlock(self, trigger):
 		name = self.__Sane_Name(trigger)
 		self.dbQuery(trigger, self.__Fact_Unlock, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants information on a factoid
-	def _trigger_FACT_INFO(self, trigger):
+	def __Query_Info(self, trigger):
 		name = self.__Sane_Name(trigger)
 		self.dbQuery(trigger, self.__Fact_Info, INFO_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# Someone asked for our runtime status
-	def _trigger_FACT_STATUS(self, trigger):
+	def __Query_Status(self, trigger):
 		self.dbQuery(trigger, self.__Fact_Status, STATUS_QUERY)
 	
 	# -----------------------------------------------------------------------
 	# Someone asked to search by key
-	def _trigger_FACT_LISTKEYS(self, trigger):
+	def __Query_List_Keys(self, trigger):
 		name = self.__Sane_Name(trigger)
 		name = name.replace("%", "\%")
 		name = name.replace('"', '\\\"')
@@ -367,7 +366,7 @@ class SmartyPants(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone asked to search by value
-	def _trigger_FACT_LISTVALUES(self, trigger):
+	def __Query_List_Values(self, trigger):
 		name = self.__Sane_Name(trigger)
 		name = name.replace("%", "\%")
 		name = name.replace('"', '\\\"')
@@ -377,7 +376,7 @@ class SmartyPants(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to tell someone else about a factoid
-	def _trigger_FACT_TELL(self, trigger):
+	def __Query_Tell(self, trigger):
 		name = self.__Sane_Name(trigger)
 		self.dbQuery(trigger, self.__Fact_Get, GET_QUERY, name)
 	
@@ -395,7 +394,7 @@ class SmartyPants(Plugin):
 		# No result
 		elif result == ():
 			# The factoid wasn't in our database
-			if trigger.event.IRCType == IRCT_PUBLIC:
+			if trigger.IRCType == IRCT_PUBLIC:
 				return
 			
 			self.__dunnos += 1
@@ -442,7 +441,7 @@ class SmartyPants(Plugin):
 			value = SUB_NICK_RE.sub(escnick, value)
 			
 			# replace "$channel" with the target if this was public
-			if trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
+			if trigger.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
 				value = SUB_CHAN_RE.sub(trigger.target, value)
 			
 			# replace "$date" with a shiny date
@@ -452,7 +451,7 @@ class SmartyPants(Plugin):
 			
 			
 			# If it's just a get, spit it out
-			if trigger.name == FACT_GET:
+			if trigger.name == '__Query_Get':
 				# <reply> and <action> check
 				m = REPLY_ACTION_RE.match(value)
 				if m:
@@ -468,7 +467,7 @@ class SmartyPants(Plugin):
 					self.sendReply(trigger, replytext)
 			
 			# If it's really a 'tell', msg the requester and his target
-			elif trigger.name == FACT_TELL:
+			elif trigger.name == '__Query_Tell':
 				tellnick = trigger.match.group('nick')
 				
 				msgtext = "Told %s that %s is %s" % (tellnick, row['name'], value)
@@ -497,7 +496,7 @@ class SmartyPants(Plugin):
 		# No result, redirect failed
 		elif result == ():
 			# Don't say anything if it was a public request
-			if trigger.event.IRCType == IRCT_PUBLIC:
+			if trigger.IRCType == IRCT_PUBLIC:
 				return
 			
 			self.__dunnos += 1
@@ -564,7 +563,7 @@ class SmartyPants(Plugin):
 		
 		# It was already in our database
 		else:
-			if trigger.event.IRCType == IRCT_PUBLIC:
+			if trigger.IRCType == IRCT_PUBLIC:
 				return
 			
 			row = result[0]
@@ -701,7 +700,7 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone asked to delete a factoid. Check their flags to see if they are
 	# allowed to, then delete or refuse.
-	def __Fact_Del(self, trigger, result):
+	def __Fact_Forget(self, trigger, result):
 		name = self.__Sane_Name(trigger)
 		
 		# Error!
@@ -727,7 +726,7 @@ class SmartyPants(Plugin):
 				return
 			
 			self.__dels += 1
-			self.dbQuery(trigger, self.__Query_DELETE, DEL_QUERY, name)
+			self.dbQuery(trigger, self.__Query_DELETE, FORGET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
 	# A user just tried to do a search/replace on a factoid.
@@ -954,7 +953,7 @@ class SmartyPants(Plugin):
 		
 		# Insert succeeded
 		elif result == 1:
-			if trigger.event.IRCType == IRCT_PUBLIC:
+			if trigger.IRCType == IRCT_PUBLIC:
 				return
 			replytext = random.choice(OK)
 		

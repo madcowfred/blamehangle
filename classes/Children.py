@@ -28,29 +28,16 @@ class Child:
 			self.setup()
 	
 	# -----------------------------------------------------------------------
-	# Check our message queue. If it's not empty, try to find a method to
-	# handle the message.
-	# -----------------------------------------------------------------------
-	def handleMessages(self):
-		if not self.inQueue or self.stopnow:
-			return
+	# Get the method that meth_name refers to
+	def _Get_Method(self, method_name):
+		# We need to fudge things for __ names
+		if method_name.startswith('__'):
+			method_name = '_%s%s' % (self.__class__.__name__, method_name)
 		
-		message = self.inQueue.pop(0)
-		
-		try:
-			name = '_message_%s' % message.ident
-			method = getattr(self, name)
-		
-		except AttributeError:
-			tolog = 'Unhandled message in %s: %s' % (self._name, message.ident)
-			self.putlog(LOG_DEBUG, tolog)
-		
-		else:
-			method(message)
+		return getattr(self, method_name, None)
 	
 	# -----------------------------------------------------------------------
 	# Default REQ_REHASH handler
-	# -----------------------------------------------------------------------
 	def _message_REQ_REHASH(self, message):
 		if hasattr(self, 'rehash'):
 			self.rehash()

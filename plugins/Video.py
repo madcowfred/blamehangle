@@ -12,51 +12,48 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-VIDEO_IMDB = 'VIDEO_IMDB'
-IMDB_HELP = "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a title."
-IMDB_RE = re.compile(r'^imdb (.+)$')
 IMDB_URL = 'http://us.imdb.com/find?q=%s&type=fuzzy&tv=off&sort=smart;tt=1'
-TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
+IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
 EXACT_RE = re.compile(r'href="/title/tt(\d+)/">')
 APPROX_RE = re.compile(r'href="/title/tt(\d+)/">(.+)')
 
 # ---------------------------------------------------------------------------
 
-VIDEO_TVTOME = 'VIDEO_TVTOME'
-TVTOME_HELP = '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'
-TVTOME_RE = re.compile(r'^tvtome (.+)$')
 TVTOME_URL = 'http://www.tvtome.com/tvtome/servlet/Search'
 
 # ---------------------------------------------------------------------------
 
 class Video(Plugin):
 	def register(self):
-		self.setTextEvent(VIDEO_IMDB, IMDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(VIDEO_TVTOME, TVTOME_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('video', 'imdb', IMDB_HELP)
-		self.setHelp('video', 'tvtome', TVTOME_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_IMDb,
+			regexp = re.compile(r'^imdb (.+)$'),
+			help = ('video', 'imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_TVTome,
+			regexp = re.compile(r'^tvtome (.+)$'),
+			help = ('video', 'tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
+		)
 	
 	# ---------------------------------------------------------------------------
 	
-	def _trigger_VIDEO_IMDB(self, trigger):
+	def __Fetch_IMDb(self, trigger):
 		url = IMDB_URL % QuoteURL(trigger.match.group(1))
-		self.urlRequest(trigger, self.__IMDb, url)
+		self.urlRequest(trigger, self.__Parse_IMDb, url)
 	
-	def _trigger_VIDEO_TVTOME(self, trigger):
+	def __Fetch_TVTome(self, trigger):
 		data = {
 			'searchType': 'show',
 			'searchString': trigger.match.group(1).lower(),
 		}
 		
-		self.urlRequest(trigger, self.__TVTome, TVTOME_URL, data)
+		self.urlRequest(trigger, self.__Parse_TVTome, TVTOME_URL, data)
 	
 	# ---------------------------------------------------------------------------
-	
-	def __IMDb(self, trigger, resp):
+	# Parse an IMDb search results page
+	def __Parse_IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
 		if resp.data.find('title search</title>') < 0:
 			self.__IMDb_Title(trigger, resp)
@@ -89,7 +86,7 @@ class Video(Plugin):
 				return
 			
 			title = m.group(1)
-			url = TITLE_URL % int(title)
+			url = IMDB_TITLE_URL % (int(title))
 			self.urlRequest(trigger, self.__IMDb_Title, url)
 		
 		# Some approximate matches.. use the first 5 results
@@ -199,7 +196,7 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse a TVTome search results page
-	def __TVTome(self, trigger, resp):
+	def __Parse_TVTome(self, trigger, resp):
 		findme = trigger.match.group(1).lower()
 		
 		# It's not a search result

@@ -6,7 +6,6 @@
 'Checks the weather!'
 
 import re
-from urllib import quote
 
 from classes.Common import *
 from classes.Constants import *
@@ -14,35 +13,9 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-WEATHER_URL = 'http://search.weather.yahoo.com/search/weather2?p=%s'
-
-WEATHER_SHORT = 'WEATHER_SHORT'
-SHORT_HELP = '\02weather\02 <location> : Retrieve weather information for location (short format)'
-SHORT_RE = re.compile('^weather\s+(?P<location>.+)$')
-
-WEATHER_LONG = 'WEATHER_LONG'
-LONG_HELP = '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'
-LONG_RE = re.compile('^weatherlong\s+(?P<location>.+)$')
-
-WEATHER_FORECAST = 'WEATHER_FORECAST'
-FORECAST_HELP = '\02forecast\02 <location> : Retrieve weather forecast for location'
-FORECAST_RE = re.compile('^forecast\s+(?P<location>.+)$')
-
-# ---------------------------------------------------------------------------
-
 METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
-
-WEATHER_METAR = 'WEATHER_METAR'
-METAR_RE = re.compile('^metar (?P<station>\S+)$')
-METAR_HELP = '\02metar\02 <station id> : Retrieve coded METAR weather information.'
-
-# ---------------------------------------------------------------------------
-
 TAF_URL = 'http://weather.noaa.gov/pub/data/forecasts/taf/stations/%s.TXT'
-
-WEATHER_TAF = 'WEATHER_TAF'
-TAF_RE = re.compile('^taf (?P<station>\S+)$')
-TAF_HELP = '\02taf\02 <station id> : Retrieve coded TAF weather forecast.'
+WEATHER_URL = 'http://search.weather.yahoo.com/search/weather2?p=%s'
 
 # ---------------------------------------------------------------------------
 
@@ -76,41 +49,57 @@ class WeatherMan(Plugin):
 	
 	def register(self):
 		# Yahoo Weather
-		self.setTextEvent(WEATHER_FORECAST, FORECAST_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(WEATHER_LONG, LONG_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(WEATHER_SHORT, SHORT_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Fetch_Weather_Forecast,
+			regexp = re.compile('^forecast\s+(?P<location>.+)$'),
+			help = ('weather', 'forecast', '\02forecast\02 <location> : Retrieve weather forecast for location'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Weather_Short,
+			regexp = re.compile('^weather\s+(?P<location>.+)$'),
+			help = ('weather', 'weather', '\02weather\02 <location> : Retrieve weather information for location (short format)'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Weather_Long,
+			regexp = re.compile('^weatherlong\s+(?P<location>.+)$'),
+			help = ('weather', 'weatherlong', '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'),
+		)
 		# METAR
-		self.setTextEvent(WEATHER_METAR, METAR_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Fetch_METAR,
+			regexp = re.compile('^metar (?P<station>\S+)$'),
+			help = ('weather', 'metar', '\02metar\02 <station id> : Retrieve coded METAR weather information.'),
+		)
 		# TAF
-		self.setTextEvent(WEATHER_TAF, TAF_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		
-		self.registerEvents()
-		
-		self.setHelp('weather', 'weather', SHORT_HELP)
-		self.setHelp('weather', 'weatherlong', LONG_HELP)
-		self.setHelp('weather', 'forecast', FORECAST_HELP)
-		self.setHelp('weather', 'metar', METAR_HELP)
-		self.setHelp('weather', 'taf', TAF_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_TAF,
+			regexp = re.compile('^taf (?P<station>\S+)$'),
+			help = ('weather', 'taf', '\02taf\02 <station id> : Retrieve coded TAF weather forecast.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some weather information
-	def _trigger_WEATHER_SHORT(self, trigger):
-		url = WEATHER_URL % quote(trigger.match.group('location'))
+	def __Fetch_Weather_Forecast(self, trigger):
+		url = WEATHER_URL % QuoteURL(trigger.match.group('location'))
 		self.urlRequest(trigger, self.__Parse_Weather, url)
 	
-	_trigger_WEATHER_LONG = _trigger_WEATHER_SHORT
-	_trigger_WEATHER_FORECAST = _trigger_WEATHER_SHORT
+	def __Fetch_Weather_Long(self, trigger):
+		url = WEATHER_URL % QuoteURL(trigger.match.group('location'))
+		self.urlRequest(trigger, self.__Parse_Weather, url)
+	
+	def __Fetch_Weather_Short(self, trigger):
+		url = WEATHER_URL % QuoteURL(trigger.match.group('location'))
+		self.urlRequest(trigger, self.__Parse_Weather, url)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants METAR data
-	def _trigger_WEATHER_METAR(self, trigger):
+	def __Fetch_METAR(self, trigger):
 		url = METAR_URL % trigger.match.group('station').upper()
 		self.urlRequest(trigger, self.__Parse_METAR, url)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants TAF data, the nutter
-	def _trigger_WEATHER_TAF(self, trigger):
+	def __Fetch_TAF(self, trigger):
 		url = TAF_URL % trigger.match.group('station').upper()
 		self.urlRequest(trigger, self.__Parse_TAF, url)
 	
@@ -234,17 +223,17 @@ class WeatherMan(Plugin):
 			
 			chunks = []
 			
-			if trigger.name == WEATHER_SHORT:
+			if trigger.name == '__Fetch_Weather_Short':
 				for part in self.__Short_Parts:
 					if data.has_key(part):
 						chunks.append(data[part])
 			
-			elif trigger.name == WEATHER_LONG:
+			elif trigger.name == '__Fetch_Weather_Long':
 				for part in self.__Long_Parts:
 					if data.has_key(part):
 						chunks.append(data[part])
 			
-			elif trigger.name == WEATHER_FORECAST:
+			elif trigger.name == '__Fetch_Weather_Forecast':
 				chunks.append(data['forecast'])
 			
 			

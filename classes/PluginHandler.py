@@ -1,12 +1,13 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains the code that deals with all the plugins
 
+import re
 import time
 
 from classes.Children import Child
 from classes.Constants import *
+from classes.Message import Message
 from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
@@ -18,47 +19,53 @@ LOG_QUERY += " VALUES (%s, %s, %s, %s, %s, %s, %s)"
 
 class PluginHandler(Child):
 	"""
-	This is the class that handles all the program <-> plugin communication.
+	This handles all of the IRC <-> plugin event nastiness.
 	"""
 	
 	def setup(self):
 		self._log_commands = self.Config.getboolean('logging', 'log_commands')
 		
 		self.Plugins = self.Config.get('plugin', 'plugins').split()
-		self.Plugins.append('Helper')
 		
 		self.__Events = {}
 		for IRCType in [IRCT_PUBLIC, IRCT_PUBLIC_D, IRCT_MSG, IRCT_NOTICE, IRCT_CTCP, IRCT_TIMED]:
 			self.__Events[IRCType] = {}
-	
-	# When we're shutting down, we don't want to answer any events any more
-	def shutdown(self, message):
-		for k in self.__Events.keys():
-			self.__Events[k] = {}
+		self.__Help = {}
+		
+		# We need to register our helper. This is a bit of a nasty hack, but
+		# it's certainly better than a fake Helper plugin being special-cased
+		# in various places :)
+		event = PluginTextEvent('_HELPER_', (IRCT_PUBLIC_D, IRCT_MSG), re.compile('^help(.*?)$'), None, 10)
+		self.__Events[IRCT_PUBLIC_D]['_HELPER_'] = (event, self)
+		self.__Events[IRCT_MSG]['_HELPER_'] = (event, self)
 	
 	# -----------------------------------------------------------------------
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
 	def run_once(self):
-		self.sendMessage(self.Plugins, PLUGIN_REGISTER, [])
+		if self.Plugins:
+			self.sendMessage(self.Plugins, PLUGIN_REGISTER, [])
+		else:
+			self.putlog(LOG_WARNING, 'No plugins are loaded!')
+	
+	# When we're shutting down, we don't want to trigger events any more
+	def shutdown(self, message):
+		for k in self.__Events.keys():
+			self.__Events[k] = {}
 	
 	# -----------------------------------------------------------------------
-	# Check to see if we have any TIMED events that need to trigger
+	# Check to see if we have any TIMED events that need to trigger. If we
+	# have some, make a new PluginTimedTrigger and send it out
 	def run_sometimes(self, currtime):
-		for event, plugin in [(e, p) for e, p in self.__Events[IRCT_TIMED].values() if \
-			currtime - e.last_trigger >= e.interval]:
-			
+		ready = [(e, p) for e, p in self.__Events[IRCT_TIMED].values() if currtime - e.last_trigger >= e.interval]
+		for event, plugin in ready:
 			event.last_trigger = currtime
-			# We make a trigger here so that it is a unique object each time
-			# we trigger. Hours of bug hunting to find out that this was
-			# neccessary :)
 			trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
 			self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
 	# -----------------------------------------------------------------------
-	# Postman has asked us to rehash our config.
-	# For PluginHandler, this involves clearing out all our plugin triggers,
-	# and sending out a PLUGIN_REGISTER message again.
+	# Postman has asked us to rehash our config. We reset our events and ask
+	# plugins for them again.
 	def _message_REQ_REHASH(self, message):
 		self.setup()
 		self.run_once()
@@ -66,19 +73,26 @@ class PluginHandler(Child):
 	# -----------------------------------------------------------------------
 	# A plugin has responded
 	def _message_PLUGIN_REGISTER(self, message):
-		events = message.data
-		
-		for event in events:
+		for event in message.data:
 			name = event.name
-			if hasattr(event, 'args'):
-				if len(event.args) > 0:
-					name = '%s:%s' % (event.name, event.args)
+			if hasattr(event, 'args') and event.args:
+				name = '%s:%s' % (event.name, event.args)
 			
-			if name in self.__Events[event.IRCType]:
-				errtext = "%s already has an event for %s" % (event.name, event.IRCType)
-				raise ValueError, errtext
-			else:
-				self.__Events[event.IRCType][name] = (event, message.source)
+			# PluginTextEvents are a bit complicated
+			#if issubclass(PluginTextEvent, event):
+			for IRCType in event.IRCTypes:
+				if name in self.__Events[IRCType]:
+					# FIXME: error message sucks
+					errtext = "%s already has a %s event in %s" % (message.source, event.name, IRCType)
+					raise ValueError, errtext
+				
+				# Store the event nicely
+				self.__Events[IRCType][name] = (event, message.source)
+			
+			# Store any help for it if we have to
+			if event.help:
+				topic, command, help_text = event.help
+				self.__Help.setdefault(topic, {})[command] = help_text
 	
 	# A plugin wants to unregister an event (by name only for now)
 	def _message_PLUGIN_UNREGISTER(self, message):
@@ -92,11 +106,13 @@ class PluginHandler(Child):
 	def _message_PLUGIN_DIED(self, message):
 		dead_name = message.data
 		
+		# Delete any events it registered
 		for IRCType, events in self.__Events.items():
 			for event_name, (event, plugin_name) in events.items():
 				if plugin_name == dead_name:
 					del events[event_name]
 		
+		# Then remove it from our plugin list
 		if dead_name in self.Plugins:
 			self.Plugins.remove(dead_name)
 	
@@ -105,33 +121,36 @@ class PluginHandler(Child):
 	# through the appropriate collection of events and see if any match. If
 	# we find a match, send the TRIGGER message to the appropriate plugin.
 	#
-	# This will never happen with IRCtype == TIMED, since there is no way that
+	# This will never happen with IRCType == TIMED, since there is no way that
 	# ChatterGizmo can come up with a TIMED IRC_EVENT. This lets us avoid
 	# special case code here.
 	def _message_IRC_EVENT(self, message):
-		conn, IRCtype, userinfo, target, text = message.data
+		conn, IRCType, userinfo, target, text = message.data
 		
 		triggered = {}
 		
 		# Collect the events that have triggered
-		for event, plugin in self.__Events[IRCtype].values():
+		for event, plugin in self.__Events[IRCType].values():
 			m = event.regexp.match(text)
 			if m:
-				trigger = PluginTextTrigger(event, m, conn, target, userinfo)
-				triggered.setdefault(event.priority, []).append([plugin, trigger])
+				triggered.setdefault(event.priority, []).append([plugin, event, m])
 		
 		# Sort out the events, and only trigger the highest priority one(s)
 		if triggered:
 			priorities = triggered.keys()
 			priorities.sort()
-			for plugin, trigger in triggered[priorities[-1]]:
-				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+			for plugin, event, m in triggered[priorities[-1]]:
+				trigger = PluginTextTrigger(event, m, IRCType, conn, target, userinfo)
+				if plugin is self:
+					self.__Helper(trigger)
+				else:
+					self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 			
 			# Log the command if we have to
 			if self._log_commands:
-				if IRCtype == IRCT_PUBLIC: irct = 'public'
-				elif IRCtype == IRCT_PUBLIC_D: irct= 'direct'
-				elif IRCtype == IRCT_MSG: irct = 'privmsg'
+				if IRCType == IRCT_PUBLIC: irct = 'public'
+				elif IRCType == IRCT_PUBLIC_D: irct = 'direct'
+				elif IRCType == IRCT_MSG: irct = 'privmsg'
 				
 				user_host = '%s@%s' % (userinfo.ident, userinfo.host)
 				
@@ -150,7 +169,14 @@ class PluginHandler(Child):
 	# -----------------------------------------------------------------------
 	# We just got a reply from a plugin.
 	def _message_PLUGIN_REPLY(self, message):
-		reply = message.data
+		if isinstance(message, Message):
+			reply = message.data
+		elif isinstance(message, PluginReply):
+			reply = message
+		else:
+			# wtf
+			errtext = "Bad PLUGIN_REPLY message: %r" % (reply)
+			raise ValueError, errtext
 		
 		if isinstance(reply.trigger, PluginTimedTrigger):
 			self.privmsg(reply.trigger.targets, None, reply.replytext)
@@ -159,7 +185,7 @@ class PluginHandler(Child):
 			nick = reply.trigger.userinfo.nick
 			target = reply.trigger.target
 			conn = reply.trigger.conn
-			if reply.trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
+			if reply.trigger.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
 				if reply.process:
 					tosend = "%s: %s" % (nick, reply.replytext)
 				else:
@@ -174,7 +200,57 @@ class PluginHandler(Child):
 		
 		else:
 			# wtf
-			errtext = "Bad reply object: %s" % repr(reply)
+			errtext = "Bad reply object: %r" % (reply)
 			raise ValueError, errtext
+	
+	# -----------------------------------------------------------------------
+	# Our helpful helper
+	def __Helper(self, trigger):
+		# Split it into nice parts
+		parts = trigger.match.group(1).lower().strip().split()
+		
+		# If there are no extra parts, they want basic help
+		if len(parts) == 0:
+			replytext = 'Help topics: '
+			topics = self.__Help.keys()
+			topics.sort()
+			replytext += ' \02;;\02 '.join(topics)
+		
+		# If there is one part, they want topic help
+		elif len(parts) == 1:
+			topic = parts[0]
+			
+			# Nasty hack for obligatory Monty Python reference
+			if topic == 'help':
+				replytext = "Help! Help! I'm being repressed!"
+			
+			elif topic in self.__Help:
+				replytext = "Help commands in topic '\02%s\02': " % topic
+				cmds = self.__Help[topic].keys()
+				cmds.sort()
+				replytext += ' \02;;\02 '.join(cmds)
+			
+			else:
+				replytext = "No such help topic '%s'" % topic
+		
+		# If there are two parts, they want command help
+		elif len(parts) == 2:
+			topic, command = parts
+			
+			if topic in self.__Help:
+				if command in self.__Help[topic]:
+					replytext = self.__Help[topic][command]
+				else:
+					replytext = "No such help topic '%s %s'" % (topic, command)
+			else:
+				replytext = "No such help topic '%s'" % topic
+		
+		# If there are more, someone is being stupid
+		else:
+			replytext = "Too many fields, try 'help'."
+		
+		# Spit it out
+		reply = PluginReply(trigger, replytext, 1)
+		self._message_PLUGIN_REPLY(reply)
 
 # ---------------------------------------------------------------------------

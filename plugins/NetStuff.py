@@ -13,15 +13,8 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-NET_CCTLD = 'NET_CCTLD'
-CCTLD_HELP = "\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>."
-CCTLD_RE = re.compile('^cctld (.+)$')
-
-# ---------------------------------------------------------------------------
-
 class NetStuff(Plugin):
 	def setup(self):
-		#try:
 		self.__ccTLDs = {}
 		
 		filename = os.path.join('data', 'cctlds')
@@ -42,15 +35,15 @@ class NetStuff(Plugin):
 		cctld_file.close()
 	
 	def register(self):
-		self.setTextEvent(NET_CCTLD, CCTLD_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('net', 'cctld', CCTLD_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__ccTLD,
+			regexp = re.compile('^cctld (.+)$'),
+			help = ('net', 'cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
+		)
 	
 	# ---------------------------------------------------------------------------
-	# Someone wants to look up a CCTLD!
-	def _trigger_NET_CCTLD(self, trigger):
+	# Someone wants to look up a ccTLD!
+	def __ccTLD(self, trigger):
 		findme = trigger.match.group(1).lower()
 		
 		# Evil people should die

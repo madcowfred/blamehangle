@@ -52,12 +52,7 @@ MONTH = 60 * 60 * 24 * 30
 
 # ---------------------------------------------------------------------------
 
-AUSBOM_AUSBOM = 'AUSBOM_AUSBOM'
-AUSBOM_HELP = '\02ausbom\02 <location> : Get current weather data for <location>.'
-AUSBOM_RE = re.compile('^ausbom (?P<location>.+)$')
 AUSBOM_URL = 'http://www.bom.gov.au/products/%s.shtml'
-
-AUSBOM_UPDATE = 'AUSBOM_UPDATE'
 
 # ---------------------------------------------------------------------------
 
@@ -80,15 +75,15 @@ class AusBOM(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def register(self):
-		self.setTextEvent(AUSBOM_AUSBOM, AUSBOM_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('weather', 'ausbom', AUSBOM_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_AusBOM,
+			regexp = re.compile('^ausbom (?P<location>.+)$'),
+			help = ('weather', 'ausbom', '\02ausbom\02 <location> : Get current weather data for <location>.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some info on a location
-	def _trigger_AUSBOM_AUSBOM(self, trigger):
+	def __Fetch_AusBOM(self, trigger):
 		product = self.__Find_Product(trigger, trigger.match.group('location'))
 		if product:
 			url = AUSBOM_URL % (product)
@@ -103,7 +98,7 @@ class AusBOM(Plugin):
 		self.__Locations = {}
 		
 		# We need a fake trigger here for urlRequest()
-		trigger = PluginFakeTrigger(AUSBOM_UPDATE)
+		trigger = PluginFakeTrigger('AUSBOM_UPDATE')
 		trigger.count = 0
 		
 		# Go to get the first one
@@ -114,9 +109,9 @@ class AusBOM(Plugin):
 	# Parse a Current Observations page.
 	def __Parse_Current(self, trigger, resp):
 		# Work out what our location should be
-		if trigger.name == AUSBOM_AUSBOM:
+		if trigger.name == '__Fetch_AusBOM':
 			location = trigger.match.group('location')
-		elif trigger.name == AUSBOM_UPDATE:
+		elif trigger.name == 'AUSBOM_UPDATE':
 			location = None
 		
 		# Find the damn title

@@ -19,22 +19,6 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-GRABBT_CHECKDIR = 'GRABBT_CHECKDIR'
-
-GRABBT_GRAB = 'GRABBT_GRAB'
-GRAB_RE = re.compile(r'^grab (http://\S+)$')
-
-GRABBT_TORRENTS = 'GRABBT_TORRENTS'
-TORRENTS_RE = re.compile(r'^torrents$')
-
-GRABBT_TORRENTSPACE = 'GRABBT_TORRENTSPACE'
-TORRENTSPACE_RE = re.compile(r'^torrentspace$')
-
-GRABBT_TORRENTSPEED = 'GRABBT_TORRENTSPEED'
-TORRENTSPEED_RE = re.compile(r'^torrentspeed$')
-
-# ---------------------------------------------------------------------------
-
 class GrabBT(Plugin):
 	def setup(self):
 		self.rehash()
@@ -78,18 +62,35 @@ class GrabBT(Plugin):
 	def register(self):
 		# If we have to, start the check timer
 		if self.__files is not None and self.__newfiles:
-			self.setTimedEvent(GRABBT_CHECKDIR, 5, None)
-			self.setTextEvent(GRABBT_TORRENTSPACE, TORRENTSPACE_RE, IRCT_PUBLIC_D)
+			self.addTimedEvent(
+				method = self.__Torrent_Check,
+				interval = 5,
+			)
+			self.addTextEvent(
+				method = self.__Torrent_Space,
+				regexp = re.compile(r'^torrentspace$'),
+				IRCTypes = (IRCT_PUBLIC_D,),
+			)
 		
-		self.setTextEvent(GRABBT_GRAB, GRAB_RE, IRCT_PUBLIC_D)
-		self.setTextEvent(GRABBT_TORRENTS, TORRENTS_RE, IRCT_PUBLIC_D)
-		self.setTextEvent(GRABBT_TORRENTSPEED, TORRENTSPEED_RE, IRCT_PUBLIC_D)
-		
-		self.registerEvents()
+		self.addTextEvent(
+			method = self.__Torrent_Grab,
+			regexp = re.compile(r'^grab (http://\S+)$'),
+			IRCTypes = (IRCT_PUBLIC_D,),
+		)
+		self.addTextEvent(
+			method = self.__Torrent_List,
+			regexp = re.compile(r'^torrents$'),
+			IRCTypes = (IRCT_PUBLIC_D,),
+		)
+		self.addTextEvent(
+			method = self.__Torrent_Speed,
+			regexp = re.compile(r'^torrentspeed$'),
+			IRCTypes = (IRCT_PUBLIC_D,),
+		)
 	
 	# -----------------------------------------------------------------------
 	# It's time to see if we have any new files
-	def _trigger_GRABBT_CHECKDIR(self, trigger):
+	def __Torrent_Check(self, trigger):
 		files = dircache.listdir(self._new_dir)
 		if files is self.__files:
 			return
@@ -113,7 +114,7 @@ class GrabBT(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to get a torrent
-	def _trigger_GRABBT_GRAB(self, trigger):
+	def __Torrent_Grab(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		url = trigger.match.group(1)
 		
@@ -204,7 +205,7 @@ class GrabBT(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to see how our torrents are doing.
-	def _trigger_GRABBT_TORRENTS(self, trigger):
+	def __Torrent_List(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
 		if network not in self.__commands or trigger.target not in self.__commands[network]:
@@ -213,7 +214,11 @@ class GrabBT(Plugin):
 			return
 		
 		# Get the list of torrents
-		lines = open(self._status_file, 'r').readlines()
+		try:
+			lines = open(self._status_file, 'r').readlines()
+		except:
+			self.sendReply(trigger, "Couldn't open status file, no active torrents?")
+			return
 		
 		if lines:
 			for line in lines:
@@ -232,7 +237,7 @@ class GrabBT(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to see some total torrent speed.
-	def _trigger_GRABBT_TORRENTSPEED(self, trigger):
+	def __Torrent_Speed(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
 		if network not in self.__commands or trigger.target not in self.__commands[network]:
@@ -241,7 +246,11 @@ class GrabBT(Plugin):
 			return
 		
 		# Get the list of torrents
-		lines = open(self._status_file, 'r').readlines()
+		try:
+			lines = open(self._status_file, 'r').readlines()
+		except:
+			self.sendReply(trigger, "Couldn't open status file, no active torrents?")
+			return
 		
 		if lines:
 			down = up = 0.0
@@ -260,7 +269,7 @@ class GrabBT(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to see how much disk space we have free.
-	def _trigger_GRABBT_TORRENTSPACE(self, trigger):
+	def __Torrent_Space(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
 		if network not in self.__commands or trigger.target not in self.__commands[network]:

@@ -22,40 +22,15 @@ from classes.feedparser import FeedParser
 
 # ---------------------------------------------------------------------------
 
-NEWS_ANANOVA_QUIRKIES = 'NEWS_ANANOVA_QUIRKIES'
-NEWS_GOOGLE_BUSINESS = 'NEWS_GOOGLE_BUSINESS'
-NEWS_GOOGLE_HEALTH = 'NEWS_GOOGLE_HEALTH'
-NEWS_GOOGLE_SCIENCE = 'NEWS_GOOGLE_SCIENCE'
-NEWS_GOOGLE_SPORT = 'NEWS_GOOGLE_SPORT'
-NEWS_GOOGLE_WORLD = 'NEWS_GOOGLE_WORLD'
-NEWS_RSS = 'NEWS_RSS'
-
-NEWS_CLEANUP = 'NEWS_CLEANUP'
-NEWS_SPAM = 'NEWS_SPAM'
-
-# ---------------------------------------------------------------------------
-
-NEWS_SEARCH = "NEWS_SEARCH"
-NEWS_SEARCH_HELP = "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."
-NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
-
 NEWS_SEARCH_MAX_RESULTS = 6
-
-RSS_LIST = 'RSS_LIST'
-RSS_LIST_HELP = "\02listfeeds\02 : List the RSS feeds currently configured."
-RSS_LIST_RE = re.compile(r'^listfeeds$')
-
-RSS_SHOW = 'RSS_SHOW'
-RSS_SHOW_HELP = "\02showfeed\02 <feed name> : Show some information about an RSS feed."
-RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
 
 MAX_TITLE_LENGTH = 200
 
 # ---------------------------------------------------------------------------
 
-NEWS_QUERY = "SELECT title, url, description FROM news WHERE title IN (%s) OR url IN (%s)"
-INSERT_QUERY = "INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)"
-TIME_QUERY = "DELETE FROM news WHERE added < %s"
+NEWS_QUERY = 'SELECT title, url, description FROM news WHERE title IN (%s) OR url IN (%s)'
+INSERT_QUERY = 'INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)'
+TIME_QUERY = 'DELETE FROM news WHERE added < %s'
 SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 
 # ---------------------------------------------------------------------------
@@ -212,44 +187,80 @@ class News(Plugin):
 	def register(self):
 		# Various timed news checks
 		if self.News_Options['ananova_quirkies_interval']:
-			self.setTimedEvent(NEWS_ANANOVA_QUIRKIES, self.News_Options['ananova_quirkies_interval'], self.__Targets['ananova_quirkies'])
+			self.addTimedEvent(
+				method = self.__Fetch_Ananova_Quirkies,
+				interval = self.News_Options['ananova_quirkies_interval'],
+				targets = self.__Targets['ananova_quirkies'],
+			)
 		if self.News_Options['google_business_interval']:
-			self.setTimedEvent(NEWS_GOOGLE_BUSINESS, self.News_Options['google_business_interval'], self.__Targets['google_business'])
+			self.addTimedEvent(
+				method = self.__Fetch_Google_Business,
+				interval = self.News_Options['google_business_interval'],
+				targets = self.__Targets['google_business'],
+			)
 		if self.News_Options['google_health_interval']:
-			self.setTimedEvent(NEWS_GOOGLE_HEALTH, self.News_Options['google_health_interval'], self.__Targets['google_health'])
+			self.addTimedEvent(
+				method = self.__Fetch_Google_Health,
+				interval = self.News_Options['google_health_interval'],
+				targets = self.__Targets['google_health'],
+			)
 		if self.News_Options['google_science_interval']:
-			self.setTimedEvent(NEWS_GOOGLE_SCIENCE, self.News_Options['google_science_interval'], self.__Targets['google_science'])
+			self.addTimedEvent(
+				method = self.__Fetch_Google_Science,
+				interval = self.News_Options['google_science_interval'],
+				targets = self.__Targets['google_science'],
+			)
 		if self.News_Options['google_sport_interval']:
-			self.setTimedEvent(NEWS_GOOGLE_SPORT, self.News_Options['google_sport_interval'], self.__Targets['google_sport'])
+			self.addTimedEvent(
+				method = self.__Fetch_Google_Sport,
+				interval = self.News_Options['google_sport_interval'],
+				targets = self.__Targets['google_sport'],
+			)
 		if self.News_Options['google_world_interval']:
-			self.setTimedEvent(NEWS_GOOGLE_WORLD, self.News_Options['google_world_interval'], self.__Targets['google_world'])
+			self.addTimedEvent(
+				method = self.__Fetch_Google_World,
+				interval = self.News_Options['google_world_interval'],
+				targets = self.__Targets['google_world'],
+			)
 		# News search
-		self.setTextEvent(NEWS_SEARCH, NEWS_SEARCH_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Query_Search,
+			regexp = re.compile("^news (?P<search_text>.+)$"),
+			help = ('news', 'news', "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."),
+		)
 		# RSS feed commands
-		self.setTextEvent(RSS_LIST, RSS_LIST_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(RSS_SHOW, RSS_SHOW_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.addTextEvent(
+			method = self.__Feed_List,
+			regexp = re.compile(r'^listfeeds$'),
+			help = ('news', 'listfeeds', "\02listfeeds\02 : List the RSS feeds currently configured."),
+		)
+		self.addTextEvent(
+			method = self.__Feed_Show,
+			regexp = re.compile(r'^showfeed (?P<feed>.+)$'),
+			help = ('news', 'showfeed', "\02showfeed\02 <feed name> : Show some information about an RSS feed."),
+		)
 		# RSS feeds should be checked for readiness every 30 seconds
 		if self.RSS_Feeds:
-			self.setTimedEvent(NEWS_RSS, 10, None)
+			self.addTimedEvent(
+				method = self.__RSS_Check,
+				interval = 10,
+			)
 			tolog = 'Registered %d RSS feeds' % len(self.RSS_Feeds)
 			self.putlog(LOG_ALWAYS, tolog)
 		# Timed event for cleaning up the database once an hour
-		self.setTimedEvent(NEWS_CLEANUP, 3600, {})
+		self.addTimedEvent(
+			method = self.__Query_Cleanup,
+			interval = 3600,
+		)
 		# Timed event for spitting out news
-		self.setTimedEvent(NEWS_SPAM, self.News_Options['spam_delay'], {})
-		
-		# Register all these events
-		self.registerEvents()
-		
-		# Help meeee
-		self.setHelp('news', 'news', NEWS_SEARCH_HELP)
-		self.setHelp('news', 'listfeeds', RSS_LIST_HELP)
-		self.setHelp('news', 'showfeed', RSS_SHOW_HELP)
-		self.registerHelp()
+		self.addTimedEvent(
+			method = self.__Spam_News,
+			interval = self.News_Options['spam_delay'],
+		)
 	
 	# -----------------------------------------------------------------------
 	# Cleanup old news
-	def _trigger_NEWS_CLEANUP(self, trigger):
+	def __Query_Cleanup(self, trigger):
 		self.putlog(LOG_DEBUG, 'Purging old news')
 		
 		now = time.time()
@@ -259,7 +270,7 @@ class News(Plugin):
 		self.dbQuery(trigger, None, TIME_QUERY, old)
 	
 	# Search for some news
-	def _trigger_NEWS_SEARCH(self, trigger):
+	def __Query_Search(self, trigger):
 		search_text = trigger.match.group('search_text')
 		if len(search_text) < 5:
 			self.sendReply(trigger, 'Search query is too short!')
@@ -285,7 +296,7 @@ class News(Plugin):
 				self.dbQuery(trigger, self.__News_Searched, query)
 	
 	# Spam some news
-	def _trigger_NEWS_SPAM(self, trigger):
+	def __Spam_News(self, trigger):
 		if not self.__outgoing:
 			return
 		
@@ -302,7 +313,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# List of feeds
-	def _trigger_RSS_LIST(self, trigger):
+	def __Feed_List(self, trigger):
 		names = self.RSS_Feeds.keys()
 		if names:
 			names.sort()
@@ -312,7 +323,7 @@ class News(Plugin):
 		self.sendReply(trigger, replytext)
 	
 	# Show info about an RSS feed
-	def _trigger_RSS_SHOW(self, trigger):
+	def __Feed_Show(self, trigger):
 		findme = trigger.match.group('feed').lower()
 		matches = [name for name in self.RSS_Feeds.keys() if name.lower() == findme]
 		if matches:
@@ -324,26 +335,26 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _trigger_NEWS_ANANOVA_QUIRKIES(self, trigger):
+	def __Fetch_Ananova_Quirkies(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Ananova, ANANOVA_QUIRKIES_URL)
 	
-	def _trigger_NEWS_GOOGLE_BUSINESS(self, trigger):
+	def __Fetch_Google_Business(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_BUSINESS_URL)
 	
-	def _trigger_NEWS_GOOGLE_HEALTH(self, trigger):
+	def __Fetch_Google_Health(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_HEALTH_URL)
 	
-	def _trigger_NEWS_GOOGLE_SCIENCE(self, trigger):
+	def __Fetch_Google_Science(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SCIENCE_URL)
 	
-	def _trigger_NEWS_GOOGLE_SPORT(self, trigger):
+	def __Fetch_Google_Sport(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SPORT_URL)
 	
-	def _trigger_NEWS_GOOGLE_WORLD(self, trigger):
+	def __Fetch_Google_World(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
 	
 	# See if any feeds should be triggering around about now
-	def _trigger_NEWS_RSS(self, trigger):
+	def __RSS_Check(self, trigger):
 		currtime = time.time()
 		
 		ready = [(feed['checked'], name, feed) for name, feed in self.RSS_Feeds.items() if currtime - feed['checked'] >= feed['interval']]
@@ -353,7 +364,7 @@ class News(Plugin):
 			feed['checked'] = currtime
 			
 			# Build a fake timed event trigger
-			new_trigger = PluginTimedTrigger(NEWS_RSS, 1, feed['targets'], [name])
+			new_trigger = PluginTimedTrigger('__FAKE__RSS__', 1, feed['targets'], [name])
 			
 			# Maybe send a If-Modified-Since header
 			if feed['last-modified'] is not None:

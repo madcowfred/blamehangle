@@ -23,12 +23,15 @@ BOTSTATUS_RE = re.compile('^botstatus$')
 
 class BotStatus(Plugin):
 	def register(self):
-		self.setTextEvent(BOTSTATUS, BOTSTATUS_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
+		self.addTextEvent(
+			method = self.__Gather_Stats,
+			regexp = re.compile('^botstatus$'),
+			help = ('misc', 'botstatus', '\x02botstatus\x02 : Return some useful (maybe) stats about the bot.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some status info, go gather it.
-	def _trigger_BOTSTATUS(self, trigger):
+	def __Gather_Stats(self, trigger):
 		self.sendMessage('ChatterGizmo', GATHER_STATS, {'trigger': trigger})
 	
 	# Gathered!
@@ -48,8 +51,9 @@ class BotStatus(Plugin):
 		nets = (data['irc_nets'] == 1) and 'network' or 'networks'
 		queries = (data['db_queries'] == 1) and 'query' or 'queries'
 		urls = (data['http_reqs'] == 1) and 'URL' or 'URLs'
+		plugins = (data['plugins'] == 1) and 'plugin' or 'plugins'
 		
-		replytext = 'I have been running for %s. I am currently in %d %s on %d %s. I am using %dKB of memory. I have performed %d database %s. I have fetched %d %s.' % (running, data['irc_chans'], chans, data['irc_nets'], nets, data['memory'], data['db_queries'], queries, data['http_reqs'], urls)
+		replytext = 'I have been running for %s. I am currently in %d %s on %d %s. I am using %dKB of memory. I have performed %d database %s. I have fetched %d %s. I have %d %s loaded.' % (running, data['irc_chans'], chans, data['irc_nets'], nets, data['memory'], data['db_queries'], queries, data['http_reqs'], urls, data['plugins'], plugins)
 		self.sendReply(message.data['trigger'], replytext)
 
 # ---------------------------------------------------------------------------

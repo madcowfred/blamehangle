@@ -11,12 +11,6 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-QUOTES_ADDQUOTE = 'QUOTES_ADDQUOTE'
-ADDQUOTE_HELP = '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'
-ADDQUOTE_RE = re.compile('^addquote (?P<quote>.+)$')
-
-# ---------------------------------------------------------------------------
-
 class Quotes(Plugin):
 	def setup(self):
 		self.rehash()
@@ -29,15 +23,15 @@ class Quotes(Plugin):
 	# ---------------------------------------------------------------------------
 	
 	def register(self):
-		self.setTextEvent(QUOTES_ADDQUOTE, ADDQUOTE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('quotes', 'addquote', ADDQUOTE_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__AddQuote,
+			regexp = re.compile('^addquote (?P<quote>.+)$'),
+			help = ('quotes', 'addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
+		)
 	
 	# -----------------------------------------------------------------------
-	
-	def _trigger_QUOTES_ADDQUOTE(self, trigger):
+	# Someone wants to add a quote
+	def __AddQuote(self, trigger):
 			# Build the message
 			lines = []
 			
@@ -57,6 +51,10 @@ class Quotes(Plugin):
 			
 			# Split the quote into lines
 			qlines = [l.strip() for l in trigger.match.group('quote').split('||')]
+			if qlines == []:
+				self.sendReply(trigger, 'No valid lines in this quote!')
+				return
+			
 			for qline in qlines:
 				if qline:
 					lines.append(qline)

@@ -14,27 +14,9 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-# This regexp needs fixing in the year 3000, don't forget
-FUN_EASTER = 'FUN_EASTER'
-EASTER_HELP = '\02easter\02 <year> : Work out what day Easter Sunday falls on for a given year.'
-EASTER_RE = re.compile('^easter (?P<year>\d{1,4})$')
-
-FUN_EIGHTBALL = 'FUN_EIGHTBALL'
-EIGHTBALL_HELP = '\028ball\02 <question> : The magic 8 ball will answer your question!'
-EIGHTBALL_RE = re.compile('^8ball (?P<question>.+)$')
-
-FUN_MUDDLE = 'FUN_MUDDLE'
-MUDDLE_HELP = '\02muddle\02 <text> : Muddles your text by rearranging words.'
-MUDDLE_RE = re.compile('^muddle (?P<text>.+)$')
-
-
-FUN_HORO = 'FUN_HORO'
-HORO_HELP = "\02horo\02 <sign> : Look up today's horoscope for <sign>."
-HORO_RE = re.compile('^horo (?P<sign>\S+)$')
-HORO_URL = 'http://astrology.yahoo.com/astrology/general/dailyoverview/%s'
-
 HORO_SIGNS = ('aquarius', 'aries', 'cancer', 'capricorn', 'gemini', 'leo', 'libra',
 	'pisces', 'sagittarius', 'scorpio', 'taurus', 'virgo')
+HORO_URL = 'http://astrology.yahoo.com/astrology/general/dailyoverview/%s'
 
 # ---------------------------------------------------------------------------
 
@@ -53,21 +35,32 @@ class FunStuff(Plugin):
 	# ---------------------------------------------------------------------------
 	
 	def register(self):
-		self.setTextEvent(FUN_EASTER, EASTER_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FUN_EIGHTBALL, EIGHTBALL_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FUN_HORO, HORO_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(FUN_MUDDLE, MUDDLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
+		# Remember to fix this regexp in the year 10000
+		self.addTextEvent(
+			method = self.__Easter,
+			regexp = re.compile('^easter (?P<year>\d{1,4})$'),
+			help = ('funstuff', 'easter', '\02easter\02 <year> : Work out what day Easter Sunday falls on in <year>.'),
+		)
+		self.addTextEvent(
+			method = self.__EightBall,
+			regexp = re.compile('^8ball (?P<question>.+)$'),
+			help = ('funstuff', '8ball', '\028ball\02 <question> : The magic 8 ball will answer your question!'),
+		)
+		self.addTextEvent(
+			method = self.__Muddle,
+			regexp = re.compile('^muddle (?P<text>.+)$'),
+			help = ('funstuff', 'muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
+		)
 		
-		self.setHelp('funstuff', 'easter', EASTER_HELP)
-		self.setHelp('funstuff', '8ball', EIGHTBALL_HELP)
-		self.setHelp('funstuff', 'horo', HORO_HELP)
-		self.setHelp('funstuff', 'muddle', MUDDLE_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_Horoscope,
+			regexp = re.compile('^horo (?P<sign>\S+)$'),
+			help = ('funstuff', 'horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Work out what date Easter Sunday falls on for a given year.
-	def _trigger_FUN_EASTER(self, trigger):
+	def __Easter(self, trigger):
 		y = int(trigger.match.group('year'))
 		
 		# Taken from http://aa.usno.navy.mil/faq/docs/easter.html
@@ -99,7 +92,7 @@ class FunStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Come up with a random response to a question
-	def _trigger_FUN_EIGHTBALL(self, trigger):
+	def __EightBall(self, trigger):
 		while 1:
 			replytext = random.choice(self.__eightball_responses)
 			if replytext != self.__eightball_last:
@@ -110,7 +103,7 @@ class FunStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Muddle up some text by re-arranging the words
-	def _trigger_FUN_MUDDLE(self, trigger):
+	def __Muddle(self, trigger):
 		words = trigger.match.group('text').split()
 		new = []
 		
@@ -126,18 +119,18 @@ class FunStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Get today's horoscope
-	def _trigger_FUN_HORO(self, trigger):
+	def __Fetch_Horoscope(self, trigger):
 		sign = trigger.match.group('sign').lower()
 		if sign in HORO_SIGNS:
 			url = HORO_URL % sign
-			self.urlRequest(trigger, self.__Horoscope, url)
+			self.urlRequest(trigger, self.__Parse_Horoscope, url)
 		else:
 			replytext = "'%s' is not a valid sign!" % sign
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Parse a Yahoo Astrology page
-	def __Horoscope(self, trigger, resp):
+	def __Parse_Horoscope(self, trigger, resp):
 		# Find the sign
 		sign = FindChunk(resp.data, '<big class="yastshsign">', '</big>')
 		if not sign:

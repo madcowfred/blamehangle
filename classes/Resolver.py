@@ -44,7 +44,7 @@ class Resolver(Child):
 		self.__Start_Threads()
 		
 		# Now we pretend to be a plugin so we can have a timed event
-		event = PluginTimedEvent(RESOLVER_CLEANUP, 60, None)
+		event = PluginTimedEvent(RESOLVER_CLEANUP, 60, None, [])
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, [event])
 	
 	# -----------------------------------------------------------------------

@@ -1,15 +1,30 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file demonstrates the structure required by plugins.
-# It doesn't actually -do- much, but is useful as a template.
-# ---------------------------------------------------------------------------
+
+"""
+This file demonstrates the structure and basic useful bits for plugins.
+Someone write a sentence that makes sense here.
+"""
 
 import re
 
 from classes.Common import *
 from classes.Constants import *
-from classes.Plugin import *
+from classes.Plugin import Plugin
+
+# ---------------------------------------------------------------------------
+
+SAMPLE_NAME1 = 'SAMPLE_NAME1'
+SAMPLE_RE1 = re.compile(r'^sample1$')
+
+SAMPLE_NAME2 = 'SAMPLE_NAME2'
+SAMPLE_RE2 = re.compile(r'^sample2 (.+)$')
+
+SAMPLE_NAME3 = 'SAMPLE_NAME3'
+SAMPLE_TARGETS = {
+	'SuperMegaNet': ['#moo'],
+}
 
 # ---------------------------------------------------------------------------
 
@@ -19,21 +34,11 @@ class SamplePlugin(Plugin):
 	"""
 	
 	# A plugin can define the setup method if it has anything that needs to
-	# happen while it is being created. This is called from the relevant
-	# __init__() if it exists.
+	# happen while it is being created. This is called from Plugin's __init__().
 	def setup(self):
 		# If you don't have anything you need to do during initialisation
-		# for your plugin you can simply omit this method declaration entirely
-		self.SAMPLE_NAME1 = "SAMPLE_NAME1"
-		self.SAMPLE_NAME2 = "SAMPLE_NAME2"
-		self.SAMPLE_NAME3 = "SAMPLE_NAME3"
-		
-		self.SAMPLE_RE1 = re.compile("abcdef$")
-		self.SAMPLE_RE2 = re.compile("zzz (?P<stuff>.+)$")
-		
-		self.SAMPLE_NAME3_TARGETS = {
-			'SuperMegaNet': ['#moo']
-			}
+		# for your plugin you can simply omit this method entirely
+		pass
 	
 	# -----------------------------------------------------------------------
 	# A plugin can define the run_once method if it has anything that needs
@@ -42,34 +47,60 @@ class SamplePlugin(Plugin):
 	# been entered.
 	def run_once(self):
 		# If you don't need to do anything for run_once you can omit this
-		# method entirely instead of just passing
+		# method entirely
 		pass
 	
 	# -----------------------------------------------------------------------
 	# A plugin can define the run_always method if it has anything that needs
-	# to be done during every iteration of the main control loop in
-	# Blamehangle. This method will be called once per plugin per loop, if
-	# defined. Try not to use this :)
+	# to be done during every iteration of the main control loop. This method
+	# will be called once per plugin per loop, if defined. Please try not to
+	# use this :)
 	def run_always(self):
 		# If you don't need to do anything in the main_loop you can omit this
-		# method entirely instead of just passing
+		# method entirely
 		pass
 	
 	# -----------------------------------------------------------------------
-	# Every plugin must define the _message_PLUGIN_REGISTER method, which
-	# should look something like this.
-	def _message_PLUGIN_REGISTER(self, message):
-		# the message from PluginHandler -> our plugin does not contain any
-		# data, so we don't need to worry about the contents of it here.
-		
-		event1 = PluginTextEvent(self.SAMPLE_NAME1, IRCT_MSG, self.SAMPLE_RE1)
-		event2 = PluginTextEvent(self.SAMPLE_NAME2, IRCT_PUBLIC, self.SAMPLE_RE2)
-		event3 = PluginTimedEvent(self.SAMPLE_NAME3, 180, self.SAMPLE_NAME3_TARGETS)
-		
-		self.register(event1, event2, event3)
+	# A plugin can define the run_sometimes method if it has anything that needs
+	# to be done not that often (currently every 4th main loop iteration, or
+	# 0.20s). This method will be called once per plugin per loop, if defined.
+	# Please try not to use this :) You can more than likely just use a timed
+	# event to accomplish what you need to.
+	def run_always(self):
+		# If you don't need to do anything in the main_loop you can omit this
+		# method entirely
+		pass
 	
 	# -----------------------------------------------------------------------
+	# Every plugin must define the register method, which should look
+	# something like this.
+	def register(self):
+		# This is a private message event only
+		self.setTextEvent(SAMPLE_NAME1, SAMPLE_RE1, IRCT_MSG)
+		# This is a public message and public directed message event
+		self.setTextEvent(SAMPLE_NAME2, SAMPLE_RE2, IRCT_PUBLIC, IRCT_PUBLIC_D)
+		# This is a timed event, triggering every 180 seconds
+		self.setTimedEvent(SAMPLE_NAME3, 180, self.SAMPLE_TARGETS3)
+		
+		# And now we register the events
+		self.registerEvents()
 	
+	# -----------------------------------------------------------------------
+	# For each event, you need to implement a handler. If you don't need to
+	# do any DB work or go fetch a URL, you might as well put all of the event
+	# logic in here.
+	#
+	# 'trigger' is a plugin event trigger, either PluginTextTrigger or
+	# PluginTimedTrigger.
+	def _handle_SAMPLE_NAME1(self, trigger):
+		# This sends a reply to the person that triggered it, via whichever
+		# IRC type it came from.
+		self.sendReply(trigger, "hi, I'm a sample trigger")
+	
+	
+	
+	
+	# -----------------------------------------------------------------------
 	# All plugins must implement the _message_PLUGIN_TRIGGER method, which
 	# will be called whenever an event that this plugin has registered has
 	# occured

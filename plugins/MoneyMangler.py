@@ -14,28 +14,9 @@ from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
-MONEY_ASX = 'MONEY_ASX'
-ASX_HELP = '\02asx\02 <symbol> : Look up a current stock price on the ASX.'
-ASX_RE = re.compile('^asx (?P<symbol>.+)$')
 ASX_URL = 'http://www.asx.com.au/asx/markets/EquitySearchResults.jsp?method=get&template=F1001&ASXCodes=%s'
-
-MONEY_CURRENCY = 'MONEY_CURRENCY'
-CURRENCY_HELP = '\02currency\02 <code OR partial name> : Look up an ISO 4217 currency code and name, given the specified information.'
-CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
-
-MONEY_EXCHANGE = 'MONEY_EXCHANGE'
-EXCHANGE_HELP = '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'
-EXCHANGE_RE = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 EXCHANGE_URL = 'http://finance.yahoo.com/currency/convert?amt=%(amt)s&from=%(from)s&to=%(to)s&submit=Convert'
-
-MONEY_QUOTE = 'MONEY_QUOTE'
-QUOTE_HELP = '\02quote\02 <symbol> : Look up a current stock price.'
-QUOTE_RE = re.compile('^quote (?P<symbol>\S+)$')
 QUOTE_URL = 'http://finance.yahoo.com/q?d=v1&s=%s'
-
-MONEY_SYMBOL = 'MONEY_SYMBOL'
-SYMBOL_HELP = '\02symbol\02 <findme> : Look up a ticker symbol.'
-SYMBOL_RE = re.compile('^symbol (?P<findme>.+)$')
 SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
 
 TITLE_RE = re.compile('<title>(\S+): Summary for (.*?) -')
@@ -100,64 +81,42 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def register(self):
-		self.setTextEvent(MONEY_ASX, ASX_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(MONEY_CURRENCY, CURRENCY_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(MONEY_EXCHANGE, EXCHANGE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(MONEY_QUOTE, QUOTE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(MONEY_SYMBOL, SYMBOL_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('money', 'asx', ASX_HELP)
-		self.setHelp('money', 'currency', CURRENCY_HELP)
-		self.setHelp('money', 'exchange', EXCHANGE_HELP)
-		self.setHelp('money', 'quote', QUOTE_HELP)
-		self.setHelp('money', 'symbol', SYMBOL_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Fetch_ASX,
+			regexp = re.compile('^asx (?P<symbol>.+)$'),
+			help = ('money', 'asx', '\02asx\02 <symbol> : Look up a current stock price on the ASX.'),
+		)
+		self.addTextEvent(
+			method = self.__Currency,
+			regexp = re.compile('^currency (?P<curr>\w+)$'),
+			help = ('money', 'currency', '\02currency\02 <code OR partial name> : Look up an ISO 4217 currency code and name, given the specified information.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Exchange,
+			regexp = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$'),
+			help = ('money', 'exchange', '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Quote,
+			regexp = re.compile('^quote (?P<symbol>\S+)$'),
+			help = ('money', 'quote', '\02quote\02 <symbol> : Look up a current stock price.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Symbol,
+			regexp = re.compile('^symbol (?P<findme>.+)$'),
+			help = ('money', 'symbol', '\02symbol\02 <findme> : Look up a ticker symbol.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to lookup a stock or stocks on the ASX
-	def _trigger_MONEY_ASX(self, trigger):
+	def __Fetch_ASX(self, trigger):
 		symbol = trigger.match.group('symbol').upper()
 		url = ASX_URL % symbol
 		self.urlRequest(trigger, self.__ASX, url)
 	
 	# -----------------------------------------------------------------------
-	# Someone wants to find a currency
-	def _trigger_MONEY_CURRENCY(self, trigger):
-		curr = trigger.match.group('curr').lower()
-		
-		# Possible currency code?
-		if len(curr) == 3:
-			ucurr = curr.upper()
-			if ucurr in self.__Currencies:
-				replytext = '%s (%s)' % (self.__Currencies[ucurr], ucurr)
-				self.sendReply(trigger, replytext)
-				return
-		
-		# Search the whole bloody lot
-		found = []
-		for code, name in self.__Currencies.items():
-			if name.lower().find(curr) >= 0:
-				found.append(code)
-		
-		replytext = "Currency search for '%s'" % curr
-		
-		if found:
-			if len(found) == 1:
-				replytext += ': %s' % found[0]
-			else:
-				found.sort()
-				replytext += ' (\x02%d\x02 matches)' % len(found)
-				finds = ', '.join(found)
-				replytext += ": %s" % finds
-		else:
-			replytext += ': No matches found.'
-		
-		self.sendReply(trigger, replytext)
-	
-	# -----------------------------------------------------------------------
 	# Someone wants to do a money conversion
-	def _trigger_MONEY_EXCHANGE(self, trigger):
+	def __Fetch_Exchange(self, trigger):
 		replytext = None
 		
 		data = {}
@@ -181,14 +140,14 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to look up a stock price
-	def _trigger_MONEY_QUOTE(self, trigger):
+	def __Fetch_Quote(self, trigger):
 		symbol = trigger.match.group('symbol').upper()
 		url = QUOTE_URL % symbol
 		self.urlRequest(trigger, self.__Quote, url)
 		
 	# -----------------------------------------------------------------------
 	# Someone wants to look up a ticker symbol
-	def _trigger_MONEY_SYMBOL(self, trigger):
+	def __Fetch_Symbol(self, trigger):
 		findme = trigger.match.group('findme').upper()
 		url = SYMBOL_URL % findme
 		self.urlRequest(trigger, self.__Symbol, url)
@@ -235,6 +194,40 @@ class MoneyMangler(Plugin):
 			replytext = ' '.join(infos)
 		else:
 			replytext = 'No stock data found.'
+		
+		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Someone wants to find a currency
+	def __Currency(self, trigger):
+		curr = trigger.match.group('curr').lower()
+		
+		# Possible currency code?
+		if len(curr) == 3:
+			ucurr = curr.upper()
+			if ucurr in self.__Currencies:
+				replytext = '%s (%s)' % (self.__Currencies[ucurr], ucurr)
+				self.sendReply(trigger, replytext)
+				return
+		
+		# Search the whole bloody lot
+		found = []
+		for code, name in self.__Currencies.items():
+			if name.lower().find(curr) >= 0:
+				found.append(code)
+		
+		replytext = "Currency search for '%s'" % curr
+		
+		if found:
+			if len(found) == 1:
+				replytext += ': %s' % found[0]
+			else:
+				found.sort()
+				replytext += ' (\x02%d\x02 matches)' % len(found)
+				finds = ', '.join(found)
+				replytext += ": %s" % finds
+		else:
+			replytext += ': No matches found.'
 		
 		self.sendReply(trigger, replytext)
 	

@@ -13,12 +13,6 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-TIME_DATE = 'TIME_DATE'
-DATE_HELP = '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'
-DATE_RE = re.compile('^date (?P<city>\w+)$')
-
-# ---------------------------------------------------------------------------
-
 class TimeDate(Plugin):
 	def register(self):
 		# Sorry, no timezone stuff on Windows
@@ -26,15 +20,15 @@ class TimeDate(Plugin):
 			self.putlog(LOG_WARNING, "Unable to get timezone information on Windows systems.")
 			return
 		
-		self.setTextEvent(TIME_DATE, DATE_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.registerEvents()
-		
-		self.setHelp('time', 'date', DATE_HELP)
-		self.registerHelp()
+		self.addTextEvent(
+			method = self.__Date,
+			regexp = re.compile('^date (?P<city>\w+)$'),
+			help = ('time', 'date', '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'),
+		)
 	
 	# -----------------------------------------------------------------------
 	
-	def _trigger_TIME_DATE(self, trigger):
+	def __Date(self, trigger):
 		city = trigger.match.group('city')
 		
 		# Try to find our new timezone
