@@ -74,6 +74,13 @@ class Plugin(Child):
 			ident = '__%s__%s__' % (name, IRCType)
 			self.__Events[ident] = event
 	
+	# Shorthand way of setting timed events
+	def setTimedEvent(self, name, interval, targets):
+		event = PluginTimedEvent(name, interval, targets)
+		ident = '__%s__%s__' % (name, interval)
+		self.__Events[ident] = event
+	
+	# Quick way to register our events
 	def registerEvents(self):
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, self.__Events.values())
 	
