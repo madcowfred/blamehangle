@@ -58,21 +58,21 @@ class WrapConn:
 		#self.putlog(LOG_ALWAYS, tolog)
 		
 		
-		#try:
-		self.conn.connect(host, port, self.trynick, None, self.options['username'],
-			'blamehangle')
+		try:
+			self.conn.connect(host, port, self.trynick, None, self.options['username'],
+				'blamehangle')
 		
-		#except ServerConnectionError, x:
-		#	if type(x) == types.ListType:
-		#		x = x[1]
-		#	
-		#	tolog = 'Connection failed: %s' % x
-		#	self.putlog(LOG_ALWAYS, tolog)
-		#	
-		#	self.status = STATUS_DISCONNECTED
-		#
-		#else:
-		self.status = STATUS_CONNECTING
+		except ServerConnectionError, x:
+			if type(x) == types.ListType:
+				x = x[1]
+			
+			#tolog = 'Connection failed: %s' % x
+			#self.putlog(LOG_ALWAYS, tolog)
+			
+			self.status = STATUS_DISCONNECTED
+		
+		else:
+			self.status = STATUS_CONNECTING
 		
 		self.last_connect = time.time()
 	
