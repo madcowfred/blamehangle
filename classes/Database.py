@@ -119,6 +119,15 @@ class MySQL(DatabaseWrapper):
 									passwd=self.Config.get('database', 'password'),
 									connect_timeout=20,
 									)
+	
+	# -----------------------------------------------------------------------
+	# Over-ride this if you need to mangle SQL statements differently.
+	def _manglesql(self, sql):
+		# MySQL uses RAND() instead of RANDOM(), grr
+		if sql.startswith('SELECT'):
+			sql = sql.replace('RANDOM()', 'RAND()')
+		
+		return sql
 
 # ---------------------------------------------------------------------------
 # Wrapper class for psycopg/pyGreSQL
