@@ -73,10 +73,7 @@ class ChatterGizmo:
 		# Tell FileMonster what our local IP is
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
-		print 'Welcome to Floston Paradise!'
-		
-		for wrap in self.Conns.values():
-			wrap.join_channels()
+		self.Conns[conn].join_channels()
 	
 	# -----------------------------------------------------------------------
 	# Someone just joined a channel (including ourselves)
@@ -147,7 +144,7 @@ class ChatterGizmo:
 			conn.join(chan)
 		
 		else:
-			self.__Users.parted(chan, kicked)
+			self.Conns[conn].users.parted(chan, kicked)
 			
 			# If the user has left all our channels, tell FileMonster
 			#if not self.__Users.in_any_chan(nick):
