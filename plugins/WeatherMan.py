@@ -88,6 +88,9 @@ class WeatherMan(Plugin):
 				location = None
 				data = {}
 				
+				# Eat the degree symbols
+				page_text = page_text.replace('°', '')
+				
 				
 				# Find the chunk that tells us where we are
 				chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<script')
@@ -175,10 +178,6 @@ class WeatherMan(Plugin):
 					
 					data['forecast'] = ' - '.join(fcs)
 				
-				# Eat the degrees
-				for key in data.keys():
-					data[key] = data[key].replace('°', '')
-				
 				
 				chunks = []
 				
@@ -205,7 +204,9 @@ class WeatherMan(Plugin):
 # ---------------------------------------------------------------------------
 
 def CandF(f_val):
-	return '%s°C (%s°F)' % (ToCelsius(f_val), f_val)
+	c_val = ToCelsius(f_val)
+	f_val = f_val.strip()
+	return '%s°C (%s°F)' % (c_val, f_val)
 
 def ToCelsius(val):
 	try:
