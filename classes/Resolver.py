@@ -7,6 +7,7 @@ Implements threaded DNS lookups. getaddrinfo() lets the rest of the Python
 interpreter run in 2.3+, yay.
 """
 
+import re
 import socket
 import time
 
@@ -16,6 +17,10 @@ from threading import Thread
 from classes.Children import Child
 from classes.Constants import *
 from classes.SimpleCacheDict import SimpleCacheDict
+
+# ---------------------------------------------------------------------------
+# This doesn't actually check for a valid IP, just the basic structure.
+IPV4_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 
 # ---------------------------------------------------------------------------
 
@@ -70,15 +75,23 @@ class Resolver(Child):
 	# -----------------------------------------------------------------------
 	# Someone wants us to resolve something, woo
 	def _message_REQ_DNS(self, message):
+		trigger, method, host, args = message.data
+		
 		# If the requested host is cached, just send that back
-		if message.data[2] in self.DNSCache:
-			data = list(message.data[:2])
-			data.append(self.DNSCache[message.data[2]][1])
-			data.append(message.data[3])
+		if host in self.DNSCache:
+			data = [trigger, method, self.DNSCache[host], args]
 			self.sendMessage(message.source, REPLY_DNS, data)
 		# If not, go resolve it
 		else:
-			self.Requests.put(message)
+			# Well, make sure it's not an IP first
+			if IPV4_RE.match(host):
+				data = [trigger, method, [(4, host)], args]
+				self.sendMessage(message.source, REPLY_DNS, data)
+			elif ':' in host:
+				data = [trigger, method, [(6, host)], args]
+				self.sendMessage(message.source, REPLY_DNS, data)
+			else:
+				self.Requests.put(message)
 
 # ---------------------------------------------------------------------------
 
@@ -117,7 +130,7 @@ def ResolverThread(parent, myindex):
 				elif af == socket.AF_INET6:
 					hosts.append((6, sa[0]))
 			
-			parent.DNSCache[host] = (time.time(), hosts)
+			parent.DNSCache[host] = hosts
 			data = [trigger, method, hosts, args]
 		
 		parent.sendMessage(message.source, REPLY_DNS, data)
