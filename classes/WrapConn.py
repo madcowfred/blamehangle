@@ -4,6 +4,7 @@
 # This class wraps an IRC connection into something slightly easier to deal
 # with.
 
+import random
 import socket
 import time
 import types
@@ -89,19 +90,10 @@ class WrapConn:
 		
 		
 		self.conn.connect_to_server(host, port, nick,
-									username=self.options['username'],
+									username=self.options.get('username'),
 									ircname=self.realname,
 									vhost=self.vhost
 									)
-		
-		#except ServerConnectionError, x:
-		#	if type(x) in (types.ListType, types.TupleType):
-		#		x = x[1]
-		#	
-		#	tolog = 'Connection failed: %s' % x
-		#	self.connlog(LOG_ALWAYS, tolog)
-		#	
-		#	self.conn.status = STATUS_DISCONNECTED
 		
 		self.last_connect = time.time()
 	
@@ -134,23 +126,56 @@ class WrapConn:
 	# Our nick is in use
 	def nicknameinuse(self, nick):
 		# While trying to connect!
-		if self.conn.status == STATUS_CONNECTING:
-			if nick == self.conn.getnick():
+		if self.conn.status == STATUS_CONNECTED and self.conn.welcomed == 0:
+			gennick = 0
+			
+			# The nick we just tried is in use, ruh-roh
+			if nick == self.nicks[self.trynick]:
+				
+				# If we have some more nicks to try, do that
 				if len(self.nicks) > 1:
 					self.trynick += 1
 					if self.trynick >= len(self.nicks):
 						self.trynick = 0
-					
-					nick = self.nicks[self.trynick]
-				
-				else:
-					nick = self.nicks[0]
-					if len(nick) < 9:
-						nick += '-'
+						gennick = 1
 					else:
-						nick[-1] = '-'
+						newnick = self.nicks[self.trynick]
+				else:
+					gennick = 1
+			
+			# We probably tried a made up one, try again
+			elif nick not in self.nicks:
+				gennick = 1
+			
+			# Generate a silly new nick
+			if gennick:
+				# If it was already a generated nick, time to try a bit
+				# of randomness.
+				if nick not in self.nicks:
+					print 'baa'
+					newnick = nick[:6]
+					
+					# 0-9 = 48-57, A-Z = 65-90, a-z = 97-122
+					for i in range(9 - len(newnick)):
+						n = random.randint(0, 2)
+						if n == 0:
+							newnick += chr(random.randint(48, 57))
+						elif n == 1:
+							newnick += chr(random.randint(65, 90))
+						elif n == 2:
+							newnick += chr(random.randint(97, 122))
 				
-				self.conn.nick(nick)
+				# Just try sticking a dash on the end (probably)
+				else:
+					newnick = self.nicks[0]
+					if len(nick) < 9:
+						newnick += '-'
+					else:
+						newnick[-1] = '-'
+			
+			# And off we go
+			self.last_nick = time.time()
+			self.conn.nick(newnick)
 		
 		# Nick is still in use, try again later
 		elif self.conn.status == STATUS_CONNECTED:
@@ -226,6 +251,7 @@ class WrapConn:
 			# If we still don't have our nick, try again
 			if self.conn.getnick() != self.nicks[0]:
 				if currtime - self.last_nick >= 30:
+					self.last_nick = currtime
 					self.conn.nick(self.nicks[0])
 			
 			# Send some stuff from our output queues if we have to

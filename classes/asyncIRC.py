@@ -71,6 +71,7 @@ class asyncIRC(buffered_dispatcher):
 		self.connid = CONNID
 		
 		self.status = STATUS_DISCONNECTED
+		self.welcomed = 0
 		
 		# stuff we need to keep track of
 		self.__handlers = []
@@ -130,6 +131,8 @@ class asyncIRC(buffered_dispatcher):
 	# Really close the connectoin
 	def really_close(self, errormsg=None):
 		self.status = STATUS_DISCONNECTED
+		self.welcomed = 0
+		
 		self.close()
 		
 		# Trigger a disconnect event
@@ -189,6 +192,7 @@ class asyncIRC(buffered_dispatcher):
 			# Keep our nickname up to date
 			if command == '001':
 				self.status = STATUS_CONNECTED
+				self.welcomed = 1
 				self.__nickname = arguments[0]
 			elif command == 'nick' and userinfo.nick == self.__nickname:
 				self.__nickname = arguments[0]
