@@ -14,6 +14,8 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
+CYBORG_URL = 'http://www.cyborgname.com/cyborger.cgi?acronym=%s&robotchoice=handyvac'
+
 HORO_SIGNS = ('aquarius', 'aries', 'cancer', 'capricorn', 'gemini', 'leo', 'libra',
 	'pisces', 'sagittarius', 'scorpio', 'taurus', 'virgo')
 HORO_URL = 'http://astrology.yahoo.com/astrology/general/dailyoverview/%s'
@@ -52,6 +54,11 @@ class FunStuff(Plugin):
 			help = ('funstuff', 'muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
 		)
 		
+		self.addTextEvent(
+			method = self.__Fetch_Cyborg,
+			regexp = re.compile('^cyborg (?P<name>\w+)$'),
+			help = ('funstuff', 'cyborg', '\02cyborg\02 <name> : See what the cyborg name is for <name>.'),
+		)
 		self.addTextEvent(
 			method = self.__Fetch_Horoscope,
 			regexp = re.compile('^horo (?P<sign>\S+)$'),
@@ -118,6 +125,26 @@ class FunStuff(Plugin):
 		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
+	# Get a cyborg name
+	def __Fetch_Cyborg(self, trigger):
+		name = trigger.match.group('name').upper()
+		if len(name) > 11:
+			self.sendReply(trigger, "That's too long! Maximum of 11 characters.")
+		elif len(name) < 2:
+			self.sendReply(trigger, "That's too short! Minimum of 2 characters.")
+		else:
+			url = CYBORG_URL % name
+			self.urlRequest(trigger, self.__Parse_Cyborg, url)
+	
+	# Parse a cyborgname.com page
+	def __Parse_Cyborg(self, trigger, resp):
+		chunk = FindChunk(resp.data, '<p class="mediumheader">', '</p>')
+		if chunk:
+			self.sendReply(trigger, chunk)
+		else:
+			self.sendReply(trigger, 'Page parsing failed.')
+	
+	# -----------------------------------------------------------------------
 	# Get today's horoscope
 	def __Fetch_Horoscope(self, trigger):
 		sign = trigger.match.group('sign').lower()
@@ -128,7 +155,6 @@ class FunStuff(Plugin):
 			replytext = "'%s' is not a valid sign!" % sign
 			self.sendReply(trigger, replytext)
 	
-	# -----------------------------------------------------------------------
 	# Parse a Yahoo Astrology page
 	def __Parse_Horoscope(self, trigger, resp):
 		# Find the sign
