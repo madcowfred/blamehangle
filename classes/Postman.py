@@ -471,9 +471,6 @@ class Postman:
 	def __Reload_Config(self):
 		self.__Log(LOG_ALWAYS, 'Rehashing config...')
 		
-		# Reload the user list
-		self.Userlist.Reload()
-		
 		# Make a copy of the plugin list
 		old_plugin_list = self.__plugin_list[:]
 		
@@ -514,6 +511,9 @@ class Postman:
 						self.__Log(LOG_ALWAYS, tolog)
 						
 						self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
+		
+		# Reload the user list
+		self.Userlist.Reload()
 		
 		# This is where you'd expect the code to remove any imported plugins
 		# that are no longer needed to go, but instead we put it in the handler
