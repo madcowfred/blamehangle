@@ -16,7 +16,7 @@ CONVERT_HELP = '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert betw
 CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
 
 # ---------------------------------------------------------------------------
-# Mapping of measurements to SI units (meters)
+# Mapping of distance measurements to SI units (meters)
 DISTANCE = {
 	'in': ('inches', 0.0254),
 	'ft': ('feet', 0.3048),
@@ -28,7 +28,16 @@ DISTANCE = {
 	'km': ('kilometers', 1000),
 }
 
-# Mapping of weights to, err, grams
+# Mapping of volume measurements to SI units (litres)
+VOLUME = {
+	'ml': ('millilitres', 0.001),
+	'l': ('litres', 1),
+	'pt': ('pints', 0.4731),
+	'qt': ('quarts', 0.9463),
+	'gal': ('gallons', 3.7854),
+}
+
+# Mapping of weight measurements to SI units (grams)
 WEIGHT = {
 	'mg': ('milligrams', 0.001,
 	'cg': ('centigrams', 0.01),
@@ -78,7 +87,7 @@ class Converter(Plugin):
 			replytext = '%s °F == %s °C' % (data['amt'], value)
 		
 		else:
-			for MAP in (DISTANCE, WEIGHT):
+			for MAP in (DISTANCE, VOLUME, WEIGHT):
 				_from = None
 				_to = None
 				
