@@ -46,6 +46,11 @@ class WeatherMan(Plugin):
 		)
 		# METAR
 		self.addTextEvent(
+			method = self.__Fetch_DMETAR,
+			regexp = re.compile('^dmetar (?P<station>\S+)$'),
+			help = ('weather', 'dmetar', '\02dmetar\02 <station id> : Retrieve decoded METAR weather information.'),
+		)
+		self.addTextEvent(
 			method = self.__Fetch_METAR,
 			regexp = re.compile('^metar (?P<station>\S+)$'),
 			help = ('weather', 'metar', '\02metar\02 <station id> : Retrieve coded METAR weather information.'),
@@ -73,6 +78,10 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Someone wants METAR data
+	def __Fetch_DMETAR(self, trigger):
+		url = METAR_URL % trigger.match.group('station').upper()
+		self.urlRequest(trigger, self.__Parse_METAR, url)
+	
 	def __Fetch_METAR(self, trigger):
 		url = METAR_URL % trigger.match.group('station').upper()
 		self.urlRequest(trigger, self.__Parse_METAR, url)
@@ -239,33 +248,95 @@ class WeatherMan(Plugin):
 	# -----------------------------------------------------------------------
 	# Parse a semi-decoded METAR file
 	def __Parse_METAR(self, trigger, resp):
-		stationid = trigger.match.group('station').upper()
-		
 		# No results
 		if resp.data.find('Not Found') >= 0:
-			replytext = "No such station ID '%s'" % stationid
+			replytext = "No such station ID '%s'" % trigger.match.group('station').upper()
 			self.sendReply(trigger, replytext)
+			return
 		
-		# Ok, off we go
+		data = {}
+		lines = resp.data.splitlines()
+		
+		# Location
+		i = lines[0].find(' (')
+		if i >= 0:
+			data['location'] = lines[0][:i]
 		else:
-			lines = resp.data.splitlines()
-			
-			# Get the location
-			i = lines[0].find(' (')
-			if i >= 0:
-				location = lines[0][:i]
+			data['location'] = 'Unknown location'
+		
+		# Times
+		if lines[1].find('UTC') >= 0:
+			chunks = lines[1].split(' / ', 1)
+			data['time_local'] = chunks[0]
+			data['time_utc'] = chunks[1]
+		
+		# Other data
+		for line in lines[2:]:
+			if line.find(':') >= 0:
+				chunks = [f.strip() for f in line.split(':')]
+				
+				if chunks[0] == 'Wind':
+					parts = chunks[1].split()
+					data['wind_dir'] = parts[2]
+					data['wind_speed'] = self.GetWind(trigger, parts[6])
+				
+				elif chunks[0] == 'Visibility':
+					data['visibility'] = chunks[1]
+				
+				elif chunks[0] == 'Sky conditions':
+					data['sky'] = chunks[1]
+				
+				elif chunks[0] == 'Weather':
+					data['weather'] = chunks[1]
+				
+				elif chunks[0] == 'Temperature':
+					parts = chunks[1].split()
+					data['temps'] = self.GetTemp(trigger, parts[0])
+				
+				elif chunks[0] == 'Relative Humidity':
+					data['humidity'] = chunks[1]
+				
+				elif chunks[0] == 'Pressure (altimeter)':
+					parts = chunks[1].split()
+					data['pressure'] = int(parts[-2][1:])
+				
+				elif chunks[0] == 'ob':
+					data['coded'] = chunks[1]
+		
+		# Now spit it out
+		if trigger.name == '__Fetch_METAR':
+			if 'coded' in data:
+				replytext = '[%(location)s] %(coded)s' % data
 			else:
-				location = 'Unknown location'
+				replytext = '[%s] No coded data found!' % (data['location'])
+		
+		elif trigger.name == '__Fetch_DMETAR':
+			parts = []
 			
-			# Find the encoded data
-			obs = [l for l in resp.data.splitlines() if l.startswith('ob: ')]
-			if obs:
-				replytext = '[%s] %s' % (location, obs[0][4:])
+			if 'weather' in data:
+				parts.append(data['weather'])
+			if 'temps' in data:
+				part = 'Currently: %s' % (data['temps'])
+				parts.append(part)
+			if 'wind_dir' in data and 'wind_speeds' in data:
+				part = 'Wind: %s %s' % (data['wind_dir'], data['wind_speeds'])
+				parts.append(part)
+			if 'humidity' in data:
+				part = 'Humidity: %s' % (data['humidity'])
+				parts.append(part)
+			if 'visibility' in data:
+				part = 'Visibility: %s' % (data['visibility'])
+				parts.append(part)
+			if 'pressure' in data:
+				part = 'Pressure: %s hPa' % (data['pressure'])
+				parts.append(part)
+			
+			if parts:
+				replytext = '[%s] %s' % (data['location'], ', '.join(parts))
 			else:
-				replytext = 'Unable to find observation data.'
-			
-			# Spit it out
-			self.sendReply(trigger, replytext)
+				replytext = '[%s] No data found!' % (data['location'])
+		
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Parse scary TAF info
