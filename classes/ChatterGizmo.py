@@ -40,8 +40,8 @@ class ChatterGizmo(Child):
 		self.__Public_Exact = {}
 		self.__Public_Param = {}
 		
-		for option in self.Config.options('public'):
-			command, rewrite = self.Config.get('public', option).split(None, 1)
+		for option in self.Config.options('Public'):
+			command, rewrite = self.Config.get('Public', option).split(None, 1)
 			
 			if option.startswith('exact'):
 				self.__Public_Exact[command] = rewrite
