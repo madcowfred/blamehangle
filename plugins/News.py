@@ -216,7 +216,7 @@ class News(Plugin):
 		
 		except HTMLParseError, e:
 			# something fucked up
-			tolog = "Error parsing news - %s" % e
+			tolog = "Error parsing news (%s) - %s" % (event.name, e)
 			self.putlog(LOG_WARNING, tolog)
 		
 		else:
