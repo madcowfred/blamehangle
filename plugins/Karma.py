@@ -3,6 +3,14 @@
 #----------------------------------------------------------------------------
 # Karma plugin
 #----------------------------------------------------------------------------
+#
+# Karma uses the following SQL table:
+# CREATE TABLE karma (
+#	name char(192) NOT NULL default '',
+#	value bigint(20) default NULL,
+#	PRIMARY KEY (key)
+# ) TYPE=MyISAM;
+#
 
 from classes.Plugin import Plugin
 from classes.Constants import *
@@ -20,9 +28,9 @@ class Karma(Plugin):
 	karma, meaning zero.
 	"""
 	
-	SELECT_QUERY = "SELECT key, value FROM karma WHERE key = %s"
+	SELECT_QUERY = "SELECT value FROM karma WHERE name = %s"
 	INSERT_QUERY = "INSERT INTO karma VALUES ('%s',%d)"
-	UPDATE_QUERY = "UPDATE karma SET key, value = key, %d WHERE key = %s"
+	UPDATE_QUERY = "UPDATE karma SET value = value + %d WHERE name = %s"
 	
 	KARMA_PLUS = "KARMA_PLUS"
 	KARMA_MINUS = "KARMA_MINUS"
@@ -47,47 +55,47 @@ class Karma(Plugin):
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_TRIGGER(self, message):
-		[key], event, conn, IRCtype, target, userinfo = message.data
+		[name], event, conn, IRCtype, target, userinfo = message.data
 		
-		queryObj = whatever(SELECT_QUERY, key, [key, event, conn, IRCtype, target, userinfo])
+		queryObj = whatever(SELECT_QUERY, name, [name, event, conn, IRCtype, target, userinfo])
 		self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 	
 	#------------------------------------------------------------------------
 
 	def _message_WHATEVER_THE_DB_SENDS_BACK(self, message):
-		result, [key, event, conn, IRCtype, target, userinfo] = message.data
+		result, [name, event, conn, IRCtype, target, userinfo] = message.data
 		
 		if event == KARMA_LOOKUP:
 			if result == []:
 				# no karma!
-				replytext = "%s has neutral karma." % key
+				replytext = "%s has neutral karma." % name
 				reply = [replytext, conn, IRCtype, target, userinfo]
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 			else:
-				key, value = result
-				replytext = "%s has karma of %d" % (key, value)
+				name, value = result
+				replytext = "%s has karma of %d" % (name, value)
 				reply = [replytext, conn, IRCtype, target, userinfo]
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 		elif event == KARMA_PLUS:
 			if result == []:
 				# no karma, so insert as 1
-				queryObj = whatever(INSERT_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj = whatever(INSERT_QUERY, (1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# increment existing karma
-				key, value = result
-				queryObj = whatever(UPDATE_QUERY, (1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				name, value = result
+				queryObj = whatever(UPDATE_QUERY, (1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 				
 		elif event == KARMA_MINUS:
 			if result == []:
 				# no karma, so insert as -1
-				queryObj =  whatever(INSERT_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj =  whatever(INSERT_QUERY, (-1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# decrement existing karma
-				queryObj = whatever(UPDATE_QUERY, (-1, key), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
+				queryObj = whatever(UPDATE_QUERY, (-1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
 				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 
 		elif event == KARMA_MOD:
