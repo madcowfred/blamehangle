@@ -398,14 +398,8 @@ class News(Plugin):
 		else:
 			articles = []
 			queries = []
-			for title in parser.news:
-				#self.__to_process[title] = parser.news[title]
-				
-				#titles.append(title)
-				#query = (NEWS_QUERY, title)
-				#queries.append(query)
-				
-				articles.append((title, parser.news[title]))
+			for title, data in parser.news.items():
+				articles.append((title, data))
 				query = (NEWS_QUERY, title)
 				queries.append(query)
 			
@@ -605,6 +599,7 @@ class Google(HTMLParser):
 	# Scan through the HTML, looking for a tag of the form <a class=y ..>
 	def handle_starttag(self, tag, attributes):
 		if tag == 'a':
+			attributes.sort()
 			for attr, value in attributes:
 				if attr == 'class' and value == 'y':
 					# We have found a main headline
@@ -642,8 +637,13 @@ class Google(HTMLParser):
 		if self.__found_a and not self.__found_br1:
 			self.__temp_title = data
 		elif self.__found_a and self.__found_br2:
-			#item = "%s - %s" % (self.__temp_href, data)
-			self.news[self.__temp_title] = (self.__temp_href, data)
+			# Eat CR/LF, squish spaces
+			newdata = data.replace('\r', ' ')
+			newdata = newdata.replace('\n', ' ')
+			newdata = re.sub('\s+', ' ', newdata)
+			
+			self.news[self.__temp_title] = (self.__temp_href, newdata)
+			
 			self.__found_a = 0
 			self.__found_br1 = 0
 			self.__found_br2 = 0
@@ -686,7 +686,7 @@ class Ananova(HTMLParser):
 	
 	def handle_data(self, data):
 		if self.__found_small:
-			#item = "%s - %s" % (self.__temp_href, data)
 			self.news[self.__temp_title] = (self.__temp_href, data)
+			
 			self.__found_a = 0
 			self.__found_small = 0
