@@ -257,8 +257,9 @@ class ChatterGizmo(Child):
 			tolog = "Joined %s" % chan
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
-			# These need to know
+			# Our userlist needs to know that we joined
 			wrap.ircul.user_joined(chan)
+			wrap.ircul.user_joined(chan, event.userinfo.hostmask())
 			
 			# Request the modes set on this channel
 			wrap.conn.sendline('MODE %s' % chan)
