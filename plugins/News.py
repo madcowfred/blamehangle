@@ -21,7 +21,8 @@ import types
 
 from classes.Constants import *
 from classes.Plugin import *
-from classes.rssparser import RSSParser
+#from classes.rssparser import RSSParser
+from classes.feedparser import FeedParser
 
 from classes.HTMLParser import HTMLParser, HTMLParseError
 
@@ -388,7 +389,8 @@ class News(Plugin):
 	def __do_rss(self, page_text, event, name):
 		feed = self.RSS_Feeds[name]
 		
-		r = RSSParser()
+		#r = RSSParser()
+		r = FeedParser()
 		r.feed(page_text)
 		
 		if feed['title']:
