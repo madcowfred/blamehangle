@@ -64,15 +64,6 @@ tr.desc {
 		else:
 			module_doc = 'No description in file.'
 		
-		html.write(\
-"""<table align="center" cellspacing="1" cellpadding="2" width="750">
-<tr class="name">
-<td colspan="2">%s</td>
-</tr>
-<tr class="desc">
-<td colspan="2">%s</td>
-</tr>""" % (plugin, module_doc))
-		
 		# Parse the plugin file looking for help. This is an ugly hack.
 		pname = os.path.join('plugins', plugin) + '.py'
 		lines = open(pname).read().splitlines()
@@ -83,6 +74,7 @@ tr.desc {
 		
 		for line in lines:
 			line = line.strip()
+			
 			if line.startswith('help = ('):
 				help_text = eval(line[7:-1])[2]
 				
@@ -96,33 +88,19 @@ tr.desc {
 				command, help = help_text.split(' : ', 1)
 				
 				realcmds.append((command, help))
-				
-				
 		
 		
-		#cmds = [c for c in dir(module) if c.endswith('_HELP')]
-		#cmds.sort()
-		#
-		#realcmds = []
+		# Spit out the info for this plugin
+		html.write(\
+"""<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">%s</td>
+</tr>
+<tr class="desc">
+<td colspan="2">%s</td>
+</tr>""" % (plugin, module_doc))
 		
-		#for command in cmds:
-		#	# Don't want these
-		#	if command in ('SET_HELP', 'UNSET_HELP'):
-		#		continue
-		#	
-		#	# Eat silly characters
-		#	help_text = getattr(module, command)
-		#	
-		#	help_text = help_text.replace('\02', '')
-		#	help_text = help_text.replace('<', '&lt;')
-		#	help_text = help_text.replace('>', '&gt;')
-		#	
-		#	# Split it into useful bits
-		#	command, help = help_text.split(' : ', 1)
-		#	
-		#	realcmds.append((command, help))
 		
-		# Really spit it out now
 		realcmds.sort()
 		for command, help in realcmds:
 			html.write(\
