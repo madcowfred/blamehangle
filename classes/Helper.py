@@ -40,6 +40,11 @@ class Helper(Plugin):
 		help_msg = PluginTextEvent(BASIC_HELP, IRCT_MSG, BASIC_HELP_RE)
 
 		self.register(help_dir, help_msg)
+		
+		# Obligatory Monty Python joke
+		repress_re = re.compile('^help help$')
+		repress_dir = PluginTextEvent('**repressed**', IRCT_PUBLIC_D, repress_re)
+		self.register(repress_dir)
 	
 	# -----------------------------------------------------------------------
 	# A plugin has just asked to register some help info
@@ -112,9 +117,13 @@ class Helper(Plugin):
 		# Someone asked for help on a topic
 		elif trigger.name.startswith("**") and trigger.name.endswith("**"):
 			topic = trigger.name[2:-2]
-			replytext = "Help commands in topic '\02%s\02': " % topic
-			commands = [com for com, text in self.__help[topic]]
-			replytext += " \02;;\02 ".join(commands)
+			if topic == 'repressed':
+				replytext = "Help! Help! I'm being repressed!"
+			else:
+				replytext = "Help commands in topic '\02%s\02': " % topic
+				commands = [com for com, text in self.__help[topic]]
+				replytext += " \02;;\02 ".join(commands)
+			
 			self.sendReply(trigger, replytext)
 		
 		# Someone asked for help on a command
