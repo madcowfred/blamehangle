@@ -319,11 +319,14 @@ class asyncIRC(buffered_dispatcher):
 	def privmsg(self, target, text):
 		self.sendline('PRIVMSG %s :%s', target, text)
 	
-	def quit(self, reason=''):
-		if reason:
-			self.sendline('QUIT :%s', reason)
+	def quit(self, reason=None):
+		if self.status == STATUS_CONNECTED:
+			if reason is not None:
+				self.sendline('QUIT :%s', reason)
+			else:
+				self.sendline('QUIT')
 		else:
-			self.sendline('QUIT')
+			self.really_close(reason)
 	
 	def user(self, username, localhost, server, ircname):
 		self.sendline('USER %s %s %s :%s', username, localhost, server, ircname)

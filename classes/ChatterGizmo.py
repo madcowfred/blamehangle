@@ -70,11 +70,7 @@ class ChatterGizmo(Child):
 			# Quit and remove any 'gone' networks
 			else:
 				self.Conns[connid].requested_quit = 1
-				
-				if self.Conns[connid].conn.status == STATUS_DISCONNECTED:
-					self._handle_disconnect(conn, None)
-				else:
-					self.Conns[connid].conn.quit('So long, and thanks for all the fish.')
+				self.Conns[connid].conn.quit('So long, and thanks for all the fish.')
 		
 		# Connect to any newly added networks
 		for section in new_nets:
@@ -196,7 +192,7 @@ class ChatterGizmo(Child):
 		self.Conns[connid].last_connect = time.time()
 		
 		# Log something useful
-		if event.arguments is not None:
+		if event is not None and event.arguments is not None:
 			tolog = 'Disconnected from server: %s' % (event.arguments[0])
 		else:
 			tolog = 'Disconnected from server'
