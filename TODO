@@ -1,5 +1,4 @@
 critical:
-	* DataMonkey (fred)
 	* HTTPMonster (anyone)
 	* A way of converting "GoonNet" into a conn object for that connection
 	  (anyone)
