@@ -16,6 +16,8 @@ STATUS_CONNECTED = 'Connected'
 CONNECT_TIMEOUT = 40
 CONNECT_HOLDOFF = 5
 
+OUTPUT_INTERVAL = 1
+
 STONED_INTERVAL = 40
 STONED_COUNT = 3
 
@@ -170,11 +172,11 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	
 	def run_sometimes(self, currtime):
-		if self.status == STATUS_DISCONNECTED and currtime - self.last_connect >= CONNECT_HOLDOFF:
+		if self.status == STATUS_DISCONNECTED and (currtime - self.last_connect) >= CONNECT_HOLDOFF:
 			self.jump_server()
 		
 		# Connecting stuff
-		elif self.status == STATUS_CONNECTING and currtime - self.last_connect >= CONNECT_TIMEOUT:
+		elif self.status == STATUS_CONNECTING and (currtime - self.last_connect) >= CONNECT_TIMEOUT:
 			self.connlog(LOG_ALWAYS, "Connection failed: timed out")
 			self.conn.disconnect()
 		
@@ -186,7 +188,10 @@ class WrapConn:
 					self.conn.nick(self.nicks[0])
 			
 			# Send some stuff from our output queues if we have to
-			if (currtime - self.last_output) >= 1:
+			if (currtime - self.last_output) >= OUTPUT_INTERVAL:
+				if self.__ctcp_reply or self.__notice or self.__privmsg:
+					self.last_output = currtime
+				
 				if self.__ctcp_reply:
 					target, text = self.__ctcp_reply.pop(0)
 					self.conn.ctcp_reply(target, text)
@@ -198,20 +203,14 @@ class WrapConn:
 				elif self.__privmsg:
 					target, text = self.__privmsg.pop(0)
 					self.conn.privmsg(target, text)
-				
-				else:
-					return
-				
-				self.last_output = currtime
 			
 			# Stoned check
 			if (currtime - self.last_stoned) >= STONED_INTERVAL:
 				self.last_stoned = currtime
 				
 				if self.stoned > STONED_COUNT:
-					self.parent.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
+					self.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
 					self.disconnected()
 				else:
 					self.stoned += 1
-					#self.privmsg(self.conn.real_nickname, "Stoned yet?")
-					self.privmsg('bob', "Stoned yet?")
+					self.privmsg(self.conn.real_nickname, "Stoned yet?")
