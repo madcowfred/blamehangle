@@ -259,7 +259,7 @@ class asyncIRC(buffered_dispatcher):
 		try:
 			self.connect((host, port))
 		except socket.gaierror, msg:
-			self.failed(msg)
+			self.really_close(msg)
 		else:
 			self.status = STATUS_CONNECTING
 	
