@@ -70,12 +70,13 @@ class WrapConn:
 		for server in options.get('server', {}).values():
 			parts = server.split()
 			data = None
+			
 			if len(parts) == 1:
 				data = (parts[0], 6667, None, [])
 			elif len(parts) == 2:
-				data = (parts[0], parts[1], None, [])
+				data = (parts[0], int(parts[1]), None, [])
 			elif len(parts) == 3:
-				data = (parts[0], parts[1], parts[2], [])
+				data = (parts[0], int(parts[1]), parts[2], [])
 			
 			if data is not None:
 				self.servers.append(data)
