@@ -56,8 +56,7 @@ class TimeDate(Plugin):
 			os.environ['TZ'] = newtz
 			
 			# Get the date
-			p_in, p_out = os.popen2('/bin/date')
-			p_in.close()
+			p_out = os.popen('/bin/date')
 			
 			data = p_out.readlines()
 			p_out.close()
