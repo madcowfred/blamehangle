@@ -80,6 +80,17 @@ class asyncIRC(buffered_dispatcher):
 		self.__userinfo = None
 	
 	# -----------------------------------------------------------------------
+	# We have some extra connection state info to keep track of
+	def readable(self):
+		return (self.status != STATUS_DISCONNECTED)
+	
+	def writable(self):
+		if self.status == STATUS_CONNECTING:
+			return 1
+		elif self.status == STATUS_CONNECTED:
+			return (len(self.out_buffer) > 0)
+	
+	# -----------------------------------------------------------------------
 	# Register something's interest in receiving events
 	def register(self, method):
 		self.__handlers.append(method)
@@ -116,14 +127,17 @@ class asyncIRC(buffered_dispatcher):
 		self.nick(self.__nickname)
 		self.user(*self.__userinfo)
 	
-	# The connection got closed somehow
-	def handle_close(self):
+	# Really close the connectoin
+	def really_close(self, errormsg=None):
 		self.status = STATUS_DISCONNECTED
-		
 		self.close()
 		
-		# Trigger a disconnect
-		self.__trigger_event(None, None, 'disconnect', None, None)
+		# Trigger a disconnect event
+		self.__trigger_event(None, None, 'disconnect', None, errormsg)
+	
+	# The connection got closed somehow
+	def handle_close(self):
+		self.really_close()
 	
 	# An exception occured somewhere
 	def handle_error(self):
@@ -132,12 +146,12 @@ class asyncIRC(buffered_dispatcher):
 		# ^C = die now please, let Postman handle it
 		if _type == 'KeyboardInterrupt':
 			raise
-		# Otherwise, trigger a disconnect event
+		# Otherwise, do disconnect stuff
 		else:
-			if type(_value) is types.TupleType:
-				self.__trigger_event(None, None, 'disconnect', None, [_value[-1]])
+			if hasattr(_value, 'args'):
+				self.really_close([_value.args[-1]])
 			else:
-				self.__trigger_event(None, None, 'disconnect', None, [_value])
+				self.really_close(str([_value]))
 	
 	# There is some data waiting to be read
 	def handle_read(self):
