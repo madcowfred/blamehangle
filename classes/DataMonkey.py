@@ -31,8 +31,6 @@ class DataMonkey(Child):
 			for i in range(self.Num_Connections):
 				db = Database(self.Config)
 				self.DBs.append(db)
-			
-			print self.DBs
 	
 	def run_sometimes(self, currtime):
 		if (currtime - self.Last_Status) > 5:
