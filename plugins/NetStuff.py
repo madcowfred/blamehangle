@@ -99,6 +99,11 @@ class NetStuff(Plugin):
 			help = ('net', 'cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
 		)
 		self.addTextEvent(
+			method = self.__Resolve_DNS,
+			regexp = re.compile('^dns (?P<host>.+)$'),
+			help = ('net', 'dns', '\02dns02 <hostname> : Try to resolve hostname to IP(s).'),
+		)
+		self.addTextEvent(
 			method = self.__Port,
 			regexp = re.compile('^port (.{1,20})$'),
 			help = ('net', 'port', '\02port\02 <port> OR <name> : Look up the service name for a port, or the port for a service name.'),
@@ -180,6 +185,34 @@ class NetStuff(Plugin):
 					replytext = "No exact match, partial matches :: %s" % (', '.join(matches[:20]))
 				else:
 					replytext = "No exact or partial matches found."
+		
+		self.sendReply(trigger, replytext)
+	
+	# ---------------------------------------------------------------------------
+	
+	def __Resolve_DNS(self, trigger):
+		host = trigger.match.group('host').lower().strip()
+		if not host:
+			self.sendReply(trigger, 'Empty host?')
+		elif len(host) < 4:
+			self.sendReply(trigger, "That's too short!")
+		elif '.' not in host:
+			self.sendReply(trigger, "That's not a hostname!")
+		else:
+			self.dnsLookup(trigger, self.__Reply_DNS, host)
+	
+	def __Reply_DNS(self, trigger, hosts, args):
+		host = trigger.match.group('host').lower().strip()
+		
+		if not hosts:
+			replytext = "Could not resolve '%s'!" % (host)
+		else:
+			ips = [h[1] for h in hosts[:10]]
+			if len(hosts) > 10:
+				replytext = "\x02%s\x02 result(s), first \x0210\x02 - [%s]"
+			else:
+				replytext = "\x02%s\x02 result(s) - [%s]"
+			replytext = replytext % (len(hosts), ', '.join(ips))
 		
 		self.sendReply(trigger, replytext)
 	
