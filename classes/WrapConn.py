@@ -44,10 +44,10 @@ class WrapConn:
 				print 'invalid server thing'
 		
 		self.channels = self.options['channels'].split()
-		
 		self.nicks = self.options['nicks'].split()
 		
-		self.vhost = self.options['vhost'] or None
+		self.realname = self.options.get('realname', 'blamehangle!')
+		self.vhost = self.options.get('vhost', None)
 	
 	def connect(self):
 		# Initialise the variables to default values
@@ -65,8 +65,11 @@ class WrapConn:
 		
 		
 		try:
-			self.conn.connect(host, port, self.trynick, None, self.options['username'],
-				'blamehangle', vhost=self.vhost)
+			self.conn.connect(	host, port, self.trynick,
+								username=self.options['username'],
+								ircname=self.realname,
+								vhost=self.vhost
+								)
 		
 		except ServerConnectionError, x:
 			if type(x) in (types.ListType, types.TupleType):
