@@ -209,7 +209,7 @@ class ChatterGizmo(Child):
 			wrap.join_channels()
 	
 	_handle_nomotd = _handle_endofmotd
-		
+	
 	# -----------------------------------------------------------------------
 	# We just got disconnected from the server
 	# -----------------------------------------------------------------------
@@ -386,10 +386,10 @@ class ChatterGizmo(Child):
 		after = event.target
 		
 		# Update the userlist
-		wrap.ircul.user_nick(event.userinfo.hostmask, after)
+		wrap.ircul.user_nick(before, after)
 		
 		# If it was our primary nickname, try and regain it
-		if after != conn.getnick() and before == self.Conns[connid].nicks[0]:
+		if after != conn.getnick() and before == wrap.nicks[0]:
 			conn.nick(before)
 	
 	# -----------------------------------------------------------------------
