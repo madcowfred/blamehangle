@@ -86,6 +86,9 @@ class PluginHandler(Child):
 			for event_name, (event, plugin_name) in events.items():
 				if plugin_name == dead_name:
 					del events[event_name]
+		
+		if dead_name in self.Plugins:
+			self.Plugins.remove(dead_name)
 	
 	# -----------------------------------------------------------------------
 	# Something has happened on IRC, and we are being told about it. Search
