@@ -276,7 +276,6 @@ class MoneyMangler(Plugin):
 				showme = symbol
 			
 			# Find the data we need
-			#chunk = FindChunk(resp.data, '<td class="yfnc_datamodoutline1"><table width="100%"', '</table>')
 			chunk = FindChunk(resp.data, 'class="yfnc_datamodoutline1"', '</table>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
@@ -312,6 +311,8 @@ class MoneyMangler(Plugin):
 			if info:
 				try:
 					replytext = '[%(Trade Time)s] %(Showme)s: %(Value)s' % info
+					# Add the chart url
+					replytext = '%s - http://ichart.yahoo.com/z?s=%s&t=5d&q=l&l=on&z=l&p=s' % (replytext, symbol.upper())
 				except KeyError:
 					replytext = 'Some stock data missing, not good!'
 			else:
