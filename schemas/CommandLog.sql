@@ -1,5 +1,5 @@
 CREATE TABLE commandlog (
-	ctime decimal(12, 2),
+	ctime decimal(12, 2) NOT NULL,
 	irctype character varying(16) NOT NULL,
 	network character varying(16) NOT NULL,
 	channel character varying(32),
