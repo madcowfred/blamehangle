@@ -120,7 +120,7 @@ def URLThread(parent, myindex):
 			
 			try:
 				# get the page
-				request = urllib2.Request()
+				request = urllib2.Request(url)
 				#request.add_header("If-Modified-Since", format_http_date(modified))
 				request.add_header("User-Agent", parent.user_agent)
 				request.add_header("Accept-encoding", "gzip")
