@@ -295,8 +295,8 @@ class Postman:
 					
 					# If we're shutting down, see if all of our children have
 					# stopped.
-					if self.__Stopping == 1:
-						self.__Shutdown_Check()
+					if self.__Stopping == 1 and self.__Shutdown_Check():
+						return
 					
 					# Run anything our children want done occasionally
 					currtime = _time()
@@ -357,19 +357,21 @@ class Postman:
 		# If our children are asleep, and we have no messages, die
 		if not alive and not self.inQueue:
 			self.__Log(LOG_ALWAYS, 'Shutdown complete')
-			
-			sys.exit(1)
+			return 1
 		
 		elif alive:
 			# If we've been shutting down for a while, just give up
 			if time.time() - self.__Shutdown_Start >= 10:
 				tolog = 'Shutdown timeout expired: %s' % ', '.join(alive)
 				self.__Log(LOG_ALWAYS, tolog)
-				sys.exit(1)
+				return 1
 			
 			else:
 				tolog = 'Objects still alive: %s' % ', '.join(alive)
 				self.__Log(LOG_DEBUG, tolog)
+				return 0
+		
+		return 0
 	
 	# -----------------------------------------------------------------------
 	
