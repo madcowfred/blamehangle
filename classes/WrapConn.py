@@ -20,19 +20,15 @@ class WrapConn:
 	into a moderately simple class.
 	"""
 	
-	status = STATUS_DISCONNECTED
-	stoned = 0
-	
-	last_connect = 0
-	last_stoned = 0
-	
-	users = Userlist()
-	
 	def __init__(self, parent, conn, options):
 		self.parent = parent
 		self.conn = conn
 		self.options = options
 		
+		# Reset ourselves to the disconnected state
+		self.disconnected()
+		
+		# Parse the server list
 		self.servers = []
 		for server in options['servers'].split():
 			parts = server.split(':')
@@ -93,6 +89,59 @@ class WrapConn:
 		# Try and connect
 		self.connect()
 	
+	# Reset ourselves to the disconnected state
+	def disconnected(self):
+		self.status = STATUS_DISCONNECTED
+		self.stoned = 0
+		
+		self.last_connect = 0
+		self.last_output = 0
+		self.last_stoned = 0
+		
+		# Outgoing queues
+		self.__privmsg = []
+		self.__notice = []
+		self.__ctcp_reply = []
+		
+		self.users = Userlist()
+	
+	# Join the channels in our channel list
 	def join_channels(self):
 		for chan in self.channels:
 			self.conn.join(chan)
+	
+	# -----------------------------------------------------------------------
+	# Stuff outgoing data into our queues
+	def privmsg(self, target, text):
+		self.__privmsg.append([target, text])
+	
+	def notice(self, target, text):
+		self.__notice.append([target, text])
+	
+	def ctcp_reply(self, target, text):
+		self.__ctcp_reply.append([target, text])
+	
+	# Send some stuff to IRC whenever we feel like it
+	def do_output(self, currtime):
+		if self.status != STATUS_CONNECTED:
+			return
+		
+		if currtime - self.last_output >= 1:
+			if self.__ctcp_reply:
+				target, text = self.__ctcp_reply.pop(0)
+				self.conn.ctcp_reply(target, text)
+			
+			elif self.__notice:
+				target, text = self.__notice.pop(0)
+				self.conn.notice(target, text)
+			
+			elif self.__privmsg:
+				target, text = self.__privmsg.pop(0)
+				self.conn.privmsg(target, text)
+			
+			else:
+				return
+			
+			print 'sent stuff'
+			
+			self.last_output = currtime

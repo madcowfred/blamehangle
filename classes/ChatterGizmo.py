@@ -53,6 +53,8 @@ class ChatterGizmo(Child):
 			elif wrap.status == STATUS_CONNECTING and (currtime - wrap.last_connect) >= 30:
 				self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
 				wrap.jump_server()
+			
+			wrap.do_output(currtime)
 	
 	def run_always(self):
 		try:
@@ -88,12 +90,10 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	
 	def privmsg(self, conn, nick, text):
-		if self.Conns[conn].status == STATUS_CONNECTED:
-			conn.privmsg(nick, text)
+		self.Conns[conn].privmsg(nick, text)
 	
 	def notice(self, conn, nick, text):
-		if self.Conns[conn].status == STATUS_CONNECTED:
-			conn.notice(nick, text)
+		self.Conns[conn].notice(nick, text)
 	
 	def connlog(self, conn, level, text):
 		newtext = '(%s) %s' % (self.Conns[conn].options['name'], text)
@@ -119,7 +119,7 @@ class ChatterGizmo(Child):
 	# We just got disconnected from the server
 	# -----------------------------------------------------------------------
 	def _handle_disconnect(self, conn, event):
-		self.Conns[conn].status = STATUS_DISCONNECTED
+		self.Conns[conn].disconnected()
 		self.Conns[conn].last_connect = time.time()
 		
 		self.connlog(conn, LOG_ALWAYS, 'Disconnected from server')
@@ -168,10 +168,10 @@ class ChatterGizmo(Child):
 		
 		if nick != conn.real_nickname:
 			self.Conns[conn].users.quit(nick)
-			
-			# If it was our primary nickname, try and regain it
-			#if nick == self.nicknames[0]:
-			#	self.connection.nick(nick)
+		
+		# If it was our primary nickname, try and regain it
+		#if nick == self.nicknames[0]:
+		#	self.connection.nick(nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone was just kicked from a channel (including ourselves)
@@ -284,15 +284,15 @@ class ChatterGizmo(Child):
 		
 		
 		if first == 'VERSION':
-			conn.ctcp_reply(userinfo.nick, "VERSION blamehangle v" + BH_VERSION)
+			self.Conns[conn].ctcp_reply(userinfo.nick, "VERSION blamehangle v" + BH_VERSION)
 		
 		elif first == 'PING':
 			if len(rest) > 0:
 				reply = 'PING %s' % rest
-				conn.ctcp_reply(userinfo.nick, reply)
+				self.Conns[conn].ctcp_reply(userinfo.nick, reply)
 		
 		elif first == 'CLIENTINFO':
-			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
+			self.Conns[conn].ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
 		
 		else:
 			data = [conn, IRCT_CTCP, userinfo, None, first + rest]
