@@ -54,7 +54,7 @@ class Helper(Plugin):
 				# check if this is a new topic
 				if not topic in self.__help:
 					# create an empty help topic
-					self.__help[topic] = []
+					self.__help[topic] = {}
 					# register a new trigger for "help <this topic>"
 					top_name = "**%s**" % topic
 					top_pattern = re.compile("^help +(?P<topic>%s)$" % topic)
@@ -63,7 +63,7 @@ class Helper(Plugin):
 					self.register(top_dir, top_msg)
 				
 				# add the help text for this command to our help for this topic
-				self.__help[topic].append((command, help_text))
+				self.__help[topic][command] = help_text
 				
 				# register a new trigger for this command
 				com_name = "__%s__%s__" % (topic, command)
@@ -80,15 +80,12 @@ class Helper(Plugin):
 			if not topic in self.__help:
 				continue
 			
-			for findme in cmds.items():
-				command, help_text = findme
-				if not findme in self.__help[topic]:
-					continue
-				
-				self.__help[topic].remove(findme)
-				
-				name = '__%s__%s__' % (topic, command)
-				names.append(name)
+			for command in cmds.keys():
+				if command in self.__help[topic]:
+					del self.__help[topic]
+					
+					name = '__%s__%s__' % (topic, command)
+					names.append(name)
 			
 			# Empty topic, delete it too
 			if not self.__help[topic]:
@@ -109,7 +106,9 @@ class Helper(Plugin):
 		if trigger.name == BASIC_HELP:
 			if self.__help:
 				replytext = "Help topics: "
-				replytext += " \02;;\02 ".join(self.__help.keys())
+				topics = self.__help.keys()
+				topics.sort()
+				replytext += " \02;;\02 ".join(topics)
 			else:
 				replytext = 'No help topics available'
 			self.sendReply(trigger, replytext)
@@ -121,8 +120,9 @@ class Helper(Plugin):
 				replytext = "Help! Help! I'm being repressed!"
 			else:
 				replytext = "Help commands in topic '\02%s\02': " % topic
-				commands = [com for com, text in self.__help[topic]]
-				replytext += " \02;;\02 ".join(commands)
+				cmds = self.__help[topic].keys()
+				cmds.sort()
+				replytext += " \02;;\02 ".join(cmds)
 			
 			self.sendReply(trigger, replytext)
 		
@@ -132,10 +132,7 @@ class Helper(Plugin):
 			topic, command = name.replace("_", " ").split()
 			topic = topic.replace("!#!#!@@@!#!#!", " ")
 			command = command.replace("!#!#!@@@!#!#!", " ")
-			help_text = [text for com, text in self.__help[topic] if com == command][0]
-			replytext = "Help for '\02%s\02': " % command
-			replytext += help_text
-			#self.sendReply(trigger, replytext)
+			help_text = self.__help[topic][command]
 			self.sendReply(trigger, help_text)
 		
 		# Something went wrong
