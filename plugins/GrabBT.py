@@ -45,11 +45,15 @@ class GrabBT(Plugin):
 			self.__files = None
 		
 		# Work out our allowed channels
-		self.__channels = {}
-		for option in [o for o in self.Config.options('grabbt') if o.startswith('channels.')]:
-			self.__channels[option[9:]] = self.Config.get('grabbt', option).split()
+		self.__commands = {}
+		for option in [o for o in self.Config.options('grabbt') if o.startswith('commands.')]:
+			self.__commands[option[9:]] = self.Config.get('grabbt', option).split()
 		
-		if not self.__channels:
+		self.__newfiles = {}
+		for option in [o for o in self.Config.options('grabbt') if o.startswith('newfiles.')]:
+			self.__newfiles[option[9:]] = self.Config.get('grabbt', option).split()
+		
+		if not self.__commands and not self.__newfiles:
 			self.putlog(LOG_WARNING, "No channels configured!")
 		
 		# Compile our regexps
@@ -66,7 +70,7 @@ class GrabBT(Plugin):
 	
 	def register(self):
 		# If we have to, start the check timer
-		if self.__files is not None and self.__channels:
+		if self.__files is not None and self.__newfiles:
 			self.setTimedEvent(GRABBT_CHECKDIR, 10, None)
 		
 		self.setTextEvent(GRABBT_GRAB, GRAB_RE, IRCT_PUBLIC_D)
@@ -86,7 +90,7 @@ class GrabBT(Plugin):
 				else:
 					replytext = '\x0303New file\x03: %s' % (file)
 				
-				self.privmsg(self.__channels, None, replytext)
+				self.privmsg(self.__newfiles, None, replytext)
 		
 		self.__files = files
 	
@@ -97,7 +101,7 @@ class GrabBT(Plugin):
 		url = trigger.match.group(1)
 		
 		# Make sure they're in an allowed channel
-		if network not in self.__channels or trigger.target not in self.__channels[network]:
+		if network not in self.__commands or trigger.target not in self.__commands[network]:
 			tolog = "%s (%s@%s) on %s/%s trying to grab a torrent." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
 			return
@@ -194,7 +198,7 @@ class GrabBT(Plugin):
 	def _trigger_GRABBT_TORRENTS(self, trigger):
 		network = trigger.conn.options['name'].lower()
 		
-		if network not in self.__channels or trigger.target not in self.__channels[network]:
+		if network not in self.__commands or trigger.target not in self.__commands[network]:
 			tolog = "%s (%s@%s) on %s/%s trying to list torrents." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
 			return
