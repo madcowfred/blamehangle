@@ -6,8 +6,6 @@ not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
 
 whatever:
-	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
-	* Speaking of random text spammer, random factoid spam? (anyone)
 	* testing! :) (anyone)
 
 
@@ -22,3 +20,5 @@ plugins:
 	* animenfo.com lookup
 	* 'seen' (last time someone was seen)
 	* Leave notes for people (possibly combined with above)
+	* SmartyPants: Add/remove/ignore users via ctcp for admin. Possibly
+	  move user list to database?
