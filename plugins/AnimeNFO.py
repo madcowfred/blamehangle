@@ -59,27 +59,36 @@ class AnimeNFO(Plugin):
 				# Build a dictionary of FIELD: value mappings
 				fields = re.findall(r'<(.+)>(.+)</\1>', m.group(1))
 				
-				result = fields[0][1]
-				if result == '0':
-					replytext = 'No matches found.'
+				print fields
 				
-				elif result == '1':
-					chunks = []
-					for field, value in fields[1:]:
-						chunk = '[%s] %s' % (FIELDMAP[field], value)
-						chunks.append(chunk)
+				field, value = fields[0]
+				
+				if field == 'ERROR':
+					replytext = 'AnimeNFO returned error %s' % value
+				
+				elif field == 'RESULT':
+					if value == '0':
+						replytext = 'No matches found.'
 					
-					replytext = ' - '.join(chunks)
+					elif value == '1':
+						chunks = []
+						for field, value in fields[1:]:
+							chunk = '[%s] %s' % (FIELDMAP[field], value)
+							chunks.append(chunk)
+						
+						replytext = ' - '.join(chunks)
+					
+					else:
+						items = ['"%s"' % v for f, v in fields[1:]]
+						items.sort()
+						
+						replytext = 'Found \02%d\02 results: ' % (len(items))
+						replytext += ', '.join(items)
 				
 				else:
-					items = ['"%s"' % v for f, v in fields[1:]]
-					items.sort()
-					
-					replytext = 'Found \02%d\02 results: ' % (len(items))
-					replytext += ', '.join(items)
+					replytext = 'Unable to parse AnimeNFO output.'
 			
 			else:
-				self.putlog(LOG_ALWAYS, 'Unable to find AnimeNFO output')
 				replytext = 'Unable to parse AnimeNFO output.'
 		
 		else:
