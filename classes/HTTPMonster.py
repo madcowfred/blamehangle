@@ -84,9 +84,10 @@ class async_http(asyncore.dispatcher_with_send):
 		self.message = message
 		self.seen = seen
 		
-		self.returnme = message.data[0]
+		self.trigger = message.data[0]
+		self.method = message.data[1]
 		# we need '+' instead of ' '
-		self.url = re.sub(r'\s+', '+', message.data[1])
+		self.url = re.sub(r'\s+', '+', message.data[2])
 		
 		# Log what we're doing
 		tolog = 'Fetching URL: %s' % (self.url)
@@ -197,20 +198,20 @@ class async_http(asyncore.dispatcher_with_send):
 				# Anything else
 				else:
 					if len(self.data) > 0:
-						pagetext = self.data[:]
-						m = dodgy_html_check(pagetext)
+						page_text = self.data[:]
+						m = dodgy_html_check(page_text)
 						while m:
-							pre = pagetext[:m.start()]
-							post = pagetext[m.end():]
+							pre = page_text[:m.start()]
+							post = page_text[m.end():]
 							start, end = m.span('href')
-							fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
-							pagetext = pre + 'href=' + fixed + post
-							m = dodgy_html_check(pagetext)
+							fixed = '"' + page_text[start:end - 1].replace("'", "%39") + '"'
+							page_text = pre + 'href=' + fixed + post
+							m = dodgy_html_check(page_text)
 						
-						tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(pagetext))
+						tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
 						self.parent.putlog(LOG_DEBUG, tolog)
 						
-						data = [self.returnme, pagetext]
+						data = [self.trigger, self.method, page_text]
 						self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
