@@ -16,8 +16,8 @@ STATUS_CONNECTED = 'Connected'
 
 class WrapConn:
 	"""
-	Wraps an irclib Connection object and the various data we keep about it
-	into a moderately simple class.
+	Wraps an irclib.ServerConnection object and the various data we keep about
+	it.
 	"""
 	
 	def __init__(self, parent, conn, options):

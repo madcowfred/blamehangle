@@ -27,7 +27,7 @@ class Userlist:
 		for chan in self.__u.keys():
 			self.parted(chan, nick)
 	
-	def user_nick(self, oldnick, newnick):
+	def nick(self, oldnick, newnick):
 		for chan in self.__u.keys():
 			if oldnick in self.__u[chan]:
 				del self.__u[chan][oldnick]
