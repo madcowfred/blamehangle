@@ -85,6 +85,8 @@ LISTKEYS_RE = re.compile("^ *listkeys +(?P<name>.+)$")
 LISTVALUES_RE = re.compile("^ *listvalues +(?P<name>.+)$")
 TELL_RE = re.compile("^ *tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 
+REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
+
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
 MAX_SEARCH_RESULTS = 15
@@ -199,7 +201,7 @@ class SmartyPants(Plugin):
 			else:
 				query = (GET_QUERY, name)
 				self.dbQuery(trigger, query)
-
+		
 		# Somone just told us to replace the definition of a factoid with
 		# a new one
 		elif trigger.name == FACT_NO:
@@ -269,7 +271,7 @@ class SmartyPants(Plugin):
 			name = name.replace("'", "\\\'")
 			query =  (LISTVALUES_QUERY % name, )
 			self.dbQuery(trigger, query)
-
+		
 		# Someone wants us to tell someone else about a factoid
 		elif trigger.name == FACT_TELL:
 			name = trigger.match.group('name')
@@ -286,37 +288,37 @@ class SmartyPants(Plugin):
 		
 		elif trigger.name == FACT_SET:
 			self.__Fact_Set(trigger, results)
-
+		
 		elif trigger.name == FACT_NO:
 			self.__Fact_No(trigger, results)
-
+		
 		elif trigger.name == FACT_ALSO:
 			self.__Fact_Also(trigger, results)
 		
 		elif trigger.name == FACT_DEL:
 			self.__Fact_Del(trigger, results)
-
+		
 		elif trigger.name == FACT_REPLACE:
 			self.__Fact_Replace(trigger, results)
-
+		
 		elif trigger.name == FACT_LOCK:
 			self.__Fact_Lock(trigger, results)
-
+		
 		elif trigger.name == FACT_UNLOCK:
 			self.__Fact_Unlock(trigger, results)
-
+		
 		elif trigger.name == FACT_INFO:
 			self.__Fact_Info(trigger, results)
 			
 		elif trigger.name == FACT_STATUS:
 			self.__Fact_Status(trigger, results)
-
+		
 		elif trigger.name == FACT_LISTKEYS:
 			self.__Fact_Search(trigger, results, "key")
-
+		
 		elif trigger.name == FACT_LISTVALUES:
 			self.__Fact_Search(trigger, results, "value")
-
+		
 		elif trigger.name == FACT_TELL:
 			self.__Fact_Tell(trigger, results)
 		
@@ -345,18 +347,34 @@ class SmartyPants(Plugin):
 		replytext = ''
 		
 		if results == [()]:
+			# The factoid wasn't in our database
 			if trigger.event.IRCType == IRCT_PUBLIC:
+				# Don't say anything if it was a public request
 				return
 			else:
-				# The factoid wasn't in our database
 				replytext = self.__Random(DUNNO)
+				self.sendReply(trigger, replytext)
+				
 				self.__dunnos += 1
 		
 		else:
 			# We found it!
 			self.__requests += 1
 			row = results[0][0]
-			replytext = '%(name)s is %(value)s' % row
+			
+			# <reply> and <action> check
+			m = REPLY_ACTION_RE.match(row['value'])
+			if m:
+				if m.group('type') == 'reply':
+					replytext = m.group('value')
+				elif m.group('type') == 'action':
+					replytext = '\x01ACTION %s\x01' % m.group('value')
+				reply = PluginReply(trigger, replytext, process=0)
+			else:
+				replytext = '%(name)s is %(value)s' % row
+				reply = PluginReply(trigger, replytext)
+			
+			self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 			
 			# Update the request count and nick
 			trigger.name = FACT_UPDATEDB
@@ -367,9 +385,6 @@ class SmartyPants(Plugin):
 			now = int(time.time())
 			query = (REQUESTED_QUERY, requester_nick, requester_host, now, name)
 			self.dbQuery(trigger, query)
-		
-		if replytext:
-			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# A user just tried to set a factoid.. if it doesn't already exist, we
