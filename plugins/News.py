@@ -166,7 +166,7 @@ class News(Plugin):
 		gh = PluginTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
 		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
 		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
-	
+		
 		if self.__gwn_interval:
 			self.register(gwn)
 		if self.__gsci_interval:
@@ -203,21 +203,13 @@ class News(Plugin):
 		elif event.name == NEWS_ANANOVA:
 			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, event])
 		elif event.name == NEWS_RSS:
-			self.__Check_RSS(event)
+			name = event.args[0]
+			feed = self.RSS_Feeds[name]
+			data = [feed['url'], (event, name)]
+			self.sendMessage('HTTPMonster', REQ_URL, data)
 		else:
 			errstring = "News has no event: %s" % event.name
 			raise ValueError, errstring
-	
-	# -----------------------------------------------------------------------
-	
-	def __Check_RSS(self, event):
-		currtime = time.time()
-		
-		name = event.args[0]
-		feed = self.RSS_Feeds[name]
-		
-		data = [feed['url'], (event, name)]
-		self.sendMessage('HTTPMonster', REQ_URL, data)
 	
 	# -----------------------------------------------------------------------
 	
