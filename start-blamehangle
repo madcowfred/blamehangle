@@ -23,8 +23,10 @@
 
 
 if [ $# -neq 2 ] then
+do
 	echo "Usage: $0 <config file>"
 	exit
+done
 fi
 
 CONFIG_FILE=$1
