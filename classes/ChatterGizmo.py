@@ -292,7 +292,7 @@ class ChatterGizmo(Child):
 			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
 		
 		else:
-			data = [conn, IRCT_CTCP, userinfo, None, text]
+			data = [conn, IRCT_CTCP, userinfo, None, first + rest]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
