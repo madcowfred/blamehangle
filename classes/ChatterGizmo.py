@@ -306,6 +306,9 @@ class ChatterGizmo(Child):
 		# Strip any codes from the text
 		text = STRIP_CODES.sub('', event.arguments()[0])
 		
+		# Strip leading and trailing spaces
+		text = text.strip()
+		
 		if text == '':
 			return
 		
