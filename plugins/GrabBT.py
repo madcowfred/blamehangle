@@ -94,7 +94,9 @@ class GrabBT(Plugin):
 	# Someone wants us to get a torrent
 	def _trigger_GRABBT_GRAB(self, trigger):
 		network = trigger.conn.options['name'].lower()
+		url = trigger.match.group(1)
 		
+		# Make sure they're in an allowed channel
 		if network not in self.__channels or trigger.target not in self.__channels[network]:
 			tolog = "%s (%s@%s) on %s/%s trying to grab a torrent." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_WARNING, tolog)
@@ -107,7 +109,6 @@ class GrabBT(Plugin):
 		# See if the URL matches any of our regexps
 		else:
 			found = 0
-			url = trigger.match.group(1)
 			
 			for r in self.__grab_res:
 				if r.match(url):
