@@ -4,14 +4,15 @@ important:
 	* convert db.dump once the bot is ready for it, and we have a newer dump
 	  (both + dene)
 	* add/port the 'stoned check' from MadCowOffer, so the bot doesn't get
-	  stuck thinking it's connected when the server died ages ago (fred)
+	  stuck thinking it's connected when the server died ages ago -- done,
+	  but not sure if it's working properlike (fred)
+    * add upper limit to the currency changer values
 
 not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
 	* dict plugin (anyone)
 
 whatever:
-	* Mobygames/HOTU searches (fred?)
 	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
 	* Speaking of random text spammer, random factoid spam? (anyone)
 	* testing! :) (anyone)
