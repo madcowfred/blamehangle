@@ -172,7 +172,7 @@ class MapQuest(Plugin):
 				# we found the distance, yay
 				distance = self.__parse(line[index:])
 
-			index = line.find("Total Estimated Time:</b> <nobr>")
+			index = line.find("Total Estimated Time:</b><nobr>")
 			if index != -1:
 				# We found the time
 				travel_time = self.__parse(line[index:])
