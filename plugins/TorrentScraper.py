@@ -178,7 +178,7 @@ class TorrentScraper(Plugin):
 		items = trigger.items
 		del trigger.items
 		
-		items2 = items[:]
+		#items2 = items[:]
 		
 		# We don't need to add any that are already in the database
 		#t1 = time.time()
@@ -196,17 +196,18 @@ class TorrentScraper(Plugin):
 		ldescs = dict([(row['description'].lower(), None) for row in result])
 		lurls = dict([(row['url'].lower(), None) for row in result])
 		
-		newitems = []
-		for item in items2:
+		#newitems = []
+		for item in items:
 			if item[1].lower() not in lurls and item[2].lower() not in ldescs:
-				newitems.append(item)
+				self.dbQuery(trigger, None, INSERT_QUERY, *item)
+				#newitems.append(item)
 		
 		#print newitems == items,
 		#print 't1: %.4fs, t2: %.4fs' % (t2 - t1, time.time() - t2)
 		
 		# Start adding any items to our database
-		for item in items:
-			self.dbQuery(trigger, None, INSERT_QUERY, *item)
+		#for item in items:
+		#	self.dbQuery(trigger, None, INSERT_QUERY, *item)
 	
 	# -----------------------------------------------------------------------
 	# Generate a simple RSS feed with our findings
