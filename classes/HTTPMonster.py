@@ -14,6 +14,7 @@ import re
 import socket
 import sys
 import time
+import urllib
 import urlparse
 
 from classes.Children import Child
@@ -88,6 +89,11 @@ class async_http(asyncore.dispatcher_with_send):
 		self.method = message.data[1]
 		# we need '+' instead of ' '
 		self.url = re.sub(r'\s+', '+', message.data[2])
+		# See if we have POST parameters
+		if message.data[3]:
+			self.post_data = urllib.urlencode(message.data[3])
+		else:
+			self.post_data = None
 		
 		# Log what we're doing
 		tolog = 'Fetching URL: %s' % (self.url)
@@ -132,16 +138,31 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# Connection succeeded
 	def handle_connect(self):
-		#text = "GET %s HTTP/1.1\r\n" % (self.path)
-		text = "GET %s HTTP/1.0\r\n" % (self.path)
+		# POST is a bit more complimicated
+		if self.post_data:
+			text = 'POST %s HTTP/1.0\r\n' % (self.path)
+			self.send(text)
+			text = 'Content-type: application/x-www-form-urlencoded\r\n'
+			self.send(text)
+			text = 'Content-length: %d\r\n' % (len(self.post_data))
+			self.send(text)
+		# GET is simple
+		else:
+			text = 'GET %s HTTP/1.0\r\n' % (self.path)
+			self.send(text)
+		
+		text = 'Host: %s\r\n' % (self.host)
 		self.send(text)
-		text = "Host: %s\r\n" % (self.host)
-		self.send(text)
-		text = "User-Agent: %s\r\n" % (self.parent.user_agent)
+		text = 'User-Agent: %s\r\n' % (self.parent.user_agent)
 		self.send(text)
 		#text = "Connection: close\r\n"
 		#self.send(text)
-		self.send("\r\n")
+		self.send('\r\n')
+		
+		# Now we can send POST data
+		if self.post_data:
+			text = '%s\r\n' % (self.post_data)
+			self.send(text)
 	
 	# Connection has data to read
 	def handle_read(self):

@@ -100,8 +100,8 @@ class Child:
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	# Request a URL to be fetched
-	def urlRequest(self, trigger, method, url):
-		data = [trigger, method, url]
-		self.sendMessage('HTTPMonster', REQ_URL, data)
+	def urlRequest(self, trigger, method, url, data={}):
+		req = [trigger, method, url, data]
+		self.sendMessage('HTTPMonster', REQ_URL, req)
 
 # ---------------------------------------------------------------------------
