@@ -148,7 +148,7 @@ class Postman:
 						
 						elif message.ident == REQ_SHUTDOWN:
 							self.__Shutdown(message.data[0])
-
+						
 						# A child just shut itself down. If it was a plugin,
 						# "unimport" it.
 						elif message.ident == REPLY_SHUTDOWN:
@@ -292,8 +292,9 @@ class Postman:
 			
 			sys.exit(1)
 		
-		else:
-			print alive
+		elif alive:
+			tolog = 'Objects still alive: %s' % ', '.join(alive)
+			self.__Log(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
 	
