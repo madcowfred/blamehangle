@@ -10,26 +10,26 @@ Requirements
 ------------
 Installation
 ------------
- 1. Since you're reading this, you've probably already extracted the files from
-    the .tar.gz. For the first step, you need to make a copy of the 'configs/'
-    directory:
-    
-    $ cp -R configs newname
- 
- 2. If any plugins that you plan to use have their own configuration file, edit
-    'newname/Plugin.conf'.
- 
- 3. Copy 'sample.conf' to a new file, and open it up. There are quite a few
-    important options to set here, so follow the comments and get to it :)
-    Make sure you change the 'plugin/config_dir' option to the name you chose
-    for newname in the first step.
-    
-    Read docs/Plugins.html to see a current list of plugins and what they can do.
- 
- 4. Start the bot (preferably under screen):
-    
-    $ ./start-blamehangle new.conf
-  
- 5. Since the above command will restart the bot if it crashes/is shut down, you'll
-    need to create a file called "STOP.new" in the blamehangle directory (for the
-    above example), then press Ctrl-C.
+1. Since you're reading this, you've probably already extracted the files from
+   the .tar.gz. For the first step, you need to make a copy of the 'configs/'
+   directory:
+   
+   $ cp -R configs newname
+
+2. If any plugins that you plan to use have their own configuration file, edit
+   'newname/Plugin.conf'.
+
+3. Copy 'sample.conf' to a new file, and open it up. There are quite a few
+   important options to set here, so follow the comments and get to it :)
+   Make sure you change the 'plugin/config_dir' option to the name you chose
+   for newname in the first step.
+   
+   Read docs/Plugins.html to see a current list of plugins and what they can do.
+
+4. Start the bot (preferably under screen):
+   
+   $ ./start-blamehangle new.conf
+
+5. Since the above command will restart the bot if it crashes/is shut down, you'll
+   need to create a file called "STOP.new" in the blamehangle directory (for the
+   above example), then press Ctrl-C.
