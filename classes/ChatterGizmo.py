@@ -296,9 +296,9 @@ class ChatterGizmo(Child):
 				continue
 			
 			if sign == '+':
-				self.Conns[conn].users.addflag(chan, arg, mode)
+				self.Conns[conn].users.add_mode(chan, arg, mode)
 			elif sign == '-':
-				self.Conns[conn].users.delflag(chan, arg, mode)
+				self.Conns[conn].users.del_mode(chan, arg, mode)
 	
 	# -----------------------------------------------------------------------
 	# Someone just invited us to a channel
