@@ -34,6 +34,8 @@ LANG_MAP = {
 	'pt': ('en',),
 }
 
+TRANSMANGLE_LIMIT = 8
+
 # ---------------------------------------------------------------------------
 
 class Google(Plugin):
@@ -108,7 +110,9 @@ class Google(Plugin):
 			return
 		
 		# Otherwise, build the URL and send it off
-		trigger.done = 0
+		trigger._round = 1
+		trigger._lang = _lang
+		trigger._text = [_text,]
 		
 		url = TRANSLATE_URL % ('en', _lang, quote(_text))
 		self.urlRequest(trigger, self.__Transmangle, url)
@@ -220,25 +224,33 @@ class Google(Plugin):
 		if resp.data.find('Sorry, this text could not be translated') >= 0:
 			replytext = 'Sorry, this text could not be translated.'
 		
+		# Maybe loop again now
 		else:
 			chunk = FindChunk(resp.data, 'wrap=PHYSICAL>', '</textarea>')
 			if chunk:
-				# We need to translate it back again now
-				if trigger.done == 0:
-					trigger.done = 1
+				# Needs to be translated again
+				if (trigger._round % 2) == 1:
+					trigger._round += 1
 					
-					_lang = trigger.match.group('lang').lower()
-					_text = trigger.match.group('text')
-					
-					url = TRANSLATE_URL % (_lang, 'en', quote(chunk))
+					url = TRANSLATE_URL % (trigger._lang, 'en', quote(chunk))
 					self.urlRequest(trigger, self.__Transmangle, url)
 				
-				# Now we're done
+				# We're back in English
 				else:
-					replytext = chunk
+					# And we're done
+					if trigger._round == TRANSMANGLE_LIMIT or chunk in trigger._text:
+						replytext = chunk
+					
+					else:
+						trigger._round += 1
+						trigger._text.append(chunk)
+						
+						url = TRANSLATE_URL % ('en', trigger._lang, quote(chunk))
+						self.urlRequest(trigger, self.__Transmangle, url)
 			
+			# It's back in English
 			else:
-				replytext = 'Unable to parse page.'
+				replytext = 'Unable to parse page!'
 		
 		# Spit something out if we have to
 		if replytext is not None:
