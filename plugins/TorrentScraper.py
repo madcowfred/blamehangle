@@ -157,11 +157,7 @@ class TorrentScraper(Plugin):
 			ldesc = row['description'].lower()
 			items = [a for a in items if a[1].lower() != lurl and a[2].lower() != ldesc]
 		
-		# If we don't have any new items, go home now
-		if len(items) == 0:
-			return
-		
-		# Start adding the items to our database
+		# Start adding any items to our database
 		for item in items:
 			self.dbQuery(trigger, None, INSERT_QUERY, *item)
 	
