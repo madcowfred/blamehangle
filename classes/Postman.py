@@ -132,13 +132,11 @@ class Postman:
 			if hasattr(child, 'run_always'):
 				for meth in self.__run_always:
 					if meth == child.run_always:
-						print 'Found run_always: %s' % meth
 						self.__run_always.remove(meth)
 						break
 			if hasattr(child, 'run_sometimes'):
 				for meth in self.__run_sometimes:
 					if meth == child.run_sometimes:
-						print 'Found run_sometimes: %s' % meth
 						self.__run_sometimes.remove(meth)
 						break
 			
