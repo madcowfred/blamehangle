@@ -36,7 +36,7 @@ import copy
 from classes.Plugin import *
 from classes.Constants import *
 
-#----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 FACT_SET = "FACT_SET"
 FACT_GET = "FACT_GET"
