@@ -302,11 +302,11 @@ class asyncIRC(buffered_dispatcher):
 	def ctcp_reply(self, target, text):
 		self.notice(target, '\001%s\001' % text)
 	
-	def join(self, channel, key=''):
-		if key:
-			self.sendline('JOIN %s %s', channel, key)
-		else:
+	def join(self, channel, key=None):
+		if key is None:
 			self.sendline('JOIN %s', channel)
+		else:
+			self.sendline('JOIN %s %s', channel, key)
 	
 	def nick(self, nickname):
 		self.sendline('NICK %s', nickname)

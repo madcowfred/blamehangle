@@ -42,7 +42,8 @@ class WrapConn:
 		self.parent = parent
 		self.network = network
 		self.conn = conn
-		self.options = options
+		
+		self.channels = {}
 		
 		# We increment this to keep track of things like channel rejoin attempts
 		self.connect_id = 0
@@ -55,6 +56,12 @@ class WrapConn:
 		# Reset ourselves to the disconnected state
 		self.disconnected()
 		
+		# Parse our options
+		self.parse_options(options)
+	
+	def parse_options(self, options):
+		self.name = options['name']
+		
 		# Parse the server list
 		self.servers = []
 		for server in options['servers'].split():
@@ -64,25 +71,50 @@ class WrapConn:
 			elif len(parts) == 2:
 				self.servers.append( (parts[0], int(parts[1])) )
 			else:
+				#FIXME: log something useful
 				print 'invalid server entry'
 		
-		# Parse the rest of our options
-		self.channels = self.options['channels'].split()
-		self.nicks = self.options['nicks'].split()
+		# Parse the channels
+		old_chans = self.channels
+		self.channels = {}
 		
-		self.realname = self.options.get('realname', 'blamehangle!').strip() or 'blamehangle!'
-		self.username = self.options.get('username', 'blamehangle').strip() or 'blamehangle'
-		self.vhost = self.options.get('vhost', '').strip() or None
+		for chunk in options.get('channel', {}).values():
+			parts = chunk.split(None, 1)
+			if len(parts) == 1:
+				self.channels[parts[0]] = None
+			else:
+				self.channels[parts[0]] = parts[1]
+		
+		# Update our channels if we're connected
+		if self.conn.status == STATUS_CONNECTED:
+			for chan in old_chans:
+				if chan not in self.channels:
+					self.conn.part(chan)
+			
+			self.join_channels()
+		
+		# Boring stuff
+		self.nicks = options['nicks'].split()
+		
+		self.realname = options.get('realname', 'blamehangle!').strip() or 'blamehangle!'
+		self.username = options.get('username', 'blamehangle').strip() or 'blamehangle'
+		self.vhost = options.get('vhost', '').strip() or None
 		if self.vhost and not hasattr(socket, 'gaierror'):
 			self.parent.connlog(LOG_WARNING, "vhost is set, but socket module doesn't have getaddrinfo()!")
 			self.vhost = None
 		
-		self.ignore_strangers = int(self.options.get('ignore_strangers', 0))
+		self.ignore_strangers = int(options.get('ignore_strangers', 0))
+		self.combine_targets = int(options.get('combine_targets', 0))
+		
+		self.nickserv_nick = options.get('nickserv_nick', '').strip() or None
+		self.nickserv_pass = options.get('nickserv_pass', '').strip() or None
 		
 		# Max line length should default to the max if there is no such option
-		self.max_line_length = max(MIN_LINE_LENGTH, min(MAX_LINE_LENGTH, int(self.options.get('max_line_length', MAX_LINE_LENGTH))))
+		self.max_line_length = max(MIN_LINE_LENGTH, min(MAX_LINE_LENGTH, int(options.get('max_line_length', MAX_LINE_LENGTH))))
 		# Max split lines should default to the min if there is no such option
-		self.max_split_lines = max(MIN_SPLIT_LINES, min(MAX_SPLIT_LINES, int(self.options.get('max_split_lines', MIN_SPLIT_LINES))))
+		self.max_split_lines = max(MIN_SPLIT_LINES, min(MAX_SPLIT_LINES, int(options.get('max_split_lines', MIN_SPLIT_LINES))))
+	
+	# -----------------------------------------------------------------------
 	
 	def connlog(self, level, text):
 		self.parent.connlog(self.conn.connid, level, text)
@@ -187,7 +219,10 @@ class WrapConn:
 	# Join the channels in our channel list
 	def join_channels(self):
 		for chan in self.channels:
-			self.conn.join(chan)
+			self.join_channel(chan)
+	
+	def join_channel(self, chan):
+		self.conn.join(chan, self.channels[chan])
 	
 	# -----------------------------------------------------------------------
 	# Stuff outgoing data into our queues

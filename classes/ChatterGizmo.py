@@ -64,16 +64,8 @@ class ChatterGizmo(Child):
 			
 			# Update any maybe changed ones
 			if network in new_nets:
-				old_chans = self.Conns[connid].users.channels()
-				new_chans = self.Config.get(network, 'channels').split()
-				
-				# Leave any channels that are no longer in our config
-				for chan in [chan for chan in old_chans if chan not in new_chans]:
-					conn.part(chan)
-				
-				# And join any new ones
-				self.Conns[connid].channels = new_chans
-				self.Conns[connid].join_channels()
+				options = self.OptionsDict(section)
+				self.Conns[connid].parse_options(options)
 			
 			# Quit and remove any 'gone' networks
 			else:
@@ -130,7 +122,7 @@ class ChatterGizmo(Child):
 			
 			elif (currtime - last) >= 20:
 				self.__Rejoins.remove(rejoin)
-				self.Conns[connid].conn.join(chan)
+				self.Conns[connid].join_channel(chan)
 		
 		# Do other stuff here
 		for conn, wrap in self.Conns.items():
@@ -145,7 +137,7 @@ class ChatterGizmo(Child):
 		self.Conns[connid].notice(nick, text)
 	
 	def connlog(self, connid, level, text):
-		newtext = '(%s) %s' % (self.Conns[connid].options['name'], text)
+		newtext = '(%s) %s' % (self.Conns[connid].name, text)
 		self.putlog(level, newtext)
 
 	# -----------------------------------------------------------------------
@@ -172,15 +164,12 @@ class ChatterGizmo(Child):
 		self.connlog(connid, LOG_ALWAYS, tolog)
 		
 		# If we're supposed to use NickServ, do so
-		_nick = wrap.options.get('nickserv_nick', None)
-		_pass = wrap.options.get('nickserv_pass', None)
-		
-		if _nick and _pass:
-			tolog = 'Identifying with %s' % (_nick)
+		if wrap.nickserv_nick and wrap.nickserv_pass:
+			tolog = 'Identifying with %s' % (wrap.nicksev_nick)
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
-			text = 'IDENTIFY %s' % (_pass)
-			self.privmsg(connid, _nick, text)
+			text = 'IDENTIFY %s' % (wrap.nickserv_pass)
+			self.privmsg(connid, wrap.nickserv_nick, text)
 			
 			# Delay our joins by 2 seconds so that we're (probably) identified
 			# FIXME: make this not use magic numbers
@@ -323,11 +312,11 @@ class ChatterGizmo(Child):
 		
 		if chan in self.Conns[connid].channels:
 			tolog = '%s invited me to %s, joining...' % (event.userinfo, chan)
-			self.putlog(LOG_ALWAYS, tolog)
-			conn.join(chan)
+			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.Conns[connid].join_channel(chan)
 		else:
 			tolog = '%s invited me to %s, which is NOT in my channel list!' % (event.userinfo, chan)
-			self.putlog(LOG_WARNING, tolog)
+			self.connlog(connid, LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone was just kicked from a channel (including ourselves)
@@ -337,11 +326,11 @@ class ChatterGizmo(Child):
 		kicked = event.arguments[0]
 		
 		if kicked == conn.getnick():
-			tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, event.userinfo)
+			tolog = '%s kicked me from %s, rejoining...' % (event.userinfo, chan)
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
 			self.Conns[connid].users.parted(chan)
-			conn.join(chan)
+			self.Conns[connid].join_channel(chan)
 		
 		else:
 			self.Conns[connid].users.parted(chan, kicked)
@@ -575,9 +564,9 @@ class ChatterGizmo(Child):
 			for network, targets in conn.items():
 				net = network.lower()
 				for wrap in self.Conns.values():
-					if wrap.options['name'].lower() == net:
+					if wrap.name.lower() == net:
 						# If we combine targets for this network, do that
-						if wrap.options.get('combine_targets', 1):
+						if wrap.combine_targets:
 							target = ','.join(targets)
 							self.privmsg(wrap.conn.connid, target, text)
 						# Oh well, do it the slow way

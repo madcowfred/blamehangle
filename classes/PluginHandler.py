@@ -156,7 +156,7 @@ class PluginHandler(Child):
 				
 				user_host = '%s@%s' % (userinfo.ident, userinfo.host)
 				
-				data = (time.time(), irct, conn.options['name'], target, userinfo.nick, user_host, text)
+				data = (time.time(), irct, conn.name, target, userinfo.nick, user_host, text)
 				self.dbQuery(None, self.__Query_Log, LOG_QUERY, *data)
 	
 	# -----------------------------------------------------------------------

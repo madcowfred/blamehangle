@@ -33,7 +33,7 @@ class GrabBT(Plugin):
 			self.__files = None
 		
 		if not self.Options['commands'] and not self.Options['newfiles']:
-			self.putlog(LOG_WARNING, "No channels configured!")
+			self.putlog(LOG_4, "No channels configured!")
 		
 		# Compile our regexps
 		self.__grab_res = []
@@ -102,7 +102,7 @@ class GrabBT(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants us to get a torrent
 	def __Torrent_Grab(self, trigger):
-		network = trigger.conn.options['name'].lower()
+		network = trigger.conn.name.lower()
 		chan = trigger.target.lower()
 		url = trigger.match.group(1)
 		
@@ -208,7 +208,7 @@ class GrabBT(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants to see how our torrents are doing.
 	def __Torrent_List(self, trigger):
-		network = trigger.conn.options['name'].lower()
+		network = trigger.conn.name.lower()
 		chan = trigger.target.lower()
 		
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
@@ -241,7 +241,7 @@ class GrabBT(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants to see some total torrent speed.
 	def __Torrent_Speed(self, trigger):
-		network = trigger.conn.options['name'].lower()
+		network = trigger.conn.name.lower()
 		chan = trigger.target.lower()
 		
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
@@ -274,7 +274,7 @@ class GrabBT(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants to see how much disk space we have free.
 	def __Torrent_Space(self, trigger):
-		network = trigger.conn.options['name'].lower()
+		network = trigger.conn.name.lower()
 		chan = trigger.target.lower()
 		
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
