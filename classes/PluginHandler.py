@@ -30,7 +30,7 @@ class PluginHandler(Child):
 		self.__CTCP_Events = {}
 		self.__TIMED_Events = {}
 
-#----------------------------------------------------------------------------
+	#------------------------------------------------------------------------
 
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
@@ -38,7 +38,7 @@ class PluginHandler(Child):
 		for name in self.Plugins:
 			self.sendMessage(name, PLUGIN_REGISTER, [])
 	
-#----------------------------------------------------------------------------
+	#------------------------------------------------------------------------
 
 	# Check to see if we have any TIMED events that have expired their delai
 	# time
@@ -52,7 +52,7 @@ class PluginHandler(Child):
 				# Update the last trigger time
 				self.__TIMED_Events[token] = (delay, currtime, targets, plugin)
 
-#----------------------------------------------------------------------------
+	#------------------------------------------------------------------------
 
 	# Generate a list of all the plugins.
 	# This is a rather ugly hack, but I can't think of any better way to do
@@ -67,7 +67,7 @@ class PluginHandler(Child):
 					plugin_list.append(name)
 		return plugin_list
 
-#----------------------------------------------------------------------------
+	#------------------------------------------------------------------------
 
 	# A plugin has responded
 	def _message_PLUGIN_REGISTER(self, message):
@@ -90,7 +90,7 @@ class PluginHandler(Child):
 				else:
 					eventStore[token] = (criterion, groups, message.source)
 
-#----------------------------------------------------------------------------
+	#------------------------------------------------------------------------
 
 	# Something has happened on IRC, and we are being told about it. Search
 	# through the appropriate collection of events and see if any match. If
@@ -119,18 +119,18 @@ class PluginHandler(Child):
 				# do we want it to be possible to have more than one plugin
 				# trigger on the same text?
 		
-#----------------------------------------------------------------------------		
+	#------------------------------------------------------------------------		
 	def __getRelevantStore(self, type):
 		if type == PUBLIC:
-			return self.PUBLIC_Events
+			return self.__PUBLIC_Events
 		elif type == MSG:
-			return self.MSG_Events
+			return self.__MSG_Events
 		elif type == NOTICE:
-			return self.NOTICE_Events
+			return self.__NOTICE_Events
 		elif type == CTCP:
-			return self.CTCP_Events
+			return self.__CTCP_Events
 		elif type == TIMED:
-			return self.TIMED_Events
+			return self.__TIMED_Events
 		else:
 			# Some smartass has come up with a new event type
 			raise AttributeError, "no such event type: %s" % type
