@@ -14,8 +14,7 @@ from classes.Plugin import *
 GOOGLE_GOOGLE = 'GOOGLE_GOOGLE'
 GOOGLE_RE = re.compile(r'^google (?P<findme>.+)$')
 GOOGLE_HELP = '\02google\02 <search term> : Search via Google!'
-GOOGLE_URL = 'http://www.google.com/search?q=%s'
-#GOOGLE_URL = 'http://www.google.com/search?q=%s&ie=UTF-8&oe=UTF-8&hl-en&btnI=I%27m+Feeling+Lucky&meta='
+GOOGLE_URL = 'http://www.google.com/search?q=%s&num=5'
 
 RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
 CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
@@ -68,37 +67,57 @@ class Google(Plugin):
 			else:
 				calc = None
 			
-			# Find the result
-			chunk = FindChunk(page_text, '<!--m-->', '</a>')
-			if chunk:
-				# Try to match it against the regexp
-				m = RESULT_RE.match(chunk)
-				if not m:
+			# Find the result(s)
+			chunks = FindChunks(page_text, '<!--m-->', '</a>')
+			if chunks:
+				results = []
+				
+				for chunk in chunks:
+					# Try to match it against the regexp
+					m = RESULT_RE.match(chunk)
+					if not m:
+						continue
+					
+					title = NOBOLD_RE.sub('', m.group('title'))
+					url = m.group('url')
+					
+					# Try to filter out annoying multiple URLs
+					if [u for t, u in results if url.startswith(u)]:
+						continue
+					
+					# Keep the result
+					results.append([title, url])
+				
+				# If we found some results, spit them out
+				if results:
+					# If that user is trustworthy, spam away
+					if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam'):
+						# Add calculator output to the first result
+						if calc:
+							replytext = '%s :: %s - %s' % (calc, results[0][0], results[0][1])
+						else:
+							replytext = '%s - %s' % (results[0][0], results[0][1])
+						self.sendReply(trigger, replytext)
+						
+						# Spit out the rest
+						for title, url in results[1:]:
+							replytext = '%s - %s' % (title, url)
+							self.sendReply(trigger, replytext)
+				
+				# If we found no results at all, cry
+				else:
 					self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
 					self.sendReply(trigger, 'Failed to match result')
 					return
-				
-				# Build the reply string
-				url = m.group('url')
-				title = NOBOLD_RE.sub('', m.group('title'))
-				
-				replytext = '%s - %s' % (title, url)
-				
-				# If there was a calculation, stick that on the end
-				if calc is not None:
-					replytext = '%s :: %s' % (replytext, calc)
 			
 			# No normal result, was it the calculator?
 			elif calc:
-				replytext = calc
+				self.sendReply(trigger, calc)
 			
 			# Beep, failed
 			else:
 				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to find a result')
 				self.sendReply(trigger, 'Failed to parse page')
 				return
-			
-			# Spit out the reply
-			self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
