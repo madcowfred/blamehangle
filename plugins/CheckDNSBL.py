@@ -23,8 +23,6 @@ class CheckDNSBL(Plugin):
 	def rehash(self):
 		self.Options = self.OptionsDict('CheckDNSBL', autosplit=True)
 		self.Options['actions'] = self.Options['actions'].split()
-		
-		print self.Options
 	
 	def register(self):
 		if 'dnsbl' in self.Options:
@@ -93,7 +91,6 @@ class CheckDNSBL(Plugin):
 		
 		# Some replies, see if we have to punish
 		if hosts:
-			print 'yup'
 			for ip in hosts:
 				checks = self.Options['dnsbl'][name][2:]
 				
@@ -117,7 +114,6 @@ class CheckDNSBL(Plugin):
 		
 		# No replies, oh well
 		else:
-			print 'nope'
 			cache = self.HostCache.get(host, {})
 			cache[name] = False
 			self.HostCache[host] = cache
@@ -133,8 +129,10 @@ class CheckDNSBL(Plugin):
 		wrap = info['wrap']
 		ournick = wrap.conn.getnick()
 		
+		tolog = '%s on %s is listed in one of my DNSBL lists!' % (info['ui'], info['chan'])
+		self.connlog(wrap, LOG_WARNING, tolog)
+		
 		if not wrap.ircul.user_has_mode(info['chan'], ournick, 'o'):
-			print 'not opped!'
 			return
 		
 		for action in self.Options['actions']:
