@@ -34,7 +34,7 @@ class WrapConn:
 			if len(parts) == 1:
 				self.servers.append( (parts[0], 6667) )
 			elif len(parts) == 2:
-				self.servers.append( (parts[0], parts[1]) )
+				self.servers.append( (parts[0], int(parts[1])) )
 			else:
 				print 'invalid server thing'
 		
@@ -52,14 +52,14 @@ class WrapConn:
 		
 		host, port = self.server
 		
-		tolog = '[%s] Connecting to %s:%s...' % (self.options['name'], host, port)
+		tolog = 'bork! Connecting to %s:%d...' % (self.options['name'], host, port)
 		print tolog
 		
 		#self.putlog(LOG_ALWAYS, tolog)
 		
 		
 		#try:
-		self.conn.connect(host, int(port), self.trynick, None, self.options['username'],
+		self.conn.connect(host, port, self.trynick, None, self.options['username'],
 			'blamehangle')
 		
 		#except ServerConnectionError, x:
