@@ -27,16 +27,32 @@ ENTITY_RE = re.compile(r'&(?!amp;|lt;|gt;|quot;|apos;)')
 
 class TorrentScraper(Plugin):
 	def setup(self):
+		self.URLs = {}
+		
 		self.rehash()
 	
 	def rehash(self):
 		# Easy way to get general options
 		self.SetupOptions('TorrentScraper')
 		
-		# Now get our URLs
-		self.URLs = {}
+		print self.URLs.keys()
+		
+		# Get the list of URLs from our config
+		newurls = {}
 		for option in self.Config.options('TorrentScraper-URLs'):
-			self.URLs[self.Config.get('TorrentScraper-URLs', option)] = 0
+			newurls[self.Config.get('TorrentScraper-URLs', option)] = 0
+		
+		# Add any new ones to the list
+		for url in newurls.keys():
+			if url not in self.URLs:
+				self.URLs[url] = 0
+		
+		# Remove any old ones
+		for url in self.URLs.keys():
+			if url not in newurls:
+				del self.URLs[url]
+		
+		print self.URLs.keys()
 	
 	def register(self):
 		self.setTimedEvent(SCRAPE_TIMER, int(self.Options['request_interval']), None)
