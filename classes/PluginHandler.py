@@ -63,7 +63,7 @@ class PluginHandler(Child):
 	# Check to see if we have any TIMED events that need to trigger. If we
 	# have some, make a new PluginTimedTrigger and send it out
 	def run_sometimes(self, currtime):
-		for event, plugin in self.__Events[IRCT_TIMED.values():
+		for event, plugin in self.__Events[IRCT_TIMED].values():
 			if currtime - event.last_trigger >= event.interval:
 				event.last_trigger += event.interval
 				trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
