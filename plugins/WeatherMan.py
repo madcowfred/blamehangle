@@ -20,7 +20,9 @@ WEATHER_URL = "http://search.weather.yahoo.com/search/weather2?p=%s"
 
 s1 = '[%(location)s] %(weather)s, Currently: %(currently)s°F (%(currently_c)s°C)'
 s2 = ', High: %(hi)s°F (%(hi_c)s°C), Low: %(lo)s°F (%(lo_c)s°C)'
-WEATHER_REPLY = s1 + s2
+s3 = ', Wind: %(wind)s (%(wind_km)s kph), Feels Like: %(like)s°F (%(like_c)s°C)'
+s4 = ', Humidity: %(humidity)s, Visibility: %(visibility)s'
+WEATHER_REPLY = s1 + s2 + s3 + s4
 
 # ---------------------------------------------------------------------------
 
@@ -73,13 +75,7 @@ class WeatherMan(Plugin):
 					self.sendReply(trigger, 'Failed to parse page properly')
 					return
 				
-				# Remove all HTML tags
-				mangled = re.sub(r'(?s)<.*?>', '', m.group(1))
-				# Eat escaped bits and pieces
-				mangled = re.sub(r'\&.*?\;', '', mangled)
-				
-				# Split into lines that aren't empty
-				lines = [s for s in mangled.splitlines() if s.strip()]
+				lines = StripHTML(m.group(1))
 				
 				# Extract location!
 				loc1 = lines[-1]
@@ -94,19 +90,31 @@ class WeatherMan(Plugin):
 					self.sendReply(trigger, 'Failed to parse page properly')
 					return
 				
-				# Remove all HTML tags
-				mangled = re.sub(r'(?s)<.*?>', '', m.group(1))
-				# Eat escaped bits and pieces
-				mangled = re.sub(r'\&.*?\;', '', mangled)
-				
 				# Split into lines that aren't empty
-				lines = [s for s in mangled.splitlines() if s.strip()]
+				lines = StripHTML(m.group(1))
 				
 				# Extract current conditions!
 				data['currently'] = lines[1]
 				data['weather'] = lines[2]
 				data['hi'] = lines[3][3:]
 				data['lo'] = lines[4][3:]
+				
+				
+				# Find some more weather data
+				m = re.search(r'<\!--MORE CC-->(.*?)<\!--ENDMORE CC-->', page_text, re.M | re.S)
+				if not m:
+					self.putlog(LOG_WARNING, 'Weather page parsing failed: no extra data')
+					self.sendReply(trigger, 'Failed to parse page properly')
+					return
+				
+				# Split into lines that aren't empty
+				lines = StripHTML(m.group(1))
+				
+				# Extract!
+				data['like'] = lines[2]
+				data['wind'] = lines[10]
+				data['humidity'] = lines[12]
+				data['visibility'] = lines[16]
 				
 				
 				#if broken:
@@ -116,11 +124,28 @@ class WeatherMan(Plugin):
 				data['currently_c'] = ToCelsius(data['currently'])
 				data['hi_c'] = ToCelsius(data['hi'])
 				data['lo_c'] = ToCelsius(data['lo'])
+				data['like_c'] = ToCelsius(data['like'])
+				
+				wind_mph = data['wind'].split()[1]
+				data['wind_km'] = ToKilometers(wind_mph)
 				
 				replytext = WEATHER_REPLY % data
 				self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
 
+def StripHTML(text):
+	# Remove all HTML tags
+	mangled = re.sub(r'(?s)<.*?>', '', text)
+	# Eat escaped bits and pieces
+	mangled = re.sub(r'\&.*?\;', '', mangled)
+	# Split into lines that aren't empty
+	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
+	# Return!
+	return lines
+
 def ToCelsius(val):
 	return '%.1f' % ((int(val) - 32) * 5.0 / 9)
+
+def ToKilometers(val):
+	return '%d' % (int(val) * 1.60934)
