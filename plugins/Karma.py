@@ -24,26 +24,27 @@ class Karma(Plugin):
 	KARMA_LOOKUP = "KARMA_LOOKUP"
 	KARMA_MOD = "KARMA_MOD"
 	
-	def __init__(self, name, outQueue, Config):
-		Plugin.__init__(self, name, outQueue, Config)
-		
+	def setup(self):
+		pass
+
 #----------------------------------------------------------------------------
 
-	def listEvents(self):
-		return [
-		(PUBLIC, re.compile("^.*(?=\+\+$)"), KARMA_PLUS),
-		(PUBLIC, re.compile("^.*(?=--$)"), KARMA_MINUS),
-		(PUBLIC, re.compile("^karma .*(?=$|\?$)"), KARMA_LOOKUP),
-		(MSG, re.complie("^karma .*(?=$|\?$)"), KARMA_LOOKUP)
+	def _message_PLUGIN_REGISTER(self, message):
+		reply = [
+		(PUBLIC, re.compile("^.*(?=\+\+$)"), [0], KARMA_PLUS),
+		(PUBLIC, re.compile("^.*(?=--$)"), [0], KARMA_MINUS),
+		(PUBLIC, re.compile("^karma .*(?=$|\?$)"), [0], KARMA_LOOKUP),
+		(MSG, re.complie("^karma .*(?=$|\?$)"), [0], KARMA_LOOKUP)
 		]
+		self.sendMessage('PluginHandler', PLUGIN_REGISTER, reply)
 	
 #----------------------------------------------------------------------------
 
 	def _message_PLUGIN_TRIGGER(self, message):
-		event, key = message.data
+		event, [key] = message.data
 		
 		queryObj = whatever(__SELECT_QUERY, key, (event, key))
-		self.sendMessage(TheDatabase, DB_QUERY, queryObj)
+		self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 	
 #----------------------------------------------------------------------------
 
@@ -54,32 +55,32 @@ class Karma(Plugin):
 			if result == "":
 				# no karma!
 				reply = "%s has neutral karma." % key
-				self.sendMessage(PluginHandler, PLUGIN_REPLY, reply)
+				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 			else:
 				key, value = result
 				reply = "%s has karma of %d" % (key, value)
-				self.sendMessage(PluginHandler, PLUGIN_REPLY, reply)
+				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 		elif event == KARMA_PLUS:
 			if result == "":
 				# no karma, so insert as 1
 				queryObj = whatever(__INSERT_QUERY, (1, key), (KARMA_MOD, key))
-				self.sendMessage(TheDatabase, DB_QUERY, queryObj)
+				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# increment existing karma
 				key, value = result
 				queryObj = whatever(__UPDATE_QUERY, (1, key), (KARMA_MOD, key))
-				self.sendMessage(TheDatabase, DB_QUERY, queryObj)
+				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 				
 		elif event == KARMA_MINUS:
 			if result == "":
 				# no karma, so insert as -1
 				queryObj =  whatever(__INSERT_QUERY, (-1, key), (KARMA_MOD, key))
-				self.sendMessage(TheDatabase, DB_QUERY, queryObj)
+				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 			else:
 				# decrement existing karma
 				queryObj = whatever(__UPDAtE_QUERY, (-1, key) (KARMA_MOD, key))
-				self.sendMessage(TheDatabase, DB_QUERY, queryObj)
+				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 
 		elif event == KARMA_MOD:
 			# The database just made our requested modifications to the karma
