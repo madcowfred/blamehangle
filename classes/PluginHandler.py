@@ -43,7 +43,6 @@ class PluginHandler(Child):
 	# Check to see if we have any TIMED events that have expired their delai
 	# time
 	def run_sometimes(self, currtime):
-
 		for name in self.__TIMED_Events:
 			event, plugin = self.__TIMED_Events[name]
 			if event.interval_elapsed(currtime):

@@ -12,6 +12,7 @@
 from Queue import Queue
 from select import select
 from thread import start_new_thread
+from threading import BoundedSemaphore
 from time import sleep
 # we have our own version so we can mess with the user-agent string
 from classes.urllib2 import urlopen
@@ -19,6 +20,8 @@ from classes.urllib2 import urlopen
 from classes.Children import Child
 from classes.Constants import *
 from classes.Common import *
+
+# ---------------------------------------------------------------------------
 
 dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
@@ -37,6 +40,17 @@ class HTTPMonster(Child):
 		else:
 			# Default to Mozilla running in windows
 			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
+		
+		if self.Config.has_option('HTTP', 'connections'):
+			conns = self.Config.getint('HTTP', 'connections')
+			if conns < 1:
+				conns = 1
+			elif conns > 10:
+				conns = 10
+		else:
+			conns = 2
+		self.sem = BoundedSemaphore(conns)
+	
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
@@ -46,6 +60,9 @@ class HTTPMonster(Child):
 
 def URLThread(parent, message):
 	url, returnme = message.data
+	
+	# Acquire the semaphore. This will block if 2 threads are already using it.
+	parent.sem.acquire(1)
 	
 	tolog = 'Spawning thread to fetch URL: %s' % url
 	parent.putlog(LOG_DEBUG, tolog)
@@ -87,3 +104,6 @@ def URLThread(parent, message):
 		data = [pagetext, returnme]
 		message = Message('HTTPMonster', message.source, REPLY_URL, data)
 		parent.outQueue.put(message)
+	
+	# Release the semaphore
+	parent.sem.release()
