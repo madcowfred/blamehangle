@@ -156,7 +156,7 @@ class TorrentScraper(Plugin):
 		
 		query = SELECT_QUERY % (querybit, querybit)
 		
-		print 'Page parsed: %.3fs %.3fs %.3fs %.3fs %.3fs' % (time.time() - t4, t4 - t3, t3 - t2, t2 - t1)
+		print 'Page parsed: %.3fs %.3fs %.3fs %.3fs %.3fs' % (time.time() - t5, t5-t4, t4 - t3, t3 - t2, t2 - t1)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
