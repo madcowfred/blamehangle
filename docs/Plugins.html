@@ -90,17 +90,6 @@ an airline's code, or get details on a flight number.
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
-<td colspan="2">BugMeNot</td>
-</tr>
-<tr class="desc">
-<td colspan="2">None</td>
-</tr><tr>
-<td width="300">bugmenot &lt;site&gt;</td>
-<td>See if BugMeNot has a login for &lt;site&gt;.</td>
-</tr>
-</table>
-<table align="center" cellspacing="1" cellpadding="2" width="750">
-<tr class="name">
 <td colspan="2">Converter</td>
 </tr>
 <tr class="desc">
@@ -239,6 +228,23 @@ Various mathetmatical commands.
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
+<td colspan="2">Misc</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+Miscellaneous stuff that doesn't really deserve it's own plugin.
+</td>
+</tr><tr>
+<td width="300">bugmenot &lt;site&gt;</td>
+<td>See if BugMeNot has a login for &lt;site&gt;.</td>
+</tr>
+<tr>
+<td width="300">pgpkey &lt;findme&gt;</td>
+<td>Search pgp.mit.edu for a key/keys matching &lt;findme&gt;, returning the first match.</td>
+</tr>
+</table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
 <td colspan="2">MoneyMangler</td>
 </tr>
 <tr class="desc">
@@ -275,6 +281,14 @@ Various mathetmatical commands.
 <td>Look up the country for &lt;code&gt;, or search for the ccTLD for &lt;country&gt;.</td>
 </tr>
 <tr>
+<td width="300">dns02 &lt;hostname&gt;</td>
+<td>Try to resolve hostname to IP(s).</td>
+</tr>
+<tr>
+<td width="300">port &lt;port&gt; OR &lt;name&gt;</td>
+<td>Look up the service name for a port, or the port for a service name.</td>
+</tr>
+<tr>
 <td width="300">whois &lt;domain&gt;</td>
 <td>Look up &lt;domain&gt; in the WHOIS database.</td>
 </tr>
@@ -306,22 +320,12 @@ want to use.
 <td colspan="2">Quotes</td>
 </tr>
 <tr class="desc">
-<td colspan="2">None</td>
+<td colspan="2">Sends quotes to an e-mail address, for _really_ lazy people.</td>
 </tr><tr>
 <td width="300">addquote &lt;quote&gt;</td>
 <td>sends a quote to the configured e-mail address. Use || to seperate lines.</td>
 </tr>
 </table>
-<table align="center" cellspacing="1" cellpadding="2" width="750">
-<tr class="name">
-<td colspan="2">Seen</td>
-</tr>
-<tr class="desc">
-<td colspan="2">
-Your standard generic seen plugin. Tracks people. Sends them flowers. Possibly
-follows them to work.
-</td>
-</tr></table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
 <td colspan="2">SiteBot</td>
@@ -481,6 +485,10 @@ then generates an RSS feed of the latest ones.
 <tr class="desc">
 <td colspan="2">Checks the weather!</td>
 </tr><tr>
+<td width="300">dmetar &lt;station id&gt;</td>
+<td>Retrieve decoded METAR weather information.</td>
+</tr>
+<tr>
 <td width="300">forecast &lt;location&gt;</td>
 <td>Retrieve weather forecast for location</td>
 </tr>
