@@ -95,6 +95,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	
 	def _handle_welcome(self, conn, event):
+		tolog = 'Connected to %s:%d' % self.Conns[conn].server
 		self.Conns[conn].status = STATUS_CONNECTED
 		self.connlog(conn, LOG_ALWAYS, tolog)
 		
