@@ -63,7 +63,7 @@ URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 class WordStuff(Plugin):
 	def setup(self):
-		self.__spell_bin = ''
+		self.__spell_bin = None
 		
 		self.rehash()
 	
@@ -79,6 +79,8 @@ class WordStuff(Plugin):
 			if not os.access(bin, os.X_OK):
 				tolog = '%s is not executable or not a file, spell command will not work!' % bin
 				self.putlog(LOG_WARNING, tolog)
+				
+				self.__spell_bin = None
 			
 			else:
 				self.__spell_bin = '%s -a -S' % bin
