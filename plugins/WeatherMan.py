@@ -167,11 +167,6 @@ class WeatherMan(Plugin):
 					data['forecast'] = ' - '.join(fcs)
 				
 				
-				#if broken:
-				#	self.sendReply(trigger, "Failed to parse page properly")
-				
-				#else:
-				
 				chunks = []
 				
 				if trigger.name == WEATHER_SHORT:
