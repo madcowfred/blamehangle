@@ -136,9 +136,7 @@ class async_http(asyncore.dispatcher_with_send):
 		try:
 			self.connect((host, port))
 		except socket.gaierror, msg:
-			tolog = "Error while trying to fetch url: %s - %s" % (self.url, msg)
-			self.parent.putlog(LOG_ALWAYS, tolog)
-			self.close()
+			self.failed(msg)
 		else:
 			self.parent.active += 1
 			self.last_activity = time.time()
@@ -214,13 +212,11 @@ class async_http(asyncore.dispatcher_with_send):
 								newurl = 'http://%s:%s%s' % (self.host, self.port, newurl)
 							
 							if newurl in self.seen:
-								tolog = 'Redirection loop encountered while trying to fetch %s' % (self.url)
-								self.parent.putlog(LOG_WARNING, tolog)
+								self.failed('Redirection loop encountered!')
 							else:
 								self.seen[self.url] = 1
 								if len(self.seen) > REDIRECT_LIMIT:
-									tolog = 'Redirection limit reached while trying to fetch %s' % (self.url)
-									self.parent.putlog(LOG_WARNING, tolog)
+									self.failed('Redirection limit reached!')
 								else:
 									self.message.data[2] = newurl
 									async_http(self.parent, self.message, self.seen)
@@ -272,7 +268,7 @@ class async_http(asyncore.dispatcher_with_send):
 		tolog = "Error while trying to fetch url: %s - %s" % (self.url, errormsg)
 		self.parent.putlog(LOG_ALWAYS, tolog)
 		
-		data = [self.trigger, self.method, None]
+		data = [self.trigger, self.method, self.url, None]
 		self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
