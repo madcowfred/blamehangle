@@ -121,6 +121,7 @@ class News(Plugin):
 		# Do RSS feed setup
 		self.__rss_default_interval = self.Config.getint('RSS', 'default_interval') * 60
 		self.__rss_ignore_no_link = self.Config.getboolean('RSS', 'ignore_no_link')
+		self.__rss_maximum_new = min(1, self.Config.getint('RSS', 'maximum_new')
 		
 		self.__Setup_RSS_Feeds()
 	
@@ -138,19 +139,6 @@ class News(Plugin):
 				self.__setup_target(self.__gbiz_targets, 'News', option)
 			elif option.startswith('ananova.'):
 				self.__setup_target(self.__anaq_targets, 'News', option)
-	
-	# -----------------------------------------------------------------------
-
-	def __setup_rss_target(self, section, feed):
-		feed['targets'] = {}
-		for option in self.Config.options(section):
-			if option.startswith('targets.'):
-				self.__setup_target(feed['targets'], section, option)
-
-		if not feed['targets']:
-			for option in self.Config.options('RSS'):
-				if option.startswith('default_targets.'):
-					self.__setup_target(feed['targets'], 'RSS', option)
 	
 	# -----------------------------------------------------------------------
 	
@@ -177,16 +165,32 @@ class News(Plugin):
 			else:
 				feed['title'] = None
 			
+			if self.Config.has_option(section, 'maximum_new'):
+				feed['maximum_new'] = self.Config.getint(section, 'maximum_new')
+			else:
+				feed['maximum_new'] = self.__rss_maximum_new
+			
 			if self.Config.has_option(section, 'interval'):
 				feed['interval'] = self.Config.getint(section, 'interval') * 60
 			else:
 				feed['interval'] = self.__rss_default_interval
 			
-			self.__setup_rss_target(section, feed)
+			self.__Setup_RSS_Target(section, feed)
 			
 			feed['url'] = self.Config.get(section, 'url')
 			
 			self.RSS_Feeds[name] = feed
+	
+	def __Setup_RSS_Target(self, section, feed):
+		feed['targets'] = {}
+		for option in self.Config.options(section):
+			if option.startswith('targets.'):
+				self.__setup_target(feed['targets'], section, option)
+		
+		if not feed['targets']:
+			for option in self.Config.options('RSS'):
+				if option.startswith('default_targets.'):
+					self.__setup_target(feed['targets'], 'RSS', option)
 	
 	# -----------------------------------------------------------------------
 	
@@ -201,9 +205,6 @@ class News(Plugin):
 		gbiz = PluginTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
 		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
 		
-		ns_dir = PluginTextEvent(NEWS_SEARCH, IRCT_PUBLIC_D, NEWS_SEARCH_RE)
-		ns_msg = PluginTextEvent(NEWS_SEARCH, IRCT_MSG, NEWS_SEARCH_RE)
-		
 		if self.__gwn_interval:
 			self.register(gwn)
 		if self.__gsci_interval:
@@ -215,9 +216,12 @@ class News(Plugin):
 		if self.__anaq_interval:
 			self.register(anaq)
 		
+		ns_dir = PluginTextEvent(NEWS_SEARCH, IRCT_PUBLIC_D, NEWS_SEARCH_RE)
+		ns_msg = PluginTextEvent(NEWS_SEARCH, IRCT_MSG, NEWS_SEARCH_RE)
+		
 		self.register(ns_dir, ns_msg)
 		
-		
+		# RSS feeds
 		list_pub = PluginTextEvent(RSS_LIST, IRCT_PUBLIC_D, RSS_LIST_RE)
 		list_msg = PluginTextEvent(RSS_LIST, IRCT_MSG, RSS_LIST_RE)
 		show_pub = PluginTextEvent(RSS_SHOW, IRCT_PUBLIC_D, RSS_SHOW_RE)
@@ -232,6 +236,7 @@ class News(Plugin):
 			
 			event = PluginTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
 			self.register(event)
+		
 		
 		self.__setup_help_msgs()
 	
@@ -418,9 +423,8 @@ class News(Plugin):
 		
 		articles = []
 		queries = []
-		for item in r.items:
+		for item in r.items[:feed['maximum_new']]:
 			item_title = '%s: %s' % (feed_title, item.get('title', '<No Title>'))
-			#title = '%s: %s' % (feed_title, item['title'])
 			
 			if self.__rss_ignore_no_link:
 				if not item.has_key('link'):
