@@ -460,6 +460,13 @@ class SmartyPants(Plugin):
 			# This factoid wasn't a <null>, so update stats and generate the
 			# reply
 			self.__requests += 1
+
+			# replace "$nick" with the nick of the guy that requested this
+			# factoid
+			# XXX This is devinfo legacy, I'm not really sure I want to do this
+			# but the factoid database will have a bunch of factoids that
+			# expect this behaviour
+			row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
 			
 			# <reply> and <action> check
 			m = REPLY_ACTION_RE.match(row['value'])
