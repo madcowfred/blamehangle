@@ -1,0 +1,324 @@
+<html>
+<head>
+<title>blamehangle plugin docs</title>
+<style type="text/css">
+<!--
+body {
+	background: #123456;
+	color: #FFFFFF;
+	font-family: Arial, Helvetica, sans-serif;
+}
+h1 {
+	text-align: center;
+}
+table {
+	margin-bottom: 15px;
+}
+tr.name {
+	background: #419481;
+	text-align: center;
+	font-size: 120%;
+}
+tr.desc {
+	background: #449094;
+}
+
+-->
+</style>
+</head>
+
+<body>
+<h1>Plugins!</h1>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Airline</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+This plugin does some stuff regarding flights and airlines. You can lookup
+an airline's code, or get details on a flight number.
+</td>
+</tr><tr>
+<td width="300">'airline &lt;code&gt;' OR 'airline &lt;partial name&gt;'</td>
+<td>lookup the name for a carrier given the code, or lookup the code  for a carrier given the name (or start of the name)</td>
+</tr><tr>
+<td width="300">airport &lt;code&gt;</td>
+<td>look up an airport by it's IATA code</td>
+</tr><tr>
+<td width="300">flight &lt;code&gt; &lt;flight number&gt; &lt;date&gt;</td>
+<td>look up the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Anime</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Various bits and pieces for looking up anime information.</td>
+</tr><tr>
+<td width="300">anidb &lt;name&gt;</td>
+<td>Search for anime information on AniDB.</td>
+</tr><tr>
+<td width="300">animenfo &lt;name&gt;</td>
+<td>Search for anime information on AnimeNFO.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">AusBOM</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Retrieve current weather data from the Australian Bureau of Meteorology.</td>
+</tr><tr>
+<td width="300">ausbom &lt;location&gt;</td>
+<td>Get current weather data for &lt;location&gt;.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Calculator</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+A calculator for simple expressions.
+Operations allowed are addition, subtraction, division, multiplication,
+modulo, and exponentiation.
+
+Won't divide by zero or lame things like that.
+</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Converter</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Converts between various distance/volume/weight measurements.</td>
+</tr><tr>
+<td width="300">convert &lt;amount&gt; &lt;type 1&gt; to &lt;type 2&gt;</td>
+<td>Convert between different measurements?</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">FunStuff</td>
+</tr>
+<tr class="desc">
+<td colspan="2">A collection of silly things for people to play with.</td>
+</tr><tr>
+<td width="300">8ball &lt;question&gt;</td>
+<td>The magic 8 ball will answer your question!</td>
+</tr><tr>
+<td width="300">easter &lt;year&gt;</td>
+<td>Work out what day Easter Sunday falls on for a given year.</td>
+</tr><tr>
+<td width="300">muddle &lt;text&gt;</td>
+<td>Muddles your text by rearranging words.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">GameStuff</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Gets information on video games from various sites.</td>
+</tr><tr>
+<td width="300">klov &lt;title&gt;</td>
+<td>Look up title in the Killer List Of Video Games (KLOVG?!)</td>
+</tr><tr>
+<td width="300">moby &lt;title&gt;</td>
+<td>Look up title at MobyGames.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Google</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Lets lazy people use Google from IRC.</td>
+</tr><tr>
+<td width="300">google &lt;search term&gt;</td>
+<td>Search via Google!</td>
+</tr><tr>
+<td width="300">translate &lt;from&gt; to &lt;to&gt; &lt;text&gt;</td>
+<td>Translate some text via Google Translate.</td>
+</tr><tr>
+<td width="300">transmangle &lt;lang&gt; &lt;text&gt;</td>
+<td>Mangle text by translating from English to lang and back again.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Karma</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Karma. Someone put a useful description here.</td>
+</tr><tr>
+<td width="300">'&lt;something&gt;++' OR '&lt;something&gt;--'</td>
+<td>Increment or decrement karma for &lt;something&gt;</td>
+</tr><tr>
+<td width="300">'karma &lt;something&gt;'</td>
+<td>Look up &lt;something&gt;'s karma level</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">MapQuest</td>
+</tr>
+<tr class="desc">
+<td colspan="2">MapQuest.com travel distance checker.</td>
+</tr><tr>
+<td width="300">'distance &lt;[city, state] or [zip]&gt; to &lt;[city, state] or zip&gt;'</td>
+<td>Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">MoneyMangler</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Commands for playing with money.</td>
+</tr><tr>
+<td width="300">asx &lt;symbol&gt;</td>
+<td>Look up a current stock price on the ASX.</td>
+</tr><tr>
+<td width="300">currency &lt;code OR partial name&gt;</td>
+<td>Look up an ISO 4217 currency code and name, given the specified information.</td>
+</tr><tr>
+<td width="300">exchange &lt;amount&gt; &lt;currency 1&gt; to &lt;currency 2&gt;</td>
+<td>Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.</td>
+</tr><tr>
+<td width="300">quote &lt;symbol&gt;</td>
+<td>Look up a current stock price.</td>
+</tr><tr>
+<td width="300">symbol &lt;findme&gt;</td>
+<td>Look up a ticker symbol.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">News</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+Gathers news from Ananova Quirkies, Google News or any RSS feeds you might
+want to use.
+</td>
+</tr><tr>
+<td width="300">listfeeds</td>
+<td>List the RSS feeds currently configured.</td>
+</tr><tr>
+<td width="300">news &lt;partial headline&gt;</td>
+<td>Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given.</td>
+</tr><tr>
+<td width="300">showfeed &lt;feed name&gt;</td>
+<td>Show some information about an RSS feed.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Quotes</td>
+</tr>
+<tr class="desc">
+<td colspan="2">None</td>
+</tr><tr>
+<td width="300">addquote &lt;quote&gt;</td>
+<td>sends a quote to the configured e-mail address</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">SiteBot</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+A glFTPd sitebot plugin. Doesn't make much sense to maintain a pile of code
+for a seperate bot when there's already a nice framework here :)
+
+Different style to the other plugins, as we use a single command trigger with
+our own command matching.
+</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">SmartyPants</td>
+</tr>
+<tr class="desc">
+<td colspan="2">An implementation of an infobot, similar to... every other infobot.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">SportsFan</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Yahoo Sports game result lookup.</td>
+</tr><tr>
+<td width="300">score &lt;league&gt; &lt;team&gt;</td>
+<td>Search for a score for &lt;team&gt; playing in &lt;league&gt; today. &lt;league&gt; can be one of NFL, MLB, NBA, NHL. &lt;team&gt; is identified by location, not nickname.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">TextStuff</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Miscellaneous commands for playing with text.</td>
+</tr><tr>
+<td width="300">crc32 &lt;text&gt;</td>
+<td>Compute the CRC32 checksum of text.</td>
+</tr><tr>
+<td width="300">md5 &lt;text&gt;</td>
+<td>Compute the MD5 checksum of text.</td>
+</tr><tr>
+<td width="300">rot13 &lt;text&gt;</td>
+<td>ROT13 text.</td>
+</tr><tr>
+<td width="300">sha1 &lt;text&gt;</td>
+<td>Compute the SHA-1 checksum of text.</td>
+</tr><tr>
+<td width="300">urldec &lt;url&gt;</td>
+<td>Do something else.</td>
+</tr><tr>
+<td width="300">urlenc &lt;url&gt;</td>
+<td>Do something.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">TimeDate</td>
+</tr>
+<tr class="desc">
+<td colspan="2">A huge plugin to see what the time is in various places.</td>
+</tr><tr>
+<td width="300">date &lt;city&gt;</td>
+<td>Do something.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Video</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Look up information on movies/TV shows.</td>
+</tr><tr>
+<td width="300">imdb &lt;search term&gt;</td>
+<td>Search for a movie on IMDb. Use 'tt1234567' for a title.</td>
+</tr><tr>
+<td width="300">tvtome &lt;search term&gt;</td>
+<td>Search for a TV show  on TV Tome.</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">WeatherMan</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Checks the weather!</td>
+</tr><tr>
+<td width="300">forecast &lt;location&gt;</td>
+<td>Retrieve weather forecast for location</td>
+</tr><tr>
+<td width="300">metar &lt;station id&gt;</td>
+<td>Retrieve coded METAR weather information.</td>
+</tr><tr>
+<td width="300">metard &lt;station id&gt;</td>
+<td>Retrieve decoded METAR weather information.</td>
+</tr><tr>
+<td width="300">taf &lt;station id&gt;</td>
+<td>Retrieve coded TAF weather forecast.</td>
+</tr><tr>
+<td width="300">weather &lt;location&gt;</td>
+<td>Retrieve weather information for location (short format)</td>
+</tr><tr>
+<td width="300">weatherlong &lt;location&gt;</td>
+<td>Retrieve weather information for location (long format)</td>
+</tr></table><table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">WordStuff</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Various commands for playing with words.</td>
+</tr><tr>
+<td width="300">antonyms &lt;word&gt;</td>
+<td>Search for words that have the exact opposite meaning of &lt;word&gt;.</td>
+</tr><tr>
+<td width="300">dict &lt;word&gt;</td>
+<td>Look up the dictionary meaning of a word.</td>
+</tr><tr>
+<td width="300">rhyme &lt;word&gt;</td>
+<td>Search for words that rhyme with &lt;word&gt;.</td>
+</tr><tr>
+<td width="300">spell &lt;word&gt;</td>
+<td>Check spelling of a word.</td>
+</tr><tr>
+<td width="300">synonyms &lt;word&gt;</td>
+<td>Search for words that have the same meaning as &lt;word&gt;.</td>
+</tr><tr>
+<td width="300">urban [n] &lt;term&gt;</td>
+<td>Look up &lt;term&gt; on urbandictionary.com, possibly getting definition &lt;n&gt;.</td>
+</tr></table></body>
+</html>

@@ -23,6 +23,8 @@ Installation
     important options to set here, so follow the comments and get to it :)
     Make sure you change the 'plugin/config_dir' option to the name you chose
     for newname in the previous step.
+    
+    Read docs/PLUGINS to see a current list of plugins and what they can do.
  
  4. For each plugin you want to use, you may need to create a database table.
     Look in the 'schemas/' directory for the CREATE commands. For MySQL, you can
