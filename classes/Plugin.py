@@ -10,7 +10,6 @@ plugin developer, and generally make life easier.
 It also contains the various Triggers and Events that Plugins rely on.
 """
 
-import cPickle
 import os
 import time
 
@@ -90,49 +89,6 @@ class Plugin(Child):
 	def addTimedEvent(self, method, interval, targets=None, *args):
 		event = PluginTimedEvent(method.__name__, interval, targets, args)
 		self.__Events.append(event)
-	
-	# -----------------------------------------------------------------------
-	# Pickle stuff
-	def savePickle(self, filename, obj):
-		config_dir = self.Config.get('plugin', 'config_dir')
-		filename = os.path.join(config_dir, filename)
-		
-		try:
-			f = open(filename, 'wb')
-		except:
-			# We couldn't open our file :(
-			tolog = "Unable to open %s for writing" % filename
-			self.putlog(LOG_WARNING, tolog)
-		else:
-			tolog = "Saving pickle to %s" % filename
-			self.putlog(LOG_DEBUG, tolog)
-			# the 1 turns on binary-mode pickling
-			cPickle.dump(obj, f, 1)
-			f.flush()
-			f.close()
-	
-	def loadPickle(self, filename):
-		config_dir = self.Config.get('plugin', 'config_dir')
-		filename = os.path.join(config_dir, filename)
-		
-		try:
-			f = open(filename, 'rb')
-		except:
-			# Couldn't open the pickle file, so don't try to unpickle
-			return None
-		
-		# We have a pickle!
-		tolog = "Loading pickle from %s" % filename
-		self.putlog(LOG_DEBUG, tolog)
-		
-		try:
-			obj = cPickle.load(f)
-		except:
-			# Failed to read the pickle file
-			self.putlog(LOG_DEBUG, 'Pickle load failed!')
-			return None
-		else:
-			return obj
 
 # ---------------------------------------------------------------------------
 

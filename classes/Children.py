@@ -7,6 +7,7 @@ This file contains the class that all system objects are based on, as well as
 Plugin. Don't touch.
 """
 
+import cPickle
 import os
 
 from classes.Constants import *
@@ -242,5 +243,49 @@ class Child:
 		for option in self.Config.options(section):
 			values.append(self.Config.get(section, option))
 		return values
+	
+	# -----------------------------------------------------------------------
+	# Save an object to disk as a pickle
+	def savePickle(self, filename, obj):
+		config_dir = self.Config.get('plugin', 'config_dir')
+		filename = os.path.join(config_dir, filename)
+		
+		try:
+			f = open(filename, 'wb')
+		except:
+			tolog = "Unable to open %s for writing" % (filename)
+			self.putlog(LOG_WARNING, tolog)
+			return
+		
+		try:
+			cPickle.dump(obj, f, 1)
+		except Exception, msg:
+			tolog = "Saving pickle to '%s' failed: %s" % (filename, msg)
+			self.putlog(LOG_WARNING, tolog)
+		else:
+			tolog = "Saved pickle to '%s'" % (filename)
+			self.putlog(LOG_DEBUG, tolog)
+		
+		f.close()
+	
+	def loadPickle(self, filename):
+		config_dir = self.Config.get('plugin', 'config_dir')
+		filename = os.path.join(config_dir, filename)
+		
+		try:
+			f = open(filename, 'rb')
+		except:
+			return None
+		
+		try:
+			obj = cPickle.load(f)
+		except Exception, msg:
+			tolog = "Loading pickle from '%s' failed: %s" % (filename, msg)
+			self.putlog(LOG_WARNING, tolog)
+			return None
+		else:
+			tolog = "Loaded pickle from '%s'" % (filename)
+			self.putlog(LOG_DEBUG, tolog)
+			return obj
 
 # ---------------------------------------------------------------------------
