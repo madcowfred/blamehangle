@@ -124,7 +124,7 @@ class News(Plugin):
 
 				tolog = "%s news items remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)
-				self.__pickle(self.__outgoing, '.news.out_pickle')
+			self.__pickle(self.__outgoing, '.news.out_pickle')
 		
 		# Once an hour, go and check for old news and purge it from the
 		# db
