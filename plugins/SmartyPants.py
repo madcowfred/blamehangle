@@ -66,6 +66,7 @@ TELL_RE = re.compile("^tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
 NULL_RE = re.compile("^<null>\s*$", re.I)
 
+#----------------------------------------------------------------------------
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
@@ -114,8 +115,12 @@ class SmartyPants(Plugin):
 		self.__sets = 0
 		self.__modifys = 0
 		self.__dels = 0
+		
 		self.__setup_config()
-
+		
+		# build our translation string
+		self.__Build_Translation()
+	
 	def __setup_config(self):
 		self.__users = HangleUserList(self, 'InfobotUsers')
 		self.__get_pub = {}
@@ -136,6 +141,24 @@ class SmartyPants(Plugin):
 				else:
 					tolog = "malformed option in Infobot config: %s" % option
 					self.putlog(LOG_WARNING, tolog)
+	
+	def __Build_Translation(self):
+		# space # ' - . [ ] ^ _ |
+		chars = [32, 35, 39, 45, 46, 91, 93, 94, 95, 124]
+		# 0-9 (48-57)
+		chars += range(48, 58)
+		# A-Z (65-90)
+		chars += range(65, 91)
+		# a-z (97-122)
+		chars += range(97, 123)
+		
+		# Build the table! \x00 is our 'bad' char
+		self.__trans = ''
+		for i in range(256):
+			if i in chars:
+				self.__trans += chr(i)
+			else:
+				self.__trans += '\x00'
 	
 	def rehash(self):
 		self.__setup_config()
@@ -240,14 +263,14 @@ class SmartyPants(Plugin):
 			# Either it wasn't an IRCT_PUBLIC, or we have a config rule that
 			# says we are allowed to reply to public queries on this server in
 			# this channel, so look it up.
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to set a factoid. If the name is too long, tell them
 		# to go to hell.
 		elif trigger.name == FACT_SET:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			
 			# check to see if it was a public, and abort if we are not replying
 			# to public requests for this server/channel
@@ -275,13 +298,13 @@ class SmartyPants(Plugin):
 		# Somone just told us to replace the definition of a factoid with
 		# a new one
 		elif trigger.name == FACT_NO:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to add to the definition of a factoid
 		elif trigger.name == FACT_ALSO:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			if len(name) > MAX_FACT_NAME_LENGTH:
 				replytext = "factoid name is too long"
 				self.sendReply(trigger, replytext)
@@ -291,31 +314,31 @@ class SmartyPants(Plugin):
 		
 		# Someone wants to delete a factoid
 		elif trigger.name == FACT_DEL:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to do a search/replace on a factoid
 		elif trigger.name == FACT_REPLACE:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to lock a factoid
 		elif trigger.name == FACT_LOCK:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to unlock a factoid
 		elif trigger.name == FACT_UNLOCK:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants information on a factoid
 		elif trigger.name == FACT_INFO:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (INFO_QUERY, name)
 			self.dbQuery(trigger, query)
 		
@@ -326,7 +349,7 @@ class SmartyPants(Plugin):
 		
 		# Someone asked to search by key
 		elif trigger.name == FACT_LISTKEYS:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			name = name.replace("%", "\%")
 			name = name.replace('"', '\\\"')
 			name = name.replace("'", "\\\'")
@@ -335,7 +358,7 @@ class SmartyPants(Plugin):
 		
 		# Someone asked to search by value
 		elif trigger.name == FACT_LISTVALUES:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			name = name.replace("%", "\%")
 			name = name.replace('"', '\\\"')
 			name = name.replace("'", "\\\'")
@@ -344,7 +367,7 @@ class SmartyPants(Plugin):
 		
 		# Someone wants us to tell someone else about a factoid
 		elif trigger.name == FACT_TELL:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 	
@@ -501,7 +524,7 @@ class SmartyPants(Plugin):
 				# The factoid wasn't in our database, so insert it
 				#
 				#INSERT INTO factoids (name, value, author_nick, author_host, created_time)
-				name = trigger.match.group('name').lower()
+				name = self.__Sane_Name(trigger)
 				value = trigger.match.group('value')
 				if len(value) > MAX_FACT_VAL_LENGTH:
 					replytext = "that's too long"
@@ -542,7 +565,7 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	def __Fact_No(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name').lower()
+		name = self.__Sane_Name(trigger)
 		value = trigger.match.group('value')
 		
 		if len(value) > MAX_FACT_VAL_LENGTH:
@@ -654,7 +677,7 @@ class SmartyPants(Plugin):
 		modified_time = int(time.time())
 		modifier_nick = trigger.userinfo.nick
 		modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
-		name = trigger.match.group('name').lower()
+		name = self.__Sane_Name(trigger)
 		query = (MOD_QUERY, value, modifier_nick, modifier_host, modified_time, name)
 		self.dbQuery(trigger, query)
 	
@@ -667,7 +690,7 @@ class SmartyPants(Plugin):
 		
 		# SELECT reply
 		if typ == types.TupleType:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			
 			if results == [()]:
 				# The factoid wasn't in our database, tell whoever cares
@@ -709,7 +732,7 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	def __Fact_Replace(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name').lower()
+		name = self.__Sane_Name(trigger)
 		
 		# SELECT reply
 		if typ == types.TupleType:
@@ -799,7 +822,7 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	def __Fact_Lock(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name').lower()
+		name = self.__Sane_Name(trigger)
 		
 		# SELECT reply
 		if typ == types.TupleType:
@@ -846,7 +869,7 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	def __Fact_Unlock(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name').lower()
+		name = self.__Sane_Name(trigger)
 
 		# SELECT reply
 		if typ == types.TupleType:
@@ -984,7 +1007,7 @@ class SmartyPants(Plugin):
 	# Someone just asked to search the factoid database
 	#------------------------------------------------------------------------
 	def __Fact_Search(self, trigger, results, what):
-		findme = trigger.match.group('name').lower()
+		findme = self.__Sane_Name(trigger)
 		if results == [()]:
 			# the search failed
 			replytext = "Factoid search of '\02%s\02' by %s returned no results." % (findme, what)
@@ -1015,7 +1038,7 @@ class SmartyPants(Plugin):
 
 		# SELECT reply
 		if typ == types.TupleType:
-			name = trigger.match.group('name').lower()
+			name = self.__Sane_Name(trigger)
 			tellnick = trigger.match.group('nick')
 		
 			if results == [()]:
@@ -1057,5 +1080,15 @@ class SmartyPants(Plugin):
 			if result == 0:
 				replytext = 'factoid stats update failed, warning, warning!'
 				self.sendReply(trigger, replytext)
-
-# ---------------------------------------------------------------------------
+	
+	# -----------------------------------------------------------------------
+	# Return a sanitised factoid name.
+	def __Sane_Name(self, trigger):
+		# lower case
+		newname = trigger.match.group('name').lower()
+		# translate the name according to our table
+		newname = newname.translate(self.__trans)
+		# remove any bad chars now
+		newname = newname.replace('\x00', '')
+		
+		return newname
