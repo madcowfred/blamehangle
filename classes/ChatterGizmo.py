@@ -1,41 +1,10 @@
-
 import errno
 import select
 
 from classes import irclib
+
 from classes.Userlist import Userlist
-
-# ---------------------------------------------------------------------------
-# Constants specific to this module
-# ---------------------------------------------------------------------------
-
-STATUS_DISCONNECTED = 'Disconnected'
-STATUS_CONNECTING = 'Connecting'
-STATUS_CONNECTED = 'Connected'
-
-# ---------------------------------------------------------------------------
-
-class WrapConn:
-	"""
-	Wraps an irclib Connection object and the various data we keep about it
-	into a moderately simple class.
-	"""
-	
-	status = STATUS_DISCONNECTED
-	stoned = 0
-	
-	last_connect = 0
-	last_stoned = 0
-	
-	users = Userlist()
-	
-	def __init__(self, conn, options):
-		self.conn = conn
-		self.options = options
-	
-	def join_channels(self):
-		for chan in self.options['channels'].split():
-			self.conn.join(chan)
+from classes.WrapConn import *
 
 # ---------------------------------------------------------------------------
 
@@ -79,6 +48,8 @@ class ChatterGizmo:
 			
 			conn = self.__ircobj.server()
 			self.Conns[conn] = WrapConn(conn, options)
+			
+			self.Conns[conn].do_connect()
 	
 	# -----------------------------------------------------------------------
 	
