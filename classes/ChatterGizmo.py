@@ -224,7 +224,7 @@ class ChatterGizmo(Child):
 		if m:
 			errormsg = m.group('error')
 		
-		tolog = '%s says ERROR: %s' % (self.Conns[conn].server[0], errormsg)
+		tolog = 'ERROR: %s' % (errormsg)
 		self.connlog(conn, LOG_ALWAYS, tolog)
 	
 	# -----------------------------------------------------------------------
