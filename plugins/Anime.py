@@ -166,6 +166,10 @@ class Anime(Plugin):
 		elif resp.data.find('maintenance') >= 0:
 			self.sendReply(trigger, "AniDB seems to be under maintenance. Again.")
 		
+		# Bad input
+		elif resp.data.find('ILLEGAL INPUT') >= 0:
+			self.sendReply(trigger, "AniDB says ILLEGAL INPUT. Naughty!")
+		
 		# Parsing failed
 		else:
 			self.sendReply(trigger, 'Page parsing failed.')
