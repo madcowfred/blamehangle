@@ -4,8 +4,6 @@
 # This file contains the objects for each 'component' of Blamehangle.
 # ---------------------------------------------------------------------------
 
-#from Queue import *
-
 from classes.Common import *
 from classes.Constants import *
 
@@ -106,12 +104,3 @@ class Child:
 	def urlRequest(self, returnme, url):
 		data = [returnme, url]
 		self.sendMessage('HTTPMonster', REQ_URL, data)
-	
-	# Timer support?
-	def addTimer(self, ident, interval, *args):
-		data = [ident, interval, args]
-		self.sendMessage('TimeKeeper', REQ_ADD_TIMER, data)
-	
-	def delTimer(self, ident):
-		data = [ident]
-		self.sendMessage('TimeKeeper', REQ_DEL_TIMER, data)

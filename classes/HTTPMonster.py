@@ -73,14 +73,16 @@ class HTTPMonster(Child):
 	
 	def __stop_threads(self):
 		_sleep = time.sleep
-		for i in range(len(self.threads)):
-			self.threads[i][1] = 1
+		for thread in self.threads:
+			thread[1] = 1
+		#for i in range(len(self.threads)):
+		#	self.threads[i][1] = 1
 		
 		# wait until all our threads have exited
 		while [t for t,s in self.threads if t.isAlive()]:
 			_sleep(0.25)
 		
-		tolog = "All URL threads shutdown"
+		tolog = "All URL threads stopped"
 		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------

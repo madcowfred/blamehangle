@@ -24,7 +24,6 @@ from classes.DataMonkey import DataMonkey
 from classes.HTTPMonster import HTTPMonster
 from classes.PluginHandler import PluginHandler
 from classes.Plugin import Plugin
-#from classes.TimeKeeper import TimeKeeper
 from classes.Helper import Helper
 
 # ---------------------------------------------------------------------------
@@ -59,7 +58,6 @@ class Postman:
 		# Create our children
 		self.__Children = {}
 		
-		#system = [ TimeKeeper, PluginHandler, ChatterGizmo, DataMonkey, HTTPMonster, Helper ]
 		system = [ PluginHandler, ChatterGizmo, DataMonkey, HTTPMonster, Helper ]
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
