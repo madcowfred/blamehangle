@@ -60,7 +60,7 @@ class Plugin(Child):
 			try:
 				method(trigger)
 			except:
-				replytext = '%s crashed while trying to handle %s!' % (self.__class__.__name__, trigger.name)
+				replytext = '%s crashed in %s()!' % (self.__class__.__name__, trigger.name)
 				self.sendReply(trigger, replytext)
 				raise
 		else:
@@ -68,19 +68,41 @@ class Plugin(Child):
 	
 	# Default DNS reply handler, eek
 	def _message_REPLY_DNS(self, message):
-		trigger, method, hosts, args = message.data
+		trigger, methname, hosts, args = message.data
+		if methname is None:
+			return
+		
+		method = self._Get_Method(methname)
 		if method is not None:
-			method(trigger, hosts, args)
+			try:
+				method(trigger, hosts, args)
+			except:
+				replytext = '%s crashed in %s()!' % (self.__class__.__name__, methname)
+				self.sendReply(trigger, replytext)
+				raise
+		else:
+			raise NameError, 'define %s.%s or override _message_REPLY_DNS' % (self.__class__.__name__, methname)
 	
 	# Default query reply handler, eek
 	def _message_REPLY_QUERY(self, message):
-		trigger, method, result = message.data
+		trigger, methname, result = message.data
+		if methname is None:
+			return
+		
+		method = self._Get_Method(methname)
 		if method is not None:
-			method(trigger, result)
+			try:
+				method(trigger, result)
+			except:
+				replytext = '%s crashed in %s()!' % (self.__class__.__name__, methname)
+				self.sendReply(trigger, replytext)
+				raise
+		else:
+			raise NameError, 'define %s.%s or override _message_REPLY_QUERY' % (self.__class__.__name__, methname)
 	
 	# Default URL reply handler, eek
 	def _message_REPLY_URL(self, message):
-		trigger, method, resp = message.data
+		trigger, methname, resp = message.data
 		
 		# Failed
 		if resp.data is None:
@@ -92,12 +114,20 @@ class Plugin(Child):
 					self.sendReply(trigger, replytext)
 			return
 		
-		# Call the method
-		if method:
-			method(trigger, resp)
+		# OK!
+		if methname is None:
+			return
+	
+		method = self._Get_Method(methname)
+		if method is not None:
+			try:
+				method(trigger, resp)
+			except:
+				replytext = '%s crashed in %s()!' % (self.__class__.__name__, methname)
+				self.sendReply(trigger, replytext)
+				raise
 		else:
-			tolog = '%s got a URL reply, but method is invalid!' % self._name
-			self.putlog(LOG_WARNING, tolog)
+			raise NameError, 'define %s.%s or override _message_REPLY_URL' % (self.__class__.__name__, methname)
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff

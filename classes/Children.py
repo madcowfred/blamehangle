@@ -73,17 +73,17 @@ class Child:
 	
 	# Request a DNS lookup
 	def dnsLookup(self, trigger, method, host, *args):
-		data = [trigger, method, host, args]
+		data = [trigger, getattr(method, '__name__', None), host, args]
 		self.sendMessage('Resolver', REQ_DNS, data)
 	
 	# Request a DB query
 	def dbQuery(self, trigger, method, query, *args):
-		data = [trigger, method, query, args]
+		data = [trigger, getattr(method, '__name__', None), query, args]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	# Request a URL fetch
 	def urlRequest(self, trigger, method, url, data={}, headers={}):
-		req = [trigger, method, url, data, headers]
+		req = [trigger, getattr(method, '__name__', None), url, data, headers]
 		self.sendMessage('HTTPMonster', REQ_URL, req)
 
 # ---------------------------------------------------------------------------
