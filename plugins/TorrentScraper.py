@@ -58,39 +58,67 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
 	def __Parse_Page(self, trigger, resp):
-		# Find all of our URLs
-		chunks = FindChunks(resp.data, '<a ', '</a>')
-		if not chunks:
-			#self.sendReply(trigger, 'Page parsing failed: links.')
-			self.putlog(LOG_WARNING, "Page parsing failed: links.")
-			return
-		
-		# See if any are talking about torrents
 		items = {}
 		now = int(time.time())
 		
-		for chunk in chunks:
-			# Find the URL
-			href = FindChunk(chunk, 'href="', '"')
-			if not href or href.find('.torrent') < 0:
-				continue
+		# We don't want stupid HTML entities
+		resp.data = UnquoteHTML(resp.data)
+		
+		# If it's a BNBT page, we have to do some yucky searching
+		if resp.data.find('POWERED BY BNBT') >= 0:
+			# Find the URL bits we want
+			chunks = FindChunks(resp.data, '<td class="name">', 'DL')
+			if not chunks:
+				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				return
 			
-			# Build the new URL
-			newurl = urlparse.urljoin(resp.url, href)
-			if newurl in items:
-				continue
+			# Yuck
+			for chunk in chunks:
+				# Get the bits we need
+				description = FindChunk(chunk, '>', '<')
+				href = FindChunk(chunk, 'class="download" href="', '"')
+				if not description or not href:
+					continue
+				
+				# Build the new URL
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				if newurl in items:
+					continue
+				
+				# Keep it for a bit
+				items[newurl] = (now, newurl, description)
+		
+		# Otherwise, go the easy way
+		else:
+			# Find all of our URLs
+			chunks = FindChunks(resp.data, '<a ', '</a>')
+			if not chunks:
+				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				return
 			
-			# Get some text to describe it
-			bits = chunk.split('>', 1)
-			if len(bits) != 2:
-				continue
-			
-			lines = StripHTML(bits[1])
-			if len(lines) != 1:
-				continue
-			
-			# Keep it for a bit
-			items[newurl] = (now, newurl, lines[0])
+			# See if any are talking about torrents
+			for chunk in chunks:
+				# Find the URL
+				href = FindChunk(chunk, 'href="', '"')
+				if not href or href.find('.torrent') < 0:
+					continue
+				
+				# Build the new URL
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				if newurl in items:
+					continue
+				
+				# Get some text to describe it
+				bits = chunk.split('>', 1)
+				if len(bits) != 2:
+					continue
+				
+				lines = StripHTML(bits[1])
+				if len(lines) != 1:
+					continue
+				
+				# Keep it for a bit
+				items[newurl] = (now, newurl, lines[0])
 		
 		# If we found nothing, bug out
 		if items == {}:
