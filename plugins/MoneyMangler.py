@@ -28,7 +28,7 @@ QUOTE_HELP = '\02quote\02 <symbol> : Look up a current stock price.'
 QUOTE_URL = 'http://finance.yahoo.com/q?d=v1&s=%s'
 
 MONEY_SYMBOL = 'MONEY_SYMBOL'
-SYMBOL_RE = re.compile('^symbol (?P<findme>\S+)$')
+SYMBOL_RE = re.compile('^symbol (?P<findme>.+)$')
 SYMBOL_HELP = '\02symbol\02 <findme> : Look up a ticker symbol.'
 SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
 
