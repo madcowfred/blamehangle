@@ -187,38 +187,15 @@ class TorrentScraper(Plugin):
 		items = trigger.items
 		del trigger.items
 		
-		#items2 = items[:]
-		
-		# We don't need to add any that are already in the database
-		#t1 = time.time()
-		
-		# This is the old way, and it's really quite slow.
-		#for row in result:
-		#	lurl = row['url'].lower()
-		#	ldesc = row['description'].lower()
-		#	items = [a for a in items if a[1].lower() != lurl and a[2].lower() != ldesc]
-		
-		#t2 = time.time()
-		
-		# This is the new way, which is anywhere from 2 to 15 times faster,
-		# depending on the number of rows we're looking at.
+		# This way is anywhere from 2 to 20 times faster than the old way.
 		ldescs = dict([(row['description'].lower(), None) for row in result])
 		lurls = dict([(row['url'].lower(), None) for row in result])
 		
-		#newitems = []
 		now = int(time.time())
 		for item in items:
-			#if item[1].lower() not in lurls and item[2].lower() not in ldescs:
-			if item[0].lower() not in lurls and item[1].lower() not in ldescs:
+			# If we haven't seen this before, insert it
+			if (item[0].lower() not in lurls) and (item[1].lower() not in ldescs):
 				self.dbQuery(trigger, None, INSERT_QUERY, now, item[0], item[1])
-				#newitems.append(item)
-		
-		#print newitems == items,
-		#print 't1: %.4fs, t2: %.4fs' % (t2 - t1, time.time() - t2)
-		
-		# Start adding any items to our database
-		#for item in items:
-		#	self.dbQuery(trigger, None, INSERT_QUERY, *item)
 	
 	# -----------------------------------------------------------------------
 	# Generate a simple RSS feed with our findings
