@@ -172,4 +172,4 @@ def QuoteURL(url):
 	return urllib.quote(url, ':/')
 
 def UnquoteURL(url):
-	return urllib.unquote(url)
+	return urllib.unquote(url).replace(' ', '%20')
