@@ -384,7 +384,7 @@ class MoneyMangler(Plugin):
 		# Parse 'em
 		for chunk in chunks:
 			code = chunk[:3]
-			country = chunk[5:-7]
+			country = chunk[5:-6]
 			if code and country:
 				self.__Currencies[code] = country
 		
