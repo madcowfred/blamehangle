@@ -74,7 +74,7 @@ class WrapConn:
 		self.username = self.options.get('username', 'blamehangle').strip() or 'blamehangle'
 		self.vhost = self.options.get('vhost', '').strip() or None
 		if self.vhost and not hasattr(socket, 'gaierror'):
-			self.parent.connlog("vhost is set, but socket module doesn't have getaddrinfo()!")
+			self.parent.connlog(LOG_WARNING, "vhost is set, but socket module doesn't have getaddrinfo()!")
 			self.vhost = None
 		
 		self.ignore_strangers = int(self.options.get('ignore_strangers', 0))
