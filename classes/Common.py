@@ -93,13 +93,10 @@ def FindChunk(text, start, end, pos=None):
 	if startpos < 0:
 		return None
 	
-	# Can we find the end?
-	endpos = text.find(end, startpos)
-	if endpos <= startpos:
-		return None
-	
-	# No (or null range) text?
 	startspot = startpos + len(start)
+	
+	# Can we find the end?
+	endpos = text.find(end, startspot)
 	if endpos <= startspot:
 		return None
 	
