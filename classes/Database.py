@@ -64,6 +64,11 @@ class DatabaseWrapper:
 				arg = arg.replace("'", "''")
 				
 				arg = "'%s'" % arg
+			
+			# None -> NULL
+			elif arg is None:
+				arg = 'NULL'
+			
 			newargs.append(arg)
 		
 		return sqlquery % tuple(newargs)
