@@ -130,7 +130,7 @@ class PluginHandler(Child):
 	def _message_PLUGIN_REPLY(self, message):
 		text, conn, IRCtype, target, userinfo = message.data
 
-		if IRCtype == IRCT_PUBLIC:
+		if IRCtype == IRCT_PUBLIC or IRCtype == IRCT_PUBLIC_D:
 			# We are sending back to public, prepend the relevant nick
 			tosend = "%s: %s" % (userinfo.nick, text)
 			self.privmsg(conn, target, tosend)
