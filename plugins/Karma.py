@@ -21,9 +21,9 @@ KARMA_MINUS = "KARMA_MINUS"
 KARMA_LOOKUP = "KARMA_LOOKUP"
 KARMA_MOD = "KARMA_MOD"
 
-PLUS_RE = re.compile("(?P<name>^.+)(?=\+\+$)")
-MINUS_RE = re.compile("(?P<name>^.+)(?=--$)")
-LOOKUP_RE = re.compile("^karma (?P<name>.+)")
+PLUS_RE = re.compile("^(?P<name>[ \w]+)\s*\+\+$")
+MINUS_RE = re.compile("^(?P<name>[ \w]+)--$")
+LOOKUP_RE = re.compile("^karma (?P<name>[ \w]+)")
 
 KARMA_CHANGE_HELP = "<something>\02++\02 OR <something>\02--\02 : Increment or decrement karma for <something>"
 KARMA_HELP = "\02karma\02 <something> : Look up <something>'s karma level"
@@ -55,16 +55,19 @@ class Karma(Plugin):
 	#------------------------------------------------------------------------
 	
 	def _trigger_KARMA_LOOKUP(self, trigger):
-		name = trigger.match.group('name').lower()
-		self.dbQuery(trigger, self.__Karma_Lookup, SELECT_QUERY, name)
+		name = trigger.match.group('name').lower().strip()
+		if name:
+			self.dbQuery(trigger, self.__Karma_Lookup, SELECT_QUERY, name)
 	
 	def _trigger_KARMA_PLUS(self, trigger):
-		name = trigger.match.group('name').lower()
-		self.dbQuery(trigger, self.__Karma_Plus, SELECT_QUERY, name)
+		name = trigger.match.group('name').lower().strip()
+		if name:
+			self.dbQuery(trigger, self.__Karma_Plus, SELECT_QUERY, name)
 	
 	def _trigger_KARMA_MINUS(self, trigger):
-		name = trigger.match.group('name').lower()
-		self.dbQuery(trigger, self.__Karma_Minus, SELECT_QUERY, name)
+		name = trigger.match.group('name').lower().strip()
+		if name:
+			self.dbQuery(trigger, self.__Karma_Minus, SELECT_QUERY, name)
 	
 	#------------------------------------------------------------------------
 	# Does karma lookups
