@@ -42,7 +42,7 @@ class Message:
 	# Return a printable string with info about ourself, including
 	# how long it's been since we were sent.
 	def __str__(self):
-		return '%s --> %s: (%s) %s' % (diff, self.source, self.targetstring, self.ident, self.data)
+		return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, self.data)
 
 
 # ---------------------------------------------------------------------------
