@@ -191,14 +191,10 @@ class SmartyPants(Plugin):
 			elif option == 'max_fact_value_length':
 				val = self.Config.getint('Infobot', option)
 				self.max_fact_value_length = max(MIN_FACT_VALUE_LENGTH, min(MAX_FACT_VALUE_LENGTH, val))
-		
-		# Sort out our maximum factoid values
-		#self.max_fact_name_length = max(MAX_FACT_NAME_LENGTH, min(MAX_FACT_NAME_LENGTH, int(self.options.get('max_fact_name_length', MIN_FACT_NAME_LENGTH))))
-		#self.max_fact_value_length = max(MAX_FACT_VALUE_LENGTH, min(MAX_FACT_VALUE_LENGTH, int(self.options.get('max_fact_value_length', MIN_FACT_VALUE_LENGTH))))
 	
 	def __Build_Translation(self):
-		# space # ' - . [ ] ^ _ |
-		chars = [32, 35, 39, 45, 46, 91, 93, 94, 95, 124]
+		#    space   #   '   +   -   .   [   ]   ^   _   |
+		chars = [32, 35, 39, 43, 45, 46, 91, 93, 94, 95, 124]
 		# 0-9 (48-57)
 		chars += range(48, 58)
 		# A-Z (65-90)
@@ -734,12 +730,16 @@ class SmartyPants(Plugin):
 		
 		# It was in our database, modify it!
 		else:
-			row = result[0]
-			value = row['value']
-			
+			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
+				replytext = "You don't have permission to alter factoids."
+				self.sendReply(trigger, replytext)
+				return
 			if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 				self.sendReply(trigger, "You don't have permission to alter locked factoids.")
 				return
+			
+			row = result[0]
+			value = row['value']
 			
 			modstring = trigger.match.group('modstring')
 			if modstring.startswith("s"):
@@ -881,27 +881,34 @@ class SmartyPants(Plugin):
 		
 		# A result!
 		else:
+			now = int(time.time())
 			row = result[0]
 			
-			now = int(time.time())
-			then = row['created_time']
-			row['created_time'] = self.__Nice_Time(now - then)
+			parts = []
 			
-			text = '%(name)s -- created by %(author_nick)s (%(author_host)s), %(created_time)s ago'
+			# Created info
+			part = '%s -- created by %s (%s), %s ago' % (name, row['author_nick'],
+				row['author_host'], NiceTime(now, row['created_time']))
+			parts.append(part)
+			
+			# Requested info
 			if row['request_count']:
-				then = row['requested_time']
-				row['requested_time'] = self.__Nice_Time(now - then)
-				text += '; requested %(request_count)d time(s), last by %(requester_nick)s, %(requested_time)s ago'
+				part = 'requested %s time(s), last by %s, %s ago' % (row['request_count'],
+					row['requester_nick'], NiceTime(now, row['requested_time']))
+				parts.append(part)
+			# Modified info
 			if row['modifier_nick']:
-				then = row['modified_time']
-				row['modified_time'] = self.__Nice_Time(now - then)
-				text += '; last modified by %(modifier_nick)s (%(modifier_host)s), %(modified_time)s ago'
+				part = 'last modified by %s (%s), %s ago' % (row['modifier_nick'],
+					row['modifier_host'], NiceTime(now, row['modified_time']))
+				parts.append(part)
+			# Lock info
 			if row['locker_nick']:
-				then = row['locked_time']
-				row['locked_time'] = self.__Nice_Time(now - then)
-				text += '; locked by %(locker_nick)s (%(locker_host)s), %(locked_time)s ago'
+				part = 'locked by %s (%s), %s ago' % (row['locker_nick'], row['locker_host'],
+					NiceTime(now, row['locked_time']))
+				parts.append(part)
 			
-			replytext = text % row
+			# Put it back together
+			replytext = '; '.join(parts)
 		
 		self.sendReply(trigger, replytext)
 	
@@ -989,48 +996,45 @@ class SmartyPants(Plugin):
 		newname = newname.replace('\\are', 'are')
 		
 		return newname
-	
-	# -----------------------------------------------------------------------
-	# Turn an amount of seconds into a nice string detailing how long it
-	# is in english
-	# -----------------------------------------------------------------------
-	def __Nice_Time(self, seconds):
-		parts = []
-		
-		years, seconds = divmod(seconds, 31536000)
-		days, seconds = divmod(seconds, 86400)
-		hours, seconds = divmod(seconds, 3600)
-		minutes, seconds = divmod(seconds, 60)
-		
-		# a year
-		if years:
-			part = '%dy' % years
-			parts.append(part)
-		
-		# a day
-		if days:
-			part = '%dd' % days
-			parts.append(part)
-		
-		# an hour
-		if hours:
-			part = '%dh' % hours
-			parts.append(part)
-		
-		# a minute
-		if minutes:
-			part = '%dm' % minutes
-			parts.append(part)
-		
-		# any leftover seconds
-		if seconds:
-			part = '%ds' % seconds
-			parts.append(part)
-		
-		# If we have any stuff, return it
-		if parts:
-			return ' '.join(parts)
-		else:
-			return 'right now?'
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Turn an amount of seconds into a nice understandable string
+# -----------------------------------------------------------------------
+def NiceTime(now, seconds):
+	parts = []
+	
+	if seconds < 1000:
+		return 'a long time'
+	
+	# 365.242199 days in a year, according to Google
+	years, seconds = divmod(now - seconds, 31556926)
+	days, seconds = divmod(seconds, 86400)
+	hours, seconds = divmod(seconds, 3600)
+	minutes, seconds = divmod(seconds, 60)
+	
+	# a year
+	if years:
+		part = '%dy' % years
+		parts.append(part)
+	# a day
+	if days:
+		part = '%dd' % days
+		parts.append(part)
+	# an hour
+	if hours:
+		part = '%dh' % hours
+		parts.append(part)
+	# a minute
+	if minutes:
+		part = '%dm' % minutes
+		parts.append(part)
+	# any leftover seconds
+	if seconds:
+		part = '%ds' % seconds
+		parts.append(part)
+	
+	# If we have any stuff, return it
+	if parts:
+		return ' '.join(parts)
+	else:
+		return '0s'
