@@ -146,7 +146,7 @@ class ChatterGizmo(Child):
 	def connlog(self, connid, level, text):
 		newtext = '(%s) %s' % (self.Conns[connid].name, text)
 		self.putlog(level, newtext)
-
+	
 	# -----------------------------------------------------------------------
 	# Our handy dandy generic event handler
 	def _event_handler(self, connid, prefix, hostmask, command, target, arguments):
@@ -214,7 +214,7 @@ class ChatterGizmo(Child):
 	# We just got disconnected from the server
 	# -----------------------------------------------------------------------
 	def _handle_disconnect(self, connid, conn, event):
-		self.Conns[connid].disconnected()
+		self.Conns[connid].reset()
 		self.Conns[connid].last_connect = time.time()
 		
 		# Log something useful
@@ -417,6 +417,11 @@ class ChatterGizmo(Child):
 	# Numeric 315 : WHO reply
 	# -----------------------------------------------------------------------
 	def _handle_endofwho(self, connid, conn, event):
+		wrap = self.Conns[connid]
+		chan = event.arguments[0].lower()
+		
+		wrap.ircul._c[chan].synched = True
+		
 		tolog = 'Userlist synched for %s' % (event.arguments[0])
 		self.connlog(connid, LOG_ALWAYS, tolog)
 	
@@ -661,6 +666,18 @@ class ChatterGizmo(Child):
 		else:
 			tolog = "Unknown REQ_PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
 			self.putlog(LOG_WARNING, tolog)
+	
+	# Someone wants some WrapConn objects
+	def _message_REQ_WRAPS(self, message):
+		wraps = {}
+		
+		for net in message.data:
+			netl = net.lower()
+			for wrap in self.Conns.values():
+				if wrap.name.lower() == netl:
+					wraps[net] = wrap
+		
+		self.sendMessage(message.source, REPLY_WRAPS, wraps)
 	
 	# Someone wants some stats
 	def _message_GATHER_STATS(self, message):
