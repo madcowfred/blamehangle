@@ -434,22 +434,20 @@ class News(Plugin):
 		# We need to leave the ampersands in for feedparser
 		resp.data = UnquoteHTML(resp.data, 'amp')
 		
+		# Get our feed info
 		name = trigger.args[0]
 		feed = self.RSS_Feeds[name]
 		
-		now = time.time()
-		
-		r = FeedParser()
+		# Try to parse it
 		
 		try:
+			r = FeedParser()
 			r.feed(resp.data)
 		
 		except Exception, msg:
 			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
 			self.putlog(LOG_WARNING, tolog)
 			return
-		
-		print 'Feed parsed in %.3fs' % (time.time() - now)
 		
 		# Work out the feed title
 		if feed['title']:
