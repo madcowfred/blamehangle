@@ -14,7 +14,7 @@ from classes.Plugin import *
 
 SCRAPE_TIMER = 'SCRAPE_TIMER'
 
-SELECT_QUERY = "SELECT url, description FROM torrents WHERE url = %s"
+SELECT_QUERY = "SELECT url, description FROM torrents WHERE description IN (%s)"
 RECENT_QUERY = "SELECT url, description FROM torrents ORDER BY added DESC LIMIT 20"
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
 
@@ -60,7 +60,7 @@ class TorrentScraper(Plugin):
 			return
 		
 		# See if any are talking about torrents
-		items = []
+		items = {}
 		now = int(time.time())
 		
 		for chunk in chunks:
@@ -82,23 +82,27 @@ class TorrentScraper(Plugin):
 				continue
 			
 			# Keep it for a bit
-			items.append((now, newurl, lines[0]))
+			items[newurl] = (now, newurl, lines[0])
 		
 		# If we found nothing, bug out
-		if items == []:
+		if items == {}:
 			tolog = "Found no torrents at %s!" % resp.url
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
+		# Switch back to a list
+		items = items.values()
+		items.sort()
+		
 		# Build our query
 		trigger.items = items
 		
-		query = SELECT_QUERY
-		args = [items[0][1]]
+		args = [item[2] for item in items]
+		querybit = ', '.join(['%s'] * len(args))
 		
-		for ctime, url, description in items[1:]:
-			query = query + ' OR url = %s'
-			args.append(url)
+		query = SELECT_QUERY % querybit
+		
+		print 'args:', len(args)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
@@ -111,12 +115,14 @@ class TorrentScraper(Plugin):
 			self.putlog(LOG_WARNING, '__DB_Check: A DB error occurred!')
 			return
 		
+		print 'result:', len(result)
+		
 		items = trigger.items
 		del trigger.items
 		
 		# We don't need to add any that are already in the database
 		for row in result:
-			eatme = [a for a in items if a[1].lower() == row['url'].lower()]
+			eatme = [a for a in items if a[2].lower() == row['description'].lower()]
 			for eat in eatme:
 				items.remove(eat)
 		
