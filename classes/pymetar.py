@@ -441,7 +441,7 @@ class WeatherReport:
 
     def getWindSpeed(self):
         """
-        Return the wind speed in kilometers per hour.
+        Return the wind speed in knots!
         """
         return self.windspeed
 
@@ -458,17 +458,11 @@ class WeatherReport:
         """
         return self.windcomp
 
-    def getVisibilityKilometers(self):
+    def getVisibility(self):
         """
-        Return visibility in km.
+        Return visibility.
         """
         return self.vis
-
-    def getVisibilityMiles(self):
-        """
-        Return visibility in miles.
-        """
-        return self.vis / 1.609344
 
     def getHumidity(self):
         """
@@ -817,26 +811,31 @@ class ReportParser:
                     self.Report.windcomp=None
                 elif (data.find("Variable")!=-1):
                     #print "var"
-                    v,a,speed,r=data.split(" ",3)
-                    self.Report.windspeed=float(speed)*1.609344
+                    v,a,speedm,m,speedkt,r=data.split(" ",5)
+                    #self.Report.windspeed=float(speed)*1.609344
+                    self.Report.windspeed=float(speedkt[1:])
                     self.Report.winddir=None
                     self.Report.windcomp=None
                 else:
                     #print "elab"
-                    f,t,comp,deg,r,d,speed,r=data.split(" ",7)
+                    f,t,comp,deg,r,d,speedm,m,speedkt,r=data.split(" ",9)
                     self.Report.winddir=int(deg[1:])
                     self.Report.windcomp=comp.strip()
-                    self.Report.windspeed=float(speed)*1.609344
+                    #self.Report.windspeed=float(speed)*1.609344
+                    self.Report.windspeed=float(speedkt[1:])
 
             # visibility
 
             elif (header == "Visibility"):
-                for d in data.split():
-                    try:
-                        self.Report.vis=float(d)*1.609344
-                        break
-                    except ValueError:
-                        pass
+            	if data.endswith(':0'):
+            		data = data[:-2]
+            	self.Report.vis = data
+                #for d in data.split():
+                #    try:
+                #        self.Report.vis=float(d)*1.609344
+                #        break
+                #    except ValueError:
+                #        pass
 
             # dew point
             
