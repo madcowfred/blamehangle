@@ -379,13 +379,11 @@ class ChatterGizmo(Child):
 						chan, event.arguments, modes
 					)
 					self.putlog(LOG_WARNING, tolog)
-					print tolog
 					
 					users = [foo.nick for foo in wrap.ircul._c[chan].users.keys()]
 					users.sort()
 					tolog = '<chanusers: %s>' % (', '.join(users))
 					self.putlog(LOG_WARNING, tolog)
-					print tolog
 					
 					raise
 			
