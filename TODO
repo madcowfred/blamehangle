@@ -1,6 +1,4 @@
 critical:
-	* HTTPMonster - work on making the page fetching not block the entire
-	                app (anyone) (is this still blocking?)
 	* News - think up a replacement for HTMLParser, since it seems to
 	         suck -- I may have fixed this, leave it be and see if it 
 			 breaks -- More HTMLParser woe, google news sometimes generates
@@ -22,7 +20,8 @@ not important but more than whatever:
 	* admin interface? (fred, port from MCO?)
 	* Fix Karma so that it doesn't use KARMA_MOD hackery and instead uses the
 	  "if typ == types.TupleType:" form like in SmartyPants (anyone)
-	* dict plugin (anyone)
+	* dict plugin (fred!)
+	* Mobygames/HOTU searches (fred?)
 
 whatever:
 	* other plugins from Pinky that we care about (stuff like the quotes can
