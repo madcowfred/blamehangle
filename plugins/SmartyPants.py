@@ -177,6 +177,8 @@ class SmartyPants(Plugin):
 		
 		self.max_fact_name_length = DEF_FACT_NAME_LENGTH
 		self.max_fact_value_length = DEF_FACT_VALUE_LENGTH
+		self.alter_is_also = 1
+		self.alter_search_replace = 1
 		
 		for option in self.Config.options('Infobot'):
 			if option.startswith('public_request'):
@@ -186,30 +188,17 @@ class SmartyPants(Plugin):
 				[text, network] = option.split('.')
 				self.__set_pub[network.lower()] = self.Config.get('Infobot', option).lower().split()
 			
+			elif option == 'alter_is_also':
+				self.alter_is_also = self.Config.getint('Infobot', option)
+			elif option == 'alter_search_replace':
+				self.alter_search_replace = self.Config.getint('Infobot', option)
+			
 			elif option == 'max_fact_name_length':
 				val = self.Config.getint('Infobot', option)
 				self.max_fact_name_length = max(MIN_FACT_NAME_LENGTH, min(MAX_FACT_NAME_LENGTH, val))
 			elif option == 'max_fact_value_length':
 				val = self.Config.getint('Infobot', option)
 				self.max_fact_value_length = max(MIN_FACT_VALUE_LENGTH, min(MAX_FACT_VALUE_LENGTH, val))
-	
-	def __Build_Translation(self):
-		#    space   #   '   +   -   .   [   ]   ^   _   |
-		chars = [32, 35, 39, 43, 45, 46, 91, 93, 94, 95, 124]
-		# 0-9 (48-57)
-		chars += range(48, 58)
-		# A-Z (65-90)
-		chars += range(65, 91)
-		# a-z (97-122)
-		chars += range(97, 123)
-		
-		# Build the table! \x00 is our 'bad' char
-		self.__trans = ''
-		for i in range(256):
-			if i in chars:
-				self.__trans += chr(i)
-			else:
-				self.__trans += '\x00'
 	
 	# -----------------------------------------------------------------------
 	
@@ -683,7 +672,7 @@ class SmartyPants(Plugin):
 		else:
 			row = result[0]
 			
-			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
+			if self.alter_is_also and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
 				replytext = "You don't have permission to alter factoids."
 				self.sendReply(trigger, replytext)
 				return
@@ -759,7 +748,7 @@ class SmartyPants(Plugin):
 			row = result[0]
 			value = row['value']
 			
-			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
+			if self.alter_search_replace and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
 				replytext = "You don't have permission to alter factoids."
 				self.sendReply(trigger, replytext)
 				return
@@ -984,6 +973,25 @@ class SmartyPants(Plugin):
 		self.__Query_Handle(trigger, result, 'modification')
 	
 	# -----------------------------------------------------------------------
+	# Build our translation table
+	def __Build_Translation(self):
+		#    space   #   '   +   -   .   [   ]   ^   _   |
+		chars = [32, 35, 39, 43, 45, 46, 91, 93, 94, 95, 124]
+		# 0-9 (48-57)
+		chars += range(48, 58)
+		# A-Z (65-90)
+		chars += range(65, 91)
+		# a-z (97-122)
+		chars += range(97, 123)
+		
+		# Build the table! \x00 is our 'bad' char
+		self.__trans = ''
+		for i in range(256):
+			if i in chars:
+				self.__trans += chr(i)
+			else:
+				self.__trans += '\x00'
+	
 	# Return a sanitised factoid name.
 	def __Sane_Name(self, trigger):
 		# If it's just a string, use it instead
