@@ -25,8 +25,13 @@ OUTPUT_INTERVAL = 1
 STONED_INTERVAL = 40
 # How stoned must we be to jump server
 STONED_COUNT = 3
-# Maximum line length to send to the server
-MAX_LINE_LENGTH = 400
+
+# Range for line length to be
+MIN_LINE_LENGTH = 200
+MAX_LINE_LENGTH = 500
+# Range for split lines to be
+MIN_SPLIT_LINES = 1
+MAX_SPLIT_LINES = 4
 
 # ---------------------------------------------------------------------------
 
@@ -72,7 +77,11 @@ class WrapConn:
 			self.vhost = None
 		
 		self.ignore_strangers = int(self.options.get('ignore_strangers', 0))
-		self.max_split_lines = int(self.options.get('max_split_lines', 2))
+		
+		# Max line length should default to the max if there is no such option
+		self.max_line_length = max(MIN_LINE_LENGTH, min(MAX_LINE_LENGTH, int(self.options.get('max_line_length', MAX_LINE_LENGTH))))
+		# Max split lines should default to the min if there is no such option
+		self.max_split_lines = max(MIN_SPLIT_LINES, min(MAX_SPLIT_LINES, int(self.options.get('max_split_lines', MIN_SPLIT_LINES))))
 	
 	def connlog(self, level, text):
 		self.parent.connlog(self.conn.connid, level, text)
@@ -205,7 +214,7 @@ class WrapConn:
 	# Split text into lines if it's too long
 	def __Split_Text(self, text):
 		# If it's not too long, give it back
-		if len(text) <= MAX_LINE_LENGTH:
+		if len(text) <= self.max_line_length:
 			return [text]
 		
 		# If it IS too long, split it
@@ -213,8 +222,8 @@ class WrapConn:
 			found = 0
 			
 			for i in range(10, 100, 10):
-				n = text.find(' ', MAX_LINE_LENGTH - i)
-				if n >= 0 and n < MAX_LINE_LENGTH:
+				n = text.find(' ', self.max_line_length - i)
+				if n >= 0 and n < self.max_line_length:
 					found = 1
 					break
 			
