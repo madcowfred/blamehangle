@@ -42,7 +42,7 @@ TIME_CHECK = "TIME_CHECK"
 #	title varchar(255) NOT NULL default '',
 #	time bigint UNSIGNED default NULL,
 #	PRIMARY KEY (title)
-#	TYPE=MyISAM;
+#	) TYPE=MyISAM;
 
 
 TITLE_QUERY = "SELECT title FROM news WHERE title = %s"
@@ -242,6 +242,7 @@ class News(Plugin):
 				reply = self.__outgoing.pop(index)
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
+				self.putlog(LOG_DEBUG, reply)
 
 				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)

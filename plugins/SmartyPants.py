@@ -31,6 +31,7 @@ import random
 import re
 import time
 import types
+import copy
 
 from classes.Plugin import *
 from classes.Constants import *
@@ -49,6 +50,7 @@ FACT_LOCK = "FACT_LOCK"
 FACT_UNLOCK = "FACT_UNLOCK"
 FACT_LISTKEYS = "FACT_LISTKEYS"
 FACT_LISTVALUES = "FACT_LISTVALUES"
+FACT_TELL = "FACT_TELL"
 
 FACT_UPDATEDB = "FACT_MOD"
 
@@ -81,6 +83,7 @@ INFO_RE = re.compile("^ *factinfo +(?P<name>.+)\??$")
 STATUS_RE = re.compile("^ *status$")
 LISTKEYS_RE = re.compile("^ *listkeys +(?P<name>.+)$")
 LISTVALUES_RE = re.compile("^ *listvalues +(?P<name>.+)$")
+TELL_RE = re.compile("^ *tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
@@ -159,11 +162,13 @@ class SmartyPants(Plugin):
 		listkey_msg = PluginTextEvent(FACT_LISTKEYS, IRCT_MSG, LISTKEYS_RE)
 		listval_dir = PluginTextEvent(FACT_LISTVALUES, IRCT_PUBLIC_D, LISTVALUES_RE)
 		listval_msg = PluginTextEvent(FACT_LISTVALUES, IRCT_MSG, LISTVALUES_RE)
+		tell_dir = PluginTextEvent(FACT_TELL, IRCT_PUBLIC_D, TELL_RE)
+		tell_msg = PluginTextEvent(FACT_TELL, IRCT_MSG, TELL_RE)
 		
 		self.register(get_dir, get_msg, get_pub, set_dir, set_msg, no_dir, no_msg,
 			also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg,
 			unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg,
-			listkey_dir, listkey_msg, listval_dir, listval_msg)
+			listkey_dir, listkey_msg, listval_dir, listval_msg, tell_dir, tell_msg)
 	
 	#------------------------------------------------------------------------
 	
@@ -250,13 +255,25 @@ class SmartyPants(Plugin):
 		# Someone asked to search by key
 		elif trigger.name == FACT_LISTKEYS:
 			name = trigger.match.group('name')
+			name = name.replace("%", "\%")
+			name = name.replace('"', '\\\"')
+			name = name.replace("'", "\\\'")
 			query =  (LISTKEYS_QUERY % name, )
 			self.dbQuery(trigger, query)
 		
 		# Someone asked to search by value
 		elif trigger.name == FACT_LISTVALUES:
 			name = trigger.match.group('name')
+			name = name.replace("%", "\%")
+			name = name.replace('"', '\\\"')
+			name = name.replace("'", "\\\'")
 			query =  (LISTVALUES_QUERY % name, )
+			self.dbQuery(trigger, query)
+
+		# Someone wants us to tell someone else about a factoid
+		elif trigger.name == FACT_TELL:
+			name = trigger.match.group('name')
+			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 	
 	#------------------------------------------------------------------------
@@ -299,6 +316,9 @@ class SmartyPants(Plugin):
 
 		elif trigger.name == FACT_LISTVALUES:
 			self.__Fact_Search(trigger, results, "value")
+
+		elif trigger.name == FACT_TELL:
+			self.__Fact_Tell(trigger, results)
 		
 		elif trigger.name == FACT_UPDATEDB:
 			# The database just made our requested modifications, so we just
@@ -865,14 +885,56 @@ class SmartyPants(Plugin):
 		
 
 	#------------------------------------------------------------------------
-	
-	# The DB has performed our requested update to the factoid table
-	#def __fact_update(self, text, result, conn, IRCtype, target, userinfo):
-	#	replytext = self.__random_donetext()
-	#	reply = [replytext, conn, IRCtype, target, userinfo]
-	#	self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
-	
+	# Someone wants us to tell someone else about a factoid!
 	#------------------------------------------------------------------------
+	def __Fact_Tell(self, trigger, results):
+		typ = type(results[0])
+
+		# SELECT reply
+		if typ == types.TupleType:
+			name = trigger.match.group('name')
+			tellnick = trigger.match.group('nick')
+		
+			if results == [()]:
+				# The factoid didn't exist
+				self.__dunnos += 1
+				replytext = "no such factoid, '\02%s\02'" % name
+				self.sendReply(trigger, replytext)
+
+			else:
+				self.__requests += 1
+				row = results[0][0]
+				value = row['value']
+
+				# We have to do a bit of hackery here.. we always send two /msgs in
+				# reply to this event; one to the guy being told, and one to the
+				# guy that triggered the event confirming that we have performed
+				# the telling
+
+				trigger.event.IRCType = IRCT_MSG
+				replytext = "Told %s that %s is %s" % (tellnick, name, value)
+				self.sendReply(trigger, replytext)
+
+				dupe = copy.copy(trigger)
+				dupe.userinfo = copy.deepcopy(trigger.userinfo)
+				replytext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, name, value)
+				dupe.userinfo.nick = tellnick
+				self.sendReply(dupe, replytext)
+
+				# update our stats in the db
+				requester_nick = trigger.userinfo.nick
+				requester_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
+				now = int(time.time())
+				query = (REQUESTED_QUERY, requester_nick, requester_host, now, name)
+				self.dbQuery(trigger, query)
+
+		# UPDATE reply
+		elif typ == types.LongType:
+			result = results[0]
+			if result == 0:
+				replytext = 'factoid stats update failed, warning, warning!'
+				self.sendReply(trigger, replytext)
+
 	
 	# Check if the supplied irc user has access to delete factoids from our
 	# database

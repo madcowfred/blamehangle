@@ -14,3 +14,4 @@
 from plugins.Karma import Karma
 from plugins.News import News
 from plugins.SmartyPants import SmartyPants
+from plugins.Airline import Airline

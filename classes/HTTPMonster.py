@@ -13,11 +13,14 @@ from Queue import Queue
 from select import select
 from thread import start_new_thread
 from time import sleep
-from urllib2 import urlopen
+# we have our own version so we can mess with the user-agent string
+from classes.urllib2 import urlopen
 
 from classes.Children import Child
 from classes.Constants import *
 from classes.Common import *
+
+dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
 # ---------------------------------------------------------------------------
 
@@ -28,6 +31,12 @@ class HTTPMonster(Child):
 	to ensure that the bot will not freeze due to slow servers, or whatever
 	"""
 	
+	def setup(self):
+		if self.Config.has_option('HTTP', 'useragent'):
+			self.user_agent = self.Config.get('HTTP', 'useragent')
+		else:
+			# Default to Mozilla running in windows
+			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
@@ -39,7 +48,7 @@ def URLThread(parent, message):
 	url, returnme = message.data
 	try:
 		# get the page
-		the_page = urlopen(url)
+		the_page = urlopen(url, parent.user_agent)
 		
 		pagetext = ''
 		while 1:
@@ -48,7 +57,6 @@ def URLThread(parent, message):
 				data = the_page.read(1024)
 				if len(data) == 0:
 					break
-				
 				pagetext += data
 				
 				sleep(0.05)
@@ -60,6 +68,15 @@ def URLThread(parent, message):
 	
 	else:
 		# we have the page
+		m = dodgy_html_check(pagetext)
+		while m:
+			pre = pagetext[:m.start()]
+			post = pagetext[m.end():]
+			start, end = m.span('href')
+			fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
+			pagetext = pre + 'href=' + fixed + post
+			m = dodgy_html_check(pagetext)
+
 		data = [pagetext, returnme]
 		message = Message('HTTPMonster', message.source, REPLY_URL, data)
 		parent.outQueue.put(message)

@@ -148,4 +148,4 @@ class PluginReply:
 		return "%s: %s" % (name, text)
 
 	def __repr__(self):
-		return "<class PluginReply:" + self.__str__() + ">"
+		return "<class PluginReply: " + self.__str__() + ">"
