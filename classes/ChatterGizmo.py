@@ -115,6 +115,22 @@ class ChatterGizmo(Child):
 		self.connect()
 	
 	def run_sometimes(self, currtime):
+		# Process any data from IRC
+		try:
+			self.__ircobj.process_once()
+		
+		except select.error, msg:
+			if msg[0] == errno.EINTR:
+				pass
+		
+		# Stop if we're all done
+		if self.stopping:
+			for wrap in self.Conns.values():
+				if wrap.status == STATUS_CONNECTED:
+					return
+			
+			self.stopnow = 1
+		
 		# See if we have to try rejoining any channels
 		for rejoin in self.__Rejoins:
 			last, conn, connect_id, chan = rejoin
@@ -133,22 +149,6 @@ class ChatterGizmo(Child):
 			if wrap.status == STATUS_CONNECTED:
 				wrap.run_sometimes(currtime)
 	
-	# Process any data from IRC
-	def run_always(self):
-		try:
-			self.__ircobj.process_once()
-		
-		except select.error, msg:
-			if msg[0] == errno.EINTR:
-				pass
-		
-		if self.stopping:
-			for wrap in self.Conns.values():
-				if wrap.status == STATUS_CONNECTED:
-					return
-			
-			self.stopnow = 1
-	
 	# -----------------------------------------------------------------------
 	
 	def connect(self, section=None):
@@ -160,7 +160,7 @@ class ChatterGizmo(Child):
 			conn = self.__ircobj.server()
 			self.Conns[conn] = WrapConn(self, conn, options)
 			self.Conns[conn].connect()
-
+		
 		else:
 			networks = []
 			for section in self.Config.sections():
