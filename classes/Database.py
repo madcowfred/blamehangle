@@ -88,7 +88,6 @@ class DatabaseWrapper:
 				# unescape annoying chars
 				if type(arg) == types.StringType:
 					arg = arg.replace('\\$', '$')
-					arg = arg.replace('\\\\', '\\')
 				
 				thisrow[columns[i][0]] = arg
 			
