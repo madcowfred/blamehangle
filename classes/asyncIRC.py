@@ -92,6 +92,9 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	# Your basic 'send a line of text to the server' method
 	def sendline(self, line, *args):
+		if self.status != STATUS_CONNECTED:
+			return
+		
 		if args:
 			line = line % args
 		
