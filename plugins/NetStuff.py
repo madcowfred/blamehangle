@@ -25,7 +25,11 @@ class NetStuff(Plugin):
 		self.__ccTLDs = {}
 		
 		filename = os.path.join('data', 'cctlds')
-		cctld_file = open(filename, 'r')
+		try:
+			cctld_file = open(filename, 'r')
+		except OSError:
+			self.putlog(LOG_WARNING, "Can't find data/cctlds!")
+			return
 		
 		for line in cctld_file:
 			line = line.strip()
