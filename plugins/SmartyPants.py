@@ -335,7 +335,7 @@ class SmartyPants(Plugin):
 		
 		# Someone asked to search by value
 		elif trigger.name == FACT_LISTVALUES:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			name = name.replace("%", "\%")
 			name = name.replace('"', '\\\"')
 			name = name.replace("'", "\\\'")
@@ -501,7 +501,7 @@ class SmartyPants(Plugin):
 				# The factoid wasn't in our database, so insert it
 				#
 				#INSERT INTO factoids (name, value, author_nick, author_host, created_time)
-				name = trigger.match.group('name')
+				name = trigger.match.group('name').lower()
 				value = trigger.match.group('value')
 				if len(value) > MAX_FACT_VAL_LENGTH:
 					replytext = "that's too long"
@@ -542,7 +542,7 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	def __Fact_No(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name')
+		name = trigger.match.group('name').lower()
 		value = trigger.match.group('value')
 		
 		if len(value) > MAX_FACT_VAL_LENGTH:
@@ -654,11 +654,10 @@ class SmartyPants(Plugin):
 		modified_time = int(time.time())
 		modifier_nick = trigger.userinfo.nick
 		modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
-		name = trigger.match.group('name')
+		name = trigger.match.group('name').lower()
 		query = (MOD_QUERY, value, modifier_nick, modifier_host, modified_time, name)
 		self.dbQuery(trigger, query)
-					
-
+	
 	# -----------------------------------------------------------------------
 	# Someone asked to delete a factoid.
 	# Check their flags to see if they have permission, then delete or refuse
@@ -668,7 +667,7 @@ class SmartyPants(Plugin):
 		
 		# SELECT reply
 		if typ == types.TupleType:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			
 			if results == [()]:
 				# The factoid wasn't in our database, tell whoever cares
@@ -710,15 +709,15 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	def __Fact_Replace(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name')
-
+		name = trigger.match.group('name').lower()
+		
 		# SELECT reply
 		if typ == types.TupleType:
 			if results == [()]:
 				# That factoid wasn't in our database
 				replytext = "no such factoid: '\02%s\02'" % name
 				self.sendReply(trigger, replytext)
-				
+			
 			else:
 				# It was in our database
 				row = results[0][0]
@@ -800,7 +799,7 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	def __Fact_Lock(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name')
+		name = trigger.match.group('name').lower()
 		
 		# SELECT reply
 		if typ == types.TupleType:
@@ -847,7 +846,7 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 	def __Fact_Unlock(self, trigger, results):
 		typ = type(results[0])
-		name = trigger.match.group('name')
+		name = trigger.match.group('name').lower()
 
 		# SELECT reply
 		if typ == types.TupleType:
@@ -968,8 +967,8 @@ class SmartyPants(Plugin):
 			text += "%d second" % seconds
 		else:
 			text += "%d seconds" % seconds
-
-
+		
+		
 		return text
 	
 	#------------------------------------------------------------------------
@@ -980,36 +979,34 @@ class SmartyPants(Plugin):
 		num = row['total']
 		replytext = "Since %s, there have been \02%d\02 requests, \02%d\02 modifications, \02%d\02 new factoids, \02%d\02 deletions, and \02%d\02 dunnos. I currently reference \02%d\02 factoids." % (self.__start_time, self.__requests, self.__modifys, self.__sets, self.__dels, self.__dunnos, num)
 		self.sendReply(trigger, replytext)
-
 	
 	#------------------------------------------------------------------------
 	# Someone just asked to search the factoid database
 	#------------------------------------------------------------------------
 	def __Fact_Search(self, trigger, results, what):
-		search = trigger.match.group('name')
+		findme = trigger.match.group('name').lower()
 		if results == [()]:
 			# the search failed
-			replytext = "Factoid search of '\02%s\02' by %s returned no results." % (search, what)
+			replytext = "Factoid search of '\02%s\02' by %s returned no results." % (findme, what)
 			self.sendReply(trigger, replytext)
 		else:
 			# check how many items we found
 			results = results[0]
 			if len(results) > MAX_FACT_SEARCH_RESULTS:
-				replytext = "Factoid search of '\02%s\02' by %s yielded too many results. Please refine your query." % (search, what)
+				replytext = "Factoid search of '\02%s\02' by %s yielded too many results. Please refine your query." % (findme, what)
 				self.sendReply(trigger, replytext)
 			else:
 				# We found some items, but less than our max threshold, so
 				# generate the reply
-				replytext = "Factoid search of '\02%s\02' by %s (\02%d\02 results): " % (search, what, len(results))
+				replytext = "Factoid search of '\02%s\02' by %s (\02%d\02 results): " % (findme, what, len(results))
 				while results:
 					replytext += "%s" % results[0]['name']
 					results = results[1:]
 					if results:
 							replytext += " \02;;\02 "
-
+				
 				self.sendReply(trigger, replytext)
-		
-
+	
 	#------------------------------------------------------------------------
 	# Someone wants us to tell someone else about a factoid!
 	#------------------------------------------------------------------------
@@ -1018,7 +1015,7 @@ class SmartyPants(Plugin):
 
 		# SELECT reply
 		if typ == types.TupleType:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			tellnick = trigger.match.group('nick')
 		
 			if results == [()]:
