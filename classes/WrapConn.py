@@ -277,8 +277,23 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	# Join the channels in our channel list
 	def join_channels(self):
-		for chan in self.channels:
-			self.join_channel(chan)
+		chans = []
+		keys = []
+		
+		for chan, key in self.channels.items():
+			if key is None:
+				chans.append(chan)
+			else:
+				chans.insert(0, chan)
+				keys.insert(0, key)
+		
+		chanstring = ','.join(chans)
+		if keys:
+			keystring = ','.join(keys)
+		else:
+			keystring = None
+		
+		self.conn.join(chanstring, keystring)
 	
 	def join_channel(self, chan):
 		self.conn.join(chan, self.channels[chan])
