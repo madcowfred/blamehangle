@@ -9,6 +9,7 @@ want to use.
 
 import re
 import time
+import types
 
 from random import Random
 #from sgmllib import SGMLParseError
@@ -470,7 +471,11 @@ class News(Plugin):
 					continue
 				article_link = '<No Link>'
 			else:
-				article_link = item['link']
+				# feedparser gives us weird results sometimes
+				if type(item['link']) == types.ListType:
+					continue
+				else:
+					article_link = item['link']
 			
 			description = item.get('description', '')
 			
@@ -482,6 +487,12 @@ class News(Plugin):
 			# Keep the article for later
 			data = [article_title, article_link, description, currtime]
 			articles.append(data)
+		
+		# If we found no real articles, cry a bit
+		if len(articles) == 0:
+			tolog "Failed to find any items for feed '%s'!" % (name)
+			self.putlog(LOG_WARNING, tolog)
+			return
 		
 		# Log some timing info
 		tolog = "Feed '%s' parsed in %.03fs" % (name, time.time() - started)
