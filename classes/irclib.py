@@ -428,11 +428,19 @@ class ServerConnection(Connection):
 			try:
 				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
 				af, socktype, proto, canonname, sa = res
-			except socket.gaierror, msg:
-				raise ServerConnectionError, msg[1]
-			else:
+				
 				self.sock = socket.socket(af, socktype, proto)
 				self.sock.bind(sa)
+			
+			except socket.gaierror, msg:
+				raise ServerConnectionError, msg[1]
+			
+			except socket.error, msg:
+				raise ServerConnectionError, msg[1]
+			
+			except Exception, msg:
+				raise ServerConnectionError, msg
+				
 		else:
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		
