@@ -476,10 +476,10 @@ class Postman:
 		
 		# Check for any new plugins that have been added to the list
 		for plugin_name in self.__plugin_list:
-			# New plugin, load it
-			if plugin_name not in old_plugin_list:
+			# New plugin, or plugin that crashed while loading
+			if plugin_name not in old_plugin_list or plugin_name not in self.__Children:
 				self.__Plugin_Load(plugin_name, runonce=1)
-			# Check the mtime, and possibly reload
+			# If it's already loaded, check the mtime and possibly reload
 			else:
 				pluginpath = '%s.py' % os.path.join('plugins', plugin_name)
 				if os.path.exists(pluginpath):
