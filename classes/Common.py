@@ -1,3 +1,4 @@
+# -*- coding: iso-8859-1 -*-
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
@@ -5,7 +6,11 @@
 # of the other files.
 # ---------------------------------------------------------------------------
 
-import os, re, time, types
+import os
+import re
+import time
+import types
+
 from classes.Constants import REPLY_URL
 
 # ---------------------------------------------------------------------------
@@ -153,6 +158,7 @@ def FindChunk(text, start, end):
 	# Return!
 	return chunk
 
+# ---------------------------------------------------------------------------
 # Strip HTML tags from text and split it into non-empty lines
 def StripHTML(text):
 	# Remove any half tags at the start
@@ -160,27 +166,35 @@ def StripHTML(text):
 	# Remove all HTML tags
 	mangled = re.sub(r'(?s)<.*?>', '', mangled)
 	# Fix escaped bits and pieces
-	mangled = re.sub(r'\&([^;]+);', unquote_things, mangled)
+	mangled = UnquoteHTML(mangled)
 	# Split into lines that aren't empty
 	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
 	# Return!
 	return lines
 
+# ---------------------------------------------------------------------------
 # Replace &blah; quoted things with the actual thing
-QUOTED = {
-	'amp': '&',
-	'nbsp': ' ',
-	'ordm': '°',
-	'quot': '"',
-}
+def UnquoteHTML(text):
+	# thing name -> char
+	quoted = {
+		'amp': '&',
+		'nbsp': ' ',
+		'ordm': '°',
+		'quot': '"',
+	}
+	
+	# regexp helper function to do the replacement
+	def unquote_things(m):
+		whole = m.group(0)
+		thing = m.group(1).lower()
+		if thing.startswith('#'):
+			try:
+				c = chr(int(thing[1:]))
+			except ValueError:
+				return whole
+		else:
+			return quoted.get(thing, whole)
+	
+	# go!
+	return re.sub(r'\&([^;]+);', unquote_things, text)
 
-def unquote_things(m):
-	whole = m.group(0)
-	thing = m.group(1).lower()
-	if thing.startswith('#'):
-		try:
-			c = chr(int(thing[1:]))
-		except ValueError:
-			return whole
-	else:
-		return QUOTED.get(thing, whole)
