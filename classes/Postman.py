@@ -24,6 +24,8 @@ from classes.Message import Message
 from classes.Plugin import Plugin
 from classes.Users import *
 
+from classes.make_constants import _make_constants
+
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
 from classes.HTTPMonster import HTTPMonster
@@ -208,15 +210,9 @@ class Postman:
 	# -----------------------------------------------------------------------
 	
 	def run_forever(self):
-		# Bind things locally, or something like that
-		_sleep = time.sleep
-		_time = time.time
-		
-		_always = self.__run_always
-		_sometimes = self.__run_sometimes
-		
 		sometimes_counter = 0
 		
+		# Run any run_once methods that children have
 		for child in self.__Children.values():
 			if hasattr(child, 'run_once'):
 				child.run_once()
@@ -322,13 +318,14 @@ class Postman:
 				
 				
 				# Run any always loops
-				for meth in _always:
+				for meth in self.__run_always:
 					meth()
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter = (sometimes_counter + 1) % 4
 				if sometimes_counter == 0:
-					currtime = _time()
+					#currtime = _time()
+					currtime = time.time()
 					
 					# See if our log file has to rotate
 					if currtime >= self.__rotate_after:
@@ -340,17 +337,20 @@ class Postman:
 						return
 					
 					# Run anything our children want done occasionally
-					for meth in _sometimes:
+					for meth in self.__run_sometimes:
 						meth(currtime)
 				
 				# Sleep for a while
-				_sleep(0.05)
+				time.sleep(0.05)
 			
 			except KeyboardInterrupt:
 				self.__Shutdown('Ctrl-C pressed')
 			
 			except:
 				self.__Log_Exception()
+	
+	# Use the magical constants binder to speed things up
+	run_forever = _make_constants(run_forever)
 	
 	#------------------------------------------------------------------------
 	# Our own mangled version of sendMessage

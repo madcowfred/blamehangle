@@ -139,6 +139,7 @@ class PluginHandler(Child):
 		if triggered:
 			priorities = triggered.keys()
 			priorities.sort()
+			
 			for plugin, event, m in triggered[priorities[-1]]:
 				trigger = PluginTextTrigger(event, m, IRCType, conn, target, userinfo)
 				if plugin is self:
