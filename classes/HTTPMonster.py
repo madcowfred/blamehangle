@@ -116,6 +116,7 @@ def URLThread(parent, myindex):
 			parent.putlog(LOG_DEBUG, tolog)
 			
 			last_read = _time()
+			pagetext = ''
 			
 			try:
 				# get the page
@@ -127,7 +128,6 @@ def URLThread(parent, myindex):
 				
 				the_page = urllib2.urlopen(request)
 				
-				pagetext = ''
 				while 1:
 					can_read = select([the_page], [], [], 1)[0]
 					if can_read:
@@ -153,6 +153,9 @@ def URLThread(parent, myindex):
 				# something borked
 				tolog = "Error while trying to fetch url: %s - %s" % (url, why)
 				parent.putlog(LOG_ALWAYS, tolog)
+				
+				tolog = "Received %d bytes of data" % len(pagetext)
+				parent.putlog(LOG_DEBUG, tolog)
 			
 			else:
 				# we have the page
