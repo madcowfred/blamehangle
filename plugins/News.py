@@ -431,6 +431,8 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
 	def __Parse_RSS(self, trigger, resp):
+		started = time.time()
+		
 		# We need to leave the ampersands in for feedparser
 		resp.data = UnquoteHTML(resp.data, 'amp')
 		
@@ -439,7 +441,6 @@ class News(Plugin):
 		feed = self.RSS_Feeds[name]
 		
 		# Try to parse it
-		
 		try:
 			r = FeedParser()
 			r.feed(resp.data)
@@ -471,13 +472,17 @@ class News(Plugin):
 					continue
 				article_link = '<No Link>'
 			else:
-				article_link = item['link'].replace('&amp;', '&')
+				article_link = item['link']
 			
 			description = item.get('description', '')
 			
 			# Keep the article for later
 			data = [article_title, article_link, description, currtime]
 			articles.append(data)
+		
+		# Log some timing info
+		tolog = "Feed '%s' parsed in %.03fs" % (name, time.time() - started)
+		self.putlog(LOG_DEBUG, tolog)
 		
 		# Go for it!
 		self.__News_New(trigger, articles)
@@ -543,6 +548,9 @@ class News(Plugin):
 			# Attach the description if we're in verbose mode
 			if self.__verbose and description:
 				replytext = '%s : %s' % (replytext, description)
+			
+			# Get rid of any goddamn &amp; entities
+			replytext = replytext.replace('&amp;', '&')
 			
 			# stick it in the outgoing queue
 			reply = PluginReply(trigger, replytext)
