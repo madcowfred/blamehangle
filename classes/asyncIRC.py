@@ -55,10 +55,6 @@ class UserInfo:
 	def __repr__(self):
 		return '<UserInfo: %s>' % (self.hostmask)
 
-# Is this a channel?
-def is_channel(s):
-	return s and s[0] in "#&+!"
-
 # ---------------------------------------------------------------------------
 
 class asyncIRC(buffered_dispatcher):
@@ -70,15 +66,30 @@ class asyncIRC(buffered_dispatcher):
 		CONNID += 1
 		self.connid = CONNID
 		
-		self.status = STATUS_DISCONNECTED
-		self.welcomed = 0
-		
 		# stuff we need to keep track of
 		self.__handlers = []
 		self.__read_buf = ''
 		
 		self.__nickname = None
 		self.__userinfo = None
+		
+		# Reset to the disconnected state
+		self.disconnected()
+	
+	# Reset to the disconnected state
+	def disconnected(self):
+		self.status = STATUS_DISCONNECTED
+		self.welcomed = 0
+		
+		# Default features
+		self.features = {
+			'nicklen': 9,
+			'channel_types': ['#'],
+		}
+	
+	# Is this a channel?
+	def is_channel(self, chan):
+		return chan and chan[0] in self.features['channel_types']
 	
 	# -----------------------------------------------------------------------
 	# We have some extra connection state info to keep track of
@@ -130,8 +141,7 @@ class asyncIRC(buffered_dispatcher):
 	
 	# Really close the connectoin
 	def really_close(self, errormsg=None):
-		self.status = STATUS_DISCONNECTED
-		self.welcomed = 0
+		self.disconnected()
 		
 		self.close()
 		
@@ -151,6 +161,7 @@ class asyncIRC(buffered_dispatcher):
 	def handle_error(self):
 		raise
 	
+	# -----------------------------------------------------------------------
 	# There is some data waiting to be read
 	def handle_read(self):
 		try:
@@ -196,6 +207,19 @@ class asyncIRC(buffered_dispatcher):
 			elif command == 'nick' and userinfo.nick == self.__nickname:
 				self.__nickname = arguments[0]
 			
+			# We need to do scan the 005 replies for features
+			elif command == '005':
+				for argument in arguments:
+					try:
+						k, v = argument.split('=', 1)
+					except ValueError:
+						continue
+					
+					if k == 'CHANTYPES':
+						self.features['channel_types'] = [c for c in v]
+					elif k == 'NICKLEN':
+						self.features['nicklen'] = int(v)
+			
 			# We always have to answer a PING
 			elif command == 'ping':
 				self.sendline('PONG %s', arguments[0])
@@ -207,13 +231,13 @@ class asyncIRC(buffered_dispatcher):
 				messages = _ctcp_dequote(message)
 				
 				if command == 'notice':
-					if is_channel(target):
+					if self.is_channel(target):
 						command = 'pubnotice'
 					else:
 						command = 'privnotice'
 				
 				elif command == 'privmsg':
-					if is_channel(target):
+					if self.is_channel(target):
 						command = 'pubmsg'
 				
 				# This is slightly confusing
@@ -239,7 +263,7 @@ class asyncIRC(buffered_dispatcher):
 				
 				# MODE can be for a user or channel
 				if command == 'mode':
-					if not is_channel(target):
+					if not self.is_channel(target):
 						command = 'umode'
 				
 				# Translate numerics into more readable strings.
@@ -338,7 +362,7 @@ numeric_events = {
 	"002": "yourhost",
 	"003": "created",
 	"004": "myinfo",
-	"005": "featurelist",  # XXX
+	"005": "featurelist",
 	"200": "tracelink",
 	"201": "traceconnecting",
 	"202": "tracehandshake",

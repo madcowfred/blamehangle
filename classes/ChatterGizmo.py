@@ -185,7 +185,7 @@ class ChatterGizmo(Child):
 		# Normal joining
 		else:
 			wrap.join_channels()
-	
+		
 	# -----------------------------------------------------------------------
 	# We just got disconnected from the server
 	# -----------------------------------------------------------------------

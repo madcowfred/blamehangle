@@ -52,9 +52,8 @@ class WrapConn:
 		# We increment this to keep track of things like channel rejoin attempts
 		self.connect_id = 0
 		
-		# has ChatterGizmo asked us to close this connection?
-		# (note, this flag is only inspected in ChatterGizmo, it is never
-		#  touched here)
+		# has ChatterGizmo asked us to close this connection? (note: this flag
+		# is only ever inspected in ChatterGizmo, it is never touched here)
 		self.requested_quit = 0
 		
 		# Reset ourselves to the disconnected state
@@ -131,6 +130,24 @@ class WrapConn:
 	def connlog(self, level, text):
 		newtext = '(%s) %s' % (self.name, text)
 		self.parent.putlog(level, newtext)
+	
+	# -----------------------------------------------------------------------
+	# Reset ourselves to the disconnected state
+	def disconnected(self):
+		self.stoned = 0
+		self.trynick = 0
+		
+		self.last_connect = 0
+		self.last_nick = 0
+		self.last_output = 0
+		self.last_stoned = 0
+		
+		# Outgoing queues
+		self.__privmsg = []
+		self.__notice = []
+		self.__ctcp_reply = []
+		
+		self.users = Userlist()
 	
 	def connect(self):
 		if self.dnswait:
@@ -213,23 +230,6 @@ class WrapConn:
 											)
 	
 	# -----------------------------------------------------------------------
-	# Reset ourselves to the disconnected state
-	def disconnected(self):
-		self.stoned = 0
-		self.trynick = 0
-		
-		self.last_connect = 0
-		self.last_nick = 0
-		self.last_output = 0
-		self.last_stoned = 0
-		
-		# Outgoing queues
-		self.__privmsg = []
-		self.__notice = []
-		self.__ctcp_reply = []
-		
-		self.users = Userlist()
-	
 	# Our nick is in use
 	def nicknameinuse(self, nick):
 		# While trying to connect!
@@ -252,7 +252,7 @@ class WrapConn:
 				# If it was already a generated nick, time to try a bit
 				# of randomness.
 				if nick not in self.nicks:
-					newnick = nick[:7]
+					newnick = nick[:(self.conn.features['nicklen'] - 2)]
 					
 					# 0-9 = 48-57, a-z = 97-122
 					for i in range(2):
@@ -263,7 +263,7 @@ class WrapConn:
 							newnick += chr(random.randint(97, 122))
 				# Just try sticking a dash on the end
 				else:
-					newnick = self.nicks[0][:8] + '-'
+					newnick = self.nicks[0][:(self.conn.features['nicklen'] - 1)] + '-'
 			
 			# And off we go
 			self.last_nick = time.time()
