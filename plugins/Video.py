@@ -263,9 +263,13 @@ class Video(Plugin):
 		
 		# Find the show info
 		chunk = FindChunk(page_text, '<!-- Show Information body Begins -->', '<!-- Show Information body Ends -->')
-		chunk = FindChunk(chunk, '<table width="575"', '</table>')
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: show info.')
+			return
+		
+		chunk = FindChunk(chunk, '<table width="575"', '</table>')
+		if not chunk:
+			self.sendReply(trigger, 'Page parsing failed: show info table.')
 			return
 		
 		# Find the table cells!
@@ -292,7 +296,7 @@ class Video(Plugin):
 			replytext = ' '.join(parts)
 		
 		else:
-			replytext = 'Page parsing failed: info table.'
+			replytext = 'Page parsing failed: show info table cells.'
 		
 		self.sendReply(trigger, replytext)
 
