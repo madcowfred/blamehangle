@@ -153,7 +153,11 @@ class asyncIRC(buffered_dispatcher):
 	
 	# There is some data waiting to be read
 	def handle_read(self):
-		self.__read_buf += self.recv(4096)
+		try:
+			self.__read_buf += self.recv(4096)
+		except socket.error, msg:
+			self.really_close(msg)
+			return
 		
 		# Split the data into lines. The last line is either incomplete or
 		# empty, so keep it as our buffer.
