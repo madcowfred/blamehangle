@@ -118,4 +118,4 @@ class SportsFan(Plugin):
 		if len(foo) == 2:
 			return foo
 		else:
-			return (-1, -1)
+			return (0, 0)
