@@ -94,6 +94,9 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	def sendline(self, line, *args):
 		if args:
 			line = line % args
+		
+		print '>', repr(line)
+		
 		self.send(line + '\r\n')
 	
 	# We want our nickname
@@ -139,6 +142,8 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		self.__read_buf = lines.pop()
 		
 		for line in lines:
+			print '<', repr(line)
+			
 			prefix = command = target = userinfo = None
 			arguments = []
 			
