@@ -5,13 +5,18 @@
 
 import re
 
-from classes.Plugin import *
+from classes.Common import *
 from classes.Constants import *
+from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
 SCORES = "SCORES"
-SCORES_RE = re.compile("^score\s+(?P<league>NFL|MLB|NBA|NHL)\s+(?P<team>.+)$", re.I)
+SCORES_HELP = "'\02score\02 <league> <team>' : Search for a score for <team> playing in <league> today. <league> can be one of NFL, MLB, NBA, NHL. <team> is identified by location, not nickname."
+SCORES_RE = re.compile(r'^score\s+(?P<league>NFL|MLB|NBA|NHL)\s+(?P<team>.+)$', re.I)
+SCORES_URL = "http://sports.yahoo.com/%s/"
+
+SCORE_RE = re.compile(r'(\d+)<br>(\d+)')
 
 # ---------------------------------------------------------------------------
 
@@ -25,101 +30,69 @@ class SportsFan(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		scores_dir = PluginTextEvent(SCORES, IRCT_PUBLIC_D, SCORES_RE)
-		scores_msg = PluginTextEvent(SCORES, IRCT_MSG, SCORES_RE)
-		
-		self.register(scores_dir, scores_msg)
-		self.__set_help_msgs()
-	
-	def __set_help_msgs(self):
-		SCORES_HELP = "'\02score\02 <league> <team>' : Search for a score for <team> playing in <league> today. <league> can be one of NFL, MLB, NBA, NHL. <team> is identified by location, not nickname."
+		self.setTextEvent(SCORES, SCORES_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('sports', 'score', SCORES_HELP)
-		
 		self.registerHelp()
 	
 	# -----------------------------------------------------------------------
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == SCORES:
-			self.__scores(trigger)
-		else:
-			errtext = "SportsFan got a bad event: %s" % trigger.name
-			raise ValueError, errtext
-	
-	# -----------------------------------------------------------------------
-	
 	# Someone wants us to lookup a sports score
-	def __scores(self, trigger):
-		url = "http://sports.yahoo.com/%s/" % trigger.match.group('league').lower()
-		self.urlRequest(trigger, url)
+	def _trigger_SCORES(self, trigger):
+		url = SCORES_URL % trigger.match.group('league').lower()
+		self.urlRequest(trigger, self.__Parse_Scores, url)
 	
 	# -----------------------------------------------------------------------
-	
 	# We heard back from Yahoo. yay!
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
-		team = trigger.match.group('team')
-		league = trigger.match.group('league')
+	def __Parse_Scores(self, trigger, page_text):
+		team = trigger.match.group('team').lower()
+		league = trigger.match.group('league').lower()
 		
-		# Search for our info in the page Yahoo Sports gave us
-		find_re = re.compile(r'^\s*<a href="/%s/teams/.*?at<br>$' % league, re.I)
+		# Find some score blocks
+		chunks = FindChunks(page_text, '<td class="yspscores">', '</tr>')
+		if not chunks:
+			self.sendReply(trigger, 'Page parsing failed')
+			return
 		
-		lines = page_text.splitlines()
-		for i in range(len(lines)):
-			line = lines[i]
-			if find_re.match(line):
-				# We found the away team in this game
-				away = self.__parse(line)[:-3]
+		# See if any of them are for team scores
+		teamlink = '/%s/teams/' % league
+		for chunk in chunks:
+			if chunk.find(teamlink) < 0:
+				continue
+			
+			# Get our team names
+			lines = StripHTML(chunk)
+			
+			away_team = lines[0].replace(' at', '')
+			home_team = lines[1]
+			
+			# If it's the team we want, do some more stuff
+			if away_team.lower() == team or home_team.lower() == team:
+				# Find our score
+				m = SCORE_RE.search(chunk)
+				if not m:
+					continue
 				
-				# the next line is the home team
-				home = self.__parse(lines[i+1])
+				away_score = m.group(1)
+				home_score = m.group(2)
 				
-				# one line of crappy html, then the scores
-				away_score, home_score = self.__find_scores(lines[i+3])
-				
-				# this line indicates if this is a final score or not
-				blah = self.__parse(lines[i+7])
-				if blah == "Final":
-					game_status = "(Final score)"
+				# See if it's a final score or not
+				if lines[-1].startswith('Final'):
+					thing = 'Final'
 				else:
-					game_status = "(Progress score)"
+					thing = 'Progress'
 				
-				tolog = "Found a game: %s %s: %s - %s: %s" % (game_status, home, home_score, away, away_score)
-				self.putlog(LOG_DEBUG, tolog)
+				# Went to overtime?
+				if lines[-1].endswith('OT'):
+					replytext = '(%s score, overtime) %s %s - %s %s' % (thing, away_team, away_score, home_score, home_team)
+				else:
+					replytext = '(%s score) %s %s - %s %s' % (thing, away_team, away_score, home_score, home_team)
 				
-				# check to see if this is the game the user was asking about
-				if team.lower() == away.lower() or team.lower() == home.lower():
-					replytext = '%s %s: %s - %s: %s' % (game_status, home, home_score, away, away_score)
-					self.sendReply(trigger, replytext)
-					return
+				self.sendReply(trigger, replytext)
+				return
 		
-		# If we get here, we didn't find any games that matched what the user
-		# was looking for
-		replytext = "Couldn't find a %s game today for '%s'" % (league, team)
+		# If we get here, we didn't find any matching games
+		replytext = "Couldn't find a %s game for '%s'" % (league.upper(), team)
 		self.sendReply(trigger, replytext)
-	
-	# -----------------------------------------------------------------------
-	# remove all the HTML tags and the trailing newline from the supplied line
-	def __parse(self, text):
-		text = re.sub("<.+?>", "", text)
-		text = text.replace("&nbsp;", " ")
-		if text.endswith("\n"):
-			text = text[:-1]
-		return text.strip()
-	
-	# -----------------------------------------------------------------------
-	# Find the scores in the current line
-	def __find_scores(self, text):
-		text = text.replace("<", " <")
-		text = self.__parse(text)
-		
-		foo = text.split()
-		if len(foo) == 2:
-			return foo
-		else:
-			return (0, 0)
 
 # ---------------------------------------------------------------------------
