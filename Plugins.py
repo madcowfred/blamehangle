@@ -18,3 +18,4 @@ from plugins.Airline import Airline
 from plugins.Calculator import Calculator
 from plugins.MapQuest import MapQuest
 from plugins.MoneyMangler import MoneyMangler
+from plugins.SpellingBee import SpellingBee
