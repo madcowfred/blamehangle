@@ -12,11 +12,24 @@ from classes.Children import Child
 from classes.Constants import *
 
 class Plugin(Child):
+	def __init__(self, *args, **kwargs):
+		Child.__init__(self, *args, **kwargs)
+		
+		self.__Help = {}
+	
 	def _message_PLUGIN_REGISTER(self, message):
 		raise Error, 'need to overwrite REGISTER message handler in %s' % self.__name
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		raise Error, 'need to overwrite TRIGGER message handler in %s' % self.__name
+	
+	# -----------------------------------------------------------------------
+	# Extend the default shutdown handler a little, so we can unset help stuff
+	def _message_REQ_SHUTDOWN(self, *args, **kwargs):
+		Child._message_REQ_SHUTDOWN(self, *args, **kwargs)
+		
+		if self.__Help:
+			self.unregisterHelp()
 	
 	# -----------------------------------------------------------------------
 	
@@ -27,7 +40,13 @@ class Plugin(Child):
 	# -----------------------------------------------------------------------
 	
 	def setHelp(self, topic, command, help_text):
-		self.sendMessage('Helper', SET_HELP, [topic, command, help_text])
+		self.__Help.setdefault(topic, {})[command] = help_text
+	
+	def registerHelp(self):
+		self.sendMessage('Helper', SET_HELP, self.__Help)
+	
+	def unregisterHelp(self):
+		self.sendMessage('Helper', UNSET_HELP, self.__Help)
 	
 	def register(self, *events):
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)

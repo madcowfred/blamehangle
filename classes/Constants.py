@@ -15,17 +15,16 @@ LOG_DEBUG = 'LOG_DEBUG'
 LOG_WARNING = 'LOG_WARNING'
 LOG_MSG = 'LOG_MSG'
 
-TOLOG_ADMIN_INVALIDPORT = "ERROR: Telnet admin port is privileged or invalid."
-TOLOG_ADMIN_PORTINUSE = "ERROR: Telnet admin port is in use."
-
 # ---------------------------------------------------------------------------
 # Plugin constants
 # ---------------------------------------------------------------------------
 
 PLUGIN_REGISTER = 'PLUGIN_REGISTER'
+PLUGIN_UNREGISTER = 'PLUGIN_UNREGISTER'
 PLUGIN_TRIGGER = 'PLUGIN_TRIGGER'
 PLUGIN_REPLY = 'PLUGIN_REPLY'
 SET_HELP = 'SET_HELP'
+UNSET_HELP = 'UNSET_HELP'
 
 # ---------------------------------------------------------------------------
 # IRCtype constants
@@ -42,8 +41,6 @@ IRCT_TIMED = 'IRCT_TIMED'
 # ---------------------------------------------------------------------------
 # Request constants
 # ---------------------------------------------------------------------------
-REQ_ADD_TIMER = 'REQ_ADD_TIMER'
-REQ_DEL_TIMER = 'REQ_DEL_TIMER'
 REQ_LOG = 'REQ_LOG'
 REQ_NOTICE = 'REQ_NOTICE'
 REQ_PRIVMSG = 'REQ_PRIVMSG'
@@ -58,6 +55,5 @@ REQ_REHASH = 'REQ_REHASH'
 # Reply constants
 # ---------------------------------------------------------------------------
 REPLY_QUERY = 'REPLY_QUERY'
-REPLY_TIMER_TRIGGER = 'REPLY_TIMER_TRIGGER'
 REPLY_URL = 'REPLY_URL'
 REPLY_SHUTDOWN = 'REPLY_SHUTDOWN'

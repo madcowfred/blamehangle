@@ -40,43 +40,73 @@ class Helper(Plugin):
 		self.register(help_dir, help_msg)
 	
 	# -----------------------------------------------------------------------
-	
 	# A plugin has just asked to register some help info
 	def _message_SET_HELP(self, message):
-		topic, command, help_text = message.data
-
-		# check if this is a new topic
-		if not topic in self.__help:
-			# create an empty help topic
-			self.__help[topic] = []
-			# register a new trigger for "help <this topic>"
-			top_name = "**%s**" % topic
-			top_pattern = re.compile("^help +(?P<topic>%s)$" % topic)
-			top_dir = PluginTextEvent(top_name, IRCT_PUBLIC_D, top_pattern)
-			top_msg = PluginTextEvent(top_name, IRCT_MSG, top_pattern)
-			self.register(top_dir, top_msg)
-
-		# add the help text for this command to our help for this topic
-		self.__help[topic].append((command, help_text))
-		
-		# register a new trigger for this command
-		com_name = "__%s__%s__" % (topic, command)
-		com_pattern = re.compile("^help +(?P<topic>%s) +(?P<command>%s)$" % (topic, command))
-		com_dir = PluginTextEvent(com_name, IRCT_PUBLIC_D, com_pattern)
-		com_msg = PluginTextEvent(com_name, IRCT_MSG, com_pattern)
-		self.register(com_dir, com_msg)
-
+		for topic, cmds in message.data.items():
+			for command, help_text in cmds.items():
+				# check if this is a new topic
+				if not topic in self.__help:
+					# create an empty help topic
+					self.__help[topic] = []
+					# register a new trigger for "help <this topic>"
+					top_name = "**%s**" % topic
+					top_pattern = re.compile("^help +(?P<topic>%s)$" % topic)
+					top_dir = PluginTextEvent(top_name, IRCT_PUBLIC_D, top_pattern)
+					top_msg = PluginTextEvent(top_name, IRCT_MSG, top_pattern)
+					self.register(top_dir, top_msg)
+				
+				# add the help text for this command to our help for this topic
+				self.__help[topic].append((command, help_text))
+				
+				# register a new trigger for this command
+				com_name = "__%s__%s__" % (topic, command)
+				com_pattern = re.compile("^help +(?P<topic>%s) +(?P<command>%s)$" % (topic, command))
+				com_dir = PluginTextEvent(com_name, IRCT_PUBLIC_D, com_pattern)
+				com_msg = PluginTextEvent(com_name, IRCT_MSG, com_pattern)
+				self.register(com_dir, com_msg)
+	
 	# -----------------------------------------------------------------------
-
+	# A plugin wants to unregister some help info
+	def _message_UNSET_HELP(self, message):
+		names = []
+		for topic, cmds in message.data.items():
+			if not topic in self.__help:
+				continue
+			
+			for findme in cmds.items():
+				command, help_text = findme
+				if not findme in self.__help[topic]:
+					continue
+				
+				self.__help[topic].remove(findme)
+				
+				name = '__%s__%s__' % (topic, command)
+				names.append(name)
+			
+			# Empty topic, delete it too
+			if not self.__help[topic]:
+				del self.__help[topic]
+				
+				name = '**%s**' % (topic)
+				names.append(name)
+		
+		self.sendMessage('PluginHandler', PLUGIN_UNREGISTER, [IRCT_PUBLIC_D, names])
+		self.sendMessage('PluginHandler', PLUGIN_UNREGISTER, [IRCT_MSG, names])
+	
+	# -----------------------------------------------------------------------
+	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
-
+		
 		# Someone simply asked for "help"
 		if trigger.name == BASIC_HELP:
-			replytext = "Help topics: "
-			replytext += " \02;;\02 ".join(self.__help.keys())
+			if self.__help:
+				replytext = "Help topics: "
+				replytext += " \02;;\02 ".join(self.__help.keys())
+			else:
+				replytext = 'No help topics available'
 			self.sendReply(trigger, replytext)
-
+		
 		# Someone asked for help on a topic
 		elif trigger.name.startswith("**") and trigger.name.endswith("**"):
 			topic = trigger.name[2:-2]
@@ -84,7 +114,7 @@ class Helper(Plugin):
 			commands = [com for com, text in self.__help[topic]]
 			replytext += " \02;;\02 ".join(commands)
 			self.sendReply(trigger, replytext)
-
+		
 		# Someone asked for help on a command
 		elif trigger.name.startswith("__") and trigger.name.endswith("__"):
 			name = trigger.name.replace(" ", "!#!#!@@@!#!#!")
@@ -96,10 +126,10 @@ class Helper(Plugin):
 			replytext += help_text
 			#self.sendReply(trigger, replytext)
 			self.sendReply(trigger, help_text)
-
+		
 		# Something went wrong
 		else:
 			errtext = "Helper got an unknown trigger: %s" % trigger.name
 			raise ValueError, errtext
-	
+
 # ---------------------------------------------------------------------------

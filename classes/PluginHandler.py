@@ -77,7 +77,6 @@ class PluginHandler(Child):
 		self.run_once()
 	
 	# -----------------------------------------------------------------------
-
 	# A plugin has responded
 	def _message_PLUGIN_REGISTER(self, message):
 		events = message.data
@@ -96,7 +95,16 @@ class PluginHandler(Child):
 			else:
 				eventStore[name] = (event, message.source)
 	
-	#------------------------------------------------------------------------
+	# A plugin wants to unregister an event (by name only for now)
+	def _message_PLUGIN_UNREGISTER(self, message):
+		IRCType, names = message.data
+		eventStore = self.__getRelevantStore(IRCType)
+		
+		for name in names:
+			if name in eventStore:
+				del eventStore[name]
+	
+	# -----------------------------------------------------------------------
 	# Something has happened on IRC, and we are being told about it. Search
 	# through the appropriate collection of events and see if any match. If
 	# we find a match, send the TRIGGER message to the appropriate plugin.

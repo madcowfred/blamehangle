@@ -123,6 +123,9 @@ class Postman:
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
+		tolog = "Unloading plugin object '%s'" % name
+		self.__Log(LOG_DEBUG, tolog)
+		
 		if self.__Children.has_key(name):
 			# Remove them from the run_* lists
 			child = self.__Children[name]
@@ -277,11 +280,15 @@ class Postman:
 				if trace[0] == SystemExit:
 					raise
 				
+				# Remember the last filename
+				last_file = ''
+				
 				self.__Log(LOG_ALWAYS, '*******************************************************')
 				
 				self.__Log(LOG_ALWAYS, 'Traceback (most recent call last):')
 				
 				for entry in traceback.extract_tb(trace[2]):
+					last_file = entry[:-1][0]
 					tolog = '  File "%s", line %d, in %s' % entry[:-1]
 					self.__Log(LOG_ALWAYS, tolog)
 					tolog = '    %s' % entry[-1]
@@ -299,7 +306,13 @@ class Postman:
 					sys.exit(-1)
 				
 				else:
-					self.__Shutdown('Crashed!')
+					# Was it a plugin? If so, we can try shutting it down
+					head, tail = os.path.split(last_file)
+					if head.endswith('plugins'):
+						root, ext = os.path.splitext(tail)
+						self.sendMessage(root, REQ_SHUTDOWN, None)
+					else:
+						self.__Shutdown('Crashed!')
 	
 	#------------------------------------------------------------------------
 	# Our own mangled version of sendMessage
