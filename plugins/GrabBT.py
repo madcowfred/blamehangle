@@ -165,13 +165,12 @@ class GrabBT(Plugin):
 			self.sendReply(trigger, 'Torrent does not exist!')
 			return
 		
-		# Split the last bit of the URL off
-		torrentfile = UnquoteURL(resp.url.split('/')[-1])
-		
 		# Look for a Content-Disposition header
-		m = re.search('filename="(.*?)"', resp.headers.get('Content-Disposition', ''))
+		m = re.search('filename="(.*?)"', resp.headers.get('content-disposition', ''))
 		if m:
 			torrentfile = m.group(1)
+		else:
+			torrentfile = UnquoteURL(resp.url.split('/')[-1])
 		
 		# Bad news, do evil parsing of the URL
 		if not torrentfile.endswith('.torrent'):

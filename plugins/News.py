@@ -461,7 +461,7 @@ class News(Plugin):
 			return
 		
 		# Remember the Last-Modified header if it was sent
-		feed['last-modified'] = resp.headers.get('Last-Modified', None)
+		feed['last-modified'] = resp.headers.get('last-modified', None)
 		
 		# Work out the feed title
 		feed_title = feed['title'] or rss['feed']['title']

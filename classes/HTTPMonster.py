@@ -282,12 +282,12 @@ class async_http(buffered_dispatcher):
 				headers = {}
 				for line in self.headlines[1:]:
 					k, v = re.split(':+ ', line, 1)
-					headers[k] = v
+					headers[k.lower()] = v
 				
 				# Various redirect responses
 				if response in ('301', '302', '303', '307'):
-					if 'Location' in headers:
-						newurl = urlparse.urljoin(self.url, headers['Location'])
+					if 'location' in headers:
+						newurl = urlparse.urljoin(self.url, headers['location'])
 						
 						if newurl in self.seen:
 							self.failed('Redirection loop encountered!')
@@ -321,12 +321,12 @@ class async_http(buffered_dispatcher):
 						# Check for gzip
 						is_gzip = 0
 						
-						if 'Content-Encoding' in headers:
-							chunks = headers['Content-Encoding'].split()
+						if 'content-encoding' in headers:
+							chunks = headers['content-encoding'].split()
 							if 'gzip' in chunks:
 								is_gzip = 1
 							else:
-								tolog = 'Unknown Content-Encoding: %s' % (repr(headers['Content-Encoding']))
+								tolog = 'Unknown Content-Encoding: %s' % (repr(headers['content-encoding']))
 								self.parent.pulog(LOG_WARNING, tolog)
 						
 						# If we think it's gzip compressed, try to unsquish it
