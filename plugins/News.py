@@ -511,12 +511,13 @@ class News(Plugin):
 		if len(articles) == 0:
 			return
 		
-		# Chop off any ridiculously long titles
 		for article in articles:
+			# Chop off any ridiculously long titles
 			if len(article[0]) > MAX_TITLE_LENGTH:
 				article[0] = '%s...' % article[0][:MAX_TITLE_LENGTH]
-		
-		trigger.articles = articles
+			# Unquote HTTP urls
+			if url.startswith('http://'):
+				article[1] = UnquoteURL(article[1]).replace('&amp;', '&')
 		
 		# Build our query
 		args = [article[0] for article in articles] + [article[1] for article in articles]
@@ -524,17 +525,8 @@ class News(Plugin):
 		query = NEWS_QUERY % (querybit, querybit)
 		
 		# And execute
+		trigger.articles = articles
 		self.dbQuery(trigger, self.__News_Reply, query, *args)
-		return
-		
-		querybits = [NEWS_QUERY]
-		args = [trigger.articles[0][0]]
-		
-		for article in trigger.articles[1:]:
-			querybits.append('OR title = %s')
-			args.append(article[0])
-		
-		self.dbQuery(trigger, self.__News_Reply, ' '.join(querybits), *args)
 	
 	# -----------------------------------------------------------------------
 	# We have a reply from the database, maybe insert some stuff now
