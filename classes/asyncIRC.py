@@ -11,6 +11,7 @@ Largely a refactor of irclib.py (Joel Roshdal).
 import asyncore
 import re
 import socket
+import sys
 
 # ---------------------------------------------------------------------------
 # Yes, this thing is horrible.
@@ -75,6 +76,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	# An event happened, off we go
 	def __trigger_event(self, *args):
+		print 'EVENT:', repr(args)
 		event = IRCEvent(*args)
 		for method in self.__handlers:
 			method(event)
@@ -85,21 +87,25 @@ class asyncIRC(asyncore.dispatcher_with_send):
 			line = line % args
 		self.send(line + '\r\n')
 	
+	# We want our nickname
+	def getnick(self):
+		return self.__nickname
+	
 	# -----------------------------------------------------------------------
 	# We've managed to connect
 	def handle_connect(self):
 		self.status = STATUS_CONNECTED
 		
 		# Log on...
-		self.nick(self.nickname)
-		self.user(self.username, self.localhost, self.server, self.ircname)
+		self.nick(self.__nickname)
+		self.user(*self.__userinfo)
 	
 	# The connection got closed somehow
 	def handle_close(self):
 		self.close()
 	
 	# An exception occured somewhere
-	def handle_error(self):
+	def ahandle_error(self):
 		_type, _value = sys.exc_info()[:2]
 		
 		if _type == 'KeyboardInterrupt':
@@ -113,10 +119,12 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		
 		# Split the data into lines. The last line is either incomplete or
 		# empty, so keep it as our buffer.
-		lines = __linesep_regexp.split(self.__read_buf)
+		lines = _linesep_regexp.split(self.__read_buf)
 		self.__read_buf = lines.pop()
 		
 		for line in lines[:-1]:
+			print '<', repr(line)
+			
 			prefix = command = target = userinfo = None
 			arguments = []
 			
@@ -132,14 +140,15 @@ class asyncIRC(asyncore.dispatcher_with_send):
 			
 			# not sure about this one
 			if m.group('argument'):
-				a = string.split(m.group("argument"), " :", 1)
-				arguments = string.split(a[0])
+				a = m.group("argument").split(' :', 1)
+				arguments = a[0].split()
 				if len(a) == 2:
 					arguments.append(a[1])
 			
 			
 			# Keep our nickname up to date
 			if command == '001':
+				self.status = STATUS_CONNECTED
 				self.__nickname = arguments[0]
 			elif command == 'nick' and userinfo.nick == self.__nickname:
 				self.__nickname = arguments[0]
@@ -170,17 +179,25 @@ class asyncIRC(asyncore.dispatcher_with_send):
 				# MODE can be for a user or channel
 				if command == 'mode':
 					if not is_channel(target):
-						command = 'umode'"
+						command = 'umode'
 				
 				# Translate numerics into more readable strings.
 				command = numeric_events.get(command, command)
 				
 				# Trigger the event
-				self.__trigger_event(self, prefix, userinfo, command, target, arguments)
+				self.__trigger_event(prefix, userinfo, command, target, arguments)
+	
+	def failed(self, errormsg):
+		# FIXME - do something useful
+		print 'FAILED! %s' % errormsg
 	
 	# -----------------------------------------------------------------------
 	# Connect to a server
-	def connect(self, family, host, port, username, ircname, vhost):
+	def connect_to_server(self, host, port, nickname, username, ircname, vhost, family=socket.AF_INET):
+		# Remember our info
+		self.__nickname = nickname
+		self.__userinfo = (username, vhost, 'server', ircname)
+		
 		# Create our socket
 		self.create_socket(family, socket.SOCK_STREAM)
 		
@@ -194,6 +211,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	def disconnect(self):
 		# FIXME - do stuff here
+		pass
 	
 	def join(self, channel, key=''):
 		if key:

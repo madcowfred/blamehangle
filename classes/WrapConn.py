@@ -11,7 +11,7 @@ import types
 from classes.Constants import *
 from classes.Userlist import Userlist
 
-from classes.irclib import ServerConnectionError, STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
+from classes.irclib import STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
 
 # ---------------------------------------------------------------------------
 
@@ -28,10 +28,7 @@ MAX_LINE_LENGTH = 400
 # ---------------------------------------------------------------------------
 
 class WrapConn:
-	"""
-	Wraps an irclib.ServerConnection object and the various data we keep about
-	it.
-	"""
+	"Wraps an asyncIRC object and the various data we keep about it."
 	
 	def __init__(self, parent, network, conn, options):
 		self.parent = parent
@@ -61,6 +58,7 @@ class WrapConn:
 			else:
 				print 'invalid server thing'
 		
+		# Parse the rest of our options
 		self.channels = self.options['channels'].split()
 		self.nicks = self.options['nicks'].split()
 		
@@ -88,21 +86,20 @@ class WrapConn:
 		self.connlog(LOG_ALWAYS, tolog)
 		
 		
-		try:
-			self.conn.connect(	host, port, nick,
-								username=self.options['username'],
-								ircname=self.realname,
-								vhost=self.vhost
-								)
+		self.conn.connect_to_server(host, port, nick,
+									username=self.options['username'],
+									ircname=self.realname,
+									vhost=self.vhost
+									)
 		
-		except ServerConnectionError, x:
-			if type(x) in (types.ListType, types.TupleType):
-				x = x[1]
-			
-			tolog = 'Connection failed: %s' % x
-			self.connlog(LOG_ALWAYS, tolog)
-			
-			self.conn.status = STATUS_DISCONNECTED
+		#except ServerConnectionError, x:
+		#	if type(x) in (types.ListType, types.TupleType):
+		#		x = x[1]
+		#	
+		#	tolog = 'Connection failed: %s' % x
+		#	self.connlog(LOG_ALWAYS, tolog)
+		#	
+		#	self.conn.status = STATUS_DISCONNECTED
 		
 		self.last_connect = time.time()
 	
@@ -136,7 +133,7 @@ class WrapConn:
 	def nicknameinuse(self, nick):
 		# While trying to connect!
 		if self.conn.status == STATUS_CONNECTING:
-			if nick == self.conn.real_nickname:
+			if nick == self.conn.getnick():
 				if len(self.nicks) > 1:
 					self.trynick += 1
 					if self.trynick >= len(self.nicks):
@@ -155,7 +152,7 @@ class WrapConn:
 		
 		# Nick is still in use, try again later
 		elif self.conn.status == STATUS_CONNECTED:
-			if nick != self.conn.real_nickname:
+			if nick != self.conn.getnick():
 				self.last_nick = time.time()
 	
 	# -----------------------------------------------------------------------
@@ -225,7 +222,7 @@ class WrapConn:
 		# Connected stuff!
 		elif self.conn.status == STATUS_CONNECTED:
 			# If we still don't have our nick, try again
-			if self.conn.real_nickname != self.nicks[0]:
+			if self.conn.getnick() != self.nicks[0]:
 				if currtime - self.last_nick >= 30:
 					self.conn.nick(self.nicks[0])
 			
@@ -255,6 +252,6 @@ class WrapConn:
 					self.conn.disconnect()
 				else:
 					self.stoned += 1
-					self.privmsg(self.conn.real_nickname, "Stoned yet?")
+					self.privmsg(self.conn.getnick(), "Stoned yet?")
 
 # ---------------------------------------------------------------------------

@@ -195,7 +195,8 @@ class ChatterGizmo(Child):
 					options[option] = self.Config.get(network, option)
 				
 				# FIXME
-				conn = self.__ircobj.server()
+				#conn = self.__ircobj.server()
+				conn = asyncIRC.asyncIRC()
 				self.Conns[conn] = WrapConn(self, network, conn, options)
 				
 				self.Conns[conn].connect()
