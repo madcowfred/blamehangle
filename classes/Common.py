@@ -177,10 +177,12 @@ def StripHTML(text):
 def UnquoteHTML(text):
 	# thing name -> char
 	quoted = {
+		'lt': '<',
+		'gt': '>',
 		'amp': '&',
+		'quot': '"',
 		'nbsp': ' ',
 		'ordm': '°',
-		'quot': '"',
 	}
 	
 	# regexp helper function to do the replacement
@@ -197,4 +199,4 @@ def UnquoteHTML(text):
 			return quoted.get(thing, whole)
 	
 	# go!
-	return re.sub(r'\&.*?;', unquote_things, text)
+	return re.sub(r'&([#A-Za-z0-9]+);', unquote_things, text)
