@@ -38,10 +38,10 @@ DEL_QUERY = "DELETE FROM factoids WHERE name = %s"
 INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
 # Build the giant 'no, ' query
-NO_QUERY  = "UPDATE factoids SET name = %s, value = %s, author_nick = %s, author_host = %s"
-NO_QUERY += ", created_time = %s, modifier_nick = '', modifier_host = '', modified_time = ''"
-NO_QUERY += ", requester_nick = '', requester_host = '', requested_time = NULL, request_count = 0"
-NO_QUERY += ", locker_nick = '', locker_host = '', locked_time = NULL WHERE name = %s"
+NO_QUERY  = "UPDATE factoids SET value = %s, author_nick = %s, author_host = %s, created_time = %s"
+NO_QUERY += ", modifier_nick = '', modifier_host = '', modified_time = NULL, requester_nick = ''"
+NO_QUERY += ", requester_host = '', requested_time = NULL, request_count = 0, locker_nick = ''"
+NO_QUERY += ", locker_host = '', locked_time = NULL WHERE name = %s"
 
 REQUESTED_QUERY = "UPDATE factoids SET request_count = request_count + 1, requester_nick = %s, requester_host = %s, requested_time = %s WHERE name = %s"
 
@@ -173,7 +173,7 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		# Gets are lowest priority
+		# Gets are lowest priority (default = 10)
 		self.setTextEventPriority(0, FACT_GET, GET_D_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		if self.__get_pub:
 			self.setTextEventPriority(0, FACT_GET, GET_RE, IRCT_PUBLIC)
@@ -553,7 +553,7 @@ class SmartyPants(Plugin):
 			author_nick = trigger.userinfo.nick
 			author_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
 			created_time = int(time.time())
-			self.dbQuery(trigger, self.__Query_UPDATE, NO_QUERY, name, value, author_nick, author_host, created_time, name)
+			self.dbQuery(trigger, self.__Query_UPDATE, NO_QUERY, value, author_nick, author_host, created_time, name)
 	
 	# -----------------------------------------------------------------------
 	# A user just tried to update a factoid by appending more data. If it
@@ -938,7 +938,7 @@ class SmartyPants(Plugin):
 		newname = newname.replace('\\are', 'are')
 		
 		return newname
-
+	
 	# -----------------------------------------------------------------------
 	# Turn an amount of seconds into a nice string detailing how long it
 	# is in english
