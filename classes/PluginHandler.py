@@ -128,8 +128,6 @@ class PluginHandler(Child):
 		
 		# Sort out the events, and only trigger the highest priority one(s)
 		if triggered:
-			print triggered
-			
 			priorities = triggered.keys()
 			priorities.sort()
 			for plugin, trigger in triggered[priorities[-1]]:
