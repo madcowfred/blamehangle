@@ -122,7 +122,9 @@ def URLThread(parent, myindex):
 				# get the page
 				request = urllib2.Request(url)
 				#request.add_header("If-Modified-Since", format_http_date(modified))
-				request.add_header("User-Agent", parent.user_agent)
+				#request.add_header("User-Agent", parent.user_agent)
+				# urllib2 bug in 2.2 :\
+				request.add_header("User-agent", parent.user_agent)
 				request.add_header("Accept-encoding", "gzip")
 				
 				the_page = urllib2.urlopen(request)
