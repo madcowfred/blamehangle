@@ -2,7 +2,7 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
-'Windows does not have poll(), so we fake it :('
+"Fake poll() for systems that don't implement it (Windows, most notably)."
 
 import select
 import socket
@@ -45,3 +45,5 @@ class FakePoll:
 				results[fd] = select.POLLOUT
 		
 		return results.items()
+
+# ---------------------------------------------------------------------------
