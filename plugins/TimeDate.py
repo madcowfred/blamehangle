@@ -24,14 +24,14 @@ class TimeDate(Plugin):
 		
 		self.addTextEvent(
 			method = self.__Date,
-			regexp = re.compile('^date (?P<city>\w+)$'),
+			regexp = re.compile('^date (?P<city>[\w\s]+)$'),
 			help = ('date', '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'),
 		)
 	
 	# -----------------------------------------------------------------------
 	
 	def __Date(self, trigger):
-		city = trigger.match.group('city')
+		city = trigger.match.group('city').replace(' ', '_')
 		
 		# Try to find our new timezone
 		cmdline = 'find /usr/share/zoneinfo -iname "%s"' % city
