@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+
 #$Id$
 
 # A simple shell script to start the bot and make sure it keeps running
