@@ -156,7 +156,7 @@ class Postgres(DatabaseWrapper):
 		return sql
 
 # ---------------------------------------------------------------------------
-# Wrapper class for pyGreSQL
+# Wrapper class for PySQLite
 class SQLite(DatabaseWrapper):
 	def _connect(self):
 		if self.db:
