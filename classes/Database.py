@@ -96,7 +96,7 @@ def DataThread(parent, db, message):
 			db.disconnect()
 		
 		else:
-			results.append(db.query(query, *args))
+			results.append(result)
 	
 	data = [results, toreturn]
 	
