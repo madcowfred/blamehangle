@@ -294,11 +294,12 @@ class async_dict(asyncore.dispatcher_with_send):
 				
 				elif line.startswith('530 '):
 					tolog = "DICT server '%s' says: %s" % (self.parent._dict_host, line)
-					self.putlog(tolog)
+					self.putlog(LOG_ALWAYS, tolog)
 					self.close()
 				
 				else:
-					print 'wtf? %s' % line
+					tolog = "DICT server gave me an unknown response: %s" % line
+					self.putlog(LOG_ALWAYS, tolog)
 			
 			# Asked for a word
 			elif self.state == 1:

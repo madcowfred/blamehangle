@@ -63,16 +63,6 @@ class Message:
 		return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, data)
 
 # ---------------------------------------------------------------------------
-# Shiny way to look at a user.
-# ---------------------------------------------------------------------------
-class UserInfo:
-	def __init__(self, hostmask):
-		self.hostmask = hostmask
-		
-		self.nick, rest = hostmask.split('!')
-		self.ident, self.host = rest.split('@')
-
-# ---------------------------------------------------------------------------
 # Returns a nicely formatted size for display.
 # ---------------------------------------------------------------------------
 def Nice_Size(bytes):

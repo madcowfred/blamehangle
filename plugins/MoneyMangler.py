@@ -271,7 +271,6 @@ class MoneyMangler(Plugin):
 				try:
 					replytext = '[%(Trade Time)s] %(Showme)s: %(Value)s %(Change)s' % info
 				except KeyError:
-					print info
 					replytext = 'Some stock data missing, not good!'
 			else:
 				replytext = 'No stock data found? WTF?'

@@ -18,7 +18,6 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Userlist import Userlist
 from classes.WrapConn import *
-#from classes.Users import *
 
 # ---------------------------------------------------------------------------
 
@@ -27,6 +26,16 @@ RE_STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,
 
 # regexp to see if people are addressing someone
 RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
+
+# ---------------------------------------------------------------------------
+# Shiny way to look at a user.
+# ---------------------------------------------------------------------------
+class UserInfo:
+	def __init__(self, hostmask):
+		self.hostmask = hostmask
+		
+		self.nick, rest = hostmask.split('!')
+		self.ident, self.host = rest.split('@')
 
 # ---------------------------------------------------------------------------
 

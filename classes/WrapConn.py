@@ -186,7 +186,6 @@ class WrapConn:
 			found = 0
 			
 			for i in range(10, 100, 10):
-				print i
 				n = text.find(' ', MAX_LINE_LENGTH - i)
 				if n >= 0 and n < MAX_LINE_LENGTH:
 					found = 1
