@@ -60,10 +60,6 @@ class ChatterGizmo(Child):
 			old_nets.append(data)
 		
 		# Get a list of our new networks
-		#new_nets = []
-		#for section in self.Config.sections():
-		#	if section.startswith('network.'):
-		#		new_nets.append((section, self.Config.get(section, 'name')))
 		new_nets = [s for s in self.Config.sections() if s.startswith('network.')]
 		
 		# Work out which networks are new and which are old (heh)
