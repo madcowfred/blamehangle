@@ -279,8 +279,12 @@ class WrapConn:
 					target, text = self.__privmsg.pop(0)
 					self.conn.privmsg(target, text)
 			
+			# Set our stoned time to now if we've just connected
+			if self.last_stoned = 0:
+				self.last_stoned = curretime
+			
 			# Stoned check
-			if (currtime - self.last_stoned) >= STONED_INTERVAL:
+			elif (currtime - self.last_stoned) >= STONED_INTERVAL:
 				self.last_stoned = currtime
 				
 				if self.stoned > STONED_COUNT:
