@@ -722,7 +722,7 @@ class SmartyPants(Plugin):
 				# It was in our database
 				row = results[0][0]
 				value = row['value']
-
+				
 				if row['locker_nick'] and not self.__users.check_user_flags(trigger.userinfo, 'lock'):
 					replytext = "you don't have permission to alter locked factoids"
 					self.sendReply(trigger, replytext)
@@ -735,13 +735,13 @@ class SmartyPants(Plugin):
 					if len(bits) == 4:
 						search = bits[1]
 						replace = bits[2]
-
-						new_value = value.replace(search, replace)
+						
+						new_value = value.replace(search, replace, 1)
 						if new_value == value:
 							replytext = "that doesn't contain '%s'" % search
 							self.sendReply(trigger, replytext)
 							return
-
+						
 						# bitch at the user if they made the factoid too
 						# long
 						if len(new_value) > MAX_FACT_VAL_LENGTH:
@@ -750,7 +750,7 @@ class SmartyPants(Plugin):
 						else:
 							# everything is okay, make the change
 							self.__Fact_Update(trigger, new_value)
-
+						
 						# The following code is an alternative to the above
 						# block, starting from new_value = ...
 						# This code allows for arbitrary regexps in the
@@ -774,7 +774,7 @@ class SmartyPants(Plugin):
 						#	else:
 						#		# make the changes!
 						#		self.__Fact_Update(trigger, new_value)
-								
+					
 					else:
 						# we got a junk modstring
 						replytext = "'%s' is not a valid search/replace string" % modstring
@@ -782,7 +782,7 @@ class SmartyPants(Plugin):
 				else:
 					replytext = "'%s' is not a valid search/replace string" % modstring
 					self.sendReply(trigger, replytext)
-					
+		
 		# UPDATE reply
 		elif typ == types.LongType:
 			result = results[0]
