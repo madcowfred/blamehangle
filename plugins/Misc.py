@@ -21,16 +21,18 @@ PGP_URL = "http://pgp.mit.edu:11371/pks/lookup?op=index&search=%s"
 # ---------------------------------------------------------------------------
 
 class Misc(Plugin):
+	_HelpSection = 'misc'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_BugMeNot,
 			regexp = re.compile(r'^bugmenot (\S+)$'),
-			help = ('misc', 'bugmenot', '\x02bugmenot\x02 <site> : See if BugMeNot has a login for <site>.'),
+			help = ('bugmenot', '\x02bugmenot\x02 <site> : See if BugMeNot has a login for <site>.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_PGP_Key,
 			regexp = re.compile(r'^pgpkey (\S+)$'),
-			help = ('misc', 'pgpkey', '\x02pgpkey\x02 <findme> : Search pgp.mit.edu for a key/keys matching <findme>, returning the first match.'),
+			help = ('pgpkey', '\x02pgpkey\x02 <findme> : Search pgp.mit.edu for a key/keys matching <findme>, returning the first match.'),
 		)
 	
 	# -----------------------------------------------------------------------

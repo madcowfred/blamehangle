@@ -14,6 +14,8 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 class TimeDate(Plugin):
+	_HelpSection = 'time'
+	
 	def register(self):
 		# Sorry, no timezone stuff on Windows
 		if os.name == 'nt':
@@ -23,7 +25,7 @@ class TimeDate(Plugin):
 		self.addTextEvent(
 			method = self.__Date,
 			regexp = re.compile('^date (?P<city>\w+)$'),
-			help = ('time', 'date', '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'),
+			help = ('date', '\02date\02 <timezone> : Show the current date in <timezone>, using local system timezone data. Can be a timezone name (PST) or city (Suva, Fiji).'),
 		)
 	
 	# -----------------------------------------------------------------------

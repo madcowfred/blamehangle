@@ -34,6 +34,7 @@ class Karma(Plugin):
 	karma, meaning zero.
 	"""
 	
+	_HelpSection = 'karma'
 	_UsesDatabase = 'Karma'
 	
 	def setup(self):
@@ -63,14 +64,14 @@ class Karma(Plugin):
 		self.addTextEvent(
 			method = self.__Query_Lookup,
 			regexp = re.compile(r'^karma (?P<name>.+)'),
-			help = ('karma', 'karma', "\02karma\02 <key> : Look up <key>'s karma level."),
+			help = ('karma', "\02karma\02 <key> : Look up <key>'s karma level."),
 		)
 		# Only plus gets the help for changes
 		self.addTextEvent(
 			method = self.__Query_Plus,
 			regexp = re.compile(r'^(?P<name>.+)\+\+$'),
 			IRCTypes = (IRCT_PUBLIC,),
-			help = ('karma', 'modify', '<key>\02++\02 OR <key>\02--\02 : Increment or decrement karma for <key>.'),
+			help = ('modify', '<key>\02++\02 OR <key>\02--\02 : Increment or decrement karma for <key>.'),
 		)
 		self.addTextEvent(
 			method = self.__Query_Minus,
@@ -83,14 +84,14 @@ class Karma(Plugin):
 			self.addTextEvent(
 				method = self.__Query_Best,
 				regexp = re.compile('^bestkarma$'),
-				help = ('karma', 'bestkarma', '\02bestkarma\02 : See the keys with the best karma.'),
+				help = ('bestkarma', '\02bestkarma\02 : See the keys with the best karma.'),
 			)
 		# worstkarma might be disabled.
 		if self.Options['num_worst']:
 			self.addTextEvent(
 				method = self.__Query_Worst,
 				regexp = re.compile('^worstkarma$'),
-				help = ('karma', 'worstkarma', '\02worstkarma\02 : See the keys with the worst karma.'),
+				help = ('worstkarma', '\02worstkarma\02 : See the keys with the worst karma.'),
 			)
 	
 	#------------------------------------------------------------------------

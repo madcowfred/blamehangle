@@ -24,6 +24,8 @@ TITLE_RE = re.compile('<title>(\S+): Summary for (.*?) -')
 # ---------------------------------------------------------------------------
 
 class MoneyMangler(Plugin):
+	_HelpSection = 'money'
+	
 	def setup(self):
 		self.__Currencies = {}
 		
@@ -87,27 +89,27 @@ class MoneyMangler(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_ASX,
 			regexp = re.compile('^asx (?P<symbol>.+)$'),
-			help = ('money', 'asx', '\02asx\02 <symbol> : Look up a current stock price on the ASX.'),
+			help = ('asx', '\02asx\02 <symbol> : Look up a current stock price on the ASX.'),
 		)
 		self.addTextEvent(
 			method = self.__Currency,
 			regexp = re.compile('^currency (?P<curr>\w+)$'),
-			help = ('money', 'currency', '\02currency\02 <code OR partial name> : Look up an ISO 4217 currency code and name, given the specified information.'),
+			help = ('currency', '\02currency\02 <code OR partial name> : Look up an ISO 4217 currency code and name, given the specified information.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Exchange,
 			regexp = re.compile('^exchange (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$'),
-			help = ('money', 'exchange', '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'),
+			help = ('exchange', '\02exchange\02 <amount> <currency 1> \02to\02 <currency 2> : Convert currency using current exchange rates. Currencies are specified using their three letter ISO 4217 code.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Quote,
 			regexp = re.compile('^quote (?P<symbol>\S+)$'),
-			help = ('money', 'quote', '\02quote\02 <symbol> : Look up a current stock price.'),
+			help = ('quote', '\02quote\02 <symbol> : Look up a current stock price.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Symbol,
 			regexp = re.compile('^symbol (?P<findme>.+)$'),
-			help = ('money', 'symbol', '\02symbol\02 <findme> : Look up a ticker symbol.'),
+			help = ('symbol', '\02symbol\02 <findme> : Look up a ticker symbol.'),
 		)
 	
 	# -----------------------------------------------------------------------

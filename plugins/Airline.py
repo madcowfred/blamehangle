@@ -25,6 +25,8 @@ IATA_URL = 'http://www.flymig.com/iata/r/%s.htm'
 # ---------------------------------------------------------------------------
 
 class Airline(Plugin):
+	_HelpSection = 'travel'
+	
 	def setup(self):
 		# Load our airline codes
 		self.Airlines = {}
@@ -55,12 +57,12 @@ class Airline(Plugin):
 		self.addTextEvent(
 			method = self.__Airline_Search,
 			regexp = re.compile(r'^airline\s+(?P<airline>.+)$'),
-			help = ('travel', 'airline', "\02airline\02 <code> OR <partial name> : Look up the name for a carrier given the code, or look up the code for a carrier given the name (or part of the name)."),
+			help = ('airline', "\02airline\02 <code> OR <partial name> : Look up the name for a carrier given the code, or look up the code for a carrier given the name (or part of the name)."),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_IATA,
 			regexp = re.compile(r'^iata\s+(?P<code>\w+)$'),
-			help = ('travel', 'iata', "\02iata\02 <code> : Look up an airport by it's IATA code."),
+			help = ('iata', "\02iata\02 <code> : Look up an airport by it's IATA code."),
 		)
 		# This is really quite horrible :(
 		f1 = "^ *flight +"
@@ -76,7 +78,7 @@ class Airline(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_Flight,
 			regexp = re.compile(f1+f2+f3+f9),
-			help = ('travel', 'flight', "\02flight\02 <code> <flight number> <date> : Look up the details of the specified flight. Date is in YYYY-MM-DD format, and is optional (defaults to today's date if omitted)."),
+			help = ('flight', "\02flight\02 <code> <flight number> <date> : Look up the details of the specified flight. Date is in YYYY-MM-DD format, and is optional (defaults to today's date if omitted)."),
 		)
 	
 	# --------------------------------------------------------------------------

@@ -19,6 +19,8 @@ WEATHER_URL = 'http://search.weather.yahoo.com/search/weather2?p=%s'
 # ---------------------------------------------------------------------------
 
 class WeatherMan(Plugin):
+	_HelpSection = 'weather'
+	
 	def setup(self):
 		self.rehash()
 	
@@ -32,34 +34,34 @@ class WeatherMan(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_Weather_Forecast,
 			regexp = re.compile('^forecast\s+(?P<location>.+)$'),
-			help = ('weather', 'forecast', '\02forecast\02 <location> : Retrieve weather forecast for location'),
+			help = ('forecast', '\02forecast\02 <location> : Retrieve weather forecast for location'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Weather_Short,
 			regexp = re.compile('^weather\s+(?P<location>.+)$'),
-			help = ('weather', 'weather', '\02weather\02 <location> : Retrieve weather information for location (short format)'),
+			help = ('weather', '\02weather\02 <location> : Retrieve weather information for location (short format)'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Weather_Long,
 			regexp = re.compile('^weatherlong\s+(?P<location>.+)$'),
-			help = ('weather', 'weatherlong', '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'),
+			help = ('weatherlong', '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'),
 		)
 		# METAR
 		self.addTextEvent(
 			method = self.__Fetch_DMETAR,
 			regexp = re.compile('^dmetar (?P<station>\S+)$'),
-			help = ('weather', 'dmetar', '\02dmetar\02 <station id> : Retrieve decoded METAR weather information.'),
+			help = ('dmetar', '\02dmetar\02 <station id> : Retrieve decoded METAR weather information.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_METAR,
 			regexp = re.compile('^metar (?P<station>\S+)$'),
-			help = ('weather', 'metar', '\02metar\02 <station id> : Retrieve coded METAR weather information.'),
+			help = ('metar', '\02metar\02 <station id> : Retrieve coded METAR weather information.'),
 		)
 		# TAF
 		self.addTextEvent(
 			method = self.__Fetch_TAF,
 			regexp = re.compile('^taf (?P<station>\S+)$'),
-			help = ('weather', 'taf', '\02taf\02 <station id> : Retrieve coded TAF weather forecast.'),
+			help = ('taf', '\02taf\02 <station id> : Retrieve coded TAF weather forecast.'),
 		)
 	
 	# -----------------------------------------------------------------------

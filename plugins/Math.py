@@ -25,16 +25,18 @@ class Math(Plugin):
 	Provides various useful (possibly) math functions.
 	"""
 	
+	_HelpSection = 'math'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Base,
 			regexp = re.compile(r'^base (?P<from>\d+) *(?P<to>|\d+) (?P<number>[0-9A-Fa-f]+)$'),
-			help = ('math', 'base', '\x02base\x02 <from> [to] <number> : Convert <number> from base <from> to base [to] (default is 10).'),
+			help = ('base', '\x02base\x02 <from> [to] <number> : Convert <number> from base <from> to base [to] (default is 10).'),
 		)
 		self.addTextEvent(
 			method = self.__Calc,
 			regexp = re.compile(r'^[ ()0-9e.+\-*/%^]+$'),
-			help = ('math', 'calc', '<expr> : Calculate the result of <expr>.'),
+			help = ('calc', '<expr> : Calculate the result of <expr>.'),
 		)
 	
 	# --------------------------------------------------------------------------

@@ -48,11 +48,13 @@ WEIGHT = {
 # ---------------------------------------------------------------------------
 
 class Converter(Plugin):
+	_HelpSection = 'math'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Convert,
 			regexp = re.compile('^convert (?P<amt>-?[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$'),
-			help = ('math', 'convert', '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?'),
+			help = ('convert', '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?'),
 		)
 	
 	# -----------------------------------------------------------------------

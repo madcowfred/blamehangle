@@ -22,11 +22,13 @@ BOTSTATUS_RE = re.compile('^botstatus$')
 # ---------------------------------------------------------------------------
 
 class BotStatus(Plugin):
+	_HelpSection = 'misc'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Gather_Stats,
 			regexp = re.compile('^botstatus$'),
-			help = ('misc', 'botstatus', '\x02botstatus\x02 : Return some useful (maybe) stats about the bot.'),
+			help = ('botstatus', '\x02botstatus\x02 : Return some useful (maybe) stats about the bot.'),
 		)
 	
 	# -----------------------------------------------------------------------

@@ -37,21 +37,23 @@ LANG_MAP = {
 # ---------------------------------------------------------------------------
 
 class Google(Plugin):
+	_HelpSection = 'google'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_Google,
 			regexp = re.compile(r'^google (?P<findme>.+)$'),
-			help = ('google', 'google', '\02google\02 <search term> : Search via Google!'),
+			help = ('google', '\02google\02 <search term> : Search via Google!'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Translate,
 			regexp = re.compile('^translate (?P<from>\S+)(?: to | )(?P<to>\S+) (?P<text>.+)$'),
-			help = ('google', 'translate', '\02translate\02 <from> \02to\02 <to> <text> : Translate some text via Google Translate.'),
+			help = ('translate', '\02translate\02 <from> \02to\02 <to> <text> : Translate some text via Google Translate.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Transmangle,
 			regexp = re.compile('^transmangle (?P<lang>\S+) (?P<text>.+)$'),
-			help = ('google', 'transmangle', '\02transmangle\02 <lang> <text> : Mangle text by translating from English to lang and back again.'),
+			help = ('transmangle', '\02transmangle\02 <lang> <text> : Mangle text by translating from English to lang and back again.'),
 		)
 	
 	# -----------------------------------------------------------------------

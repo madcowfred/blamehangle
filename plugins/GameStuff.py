@@ -18,17 +18,19 @@ MOBYGAMES_URL = 'http://www.mobygames.com/search/quick?q=%s'
 # ---------------------------------------------------------------------------
 
 class GameStuff(Plugin):
+	_HelpSection = 'games'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_KLOV,
 			regexp = re.compile(r'^klov (?P<title>.+)$'),
-			help = ('gamestuff', 'klov', '\02klov\02 <title> : Look up <title> in the Killer List Of Video Games (KLOVG?!)'),
+			help = ('klov', '\02klov\02 <title> : Look up <title> in the Killer List Of Video Games (KLOVG?!)'),
 		)
 		
 		#self.addTextEvent(
 		#	method = self.__Fetch_MobyGames,
 		#	regexp = re.compile(r'^mobygames (?P<title>.+)$'),
-		#	help = ('gamestuff', 'mobygames', '\02mobygames\02 <title> : Look up <title> at MobyGames.'),
+		#	help = ('mobygames', '\02mobygames\02 <title> : Look up <title> at MobyGames.'),
 		#)
 	
 	# -----------------------------------------------------------------------

@@ -23,6 +23,8 @@ HORO_URL = 'http://astrology.yahoo.com/astrology/general/dailyoverview/%s'
 # ---------------------------------------------------------------------------
 
 class FunStuff(Plugin):
+	_HelpSection = 'fun'
+	
 	def setup(self):
 		self.rehash()
 	
@@ -37,39 +39,39 @@ class FunStuff(Plugin):
 		self.addTextEvent(
 			method = self.__Coin,
 			regexp = re.compile(r'^coin$'),
-			help = ('fun', 'coin', '\02coin\02 : Flip a coin!'),
+			help = ('coin', '\02coin\02 : Flip a coin!'),
 		)
 		self.addTextEvent(
 			method = self.__Dice,
 			regexp = re.compile(r'^dice (?P<num>\d{1,3})d(?P<sides>\d{1,3})$'),
-			help = ('fun', 'dice', '\02dice\02 <n>\02d\02<s> : Roll <n> dice of <s> sides and return the results.'),
+			help = ('dice', '\02dice\02 <n>\02d\02<s> : Roll <n> dice of <s> sides and return the results.'),
 		)
 		# Remember to fix this regexp in the year 10000
 		self.addTextEvent(
 			method = self.__Easter,
 			regexp = re.compile(r'^easter (?P<year>\d{1,4})$'),
-			help = ('fun', 'easter', '\02easter\02 <year> : Work out what day Easter Sunday falls on in <year>.'),
+			help = ('easter', '\02easter\02 <year> : Work out what day Easter Sunday falls on in <year>.'),
 		)
 		self.addTextEvent(
 			method = self.__EightBall,
 			regexp = re.compile(r'^8ball (?P<question>.+)$'),
-			help = ('fun', '8ball', '\028ball\02 <question> : The magic 8 ball will answer your question!'),
+			help = ('8ball', '\028ball\02 <question> : The magic 8 ball will answer your question!'),
 		)
 		self.addTextEvent(
 			method = self.__Muddle,
 			regexp = re.compile(r'^muddle (?P<text>.+)$'),
-			help = ('fun', 'muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
+			help = ('muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
 		)
 		
 		self.addTextEvent(
 			method = self.__Fetch_Cyborg,
 			regexp = re.compile(r'^cyborg (?P<name>\w+)$'),
-			help = ('fun', 'cyborg', '\02cyborg\02 <name> : See what the cyborg name is for <name>.'),
+			help = ('cyborg', '\02cyborg\02 <name> : See what the cyborg name is for <name>.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Horoscope,
 			regexp = re.compile(r'^horo (?P<sign>\S+)$'),
-			help = ('fun', 'horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
+			help = ('horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
 		)
 	
 	# -----------------------------------------------------------------------

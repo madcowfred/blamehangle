@@ -25,6 +25,8 @@ class MapQuest(Plugin):
 	mapquest.com and replies with the distance and estimated travel time.
 	"""
 	
+	_HelpSection = 'travel'
+	
 	def setup(self):
 		self.__canada = [
 			'AB', 'BC', 'MB', 'NB', 'NF', 'NT', 'NS', 'NU', 'ON', 'PE', 'QC',
@@ -44,7 +46,7 @@ class MapQuest(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_Distance,
 			regexp = re.compile(r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$'),
-			help = ('travel', 'distance', "\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip> : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."),
+			help = ('distance', "\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip> : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."),
 		)
 	
 	# -----------------------------------------------------------------------

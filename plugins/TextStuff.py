@@ -17,6 +17,8 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 class TextStuff(Plugin):
+	_HelpSection = 'text'
+	
 	def setup(self):
 		# Build the ROT13 translation table
 		chars = [chr(i) for i in range(256)]
@@ -34,32 +36,32 @@ class TextStuff(Plugin):
 		self.addTextEvent(
 			method = self.__CRC32,
 			regexp = re.compile('^crc32 (?P<text>.+)$'),
-			help = ('text', 'crc32', '\02crc32\02 <text> : Compute the CRC32 checksum of text.'),
+			help = ('crc32', '\02crc32\02 <text> : Compute the CRC32 checksum of text.'),
 		)
 		self.addTextEvent(
 			method = self.__MD5,
 			regexp = re.compile('^md5 (?P<text>.+)$'),
-			help = ('text', 'md5', '\02md5\02 <text> : Compute the MD5 checksum of text.'),
+			help = ('md5', '\02md5\02 <text> : Compute the MD5 checksum of text.'),
 		)
 		self.addTextEvent(
 			method = self.__ROT13,
 			regexp = re.compile('^rot13 (?P<text>.+)$'),
-			help = ('text', 'rot13', '\02rot13\02 <text> : ROT13 text.'),
+			help = ('rot13', '\02rot13\02 <text> : ROT13 text.'),
 		)
 		self.addTextEvent(
 			method = self.__SHA1,
 			regexp = re.compile('^sha1 (?P<text>.+)$'),
-			help = ('text', 'sha1', '\02sha1\02 <text> : Compute the SHA-1 checksum of text.'),
+			help = ('sha1', '\02sha1\02 <text> : Compute the SHA-1 checksum of text.'),
 		)
 		self.addTextEvent(
 			method = self.__QuoteURL,
 			regexp = re.compile('^quoteurl (?P<text>.+)$'),
-			help = ('text', 'quoteurl', '\02quoteurl\02 <url> : Quote URL?'),
+			help = ('quoteurl', '\02quoteurl\02 <url> : Quote URL?'),
 		)
 		self.addTextEvent(
 			method = self.__UnquoteURL,
 			regexp = re.compile('^unquoteurl (?P<text>.+)$'),
-			help = ('text', 'unquoteurl', '\02unquoteurl\02 <url> : Unquote URL?'),
+			help = ('unquoteurl', '\02unquoteurl\02 <url> : Unquote URL?'),
 		)
 	
 	# ---------------------------------------------------------------------------

@@ -82,6 +82,9 @@ class Plugin(Child):
 	# -----------------------------------------------------------------------
 	# New way of setting text events
 	def addTextEvent(self, method, regexp, IRCTypes=(IRCT_PUBLIC_D, IRCT_MSG), help=None, priority=10):
+		if help is not None:
+			help = (self._HelpSection, help[0], help[1])
+		
 		event = PluginTextEvent(method.__name__, IRCTypes, regexp, help, priority)
 		self.__Events.append(event)
 	

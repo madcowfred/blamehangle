@@ -57,6 +57,8 @@ AUSBOM_URL = 'http://www.bom.gov.au/products/%s.shtml'
 # ---------------------------------------------------------------------------
 
 class AusBOM(Plugin):
+	_HelpSection = 'weather'
+	
 	def setup(self):
 		self.__updating = 0
 		
@@ -78,7 +80,7 @@ class AusBOM(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_AusBOM,
 			regexp = re.compile('^ausbom (?P<location>.+)$'),
-			help = ('weather', 'ausbom', '\02ausbom\02 <location> : Get current weather data for <location>.'),
+			help = ('ausbom', '\02ausbom\02 <location> : Get current weather data for <location>.'),
 		)
 	
 	# -----------------------------------------------------------------------

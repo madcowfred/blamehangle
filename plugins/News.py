@@ -55,6 +55,7 @@ class News(Plugin):
 	Quirkies (!), and reply with the title of and link to any that it finds.
 	"""
 	
+	_HelpSection = 'news'
 	_UsesDatabase = 'News'
 	
 	def setup(self):
@@ -178,18 +179,18 @@ class News(Plugin):
 		self.addTextEvent(
 			method = self.__Query_Search,
 			regexp = re.compile("^news (?P<search_text>.+)$"),
-			help = ('news', 'news', "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."),
+			help = ('news', "\02news\02 <partial headline> : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given."),
 		)
 		# RSS feed commands
 		self.addTextEvent(
 			method = self.__Feed_List,
 			regexp = re.compile(r'^listfeeds$'),
-			help = ('news', 'listfeeds', "\02listfeeds\02 : List the RSS feeds currently configured."),
+			help = ('listfeeds', "\02listfeeds\02 : List the RSS feeds currently configured."),
 		)
 		self.addTextEvent(
 			method = self.__Feed_Show,
 			regexp = re.compile(r'^showfeed (?P<feed>.+)$'),
-			help = ('news', 'showfeed', "\02showfeed\02 <feed name> : Show some information about an RSS feed."),
+			help = ('showfeed', "\02showfeed\02 <feed name> : Show some information about an RSS feed."),
 		)
 		# RSS feeds should be checked for readiness every 30 seconds
 		if self._RSS_Feeds:

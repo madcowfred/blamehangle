@@ -56,6 +56,8 @@ WHOIS_LINES = {
 # ---------------------------------------------------------------------------
 
 class NetStuff(Plugin):
+	_HelpSection = 'net'
+	
 	def setup(self):
 		# Load our collection of ccTLDs
 		self.__ccTLDs = {}
@@ -96,22 +98,22 @@ class NetStuff(Plugin):
 		self.addTextEvent(
 			method = self.__ccTLD,
 			regexp = re.compile('^cctld (.+)$'),
-			help = ('net', 'cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
+			help = ('cctld', '\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>.'),
 		)
 		self.addTextEvent(
 			method = self.__Resolve_DNS,
 			regexp = re.compile('^dns (?P<host>.+)$'),
-			help = ('net', 'dns', '\02dns02 <hostname> : Try to resolve hostname to IP(s).'),
+			help = ('dns', '\02dns02 <hostname> : Try to resolve hostname to IP(s).'),
 		)
 		self.addTextEvent(
 			method = self.__Port,
 			regexp = re.compile('^port (.{1,20})$'),
-			help = ('net', 'port', '\02port\02 <port> OR <name> : Look up the service name for a port, or the port for a service name.'),
+			help = ('port', '\02port\02 <port> OR <name> : Look up the service name for a port, or the port for a service name.'),
 		)
 		self.addTextEvent(
 			method = self.__Resolve_WHOIS,
 			regexp = re.compile('^whois (?P<domain>[A-Za-z0-9-\.]+)$'),
-			help = ('net', 'whois', '\02whois\02 <domain> : Look up <domain> in the WHOIS database.'),
+			help = ('whois', '\02whois\02 <domain> : Look up <domain> in the WHOIS database.'),
 		)
 	
 	# ---------------------------------------------------------------------------

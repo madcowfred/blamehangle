@@ -16,6 +16,8 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 class SamplePlugin(Plugin):
+	_HelpSection = 'sample'
+	
 	# A plugin can define the setup method if it has anything that needs to
 	# happen while it is being created. This is called from Plugin's __init__().
 	def setup(self):
@@ -67,14 +69,14 @@ class SamplePlugin(Plugin):
 		self.addTextEvent(
 			method = self.__Method1,
 			regexp = re.compile(r'^method1$'),
-			help = ('sample', 'method1', '\02method1\02 : Our first example method!'),
+			help = ('method1', '\02method1\02 : Our first example method!'),
 		)
 		# This is a private message event only
 		self.addTextEvent(
 			method = self.__Method2,
 			regexp = re.compile(r'^method2$'),
 			IRCTypes = (IRCT_MSG, IRCT_PUBLIC_D),
-			help = ('sample', 'method2', '\02method2\02 : Our second example method!'),
+			help = ('method2', '\02method2\02 : Our second example method!'),
 		)
 		# This is a timed event, triggering every 180 (by default) seconds
 		self.addTimedEvent(

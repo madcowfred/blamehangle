@@ -49,16 +49,18 @@ ANIMENFO_SEND = '<ANIME><TITLE>%s</TITLE><FIELD>TITLE CATEGORY TOTAL GENRE YEAR 
 # ---------------------------------------------------------------------------
 
 class Anime(Plugin):
+	_HelpSection = 'video'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_AniDB,
 			regexp = re.compile(r'^anidb (?P<findme>.+)$'),
-			help = ('video', 'anidb', '\02anidb\02 <name> : Search for anime information on AniDB.'),
+			help = ('anidb', '\02anidb\02 <name> : Search for anime information on AniDB.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_AnimeNFO,
 			regexp = re.compile(r'^animenfo (?P<findme>.+)$'),
-			help = ('video', 'animenfo', '\02animenfo\02 <name> : Search for anime information on AnimeNFO.'),
+			help = ('animenfo', '\02animenfo\02 <name> : Search for anime information on AnimeNFO.'),
 		)
 	
 	# ---------------------------------------------------------------------------

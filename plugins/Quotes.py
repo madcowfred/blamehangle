@@ -13,6 +13,8 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 class Quotes(Plugin):
+	_HelpSection = 'misc'
+	
 	def setup(self):
 		self.rehash()
 	
@@ -25,7 +27,7 @@ class Quotes(Plugin):
 		self.addTextEvent(
 			method = self.__AddQuote,
 			regexp = re.compile('^addquote (?P<quote>.+)$'),
-			help = ('quotes', 'addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
+			help = ('addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
 		)
 	
 	# -----------------------------------------------------------------------

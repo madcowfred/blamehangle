@@ -25,16 +25,18 @@ TVTOME_URL = 'http://www.tvtome.com/tvtome/servlet/Search'
 # ---------------------------------------------------------------------------
 
 class Video(Plugin):
+	_HelpSection = 'video'
+	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_IMDb,
 			regexp = re.compile(r'^imdb (.+)$'),
-			help = ('video', 'imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
+			help = ('imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_TVTome,
 			regexp = re.compile(r'^tvtome (.+)$'),
-			help = ('video', 'tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
+			help = ('tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
 		)
 	
 	# ---------------------------------------------------------------------------
