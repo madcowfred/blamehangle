@@ -89,6 +89,7 @@ class News(Plugin):
 	
 	def __setup_config(self):
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
+		self.__spam_prefix = self.Config.get('News', 'spam_prefix')
 		
 		self.__old_days = self.Config.getint('News', 'old_threshold')
 		self.__old_threshold = self.__old_days * 86400
@@ -332,14 +333,19 @@ class News(Plugin):
 				# we don't end up posting slabs of stories from the same
 				# site in a row
 				index = self.__rand_gen.randint(0, len(self.__outgoing) - 1)
-				reply = self.__outgoing.pop(index)
+				line = self.__outgoing.pop(index)
+				
+				# attach the prefix if we have to
+				if self.__spam_prefix:
+					reply = '%s %s' % (self.__spam_prefix, line)
+				else:
+					reply = line
+				
+				# spit it out
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
 				self.putlog(LOG_DEBUG, tolog)
-				
-				# Re-pickle the current outgoing queue
-				# self.__pickle(self.__outgoing, '.news.out_pickle')
 		
 		# Once an hour, go and check for old news and purge it from the
 		# db
@@ -354,7 +360,7 @@ class News(Plugin):
 			self.dbQuery(TIME_CHECK, query)
 	
 	# -----------------------------------------------------------------------
-
+	
 	def _message_REPLY_URL(self, message):
 		event, page_text = message.data
 		
