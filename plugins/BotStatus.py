@@ -8,16 +8,10 @@ import os
 import re
 import time
 
-#from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
 
 from plugins.SmartyPants import NiceTime
-
-# ---------------------------------------------------------------------------
-
-BOTSTATUS = 'BOTSTATUS'
-BOTSTATUS_RE = re.compile('^botstatus$')
 
 # ---------------------------------------------------------------------------
 
