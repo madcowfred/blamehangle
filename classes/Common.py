@@ -82,12 +82,16 @@ def FindChunks(text, start, end, limit=0):
 			n = result[0]
 
 # ---------------------------------------------------------------------------
+
+_strip_half_tags_re = re.compile(r'^[^<]*?>')
+_strip_html_tags_re = re.compile(r'(?s)<.*?>')
+
 # Strip HTML tags from text and split it into non-empty lines
 def StripHTML(text):
 	# Remove any half tags at the start
-	mangled = re.sub(r'^[^<]*?>', '', text)
+	mangled = _strip_half_tags_re.sub('', text)
 	# Remove all HTML tags
-	mangled = re.sub(r'(?s)<.*?>', '', mangled)
+	mangled = _strip_html_tags_re.sub('', mangled)
 	# Fix escaped bits and pieces
 	mangled = UnquoteHTML(mangled)
 	# Split into lines that aren't empty
