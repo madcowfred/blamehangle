@@ -152,29 +152,58 @@ class SiteBot(Plugin):
 		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(.*?)"$', data)
 		if m:
 			base, rel = Split_Dir(m.group(1))
-			replytext = 'NEW: %s@%s drops %s in %s' % (m.group(2), m.group(3), rel, base)
-			return replytext
-	
-	# ----------------------------------------------------------------------------
+			return 'NEW: %s@%s drops %s in %s' % (m.group(2), m.group(3), rel, base)
 	
 	def parse_deldir(self, data):
 		# "dir" "user" "group" "tagline"
 		m = re.match(r'^"(.*?)" "(\S+)" "(\S+)" ".*?"$', data)
 		if m:
 			base, rel = Split_Dir(m.group(1))
-			replytext = "DELDIR: %s@%s threw %s in the trash" % (m.group(2), m.group(3), rel)
-			return replytext
-	
-	# ----------------------------------------------------------------------------
+			return 'DELDIR: %s@%s threw %s in the trash' % (m.group(2), m.group(3), rel)
 	
 	def parse_wipe(self, data):
 		# "dir" "user" "group" "tagline"
 		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(.*?)"$', data)
 		if m:
 			base, rel = Split_Dir(m.group(1))
-			
-			tosay = 'WIPED: %s@%s wiped the floor with %s' % (m.group(2), m.group(3), rel)
-			return tosay
+			return 'WIPED: %s@%s wiped the floor with %s' % (m.group(2), m.group(3), rel)
+	
+	# ----------------------------------------------------------------------------
+	
+	def parse_sfv(self, data):
+		# "dir" "user" "group" "sfv_base_name?" "files"
+		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)"$', data)
+		if m:
+			base, rel = Split_Dir(m.group(1))
+			return '\x02SFV\x02: %s/%s - [Files: \x02%s\x02 expected]' % (base, rel, m.group(5))
+	
+	def parse_firstfile(self, data):
+		# "dir" "user" "group" "file" "speed"
+		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)"$', data)
+		if m:
+			base, rel = Split_Dir(m.group(1))
+			return '\x02FIRST\x02: %s@%s uploads the first file of %s/%s at \x02%s\x02KB/s' % (m.group(2), m.group(3), base, rel, m.group(5))
+	
+	def parse_newracer(self, data):
+		# "dir" "user" "group" "file" "speed" "remain" "others"
+		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(.*?)"$', data)
+		if m:
+			base, rel = Split_Dir(m.group(1))
+			return '\x02RACER\x02: %s@%s joins the %s/%s race against [ %s ] at \x02%s\x02KB/s - [Files remaining: \x02%s\x02]' % (m.group(2), m.group(3), base, rel, m.group(7), m.group(5), m.group(6))
+	
+	def parse_update(self, data):
+		# "dir" "percent" "user" "group" "u_files" "u_kbytes" "t_files" "t_kbytes" "remain" "eta"
+		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)"$', data)
+		if m:
+			base, rel = Split_Dir(m.group(1))
+			return '\x02UPDATE\x02: %s/%s - At \x02%s\x02%%, %s@%s is leading with %s/%s files (%s/%sKB) - ETA: %s' % (base, rel, m.group(2), m.group(3), m.group(4), m.group(5), m.group(7), m.group(6), m.group(8), m.group(10))
+	
+	def parse_complete(self, data):
+		# "dir" "t_files" "t_kbytes" "t_users" "t_groups" "avgspeed" "time" "f_user" "f_speed" "s_user" "s_speed"
+		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)" "(\S+)"$', data)
+		if m:
+			base, rel = Split_Dir(m.group(1))
+			return '\x02COMPLETED\x02: %s/%s [\x02%s\x02 file(s) totalling \x02%s\x02KB] - [Upload took \x02%s\x02, average speed \x02%s\x02KB/s]' % (base, rel, m.group(2), m.group(3), m.group(7), m.group(6))
 	
 	# ----------------------------------------------------------------------------
 	
