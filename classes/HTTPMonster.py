@@ -15,9 +15,8 @@ from Queue import *
 from select import select
 #from thread import start_new_thread
 from threading import *
-# we have our own version so we can mess with the user-agent string
-#from classes.urllib2 import urlopen
-import urllib2
+# we have our own version which doesn't mangle our User-Agent
+from classes import urllib2
 
 from classes.Children import Child
 from classes.Constants import *
@@ -121,11 +120,9 @@ def URLThread(parent, myindex):
 			try:
 				# get the page
 				request = urllib2.Request(url)
+				request.add_header("User-Agent", parent.user_agent)
 				#request.add_header("If-Modified-Since", format_http_date(modified))
-				#request.add_header("User-Agent", parent.user_agent)
-				# urllib2 bug in 2.2 :\
-				request.add_header("User-agent", parent.user_agent)
-				request.add_header("Accept-encoding", "gzip")
+				#request.add_header("Accept-encoding", "gzip")
 				
 				the_page = urllib2.urlopen(request)
 				
