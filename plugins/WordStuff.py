@@ -29,8 +29,8 @@ MAX_WORD_RESULTS = 50
 class WordStuff(Plugin):
 	"""
 	"rhyme <word>"
-	"synonym <word>"
-	"antonym <word>"
+	"synonyms <word>"
+	"antonyms <word>"
 
 	Lookup words that rhyme, are synonyms, or are antonyms with/of the given
 	word, using www.rhymezone.com
@@ -51,12 +51,12 @@ class WordStuff(Plugin):
 	
 	def __set_help_msgs(self):
 		WORD_RHYME_HELP = "'\02rhyme\02 <word>' : Search for other words that rhyme with <word>"
-		WORD_SYNONYM_HELP = "'\02synonym\02 <word>' : Search for words that have the same meaning as <word>"
-		WORD_ANTONYM_HELP = "'\02antonym\02 <word>' : Search for words that have the exact opposite meaning of <word>"
+		WORD_SYNONYM_HELP = "'\02synonyms\02 <word>' : Search for words that have the same meaning as <word>"
+		WORD_ANTONYM_HELP = "'\02antonyms\02 <word>' : Search for words that have the exact opposite meaning of <word>"
 
 		self.setHelp('words', 'rhyme', WORD_RHYME_HELP)
-		self.setHelp('words', 'synonym', WORD_SYNONYM_HELP)
-		self.setHelp('words', 'antonym', WORD_ANTONYM_HELP)
+		self.setHelp('words', 'synonyms', WORD_SYNONYM_HELP)
+		self.setHelp('words', 'antonyms', WORD_ANTONYM_HELP)
 	
 	# -----------------------------------------------------------------------
 
