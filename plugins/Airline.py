@@ -3,12 +3,13 @@
 # ---------------------------------------------------------------------------
 # This plugin does some stuff regarding flights and airlines.
 # You can lookup an airline's code, or get details on a flight number.
+#
+# FIXME: At some point, rewrite this to be less hideous. Too scared to do so
+#        now.
 # ---------------------------------------------------------------------------
 
 import re
 import time
-import types
-import cPickle
 
 from classes.Common import *
 from classes.Constants import *
@@ -41,65 +42,36 @@ FLIGHT_RE = re.compile(f1+f2+f3+f9)
 
 class Airline(Plugin):
 	"""
-	stuff. it's 6:30am.
-
-	and it was much later when i finished.
-	comments come later
+	Does airline stuff?
 	"""
 	
 	def setup(self):
 		config_dir = self.Config.get('plugin', 'config_dir')
-		self.Airlines = {}
-		try:
-			f = file(config_dir + "aircodes.data", "rb")
-		except:
-			tolog = "couldn't open %saircodes.data! Airlines plugin will not work as intended" % config_dir
-			self.putlog(LOG_WARNING, tolog)
-		else:
-			try:
-				self.Airlines = cPickle.load(f)
-			except:
-				tolog = "error loading data from %saircodes.data! Airlines plugin will not work as intended" % config_dir
-				self.putlog(LOG_WARNING, tolog)
-			else:
-				f.close()
-				tolog = "loaded %d carriers from %saircodes.data" % (len(self.Airlines), config_dir)
-				self.putlog(LOG_DEBUG, tolog)
+		self.Airlines = self.loadPickle('aircodes.data') or {}
+		if self.Airlines:
+			tolog = 'Loaded %d carriers from aircodes.data' % len(self.Airlines)
+			self.putlog(LOG_DEBUG, tolog)
 	
-	def _message_REQ_REHASH(self, message):
+	def rehash(self):
 		self.setup()
 	
 	# --------------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		air_dir = PluginTextEvent(AIRLINE_AIRLINE, IRCT_PUBLIC_D, AIRLINE_RE)
-		air_msg = PluginTextEvent(AIRLINE_AIRLINE, IRCT_MSG, AIRLINE_RE)
-		fl_dir = PluginTextEvent(AIRLINE_FLIGHT, IRCT_PUBLIC_D, FLIGHT_RE)
-		fl_msg = PluginTextEvent(AIRLINE_FLIGHT, IRCT_MSG, FLIGHT_RE)
-		
-		self.register(air_dir, air_msg, fl_dir, fl_msg)
+		self.setTextEvent(AIRLINE_AIRLINE, AIRLINE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(AIRLINE_FLIGHT, FLIGHT_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.registerEvents()
 		
 		self.setHelp('travel', 'airline', AIRLINE_HELP)
 		self.setHelp('travel', 'flight', FLIGHT_HELP)
-		
 		self.registerHelp()
-	
-	# --------------------------------------------------------------------------
-	
-	def _message_PLUGIN_TRIGGER(self, message):
-		trigger = message.data
-		
-		if trigger.name == AIRLINE_AIRLINE:
-			self.__airline_lookup(trigger)
-		elif trigger.name == AIRLINE_FLIGHT:
-			self.__flight_search(trigger)
 	
 	# --------------------------------------------------------------------------
 	# Someone wants to lookup an airline. If they gave us the code, we'll find
 	# the name string, if they gave us a name string, we'll try to find codes
 	# that match it
-	def __airline_lookup(self, trigger):
-		match = self.__airline_search(trigger)
+	def _trigger_AIRLINE_AIRLINE(self, trigger):
+		match = self.__Airline_Search(trigger)
 		replytext = "Airline search for '%s'" % trigger.match.group('airline')
 		if match:
 			if len(match) > MAX_AIRLINE_MATCHES:
@@ -115,10 +87,9 @@ class Airline(Plugin):
 		self.sendReply(trigger, replytext)
 	
 	# --------------------------------------------------------------------------
-
 	# Lookup the given carrier name or code. If a partial name is supplied,
 	# return all the carriers that matched.
-	def __airline_search(self, trigger):
+	def __Airline_Search(self, trigger):
 		airtext = trigger.match.group('airline')
 		if len(airtext) == 2:
 			airtext = airtext.upper()
@@ -132,13 +103,12 @@ class Airline(Plugin):
 			for code, name in self.Airlines.items():
 				if name.lower().startswith(airtext):
 					matches.append((code, self.Airlines[code]))
-
+			
 			return matches
 	
 	# -----------------------------------------------------------------------
-	
 	# Someone wants to look up info on a flight.
-	def __flight_search(self, trigger):
+	def _trigger_AIRLINE_FLIGHT(self, trigger):
 		code = trigger.match.group('code').upper()
 		flight = trigger.match.group('flight')
 		
@@ -175,50 +145,47 @@ class Airline(Plugin):
 		
 		# Make the query url to send to travelocity.
 		url = "http://dps1.travelocity.com/dparflifo.ctl?CMonth=%s&CDayOfMonth=%s&CYear=%s&LANG=EN&last_pgd_page=dparrqst.pgd&dep_arpname=&arr_arp_name=&dep_dt_mn_1=%s&dep_dt_dy_1=%s&dep_tm1=12%%3A00pm&aln_name=%s&flt_num=%s&Search+Now.x=89&Search+Now.y=4" % (month, day, year, monthtxt, day, code, flight)
-		self.urlRequest(trigger, url)
+		self.urlRequest(trigger, self.__Parse_Travelocity, url)
 	
 	# -----------------------------------------------------------------------
 	# Travelocity has replied
-	def _message_REPLY_URL(self, message):
-		trigger, page_text = message.data
+	def __Parse_Travelocity(self, trigger, page_text):
+		# No results
+		if page_text.find('No match found') >= 0:
+			replytext = 'Unable to find flight information'
+			self.sendReply(trigger, replytext)
 		
-		if trigger.name == AIRLINE_FLIGHT:
-			# No results
-			if page_text.find('No match found') >= 0:
-				replytext = 'Unable to find flight information'
-				self.sendReply(trigger, replytext)
+		else:
+			# Find the chunk of data we're interested in
+			chunk = FindChunk(page_text, '<table name=flight_info', '</table')
+			if chunk is None:
+				self.putlog(LOG_WARNING, 'Flight page parsing failed: unable to find data')
+				self.sendReply(trigger, 'Failed to parse page properly')
+				return
+			lines = StripHTML(chunk)
 			
-			else:
-				# Find the chunk of data we're interested in
-				chunk = FindChunk(page_text, '<table name=flight_info', '</table')
-				if chunk is None:
-					self.putlog(LOG_WARNING, 'Flight page parsing failed: unable to find data')
-					self.sendReply(trigger, 'Failed to parse page properly')
-					return
-				lines = StripHTML(chunk)
-				
-				# Get our data!
-				source = lines[3]
-				dest = lines[4]
-				
-				source_sched = lines[6]
-				dest_sched = lines[7]
-				
-				source_act = lines[9]
-				dest_act = lines[10]
-				
-				source_gate = lines[12]
-				dest_gate = lines[13]
-				
-				dest_bags = lines[15]
-				
-				# Should this plugin always reply to successful queries in
-				# a /msg? If so, the hack below is required
-				#trigger.event.IRCType = IRCT_MSG
-				
-				# Build our reply string, and send it back to IRC!
-				replytext = "\02Departure\02: %s - %s (%s) Gate: %s" % (source, source_sched, source_act, source_gate)
-				replytext += " --> \02Arrival\02: %s - %s (%s) Gate: %s Baggage: %s" % (dest, dest_sched, dest_act, dest_gate, dest_bags)
-				self.sendReply(trigger, replytext)
+			# Get our data!
+			source = lines[3]
+			dest = lines[4]
+			
+			source_sched = lines[6]
+			dest_sched = lines[7]
+			
+			source_act = lines[9]
+			dest_act = lines[10]
+			
+			source_gate = lines[12]
+			dest_gate = lines[13]
+			
+			dest_bags = lines[15]
+			
+			# Should this plugin always reply to successful queries in
+			# a /msg? If so, the hack below is required
+			#trigger.event.IRCType = IRCT_MSG
+			
+			# Build our reply string, and send it back to IRC!
+			replytext = "\02Departure\02: %s - %s (%s) Gate: %s" % (source, source_sched, source_act, source_gate)
+			replytext += " --> \02Arrival\02: %s - %s (%s) Gate: %s Baggage: %s" % (dest, dest_sched, dest_act, dest_gate, dest_bags)
+			self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
