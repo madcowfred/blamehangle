@@ -301,20 +301,26 @@ class Google(HTMLParser):
 		HTMLParser.__init__(self)
 		
 		self.news = {}
+		self.__temp_href = None
+		self.__found = 0
 	
-	# If we come across an anchor tag, check to see if it has a "title"
-	# attribute. If it does, we have found a news story.
+	# Scan through the HTML, looking for a tag of the form <a class=y ..>
 	def handle_starttag(self, tag, attributes):
 		if tag == 'a':
-			href = None
-			title = None
 			for attr, value in attributes:
-				if attr == 'href':
-					href = value
-				elif attr == 'title':
-					title = value
-			if href and title:
-				self.news[title] = href
+				if attr == 'class' and value == 'y':
+					# We have found a main headline
+					self.__found = 1
+				if self.__found and attr == 'href':
+					self.__temp_href = value
+	
+	# Check to see if we have found a new headline, and if so, the data
+	# between the <a ..> </a> tags is what we want to grab as the title.
+	def handle_data(self, data):
+		if self.__found:
+			self.news[data] = self.__temp_href
+			self.__found = 0
+			self.__temp_href = None
 
 # ---------------------------------------------------------------------------
 
