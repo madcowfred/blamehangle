@@ -4,6 +4,7 @@ __version__ = '$Id$'
 # ---------------------------------------------------------------------------
 
 import errno
+import re
 import select
 
 from classes.Constants import *
@@ -13,6 +14,11 @@ from classes import irclib
 from classes.Children import Child
 from classes.Userlist import Userlist
 from classes.WrapConn import *
+
+# ---------------------------------------------------------------------------
+
+# bold | codes off | reverse | underline | 3 forms of colours
+STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,2}|\x03)')
 
 # ---------------------------------------------------------------------------
 
@@ -31,7 +37,8 @@ class ChatterGizmo(Child):
 		# Add handlers for each event in this array to call handle_event
 		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
 		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
-		for event in [	"welcome", "namreply", "join", "part", "kick", "quit" ]:
+		for event in [ 'welcome', 'namreply', 'join', 'part', 'kick', 'quit',
+			'pubmsg' ]:
 			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
 		
 		self.connect()
@@ -188,3 +195,37 @@ class ChatterGizmo(Child):
 				nick = nick[1:]
 			
 			self.Conns[conn].users.joined(chan, nick)
+	
+	# -----------------------------------------------------------------------
+	# Someone just said something in a channel we're in
+	# -----------------------------------------------------------------------
+	def _handle_pubmsg(self, conn, event):
+		chan = event.target().lower
+		nick = irclib.nm_to_n(event.source())
+		
+		# Strip any codes from the text
+		text = STRIP_CODES.sub('', event.arguments()[0])
+		#userinfo = UserInfo(event.source())
+		
+		if text != event.arguments()[0]:
+			print 'text: %s - orig: %s' % (text, event.arguments()[0])
+		
+		if text == '':
+			return
+		
+		# See if it's addressed to anyone
+		addr = 0
+		for i in range(1, 10):
+			if text[i] in (':;,-'):
+				if text[i+1] == ' ':
+					addr = i+2
+				else:
+					addr = i+1
+		
+		# It's probably addressed to someone, see if it's us
+		if addr:
+			ournick = conn.real_nickname
+			if not text.startswith(ournick):
+				return
+			
+			text = text[addr:]
