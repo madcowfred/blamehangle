@@ -41,7 +41,6 @@ IRCT_TIMED = 'IRCT_TIMED'
 # ---------------------------------------------------------------------------
 # Request constants
 # ---------------------------------------------------------------------------
-REQ_CONN = 'REQ_CONN'
 REQ_LOG = 'REQ_LOG'
 REQ_NOTICE = 'REQ_NOTICE'
 REQ_PRIVMSG = 'REQ_PRIVMSG'
@@ -52,7 +51,5 @@ REQ_URL = 'REQ_URL'
 # ---------------------------------------------------------------------------
 # Reply constants
 # ---------------------------------------------------------------------------
-REPLY_CONN = 'REPLY_CONN'
 REPLY_QUERY = 'REPLY_QUERY'
 REPLY_URL = 'REPLY_URL'
-REPLY_TEST = 'REPLY_TEST'
