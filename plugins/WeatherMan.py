@@ -136,7 +136,7 @@ class WeatherMan(Plugin):
 			m = re.search(r'<a href="(/forecast/\S+\.html)">', page_text)
 			if m:
 				url = 'http://search.weather.yahoo.com' + m.group(1)
-				self.urlRequest(trigger, url)
+				self.urlRequest(trigger, self.__Parse_Weather, url)
 			else:
 				tolog = "Weather page parsing failed for '%s'!" % trigger.match.group('location')
 				self.putlog(LOG_WARNING, tolog)
