@@ -377,7 +377,26 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants us to tell someone else about a factoid
 	def __Query_Tell(self, trigger):
+		tellnick = trigger.match.group('nick').lower()
 		name = self.__Sane_Name(trigger)
+		
+		if tellnick[0] in '#&':
+			# Target is a channel we're not in.
+			if tellnick not in trigger.conn.users.channels():
+				self.sendReply(trigger, "I'm not in that channel!")
+				tolog = "%s tried to tell %s about '%s', but I'm not in that channel!" % (
+					trigger.userinfo, tellnick, name)
+				self.putlog(LOG_WARNING, tolog)
+				return
+			
+			# Target is a channel the source isn't in.
+			if not trigger.conn.users.in_chan(tellnick, trigger.userinfo.nick):
+				self.sendReply(trigger, "You're not in that channel!")
+				tolog = "%s tried to tell %s about '%s', but they're not in that channel!" % (
+					trigger.userinfo, tellnick, name)
+				self.putlog(LOG_WARNING, tolog)
+				return
+		
 		self.dbQuery(trigger, self.__Fact_Get, GET_QUERY, name)
 	
 	# -----------------------------------------------------------------------
