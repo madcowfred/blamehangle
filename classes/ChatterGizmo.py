@@ -471,6 +471,7 @@ class ChatterGizmo(Child):
 			if nick[0] in wrap.conn.features['user_modes_r']:
 				nick = nick[1:]
 			
+			# Add a placeholder hostmask until the WHO reply is finished
 			hostmask = '%s!@' % (nick)
 			wrap.ircul.user_joined(chan, hostmask=hostmask)
 	
