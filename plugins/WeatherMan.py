@@ -103,6 +103,7 @@ class WeatherMan(Plugin):
 		self.setHelp('weather', 'forecast', FORECAST_HELP)
 		self.setHelp('weather', 'metar', METAR_HELP)
 		self.setHelp('weather', 'metard', METARD_HELP)
+		self.setHelp('weather', 'taf', TAF_HELP)
 		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
