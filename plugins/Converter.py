@@ -56,11 +56,11 @@ class Converter(Plugin):
 			replytext = "Don't be an idiot"
 		
 		elif data['from'] == 'c' and data['to'] == 'f':
-			value = (data['amt'] * 9.0 / 5) + 32
+			value = '%.1f' % ((data['amt'] * 9.0 / 5) + 32)
 			replytext = '%s °C == %s °F' % (data['amt'], value)
 		
 		elif data['from'] == 'f' and data['to'] == 'c':
-			value = (data['amt'] - 32) * 5.0 / 9
+			value = '%.1f' % ((data['amt'] - 32) * 5.0 / 9)
 			replytext = '%s °F == %s °C' % (data['amt'], value)
 		
 		else:
