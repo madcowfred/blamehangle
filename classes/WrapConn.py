@@ -375,13 +375,6 @@ class WrapConn:
 					self.last_nick = currtime
 					self.conn.nick(self.nicks[0])
 			
-			# See if we have to do our /WHO yet
-			if self.wholist and (currtime - self.wholist[0]) >= 1:
-				text = 'WHO %s' % (','.join(self.wholist[1:]))
-				self.__outgoing.priority_insert(PRIORITY_COMMAND, text)
-				
-				self.wholist = []
-			
 			# Send something from our output queue if we have to
 			if (currtime - self.last_output) >= OUTPUT_INTERVAL:
 				if self.__outgoing:

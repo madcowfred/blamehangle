@@ -266,10 +266,11 @@ class ChatterGizmo(Child):
 			text = 'MODE %s' % (chan)
 			wrap.sendline(text)
 			
-			# Request a list of info for users on this channel at some point
-			if not wrap.wholist:
-				wrap.wholist.append(time.time())
+			# Add to the /WHO list. If it's the first one, start the /WHO.
 			wrap.wholist.append(chan)
+			if len(wrap.wholist) == 1:
+				text = 'WHO %s' % (chan)
+				wrap.sendline(text)
 		
 		# Not us
 		else:
@@ -398,6 +399,25 @@ class ChatterGizmo(Child):
 			conn.nick(before)
 	
 	# -----------------------------------------------------------------------
+	# Numeric 353 : list of names in channel
+	# -----------------------------------------------------------------------
+	def _handle_namreply(self, connid, conn, event):
+		wrap = self.Conns[connid]
+		chan = event.arguments[1].lower()
+		
+		# Add each nick to the channel user list
+		for nick in event.arguments[2].split():
+			# Snarf any annoying mode characters
+			while 1:
+				if nick[0] in wrap.conn.features['user_modes_r']:
+					nick = nick[1:]
+				else:
+					break
+			
+			hostmask = '%s!@' % (nick)
+			wrap.ircul.user_joined(chan, hostmask=hostmask)
+	
+	# -----------------------------------------------------------------------
 	# Numeric 352 : WHO reply
 	# -----------------------------------------------------------------------
 	def _handle_whoreply(self, connid, conn, event):
@@ -408,7 +428,7 @@ class ChatterGizmo(Child):
 		nick = event.arguments[4]
 		modes = event.arguments[5]
 		
-		# Update this user's host in the userlist
+		# Update this user's host in the userlist, nasty
 		ui = wrap.ircul._u[nick]
 		ui.ident = ident
 		ui.host = host
@@ -417,38 +437,26 @@ class ChatterGizmo(Child):
 		for sign in modes:
 			mode = wrap.conn.features['user_modes_r'].get(sign, None)
 			if mode is not None:
-				wrap.ircul.user_add_mode(chan, nick, mode)
+				wrap.ircul.user_add_mode(chan, nick, mode)	
 	
 	# -----------------------------------------------------------------------
 	# Numeric 315 : End of WHO reply
 	# -----------------------------------------------------------------------
 	def _handle_endofwho(self, connid, conn, event):
 		wrap = self.Conns[connid]
-		chans = event.arguments[0].lower()
+		chan = event.arguments[0].lower()
 		
-		for chan in chans.split(','):
-			wrap.ircul._c[chan].synched = True
-			
-			tolog = 'Userlist synched for %s' % (chan)
-			self.connlog(connid, LOG_ALWAYS, tolog)
-	
-	# -----------------------------------------------------------------------
-	# Numeric 353 : list of names in channel
-	# -----------------------------------------------------------------------
-	def _handle_namreply(self, connid, conn, event):
-		wrap = self.Conns[connid]
-		chan = event.arguments[1].lower()
+		# We're synched now, woo
+		wrap.ircul._c[chan].synched = True
 		
-		sign_to_char = wrap.conn.features['user_modes_r']
+		tolog = 'Userlist synched for %s' % (chan)
+		self.connlog(connid, LOG_ALWAYS, tolog)
 		
-		# Add each nick to the channel user list
-		for nick in event.arguments[2].split():
-			if nick[0] in sign_to_char:
-				hostmask = '%s!@' % (nick[1:])
-			else:
-				hostmask = '%s!@' % (nick)
-			
-			wrap.ircul.user_joined(chan, hostmask=hostmask)
+		# Start the next /WHO if there's one to go
+		wrap.wholist.pop(0)
+		if wrap.wholist:
+			text = 'WHO %s' % (wrap.wholist[0])
+			wrap.sendline(text)
 	
 	# -----------------------------------------------------------------------
 	# Our nickname is in use!
