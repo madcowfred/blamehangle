@@ -39,8 +39,10 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		
 		# stuff we need to keep track of
 		self.__handlers = []
-		self.__nickname = None
 		self.__read_buf = ''
+		
+		self.__nickname = None
+		self.__userinfo = None
 	
 	# -----------------------------------------------------------------------
 	# Register something's interest in receiving events
@@ -52,21 +54,8 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		for method in self.__handlers:
 			method(command, prefix, target, arguments)
 	
-	# Connect to a server and port
-	def connect(self, host, port=6667, family=socket.AF_INET):
-		# Create our socket
-		self.create_socket(family, socket.SOCK_STREAM)
-		
-		# Try to connect. This will blow up if it can't resolve the host.
-		try:
-			self.connect((host, port))
-		except socket.gaierror, msg:
-			self.failed(msg)
-		#else:
-		#	self.last_activity = time.time()
-	
 	# Your basic 'send a line of text to the server' method
-	def sendline(self, line, *args):
+	def __sendline(self, line, *args):
 		if args:
 			line = line % args
 		self.send(line + '\r\n')
@@ -157,6 +146,45 @@ class asyncIRC(asyncore.dispatcher_with_send):
 				
 				# Trigger the event
 				self.__trigger_event(self, command, prefix, target, arguments)
+	
+	# -----------------------------------------------------------------------
+	# Connect to a server
+	def connect(self, family, host, port, username, ircname, vhost):
+		# Create our socket
+		self.create_socket(family, socket.SOCK_STREAM)
+		
+		# Try to connect. This will blow up if it can't resolve the host.
+		try:
+			self.connect((host, port))
+		except socket.gaierror, msg:
+			self.failed(msg)
+	
+	def join(self, channel, key=''):
+		if key:
+			self.sendline('JOIN %s %s', channel, key)
+		else:
+			self.sendline('JOIN %s', channel)
+	
+	def nick(self, nickname):
+		self.sendline('NICK %s', nickname)
+	
+	def notice(self, target, text):
+		self.sendline('NOTICE %s :%s', target, text)
+	
+	def part(self, channel):
+		self.sendline('PART %s', channel)
+	
+	def privmsg(self, target, text):
+		self.sendline('PRIVMSG %s :%s', target, text)
+	
+	def quit(self, reason=''):
+		if reason:
+			self.sendline('QUIT :%s', reason)
+		else:
+			self.sendline('QUIT')
+	
+	def user(self, username, localhost, server, ircname):
+		self.sendline('USER %s %s %s :%s', username, localhost, server, ircname)
 
 # ---------------------------------------------------------------------------
 
