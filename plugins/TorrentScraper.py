@@ -23,7 +23,7 @@ RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
 
 # ARGH!
-#ENTITY_RE = re.compile(r'&(?!amp;|lt;|gt;|quot;|apos;)')
+ENTITY_RE = re.compile(r'&(?![a-z]{1,4};)')
 
 # ---------------------------------------------------------------------------
 
@@ -245,9 +245,8 @@ class TorrentScraper(Plugin):
 			lines = []
 			lines.append('<item>')
 			lines.append('<title>%s</title>' % ENTITY_RE.sub('&amp;', row['description']))
-			#quotedurl = ENTITY_RE.sub('&amp;', urllib.quote(row['url'], ':/&'))
-			#lines.append('<link>%s</link>' % quotedurl)
-			lines.append('<link>%s</link>' % row['url'])
+			quotedurl = ENTITY_RE.sub('&amp;', row['url'])
+			lines.append('<link>%s</link>' % quotedurl)
 			lines.append('<pubDate>%s</pubDate>' % ISODate(row['added']))
 			lines.append('</item>')
 			print >>rssfile, '\n'.join(lines)
