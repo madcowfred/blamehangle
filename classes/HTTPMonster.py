@@ -156,6 +156,8 @@ def URLThread(parent, myindex):
 				
 				tolog = "Received %d bytes of data" % len(pagetext)
 				parent.putlog(LOG_DEBUG, tolog)
+				
+				raise
 			
 			else:
 				# we have the page
