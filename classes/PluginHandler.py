@@ -98,6 +98,17 @@ class PluginHandler(Child):
 			if name in eventStore:
 				del eventStore[name]
 	
+	# A plugin has died, unregister all of it's events
+	def _message_PLUGIN_DIED(self, message):
+		dead_name = message.data
+		
+		for store in (self.__PUBLIC_Events, self.__PUBLIC_D_Events, self.__MSG_Events,
+			self.__NOTICE_Events, self.__CTCP_Events, self.__TIMED_Events):
+			
+			for event_name, (event, plugin_name) in store.items():
+				if plugin_name == dead_name:
+					del store[event_name]
+	
 	# -----------------------------------------------------------------------
 	# Something has happened on IRC, and we are being told about it. Search
 	# through the appropriate collection of events and see if any match. If

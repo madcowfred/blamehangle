@@ -149,6 +149,7 @@ class Postman:
 			
 			del self.__Children[name]
 		
+		# 'unload' the module
 		if globals().has_key(name):
 			del globals()[name]
 		
@@ -156,6 +157,9 @@ class Postman:
 			del sys.modules['plugins.' + name]
 		except KeyError:
 			pass
+		
+		# Tell PluginHandler that we unloaded them
+		self.sendMessage('PluginHandler', PLUGIN_DIED, name)
 	
 	# -----------------------------------------------------------------------
 	
