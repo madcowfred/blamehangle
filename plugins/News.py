@@ -532,14 +532,15 @@ class News(Plugin):
 		# Add the new articles to our outgoing queue, then start adding them
 		# to the database.
 		for title, url, description, ctime in articles:
-			if self.__verbose and description:
-				replytext = '%s - %s : %s' % (title, url, description)
-			else:
-				replytext = '%s - %s' % (title, url)
+			replytext = '%s - %s' % (title, UnquoteURL(url))
 			
 			# Attach the spam prefix if we have ot
 			if self.__spam_prefix:
 				replytext = '%s %s' % (self.__spam_prefix, replytext)
+			
+			# Attach the description if we're in verbose mode
+			if self.__verbose and description:
+				replytext = '%s : %s' % (replytext, description)
 			
 			# stick it in the outgoing queue
 			reply = PluginReply(trigger, replytext)
