@@ -131,8 +131,8 @@ class Postman:
 			module = __import__('plugins.' + name, globals(), locals(), [name])
 			globals()[name] = getattr(module, name)
 		
-		except ImportError:
-			tolog = "No such plugin '%s'" % name
+		except ImportError, msg:
+			tolog = "Error while importing plugin '%s': %s" % (name, msg)
 			self.__Log(LOG_WARNING, tolog)
 		
 		except:
