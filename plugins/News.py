@@ -438,7 +438,6 @@ class News(Plugin):
 				title, (url, description) = articles[i]
 				result = results[i]
 				
-				
 				# the title was in the news db, don't add it again
 				if result:
 					continue
@@ -573,8 +572,11 @@ class Google(HTMLParser):
 					# We have found a main headline
 					self.__found_a = 1
 				if self.__found_a and attr == 'href':
-					self.__temp_href = value
-
+					if value.startswith('/url?q='):
+						self.__temp_href = value[7:]
+					else:
+						self.__temp_href = value
+		
 		if self.__found_a and tag == 'br':
 			if self.__found_br1:
 				self.__found_br2 = 1
@@ -597,7 +599,7 @@ class Google(HTMLParser):
 			self.__found_a = 0
 			self.__found_br1 = 0
 			self.__found_br2 = 0
-			
+
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
