@@ -476,6 +476,11 @@ class News(Plugin):
 			
 			description = item.get('description', '')
 			
+			# Get rid of any goddamn &amp; entities
+			article_title = article_title.replace('&amp;', '&')
+			article_link = article_link.replace('&amp;', '&')
+			description = description.replace('&amp;', '&')
+			
 			# Keep the article for later
 			data = [article_title, article_link, description, currtime]
 			articles.append(data)
@@ -548,9 +553,6 @@ class News(Plugin):
 			# Attach the description if we're in verbose mode
 			if self.__verbose and description:
 				replytext = '%s : %s' % (replytext, description)
-			
-			# Get rid of any goddamn &amp; entities
-			replytext = replytext.replace('&amp;', '&')
 			
 			# stick it in the outgoing queue
 			reply = PluginReply(trigger, replytext)
