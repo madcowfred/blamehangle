@@ -66,7 +66,8 @@ class WeatherMan(Plugin):
 			
 			# Only one result, hopefully?
 			else:
-				data = {}
+				location = None
+				chunks = []
 				
 				
 				# Find the chunk that tells us where we are
@@ -81,7 +82,7 @@ class WeatherMan(Plugin):
 				# Extract location!
 				loc1 = lines[-1]
 				loc2 = lines[-2][:-2]
-				data['location'] = '%s, %s' % (loc1, loc2)
+				location = '[%s, %s]' % (loc1, loc2)
 				
 				
 				# Find the chunk with the weather data we need
@@ -95,47 +96,59 @@ class WeatherMan(Plugin):
 				lines = StripHTML(m.group(1))
 				
 				# Extract current conditions!
-				data['currently_f'] = lines[1]
-				data['weather'] = lines[2]
-				data['hi_f'] = lines[3][3:]
-				data['lo_f'] = lines[4][3:]
+				for line in lines:
+					if line.startswith('Currently:'):
+						continue
+					elif re.match(r'^\d+$', line):
+						chunk = 'Currently: %s' % (CandF(line))
+						chunks.append(chunk)
+					elif line.startswith('Hi:'):
+						chunk = 'High: %s' % (CandF(line[3:]))
+						chunks.append(chunk)
+					elif line.startswith('Lo:'):
+						chunk = 'Low: %s' % (CandF(line[3:]))
+						chunks.append(chunk)
+					else:
+						chunks.insert(0, line)
 				
 				
 				# Find some more weather data
 				m = re.search(r'<\!--MORE CC-->(.*?)<\!--ENDMORE CC-->', page_text, re.M | re.S)
-				if not m:
-					self.putlog(LOG_WARNING, 'Weather page parsing failed: no extra data')
-					self.sendReply(trigger, 'Failed to parse page properly')
-					return
-				
-				# Split into lines that aren't empty
-				lines = StripHTML(m.group(1))
-				
-				# Extract!
-				data['like_f'] = lines[2]
-				
-				windbits = lines[-9].split()
-				if len(windbits) == 3:
-					data['wind'] = '%s %s kph (%s mph)' % (windbits[0], ToKilometers(windbits[1]), windbits[1])
-				else:
-					data['wind'] = windbits[0]
-				
-				data['humidity'] = lines[-7]
-				data['sunrise'] = lines[-5]
-				data['visibility'] = lines[-3]
-				data['sunset'] = lines[-1]
+				if m:
+					#self.putlog(LOG_WARNING, 'Weather page parsing failed: no extra data')
+					#self.sendReply(trigger, 'Failed to parse page properly')
+					#return
+					
+					# Split into lines that aren't empty
+					lines = StripHTML(m.group(1))
+					
+					# Extract!
+					chunk = 'Feels Like: %s' % (CandF(lines[2]))
+					chunks.append(chunk)
+					
+					windbits = lines[-9].split()
+					if len(windbits) == 3:
+						chunk = 'Wind: %s %s kph (%s mph)' % (windbits[0], ToKilometers(windbits[1]), windbits[1])
+					else:
+						chunk = windbits[0]
+					chunks.append(chunk)
+					
+					chunk = 'Humidity: %s' % (lines[-7])
+					chunks.append(chunk)
+					chunk = 'Visibility: %s' % (lines[-3])
+					chunks.append(chunk)
+					chunk = 'Sunrise: %s' % (lines[-5])
+					chunks.append(chunk)
+					chunk = 'Sunset: %s' % (lines[-1])
+					chunks.append(chunk)
 				
 				
 				#if broken:
 				#	self.sendReply(trigger, "Failed to parse page properly")
 				
 				#else:
-				data['currently_c'] = ToCelsius(data['currently_f'])
-				data['hi_c'] = ToCelsius(data['hi_f'])
-				data['lo_c'] = ToCelsius(data['lo_f'])
-				data['like_c'] = ToCelsius(data['like_f'])
 				
-				replytext = WEATHER_REPLY % data
+				replytext = '%s %s' % (location, ', '.join(chunks))
 				self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
@@ -151,6 +164,9 @@ def StripHTML(text):
 	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
 	# Return!
 	return lines
+
+def CandF(f_val):
+	return '%s°C (%s°F)' % (ToCelsius(f_val), f_val)
 
 def ToCelsius(val):
 	return '%d' % round((int(val) - 32) * 5.0 / 9)
