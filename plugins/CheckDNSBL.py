@@ -22,7 +22,6 @@ class CheckDNSBL(Plugin):
 	
 	def rehash(self):
 		self.Options = self.OptionsDict('CheckDNSBL', autosplit=True)
-		self.Options['action'] = self.Options['action'].split(None, 1)
 		
 		print self.Options
 	
@@ -137,19 +136,19 @@ class CheckDNSBL(Plugin):
 			print 'not opped!'
 			return
 		
-		action, text = self.Options['action']
-		if '%s' in text:
-			text = text % (info['ui'])
-		
-		if action == 'wall':
-			self.notice(wrap, '@%s' % info['chan'], text)
-		elif action == 'kick':
-			command = 'KICK %s %s :%s' % (info['chan'], info['ui'].nick, text)
-			wrap.sendline(command)
-		elif action == 'ban':
-			command = 'MODE %s +b *!*@%s' % (info['chan'], info['ui'].host)
-			wrap.sendline(command)
-			command = 'KICK %s %s :%s' % (info['chan'], info['ui'].nick, text)
-			wrap.sendline(command)
+		for action in self.Options['actions']:
+			if action == 'ban':
+				command = 'MODE %s +b *!*@%s' % (info['chan'], info['ui'].host)
+				wrap.sendline(command)
+			
+			elif action == 'wall':
+				target = '@%s' % (info['chan'])
+				text = 'WARNING: %s is listed in one of the DNSBLs that I check!' % (info['ui'])
+				self.notice(wrap, target, text)
+			
+			elif action == 'kick':
+				text = 'Your host is listed in one of the DNSBLs that I check.'
+				command = 'KICK %s %s :%s' % (info['chan'], info['ui'].nick, text)
+				wrap.sendline(command)
 
 # ---------------------------------------------------------------------------
