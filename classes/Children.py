@@ -11,13 +11,14 @@ from classes.Constants import *
 # This is the main object. The threaded object is a subclass of this.
 # ---------------------------------------------------------------------------
 class Child:
-	def __init__(self, name, outQueue, Config):
+	def __init__(self, name, outQueue, Config, Userlist):
 		# Initialise our variables
 		self.__name = name
 		
 		self.outQueue = outQueue
 		self.inQueue = []
 		self.Config = Config
+		self.Userlist = Userlist
 		
 		self.stoperror = ''
 		self.stopnow = 0

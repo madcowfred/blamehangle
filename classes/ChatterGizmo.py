@@ -18,7 +18,7 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Userlist import Userlist
 from classes.WrapConn import *
-from classes.Users import *
+#from classes.Users import *
 
 # ---------------------------------------------------------------------------
 
@@ -49,15 +49,11 @@ class ChatterGizmo(Child):
 		self.stopping = 0
 		
 		self.__Rejoins = []
-		
-		self.__users = HangleUserList(self, 'GlobalUsers')
 	
 	# The bot has been rehashed.. re-load the global users info, and check if
 	# there are any changes to the servers/channels we have been requested to
 	# sit in
 	def rehash(self):
-		self.__users = HangleUserList(self, 'GlobalUsers')
-		
 		# Get a list of our old networks
 		old_nets = []
 		for conn in self.Conns.keys():
@@ -395,7 +391,8 @@ class ChatterGizmo(Child):
 		wrap = self.Conns[conn]
 		
 		# Don't do anything for ignored lamers
-		if self.__users.check_user_flags(userinfo, 'ignore'):
+		#if self.__users.check_user_flags(userinfo, 'ignore'):
+		if self.Userlist.Has_Flag(userinfo, 'Global', 'ignore'):
 			return
 		
 		# Strip any codes from the text
@@ -455,7 +452,7 @@ class ChatterGizmo(Child):
 			wrap.stoned -= 1
 		
 		else:
-			if self.__users.check_user_flags(userinfo, 'ignore'):
+			if self.Userlist.Has_Flag(userinfo, 'Global', 'ignore'):
 				return
 			
 			# Strip any codes from the text
@@ -478,7 +475,7 @@ class ChatterGizmo(Child):
 		
 		userinfo = UserInfo(event.source())
 		
-		if self.__users.check_user_flags(userinfo, 'ignore'):
+		if self.Userlist.Has_Flag(userinfo, 'Global', 'ignore'):
 			return
 		
 		# Ignore them if they're not on any of our channels
@@ -507,7 +504,7 @@ class ChatterGizmo(Child):
 			self.Conns[conn].ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
 
 		elif first == 'REHASH':
-			if self.__users.check_user_flags(userinfo, 'admin'):
+			if self.Userlist.Has_Flag(userinfo, 'Global', 'admin'):
 				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
 		
 		else:

@@ -15,6 +15,7 @@ from exceptions import SystemExit
 
 from classes.Common import *
 from classes.Constants import *
+from classes.Users import *
 
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
@@ -29,6 +30,7 @@ class Postman:
 	def __init__(self, ConfigFile, Config):
 		self.ConfigFile = ConfigFile
 		self.Config = Config
+		self.Userlist = {}
 		
 		# Initialise the global message queue
 		self.inQueue = []
@@ -68,7 +70,7 @@ class Postman:
 			tolog = "Starting system object '%s'" % cls.__name__
 			self.__Log(LOG_ALWAYS, tolog)
 			
-			instance = cls(cls.__name__, self.inQueue, self.Config)
+			instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
 			self.__Children[cls.__name__] = instance
 			
 			if hasattr(instance, 'run_always'):
@@ -112,7 +114,7 @@ class Postman:
 			self.__Log(LOG_ALWAYS, tolog)
 			
 			cls = globals()[name]
-			instance = cls(cls.__name__, self.inQueue, self.Config)
+			instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
 			self.__Children[cls.__name__] = instance
 			
 			if runonce and hasattr(instance, 'run_once'):
@@ -460,10 +462,17 @@ class Postman:
 			for config_file in os.listdir(config_dir):
 				if config_file.endswith(".conf"):
 					self.Config.read(os.path.join(config_dir, config_file))
+		
+		# Set up the userlist now
+		self.Userlist = HangleUserList(self)
+		self.Userlist.Reload()
 	
 	# Reload our config, duh
 	def __Reload_Config(self):
 		self.__Log(LOG_ALWAYS, 'Rehashing config...')
+		
+		# Reload the user list
+		self.Userlist.Reload()
 		
 		# Make a copy of the plugin list
 		old_plugin_list = self.__plugin_list[:]

@@ -12,7 +12,6 @@ import types
 from classes.Plugin import *
 from classes.Common import *
 from classes.Constants import *
-from classes.Users import *
 
 # ---------------------------------------------------------------------------
 
@@ -122,7 +121,6 @@ class SmartyPants(Plugin):
 		self.__Build_Translation()
 	
 	def __setup_config(self):
-		self.__users = HangleUserList(self, 'InfobotUsers')
 		self.__get_pub = {}
 		self.__set_pub = {}
 
@@ -245,7 +243,7 @@ class SmartyPants(Plugin):
 		# This will possibly be superceeded if a blamehangle-wide ignore
 		# list is implemented... but perhaps not. It could be useful to
 		# only ignore a user here, but let them access other plugins. Maybe.
-		if self.__users.check_user_flags(trigger.userinfo, 'ignore'):
+		if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'ignore'):
 			return
 		
 		# Someone wants to view a factoid.
@@ -588,11 +586,11 @@ class SmartyPants(Plugin):
 				# This factoid was in our db
 				row = results[0][0]
 				if row['locker_nick']:
-					if not self.__users.check_user_flags(trigger.userinfo, 'lock'):
+					if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 						replytext = "You don't have permission to alter locked factoids"
 						self.sendReply(trigger, replytext)
 						return
-				if self.__users.check_user_flags(trigger.userinfo, 'delete'):
+				if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'delete'):
 					# This user is okay
 					self.__modifys += 1
 					author_nick = trigger.userinfo.nick
@@ -649,13 +647,13 @@ class SmartyPants(Plugin):
 				row = results[0][0]
 				extra_value = trigger.match.group('value')
 				if row['locker_nick']:
-					if not self.__users.check_user_flags(trigger.userinfo, 'lock'):
-						replytext = "you are not allowed to alter locked factoids"
-						self.sendReply(trigger, replytext)
-					
-					else:
+					if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 						new_value = "%s, or %s" % (row['value'], extra_value)
 						self.__Fact_Update(trigger, new_value)
+					
+					else:
+						replytext = "you are not allowed to alter locked factoids"
+						self.sendReply(trigger, replytext)
 				else:
 					new_value = "%s, or %s" % (row['value'], extra_value)
 					self.__Fact_Update(trigger, new_value)
@@ -701,16 +699,16 @@ class SmartyPants(Plugin):
 				# It was in our database, delete it!
 				row = results[0][0]
 				if row['locker_nick']:
-					if not self.__users.check_user_flags(trigger.userinfo, 'lock'):
-						replytext = "You don't have permission to alter locked factoids"
-						self.sendReply(trigger, replytext)
-						return
-					else:
+					if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 						replytext = "The factoid '%s' is locked, unlock it before deleting" % name
 						self.sendReply(trigger, replytext)
 						return
+					else:
+						replytext = "You don't have permission to alter locked factoids"
+						self.sendReply(trigger, replytext)
+						return
 
-				if self.__users.check_user_flags(trigger.userinfo, 'delete'):
+				if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'delete'):
 					self.__dels += 1
 					query = (DEL_QUERY, name)
 					self.dbQuery(trigger, query)
@@ -746,7 +744,7 @@ class SmartyPants(Plugin):
 				row = results[0][0]
 				value = row['value']
 				
-				if row['locker_nick'] and not self.__users.check_user_flags(trigger.userinfo, 'lock'):
+				if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 					replytext = "you don't have permission to alter locked factoids"
 					self.sendReply(trigger, replytext)
 					return
@@ -835,7 +833,7 @@ class SmartyPants(Plugin):
 				# The factoid exists. Check if the user is allowed to
 				# lock things.
 				row = results[0][0]
-				if self.__users.check_user_flags(trigger.userinfo, 'lock'):
+				if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 					if row['locker_nick']:
 						# this factoid is already locked
 						replytext = "'\02%s\02' has already been locked by %s" % (name, row['locker_nick'])
@@ -882,7 +880,7 @@ class SmartyPants(Plugin):
 			else:
 				row = results[0][0]
 				# The factoid exists. Check user permissions
-				if self.__users.check_user_flags(trigger.userinfo, 'lock'):
+				if self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 					# check if the factoid is actually locked
 					if row['locker_nick']:
 						query =  (UNLOCK_QUERY, name)
