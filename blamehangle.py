@@ -11,6 +11,12 @@ from ConfigParser import ConfigParser
 from classes.Postman import Postman
 
 # ---------------------------------------------------------------------------
+# We only want Python 2.3 or above people, sorry
+if sys.version_info[:2] < (2, 3):
+	print "ERROR: blamehangle requires Python 2.3 or later!"
+	sys.exit(1)
+
+# ---------------------------------------------------------------------------
 
 def main():
 	"""
