@@ -128,7 +128,6 @@ def URLThread(parent, myindex):
 		parent.putlog(LOG_DEBUG, tolog)
 		
 		last_read = _time()
-		the_page = None
 		pagetext = ''
 		
 		# get the page
@@ -173,9 +172,12 @@ def URLThread(parent, myindex):
 		
 		# XXX This shouldn't be needed, but I suspect these are hanging
 		# around and not getting collected for whatever reason
-		if the_page.fp:
-			the_page.close()
-		del the_page
+		try:
+			if the_page.fp:
+				the_page.close()
+			del the_page
+		except:
+			pass
 		
 		
 		# We have some data, might as well process it?
