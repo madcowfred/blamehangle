@@ -233,8 +233,6 @@ class PluginTimedEvent:
 	The following attributes are also available
 	IRCType            : This will always be IRCT_TIMED
 	last_trigger       : the time this event last triggered
-	interval_elapsed() : returns true if the interval for this event has
-		elapsed
 	"""
 	def __init__(self, name, interval, targets, *args):
 		self.name = name
@@ -249,9 +247,6 @@ class PluginTimedEvent:
 	
 	def __repr__(self):
 		return "<class PluginTimedEvent:" + self.__str__() + ">"
-	
-	def interval_elapsed(self, currtime):
-		return currtime - self.last_trigger >= self.interval
 
 class PluginTimedTrigger:
 	def __init__(self, name, interval, targets, args):

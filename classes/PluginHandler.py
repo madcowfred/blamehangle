@@ -45,27 +45,15 @@ class PluginHandler(Child):
 	# -----------------------------------------------------------------------
 	# Check to see if we have any TIMED events that need to trigger
 	def run_sometimes(self, currtime):
-		t1 = time.time()
-		for event, plugin in self.__Events[IRCT_TIMED].values():
-			if event.interval_elapsed(currtime):
-				pass
-		
-		t2 = time.time()
-		
 		for event, plugin in [(e, p) for e, p in self.__Events[IRCT_TIMED].values() if \
 			currtime - e.last_trigger >= e.interval]:
-			pass
-		
-		print 't1: %.5fs, t2: %.5fs' % (t2 - t1, time.time() - t2)
-		
-		for event, plugin in self.__Events[IRCT_TIMED].values():
-			if event.interval_elapsed(currtime):
-				event.last_trigger = currtime
-				# We make a trigger here so that it is a unique object each
-				# time we trigger. Hours of bug-hunting to discover this, of
-				# course.
-				trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
-				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+			
+			event.last_trigger = currtime
+			# We make a trigger here so that it is a unique object each time
+			# we trigger. Hours of bug hunting to find out that this was
+			# neccessary :)
+			trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
+			self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
 	# -----------------------------------------------------------------------
 	# Postman has asked us to rehash our config.
