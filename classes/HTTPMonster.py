@@ -277,6 +277,10 @@ class async_http(asyncore.dispatcher_with_send):
 							
 							data = [self.trigger, self.method, self.url, page_text]
 							self.parent.sendMessage(self.message.source, REPLY_URL, data)
+						
+						# No text, log an error
+						else:
+							self.failed('no page text: response = %s' % response)
 		
 		# Clean up
 		if not self.closed:
