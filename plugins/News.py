@@ -21,7 +21,6 @@ import types
 
 from classes.Constants import *
 from classes.Plugin import *
-#from classes.rssparser import RSSParser
 from classes.feedparser import FeedParser
 
 from classes.HTMLParser import HTMLParser, HTMLParseError
@@ -75,10 +74,12 @@ class News(Plugin):
 			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
 			self.putlog(LOG_DEBUG, tolog)
 		
-		self.__Last_Spam_Time = time.time()
-		self.__Last_Clearout_Time = time.time()
+		currtime = time.time()
 		
-		self.__rand_gen = Random(time.time())
+		self.__Last_Spam_Time = currtime
+		self.__Last_Clearout_Time = currtime
+		
+		self.__rand_gen = Random(currtime)
 		
 		self.__setup_config()
 	
@@ -631,14 +632,12 @@ class Google(HTMLParser):
 
 # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-
 # A parser for ananov'a news pages. Looks for story titles?
 class Ananova(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
 		self.reset_news()
-
+	
 	def reset_news(self):
 		self.news = {}
 		self.__found_a = 0
@@ -663,7 +662,7 @@ class Ananova(HTMLParser):
 				self.__temp_href = href
 				self.__temp_title = title
 				self.__found_a = 1
-
+		
 		elif self.__found_a and tag == 'small':
 			self.__found_small = 1
 	
