@@ -24,7 +24,7 @@ AIRLINE_HELP = "'\02airline\02 <code>' OR '\02airline\02 <partial name>' : looku
 AIRLINE_RE = re.compile(r'^airline\s+(?P<airline>.+)$')
 
 AIRLINE_AIRPORT = 'AIRLINE_AIRPORT'
-AIRPORT_HELP = "\02iata\02 <code> : look up an airport by it's IATA code"
+AIRPORT_HELP = "\02airport\02 <code> : look up an airport by it's IATA code"
 AIRPORT_RE = re.compile(r'^airport\s+(?P<code>\w+)$')
 AIRPORT_URL = 'http://www.flymig.com/iata/r/%s.htm'
 
