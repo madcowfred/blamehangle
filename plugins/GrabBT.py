@@ -8,6 +8,7 @@ Can also announce when new files show up in a seperate directory, and give
 a current torrent status report (requires my modified btlaunchmanycurses).
 """
 
+import dircache
 import os
 import re
 import urlparse
@@ -46,7 +47,7 @@ class GrabBT(Plugin):
 		
 		# If the new dir is valid, get a list of it's files
 		if self._new_dir and os.path.isdir(self._new_dir):
-			self.__files = os.listdir(self._new_dir)
+			self.__files = dircache.listdir(self._new_dir)
 		else:
 			self.__files = None
 		
@@ -77,7 +78,7 @@ class GrabBT(Plugin):
 	def register(self):
 		# If we have to, start the check timer
 		if self.__files is not None and self.__newfiles:
-			self.setTimedEvent(GRABBT_CHECKDIR, 10, None)
+			self.setTimedEvent(GRABBT_CHECKDIR, 5, None)
 			self.setTextEvent(GRABBT_TORRENTSPACE, TORRENTSPACE_RE, IRCT_PUBLIC_D)
 		
 		self.setTextEvent(GRABBT_GRAB, GRAB_RE, IRCT_PUBLIC_D)
@@ -89,19 +90,21 @@ class GrabBT(Plugin):
 	# -----------------------------------------------------------------------
 	# It's time to see if we have any new files
 	def _trigger_GRABBT_CHECKDIR(self, trigger):
-		files = os.listdir(self._new_dir)
-		for file in files:
-			# If it's a new file, spam it
-			if file not in self.__files:
-				localfile = os.path.join(self._new_dir, file)
-				filesize = os.path.getsize(localfile) / 1024 / 1024
-				
-				if self._http_base:
-					replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (file, filesize, self._http_base, QuoteURL(file))
-				else:
-					replytext = '\x0303New file\x03: %s (%.1fMB)' % (file, filesize)
-				
-				self.privmsg(self.__newfiles, None, replytext)
+		files = dircache.listdir(self._new_dir)
+		if files is self.__files:
+			return
+		
+		# Spam the new files
+		for file in [f for f in files if f not in self.__files]:
+			localfile = os.path.join(self._new_dir, file)
+			filesize = float(os.path.getsize(localfile)) / 1024 / 1024
+			
+			if self._http_base:
+				replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (file, filesize, self._http_base, QuoteURL(file))
+			else:
+				replytext = '\x0303New file\x03: %s (%.1fMB)' % (file, filesize)
+			
+			self.privmsg(self.__newfiles, None, replytext)
 		
 		self.__files = files
 	
