@@ -139,10 +139,11 @@ class Airline(Plugin):
 		code = trigger.match.group('code').upper()
 		resp.data = resp.data.replace('&deg;', '°')
 		
-		# 404 error
+		# Page not found.. but it's not a 404 :|
 		if resp.data.find('Requested File was not found') >= 0:
 			replytext = "No such IATA code: '%s'" % code
 			self.sendReply(trigger, replytext)
+			return
 		
 		# Find the chunk we need
 		chunk = FindChunk(resp.data, '<PRE>', '</PRE>')
