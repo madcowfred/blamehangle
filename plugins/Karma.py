@@ -61,7 +61,7 @@ class Karma(Plugin):
 	#------------------------------------------------------------------------
 
 	def _message_REPLY_QUERY(self, message):
-		result, trigger = message.data
+		trigger, result = message.data
 		name = trigger.match.group('name')
 		
 		if trigger.name == KARMA_LOOKUP:

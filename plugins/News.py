@@ -234,8 +234,8 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_QUERY(self, message):
-		result, (event, title) = message.data
-
+		(event, title), result = message.data
+		
 		if isinstance(event, PluginTimedEvent):
 			# this wasn't a modification request
 			if result == [()]:

@@ -98,7 +98,7 @@ def DataThread(parent, db, message):
 		else:
 			results.append(result)
 	
-	data = [results, toreturn]
+	data = [toreturn, results]
 	
 	message = Message('DataMonkey', message.source, REPLY_QUERY, data)
 	parent.outQueue.put(message)
