@@ -1,3 +1,9 @@
+# ---------------------------------------------------------------------------
+# $Id$
+# ---------------------------------------------------------------------------
+# This class wraps an IRC connection into something slightly easier to deal
+# with.
+
 import socket
 import time
 import types
@@ -18,7 +24,6 @@ STONED_INTERVAL = 40
 STONED_COUNT = 3
 
 MAX_LINE_LENGTH = 400
-MAX_SPLIT_LINES = 2
 
 # ---------------------------------------------------------------------------
 
@@ -65,6 +70,7 @@ class WrapConn:
 			self.vhost = None
 		
 		self.ignore_strangers = int(self.options.get('ignore_strangers', 0))
+		self.max_split_lines = int(self.options.get('max_split_lines', 2))
 	
 	def connlog(self, level, text):
 		self.parent.connlog(self.conn, level, text)
@@ -164,12 +170,12 @@ class WrapConn:
 	# Stuff outgoing data into our queues
 	def privmsg(self, target, text):
 		lines = self.__Split_Text(text)
-		for line in lines[:MAX_SPLIT_LINES]:
+		for line in lines[:self.max_split_lines]:
 			self.__privmsg.append([target, line])
 	
 	def notice(self, target, text):
 		lines = self.__Split_Text(text)
-		for line in lines[:MAX_SPLIT_LINES]:
+		for line in lines[:self.max_split_lines]:
 			self.__notice.append([target, text])
 	
 	def ctcp_reply(self, target, text):
@@ -251,3 +257,5 @@ class WrapConn:
 				else:
 					self.stoned += 1
 					self.privmsg(self.conn.real_nickname, "Stoned yet?")
+
+# ---------------------------------------------------------------------------
