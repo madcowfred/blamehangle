@@ -39,7 +39,7 @@ VOLUME = {
 
 # Mapping of weight measurements to SI units (grams)
 WEIGHT = {
-	'mg': ('milligrams', 0.001,
+	'mg': ('milligrams', 0.001),
 	'cg': ('centigrams', 0.01),
 	'g': ('grams', 1),
 	'kg': ('kilograms', 1000),
@@ -96,11 +96,11 @@ class Converter(Plugin):
 				else:
 					for key, value in MAP.items():
 						if value[0] == data['from']:
-							_from = MAP[found[0]]
+							_from = value
 							break
 						# Handle non-plurals too
 						elif value[0].endswith('s') and value[0][:-1] == data['from']:
-							_from = MAP[found[0]]
+							_from = value
 							break
 				
 				if MAP.has_key(data['to']):
@@ -108,11 +108,11 @@ class Converter(Plugin):
 				else:
 					for key, value in MAP.items():
 						if value[0] == data['from']:
-							_to = MAP[found[0]]
+							_to = value
 							break
 						# Handle non-plurals too
 						elif value[0].endswith('s') and value[0][:-1] == data['from']:
-							_to = MAP[found[0]]
+							_to = value
 							break
 				
 				if _from is not None and _to is not None:
