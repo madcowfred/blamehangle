@@ -212,7 +212,9 @@ class Postman:
 		
 		while 1:
 			try:
-				for message in self.inQueue:
+				while self.inQueue:
+					message = self.inQueue.pop(0)
+					
 					# If it's targeted at us, process it
 					if message.targets == ['Postman']:
 						if message.ident == REQ_LOG:
@@ -270,9 +272,6 @@ class Postman:
 								else:
 									tolog = "invalid target for Message ('%s') : %s" % (name, message)
 									self.__Log(LOG_WARNING, tolog)
-				
-				# Empty the queue
-				del self.inQueue[:]
 				
 				
 				# Deliver any waiting messages to children
