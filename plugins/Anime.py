@@ -87,6 +87,7 @@ class Anime(Plugin):
 				return
 			
 			# See if any of them match our regexp
+			exact = None
 			results = []
 			
 			for chunk in chunks:
@@ -96,9 +97,7 @@ class Anime(Plugin):
 					
 					# If it's an exact match for what we're looking for, grab it
 					if name.lower() == findme:
-						url = AID_URL % m.group(1)
-						self.urlRequest(trigger, self.__Parse_AniDB, url)
-						return
+						exact = (name, m.group(1))
 					
 					result = '\x02[\x02%s\x02]\x02' % m.group(2)
 					results.append(result)
@@ -108,6 +107,13 @@ class Anime(Plugin):
 				replytext = 'There were \002%s\002 results, first 10 :: %s' % (len(results), ' '.join(results[:10]))
 			else:
 				replytext = 'There were \002%s\002 results :: %s' % (len(results), ' '.join(results))
+			
+			# If we found an exact match, go fetch it now
+			if exact is not None:
+				replytext += " :: Using '%s'" % (exact[0])
+				
+				url = AID_URL % exact[1]
+				self.urlRequest(trigger, self.__Parse_AniDB, url)
 			
 			self.sendReply(trigger, replytext)
 		
@@ -153,8 +159,8 @@ class Anime(Plugin):
 			self.sendReply(trigger, replytext)
 		
 		# Adult content, pfft
-		elif page_text.find('Adult Content Warning'):
-			self.sendReply(trigger, "Seems to be hentai, you'll need an AniDB user account to see the details :(")
+		elif page_text.find('Adult Content Warning') >= 0:
+			self.sendReply(trigger, "Seems to be hentai, you need an AniDB user account to see the details :(")
 		
 		# Parsing failed
 		else:
