@@ -39,6 +39,8 @@ class DatabaseWrapper:
 		
 		cursor = self.db.cursor()
 		
+		sqlquery = self._manglesql(sqlquery)
+		
 		if args:
 			newquery = self._escape(sqlquery, args)
 			cursor.execute(newquery)
@@ -92,6 +94,15 @@ class DatabaseWrapper:
 			result.append(thisrow)
 		
 		return tuple(result)
+	
+	# -----------------------------------------------------------------------
+	# Over-ride this if you need to mangle SQL statements differently.
+	def _manglesql(self, sql):
+		# Default is to replace ILIKE (Postgres only) with LIKE
+		if sql.startswith('SELECT'):
+			sql = sql.replace(' ILIKE ', ' LIKE ')
+		
+		return sql
 
 # ---------------------------------------------------------------------------
 # Wrapper class for MySQLdb
@@ -129,6 +140,11 @@ class Postgres(DatabaseWrapper):
 									user=self.Config.get('database', 'username'),
 									password=self.Config.get('database', 'password'),
 								)
+	
+	# -----------------------------------------------------------------------
+	# We need to use ILIKE for Postgres!
+	def _manglesql(self, sql):
+		return sql
 
 # ---------------------------------------------------------------------------
 # Wrapper class for pyGreSQL

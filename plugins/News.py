@@ -245,7 +245,8 @@ class News(Plugin):
 				args = []
 				
 				for word in words:
-					crit = 'title LIKE %s'
+					# DataMonkey will fix this for different DB drivers
+					crit = 'title ILIKE %s'
 					crits.append(crit)
 					arg = '%%%s%%' % word
 					args.append(arg)
