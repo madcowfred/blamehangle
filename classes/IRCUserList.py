@@ -130,12 +130,11 @@ class IRCUserList:
 		if hostmask is None and ui is None:
 			self._c[chan] = ChanInfo(self._modelist)
 		# Someone else
-		elif hostmask is not None:
-			nick = hostmask.split('!')[0]
-			if nick not in self._u:
-				self._u[nick] = UserInfo(hostmask)
-			self._c[chan].users[self._u[nick]] = []
-		elif ui is not None:
+		else:
+			if hostmask is not None:
+				ui = self.get_userinfo(hostmask)
+			assert ui.nick in self._u
+			
 			self._c[chan].users[ui] = []
 	
 	def user_parted(self, chan, nick=None, ui=None):
