@@ -27,6 +27,11 @@ QUOTE_RE = re.compile('^quote (?P<symbol>\S+)$')
 QUOTE_HELP = '\02quote\02 <symbol> : Look up a current stock price.'
 QUOTE_URL = 'http://finance.yahoo.com/q?d=v1&s=%s'
 
+MONEY_SYMBOL = 'MONEY_SYMBOL'
+SYMBOL_RE = re.compile('^symbol (?P<findme>\S+)$')
+SYMBOL_HELP = '\02symbol\02 <findme> : Look up a ticker symbol.'
+SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
+
 # ---------------------------------------------------------------------------
 
 class MoneyMangler(Plugin):
@@ -66,12 +71,15 @@ class MoneyMangler(Plugin):
 		conv_msg = PluginTextEvent(MONEY_EXCHANGE, IRCT_MSG, EXCHANGE_RE)
 		quote_dir = PluginTextEvent(MONEY_QUOTE, IRCT_PUBLIC_D, QUOTE_RE)
 		quote_msg = PluginTextEvent(MONEY_QUOTE, IRCT_MSG, QUOTE_RE)
+		symbol_dir = PluginTextEvent(MONEY_SYMBOL, IRCT_PUBLIC_D, SYMBOL_RE)
+		symbol_msg = PluginTextEvent(MONEY_SYMBOL, IRCT_MSG, SYMBOL_RE)
 		
-		self.register(conv_dir, conv_msg, curr_dir, curr_msg, quote_dir, quote_msg)
+		self.register(conv_dir, conv_msg, curr_dir, curr_msg, quote_dir, quote_msg, symbol_dir, symbol_msg)
 		
 		self.setHelp('money', 'currency', CURRENCY_HELP)
 		self.setHelp('money', 'exchange', EXCHANGE_HELP)
 		self.setHelp('money', 'quote', QUOTE_HELP)
+		self.setHelp('money', 'symbol', SYMBOL_HELP)
 		
 		self.registerHelp()
 	
@@ -90,13 +98,24 @@ class MoneyMangler(Plugin):
 		
 		# Someone wants to look up a stock price
 		elif trigger.name == MONEY_QUOTE:
-			self.__Stock_Quote(trigger)
+			symbol = trigger.match.group('symbol').upper()
+			returnme = (trigger, symbol)
+			fetchme = QUOTE_URL % symbol
+			self.urlRequest(returnme, fetchme)
+		
+		# Someone wants to look up a ticker symbol
+		elif trigger.name == MONEY_SYMBOL:
+			findme = trigger.match.group('findme').upper()
+			returnme = (trigger, findme)
+			fetchme = SYMBOL_URL % findme
+			self.urlRequest(returnme, fetchme)
 	
 	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_URL(self, message):
 		(trigger, data), page_text = message.data
 		
+		# Money has been exchanged
 		if trigger.name == MONEY_EXCHANGE:
 			page_text = page_text.replace('&amp;', ' and ')
 			
@@ -122,6 +141,7 @@ class MoneyMangler(Plugin):
 					replytext = 'No result returned.'
 				self.sendReply(trigger, replytext)
 		
+		# Stock quote has returned
 		elif trigger.name == MONEY_QUOTE:
 			# Invalid symbol, sorry
 			if page_text.find('is not a valid ticker symbol') >= 0:
@@ -162,6 +182,45 @@ class MoneyMangler(Plugin):
 					replytext = 'No stock data found? WTF?'
 			
 			self.sendReply(trigger, replytext)
+		
+		# The symbol is known
+		elif trigger.name == MONEY_SYMBOL:
+			#aa <TR bgcolor=#ffffff><TD><font face=arial size=-1><a href="/q?s=MKO&d=t">MKO</a></font></TD><TD><font face=arial size=-1>Merrill Lynch & Co Inc Dow Jones Industrial Average Mkt Index Trgt Trm Sec</font></TD><TD><font face=arial size=-1>AMEX</font></TD><TD><font face=arial size=-1>N/A</font></TD><TD><font face=arial size=-1><a href="http://rd.yahoo.com/addtomy/*http://edit.finance.dcn.yahoo.com/ec?.intl=us&.src=quote&.portfover=1&.done=http://finance.yahoo.com&.cancelPage=http://finance.yahoo.com/l?s%3ddow%26t%3d%26m%3d&.sym=MKO&.nm=MKO"><center>Add</center></a></font></TD></TR>
+			#aa <TR bgcolor=#ffffff><TD><font face=arial size=-1><a href="/q?s=MTDB&d=t">MTDB</a></font></TD><TD><font face=arial size=-1>Merrill Lynch & Co Inc Dow Jones Industrial Average Mkt Index Trgt Trm Sec</font></TD><TD><font face=arial size=-1>NasdaqNM</font></TD><TD><font face=arial size=-1>N/A</font></TD><TD><font face=arial size=-1><a href="http://rd.yahoo.com/addtomy/*http://edit.finance.dcn.yahoo.com/ec?.intl=us&.src=quote&.portfover=1&.done=http://finance.yahoo.com&.cancelPage=http://finance.yahoo.com/l?s%3ddow%26t%3d%26m%3d&.sym=MTDB&.nm=MTDB"><center>Add</center></a></font></TD></TR>
+			# No matches, sorry
+			if page_text.find('returned no Stocks matches') >= 0:
+				replytext = 'No symbols found matching "%s"' % data
+			
+			else:
+				# Find the chunk of data we need
+				chunk = FindChunk(page_text, 'Add to My Portfolio', 'Quotes for All Above Symbols')
+				if chunk is None:
+					self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
+					self.sendReply(trigger, 'Failed to parse page properly')
+					return
+				
+				# Horrible HTML parsing... forgive me :\
+				bits = []
+				for line in chunk.splitlines():
+					piece = None
+					for part in re.split(r'(?i)</?td>', line):
+						part = re.sub('<.*?>', '', part).strip()
+						if not part:
+							continue
+						
+						if not piece:
+							piece = part
+						else:
+							bit = '%s::%s' % (piece, part)
+							bits.append(bit)
+							break
+					
+					if len(bits) == 10:
+						break
+				
+				# Spit something out
+				replytext = ', '.join(bits)
+				self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	
@@ -216,14 +275,6 @@ class MoneyMangler(Plugin):
 			replytext += ': No matches found.'
 		
 		self.sendReply(trigger, replytext)
-	
-	# -----------------------------------------------------------------------
-	
-	def __Stock_Quote(self, trigger):
-		symbol = trigger.match.group('symbol').upper()
-		returnme = (trigger, symbol)
-		fetchme = QUOTE_URL % symbol
-		self.urlRequest(returnme, fetchme)
 
 # ---------------------------------------------------------------------------
 # A parser for the Yahoo Finance currency conversion page
