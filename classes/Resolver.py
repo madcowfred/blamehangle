@@ -15,6 +15,11 @@ from threading import Thread
 
 from classes.Children import Child
 from classes.Constants import *
+from classes.Plugin import PluginTimedEvent
+
+# ---------------------------------------------------------------------------
+
+RESOLVER_CLEANUP = 'RESOLVER_CLEANUP'
 
 # ---------------------------------------------------------------------------
 
@@ -37,13 +42,10 @@ class Resolver(Child):
 	# We start our threads here to allow useful early shutdown
 	def run_once(self):
 		self.__Start_Threads()
-	
-	# Clean up our cache occasionally
-	def run_sometimes(self, currtime):
-		interval = currtime - self.Last_Cleanup
-		if interval >= 60:
-			for k in [k for k,v in self.DNSCache.items() if currtime - v[0] >= self.__cache_length]:
-				del self.DNSCache[k]
+		
+		# Now we pretend to be a plugin so we can have a timed event
+		event = PluginTimedEvent(RESOLVER_CLEANUP, 60, None)
+		self.sendMessage('PluginHandler', PLUGIN_REGISTER, [event])
 	
 	# -----------------------------------------------------------------------
 	# Start our threads!
@@ -70,6 +72,13 @@ class Resolver(Child):
 			_sleep(0.1)
 		
 		self.putlog(LOG_DEBUG, "All DNS threads halted")
+	
+	# -----------------------------------------------------------------------
+	# Time to delete some entries from our cache
+	def _message_PLUGIN_TRIGGER(self, message):
+		currtime = time.time()
+		for k in [k for k, v in self.DNSCache.items() if currtime - v[0] >= self.__cache_length]:
+			del self.DNSCache[k]
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to resolve something, woo
