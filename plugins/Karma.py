@@ -53,8 +53,9 @@ class Karma(Plugin):
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_TRIGGER(self, message):
-		[name], event, conn, IRCtype, target, userinfo = message.data
-
+		[origname], event, conn, IRCtype, target, userinfo = message.data
+		
+		name = origname.lower()
 		returnme = [name, event, conn, IRCtype, target, userinfo]
 		data = [returnme, (SELECT_QUERY, [name])]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
