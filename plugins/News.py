@@ -455,7 +455,7 @@ class News(Plugin):
 		articles = []
 		
 		for item in r.items[:feed['maximum_new']]:
-			item_title = '%s: %s' % (feed_title, item.get('title', '<No Title>'))
+			item_title = item.get('title', '<No Title>').strip()
 			
 			if self.__rss_ignore_no_link:
 				if not item.has_key('link'):
@@ -468,6 +468,7 @@ class News(Plugin):
 			
 			description = item.get('description', '')
 			
+			article_title = '%s: %s' % (feed_title, item_title)
 			data = [item_title, link, description, time.time()]
 			articles.append(data)
 		
@@ -510,10 +511,10 @@ class News(Plugin):
 		articles = trigger.articles
 		del trigger.articles
 		
-		tolog = '>>articles: %s' % repr(articles)
-		self.putlog(LOG_DEBUG, tolog)
-		tolog = '>>result: %s' % repr(result)
-		self.putlog(LOG_DEBUG, tolog)
+		#tolog = '>>articles: %s' % repr(articles)
+		#self.putlog(LOG_DEBUG, tolog)
+		#tolog = '>>result: %s' % repr(result)
+		#self.putlog(LOG_DEBUG, tolog)
 		
 		# We don't need to add any that are already in the database
 		for row in result:
@@ -521,8 +522,8 @@ class News(Plugin):
 			if eatme:
 				articles.remove(eatme[0])
 		
-		tolog = '>>articles: %s' % repr(articles)
-		self.putlog(LOG_DEBUG, tolog)
+		#tolog = '>>articles: %s' % repr(articles)
+		#self.putlog(LOG_DEBUG, tolog)
 		
 		# If we don't have any new articles, go home now
 		if len(articles) == 0:
