@@ -751,7 +751,7 @@ class SmartyPants(Plugin):
 						# bitch at the user if they made the factoid too
 						# long
 						if len(new_value) > MAX_FACT_VAL_LENGTH:
-							replytext = "that will wake the factoid too long"
+							replytext = "that will make the factoid too long"
 							self.sendReply(trigger, replytext)
 						else:
 							# everything is okay, make the change
