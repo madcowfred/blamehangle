@@ -55,6 +55,7 @@ class Resolver(Child):
 	def __Start_Threads(self):
 		for i in range(self.Options['resolver_threads']):
 			t = Thread(target=ResolverThread, args=(self, i))
+			t.setDaemon(1)
 			t.setName('Resolver %d' % i)
 			self.Threads.append([t, 0])
 			t.start()
@@ -110,7 +111,6 @@ def ResolverThread(parent, myindex):
 		# see if there's something to look up
 		try:
 			message = parent.Requests.get_nowait()
-		
 		except Empty:
 			_sleep(0.25)
 			continue
