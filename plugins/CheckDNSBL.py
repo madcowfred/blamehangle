@@ -22,6 +22,7 @@ class CheckDNSBL(Plugin):
 	
 	def rehash(self):
 		self.Options = self.OptionsDict('CheckDNSBL', autosplit=True)
+		self.Options['actions'] = self.Options['actions'].split()
 		
 		print self.Options
 	
