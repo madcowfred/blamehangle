@@ -47,7 +47,7 @@ class PluginHandler(Child):
 			delay, last, targets, plugin = self.__TIMED_Events[token]
 			# Is it time to trigger this TIMED event?
 			if currtime - last >= delay:
-				message = [targets, token, TIMED, None]
+				message = [targets, token, None, TIMED, None, None]
 				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
 				# Update the last trigger time
 				self.__TIMED_Events[token] = (delay, currtime, targets, plugin)
@@ -130,6 +130,15 @@ class PluginHandler(Child):
 			# We are sending back to public, prepend the relevant nick
 			tosend = "%s: %s" % (userinfo.nick, text)
 			self.privmsg(tosend, conn, target)
+		
+		elif IRCtype == TIMED:
+			# We need to handle TIMED events differently, since they have a
+			# dictionary describing the intended targets for the message on
+			# each network
+			for network_name in targets:
+				conn = self.__getConn(network_name)
+				for target in targets[network_name]:
+					self.privmsg(text, conn, target)
 		else:
 			# all other types are responded to with a /msg
 			self.privmsg(text, conn, userinfo.nick)
@@ -149,4 +158,15 @@ class PluginHandler(Child):
 		else:
 			# Some smartass has come up with a new event type
 			raise AttributeError, "no such event type: %s" % type
+
+	#------------------------------------------------------------------------
+
+	# Need some magic that can turn a string of a network name into a
+	# connection object for that network
+	def __getConn(self, name):
+		# Probably need to find a way to get the Postman to set an attribute
+		# on PluginHandler that contains a list (or something) of all the
+		# current connections, or a list of (name, conn) pairs.
+		# or something.
+		pass
 
