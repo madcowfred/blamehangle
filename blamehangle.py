@@ -4,6 +4,7 @@ import getopt
 import os
 import sys
 import time
+import gc
 
 from ConfigParser import ConfigParser
 
@@ -14,6 +15,15 @@ from classes.Postman import Postman
 
 def main():
 	"The initial setup, config reading, and probably main loop."
+
+	#gc.set_debug(gc.DEBUG_STATS|gc.DEBUG_COLLECTABLE|gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS)
+	# set our own gc thresholds, to keep mem usage from creeping. It seems
+	# that the default is extremely slow, and since blamehangle is not an
+	# interactive program the minor performance hit taken during garbage
+	# collection won't even be noticable.
+	#
+	# The default is (700, 10, 10) !
+	gc.set_threshold(50, 5, 2)
 	
 	# Parse our command line options
 	try:
