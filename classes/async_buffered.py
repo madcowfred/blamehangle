@@ -5,6 +5,7 @@
 "Simple clone of asyncore.dispatcher_with_send, without the broken-ness"
 
 import asyncore
+import select
 
 class buffered_dispatcher(asyncore.dispatcher):
 	def __init__(self, sock=None):
@@ -36,7 +37,12 @@ class buffered_dispatcher(asyncore.dispatcher):
 	
 	# Send some data from our buffer when we can write
 	def handle_write(self):
-		if len(self.out_buffer) == 0:
+		#print '%d wants to write!' % self._fileno
+		
+		if not self.writable():
+			# We don't have any buffer, silly thing
+			#print '%d has no data!' % self._fileno
+			asyncore.poller.register(self._fileno, select.POLLIN)
 			return
 		
 		sent = asyncore.dispatcher.send(self, self.out_buffer)
@@ -45,3 +51,6 @@ class buffered_dispatcher(asyncore.dispatcher):
 	# We want buffered output, duh
 	def send(self, data):
 		self.out_buffer += data
+		# We need to know about writable things now
+		asyncore.poller.register(self._fileno)
+		#print '%d has data!' % self._fileno
