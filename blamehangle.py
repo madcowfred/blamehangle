@@ -17,7 +17,7 @@ def main():
 	
 	# Parse our command line options
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "bc:", [ "background", "config=" ])
+		opts, args = getopt.getopt(sys.argv[1:], "c:", [ "config=" ])
 	
 	except getopt.GetoptError:
 		Show_Usage()
@@ -43,7 +43,6 @@ def main():
 def Show_Usage():
 	print "USAGE: %s [OPTIONS]" % sys.argv[0]
 	print
-	print " -b, --background    run in the background (no screen output)(doesn't work)"
 	print " -c, --config=FILE   config file to use"
 	print
 	
