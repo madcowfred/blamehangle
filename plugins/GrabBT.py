@@ -26,6 +26,9 @@ GRAB_RE = re.compile(r'^grab (http://\S+)$')
 GRABBT_TORRENTS = 'GRABBT_TORRENTS'
 TORRENTS_RE = re.compile(r'^torrents$')
 
+GRABBT_TORRENTSPACE = 'GRABBT_TORRENTSPACE'
+TORRENTSPACE_RE = re.compile(r'^torrentspace$')
+
 GRABBT_TORRENTSPEED = 'GRABBT_TORRENTSPEED'
 TORRENTSPEED_RE = re.compile(r'^torrentspeed$')
 
@@ -75,6 +78,7 @@ class GrabBT(Plugin):
 		# If we have to, start the check timer
 		if self.__files is not None and self.__newfiles:
 			self.setTimedEvent(GRABBT_CHECKDIR, 10, None)
+			self.setTextEvent(GRABBT_TORRENTSPACE, TORRENTSPACE_RE, IRCT_PUBLIC_D)
 		
 		self.setTextEvent(GRABBT_GRAB, GRAB_RE, IRCT_PUBLIC_D)
 		self.setTextEvent(GRABBT_TORRENTS, TORRENTS_RE, IRCT_PUBLIC_D)
@@ -252,5 +256,46 @@ class GrabBT(Plugin):
 		
 		else:
 			self.sendReply(trigger, "No torrents active.")
+	
+	# -----------------------------------------------------------------------
+	# Someone wants to see how much disk space we have free.
+	def _trigger_GRABBT_TORRENTSPACE(self, trigger):
+		network = trigger.conn.options['name'].lower()
+		
+		if network not in self.__commands or trigger.target not in self.__commands[network]:
+			tolog = "%s (%s@%s) on %s/%s trying to see torrent speed." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+			self.putlog(LOG_WARNING, tolog)
+			return
+		
+		# See how much disk space we have then
+		# self._new_dir
+		if hasattr(os, 'statvfs'):
+			try:
+				info = os.statvfs(self._new_dir)
+			except OSError:
+				replytext = 'ERROR!'
+			else:
+				# block size * total blocks
+				totalgb = info[1] * info[2] / 1024 / 1024 / 1024
+				# block size * free blocks for non-superman
+				freegb = info[1] * info[4] / 1024 / 1024 / 1024
+				
+				replytext = '%.1f of %.1f (%d%%) GB free' % (freegb, totalgb, (freegb/totalgb*100))
+		
+		else:
+			cmdline = '/bin/df -k %s' % self._new_dir
+			lines = os.popen(cmdline, 'r').readlines()
+			parts = lines[1].split()
+			
+			if len(parts) >= 4:
+				totalgb = long(parts[1]) / 1024 / 1024
+				freegb = long(parts[3]) / 1024 / 1024
+				
+				replytext = '%.1f of %.1f (%d%%) GB free' % (freegb, totalgb, (freegb/totalgb*100))
+			else:
+				replytext = 'ERROR!'
+		
+		# Spit it out
+		return replytext
 
 # ---------------------------------------------------------------------------
