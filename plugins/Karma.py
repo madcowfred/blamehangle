@@ -158,7 +158,7 @@ class Karma(Plugin):
 				for k, v in self.__Combines.items():
 					if name in v:
 						combo = 1
-						name = v[0]
+						name = k
 						break
 			
 			# Looks like it does
@@ -218,9 +218,8 @@ class Karma(Plugin):
 		
 		# Some karma for this
 		else:
-			# Combined result
-			if len(result) > 1:
-				total = sum([row['value'] for row in result])
+			total = sum([row['value'] for row in result])
+			if hasattr(trigger, 'karmaname'):
 				replytext = '%s has karma of %d' % (trigger.karmaname, total)
 			else:
 				replytext = '%s has karma of %d' % (name, result[0]['value'])
