@@ -96,6 +96,7 @@ class Video(Plugin):
 		chunks = [
 			FindChunk(resp.data, '<b>Titles (Exact Matches)</b>', '</ol>'),
 			FindChunk(resp.data, '<b>Popular Titles</b>', '</ol>'),
+			FindChunk(resp.data, '<b>Titles (Approx Matches)</b>', '</ol>'),
 			FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</ol>'),
 		]
 		
