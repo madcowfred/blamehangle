@@ -179,6 +179,14 @@ class Plugin(Child):
 			return None
 		else:
 			return obj
+	
+	# -----------------------------------------------------------------------
+	# Basic thing to load our options into something easier to use
+	def SetupOptions(self, section):
+		self.Options = {}
+		
+		for option in self.Config.options(section):
+			self.Options[option] = self.Config.get(section, option)
 
 # ---------------------------------------------------------------------------
 
