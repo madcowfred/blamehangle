@@ -3,9 +3,6 @@
 #----------------------------------------------------------------------------
 # This file contains (or at least will contain!) the factoid resolver.
 #
-# XXX: This is not set in stone.
-#      Fred, if you come up with something better, editz0r! :)
-#
 # The factoid resolver uses the following SQL tables:
 # CREATE TABLE factoids (
 # 	name varchar(64) NOT NULL default '',
@@ -95,6 +92,10 @@ class SmartyPants(Plugin):
 	"""
 	
 	#------------------------------------------------------------------------
+
+	def setup(self):
+		self.__users = FactoidUserList()
+		self.__Setup_Users()
 
 	def _message_PLUGIN_REGISTER(self, message):
 		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE, exclusive=1)
@@ -261,8 +262,12 @@ class SmartyPants(Plugin):
 			
 			else:
 				# It was in our database, delete it!
-				data = [trigger, (DEL_QUERY, [name])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				if self.__Check_User_Flags(trigger.userinfo, 'delete'):
+					data = [trigger, (DEL_QUERY, [name])]
+					self.sendMessage('DataMonkey', REQ_QUERY, data)
+				else:
+					replytext = "you don't have permission to delete factoids"
+					self.sendReply(trigger, replytext)
 		
 		# DELETE reply
 		elif typ == types.LongType:
@@ -306,3 +311,100 @@ class SmartyPants(Plugin):
 	#	self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
 	#------------------------------------------------------------------------
+	
+	# Check if the supplied irc user has access to delete factoids from our
+	# database
+	def __Check_User_Flags(self, userinfo, flag):
+		matches = self.__users.host_match(userinfo.hostmask)
+		if matches:
+			for user in matches:
+				if flag in user.flags:
+					return 1
+
+		return 0
+
+	# -----------------------------------------------------------------------
+	
+	# Config mangling to grab our list of users.
+	def __Setup_Users(self):
+		try:
+			options = self.Config.options('InfobotUsers')
+		except:
+			tolog = "no InfobotUsers section found!"
+			self.putlog(LOG_WARNING, tolog)
+		else:
+			for option in options:
+				try:
+					[nick, part] = option.split('.')
+				except:
+					tolog = "malformed user option in factoid config: %s" % option
+					self.putlog(LOG_WARNING, tolog)
+				else:
+					if part == 'hostmasks':
+						hostmasks = self.Config.get('InfobotUsers', option).lower().split()
+						flags = self.Config.get('InfobotUsers', nick + ".flags").lower().split()
+						nick = nick.lower()
+	
+						user = FactoidUser(nick, hostmasks, flags)
+						
+						tolog = "SmartyPants: user %s" % user
+						self.putlog(LOG_DEBUG, tolog)
+	
+						self.__users.add_user(user)
+						
+# ---------------------------------------------------------------------------
+
+# This class wraps up everything we need to know about a user's permissions
+# regarding the SmartyPants
+class FactoidUser:
+	def __init__(self, nick, hostmasks, flags):
+		self.nick = nick
+		self.flags = flags
+		self.hostmasks = []
+		self.regexps = []
+		
+		for hostmask in hostmasks:
+			mask = "^%s$" % hostmask
+			mask = mask.replace('.', '\\.')
+			mask = mask.replace('?', '.')
+			mask = mask.replace('*', '.*?')
+			
+			self.hostmasks.append(mask)
+			self.regexps.append(re.compile(mask))
+	
+	def __str__(self):
+		text = "%s %s %s" % (self.nick, self.hostmasks, self.flags)
+		return text
+	
+	def __repr__(self):
+		text = "<class FactoidUser:" + self.__str__() + ">"
+		return text
+
+# ---------------------------------------------------------------------------
+
+# The userlist for SmartyPants.
+class FactoidUserList:
+	def __init__(self):
+		self.__users = {}
+	
+	def __getitem__(self, item):
+		return self.__users[item]
+	
+	def __delitem__(self, item):
+		del self.__users[item]
+	
+	def add_user(self, user):
+		self.__users[user.nick] = user
+	
+	# Check if the supplied hostname matches any of the hostmasks supplied
+	# for users in the userlist. Return any users that matched.
+	def host_match(self, hostname):
+		matches = []
+		for user in self.__users:
+			for regexp in self.__users[user].regexps:
+				if regexp.match(hostname):
+					if self.__users[user] not in matches:
+						matches.append(self.__users[user])
+		
+		
+		return matches
