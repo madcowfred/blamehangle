@@ -95,7 +95,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		if args:
 			line = line % args
 		
-		print '>', repr(line)
+		#print '>', repr(line)
 		
 		self.send(line + '\r\n')
 	
@@ -142,7 +142,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		self.__read_buf = lines.pop()
 		
 		for line in lines:
-			print '<', repr(line)
+			#print '<', repr(line)
 			
 			prefix = command = target = userinfo = None
 			arguments = []
