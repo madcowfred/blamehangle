@@ -64,22 +64,28 @@ class WrapConn:
 		
 		# Parse the server list
 		self.servers = []
-		for server in options['servers'].split():
-			parts = server.split(',')
+		for server in options.get('server', {}).values():
+			parts = server.split()
+			data = None
 			if len(parts) == 1:
-				self.servers.append( (parts[0], 6667) )
+				data = (parts[0], 6667, None, [])
 			elif len(parts) == 2:
-				self.servers.append( (parts[0], int(parts[1])) )
+				data = (parts[0], parts[1], None, [])
+			elif len(parts) == 3:
+				data = (parts[0], parts[1], parts[2], [])
+			
+			if data is not None:
+				self.servers.append(data)
 			else:
-				#FIXME: log something useful
-				print 'invalid server entry'
+				tolog = "Invalid server definition: '%s'" % (server)
+				self.connlog(LOG_WARNING, tolog)
 		
 		# Parse the channels
 		old_chans = self.channels
 		self.channels = {}
 		
 		for chunk in options.get('channel', {}).values():
-			parts = chunk.split(None, 1)
+			parts = chunk.split()
 			if len(parts) == 1:
 				self.channels[parts[0]] = None
 			else:
@@ -100,7 +106,7 @@ class WrapConn:
 		self.username = options.get('username', 'blamehangle').strip() or 'blamehangle'
 		self.vhost = options.get('vhost', '').strip() or None
 		if self.vhost and not hasattr(socket, 'gaierror'):
-			self.parent.connlog(LOG_WARNING, "vhost is set, but socket module doesn't have getaddrinfo()!")
+			self.connlog(LOG_WARNING, "vhost is set, but socket module doesn't have getaddrinfo()!")
 			self.vhost = None
 		
 		self.ignore_strangers = int(options.get('ignore_strangers', 0))
@@ -117,26 +123,47 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	
 	def connlog(self, level, text):
-		self.parent.connlog(self.conn.connid, level, text)
+		newtext = '(%s) %s' % (self.name, text)
+		self.parent.putlog(level, newtext)
 	
 	def connect(self):
-		nick = self.nicks[self.trynick]
-		password = None
+		if not self.servers:
+			self.last_connect = time.time() + 25
+			self.connlog(LOG_WARNING, "No servers defined for this connection!")
+			return
 		
 		self.server = self.servers[0]
-		host, port = self.server
+		#host, port, password = self.server[:3]
+		
+		self.parent.dnsLookup(None, self.parent._DNS_Reply, self.server[0], self.conn.connid)
+		return
+	
+	def really_connect(self, hosts):
+		# We don't want to connect to an IP that we've tried recently
+		ips = [h for h in hosts if h[1] not in self.server[3]]
+		if not ips:
+			del self.server[3][:]
+			ips = hosts
+		
+		self.server[3].append(ips[0][1])
+		
+		ip = ips[0][1]
+		host = self.server[0]
+		port = self.server[1]
+		nick = self.nicks[self.trynick]
+		password = self.server[2]
 		
 		
-		tolog = 'Connecting to %s port %d...' % (host, port)
+		tolog = 'Connecting to %s (%s) port %d...' % (host, ip, port)
 		self.connlog(LOG_ALWAYS, tolog)
 		
 		# IPv6 host, set the socket family
-		if ':' in host:
+		if ips[0][0] == 6:
 			family = socket.AF_INET6
 		else:
 			family = socket.AF_INET
 		
-		self.conn.connect_to_server(host, port, nick,
+		self.conn.connect_to_server(ip, port, nick,
 									username=self.username,
 									ircname=self.realname,
 									vhost=self.vhost,

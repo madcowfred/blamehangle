@@ -40,8 +40,8 @@ class ChatterGizmo(Child):
 		self.rehash()
 	
 	def rehash(self):
-		#self.use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
-		#self.dns_order = self.Config.get('DNS', 'irc_order').strip().split()
+		self.use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
+		self.dns_order = self.Config.get('DNS', 'irc_order').strip().split()
 		
 		# Set up our public commands, if there are any
 		self.__Public_Exact = {}
@@ -129,6 +129,35 @@ class ChatterGizmo(Child):
 			wrap.run_sometimes(currtime)
 	
 	# -----------------------------------------------------------------------
+	# We just got out DNS reply, yay
+	def _DNS_Reply(self, trigger, hosts, args):
+		connid = args[0]
+		host = self.Conns[connid].server[0]
+		
+		# Resolve failure
+		if hosts is None:
+			tolog = 'Unable to resolve server: %s' % (host)
+			self.connlog(connid, LOG_ALWAYS, tolog)
+		
+		# Something useful happened
+		else:
+			if self.use_ipv6:
+				if self.dns_order:
+					new = []
+					for f in self.dns_order:
+						new += [h for h in hosts if h[0] == int(f)]
+					hosts = new
+			else:
+				hosts = [h for h in hosts if h[0] == 4]
+			
+			if hosts == []:
+				tolog = "No usable IPs found for '%s'" % (host)
+				self.connlog(connid, LOG_ALWAYS, tolog)
+			
+			else:
+				self.Conns[connid].really_connect(hosts)
+	
+	# -----------------------------------------------------------------------
 	
 	def privmsg(self, connid, nick, text):
 		self.Conns[connid].privmsg(nick, text)
@@ -160,7 +189,7 @@ class ChatterGizmo(Child):
 		wrap.connect_id += 1
 		wrap.conn.status = STATUS_CONNECTED
 		
-		tolog = 'Connected to %s:%d' % wrap.server
+		tolog = 'Connected to %s' % (wrap.server[0])
 		self.connlog(connid, LOG_ALWAYS, tolog)
 		
 		# If we're supposed to use NickServ, do so
