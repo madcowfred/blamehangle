@@ -396,7 +396,7 @@ class ServerConnection(Connection):
 		if self.connected:
 			self.quit("Changing server")
 
-		self.socket = None
+		self.sock = None
 		self.previous_buffer = ""
 		self.handlers = {}
 		self.real_server_name = ""
@@ -408,14 +408,14 @@ class ServerConnection(Connection):
 		self.ircname = ircname or nickname
 		self.password = password
 		self.localhost = socket.gethostname()
-		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
-			self.socket.connect((self.server, self.port))
+			self.sock.connect((self.server, self.port))
 		except socket.error, x:
 			raise ServerConnectionError, x
 		self.connected = 1
 		if self.irclibobj.fn_to_add_socket:
-			self.irclibobj.fn_to_add_socket(self.socket)
+			self.irclibobj.fn_to_add_socket(self.sock)
 
 		# Log on...
 		if self.password:
@@ -437,13 +437,13 @@ class ServerConnection(Connection):
 	def _get_socket(self):
 		"""[Internal]"""
 		if self.connected:
-			return self.socket
+			return self.sock
 		else:
 			return None
 
 	def fileno(self):
 		if self.connected:
-			return self.socket.fileno()
+			return self.sock.fileno()
 		else:
 			return None
 
@@ -472,7 +472,7 @@ class ServerConnection(Connection):
 		"""[Internal]"""
 
 		try:
-			new_data = self.socket.recv(2**14)
+			new_data = self.sock.recv(2**14)
 		except socket.error, x:
 			# The server hung up.
 			self.disconnect("Connection reset by peer")
@@ -626,10 +626,10 @@ class ServerConnection(Connection):
 
 		self.connected = 0
 		try:
-			self.socket.close()
+			self.sock.close()
 		except socket.error, x:
 			pass
-		self.socket = None
+		self.sock = None
 		self._handle_event(Event("disconnect", self.server, "", [message]))
 
 	def globops(self, text):
@@ -752,11 +752,11 @@ class ServerConnection(Connection):
 
 		The string will be padded with appropriate CR LF.
 		"""
-		if not self.socket:
+		if not self.sock:
 			return
 		
 		try:
-			self.socket.send(string + "\r\n")
+			self.sock.send(string + "\r\n")
 			if DEBUG:
 				print "TO SERVER:", string
 		except socket.error, x:

@@ -14,19 +14,29 @@ class ChatterGizmo:
 	server handling, and so on.
 	"""
 	
+	Conns = {}
+	
 	def __init__(self, Config):
 		self.Config = Config
 		
 		self.__ircobj = irclib.IRC()
-		self.Conns = {}
 	
 	def main_loop(self):
-		try:
-			self.__ircobj.process_once()
-		
-		except select.error, msg:
-			if msg[0] == errno.EINTR:
-				pass
+		if self.Conns:
+			try:
+				can_read = select.select(self.Socks, [], [], 0)[0]
+			
+			except select.error, msg:
+				if msg[0] == errno.EINTR:
+					pass
+			
+			else:
+				for sock in can_read:
+					conn = self.Conns[sock]
+					if conn.status == STATUS.CONNECTING:
+						conn.connected()
+					elif conn.status == STATUS.CONNECTED:
+						conn.process_data()
 	
 	# -----------------------------------------------------------------------
 	
@@ -46,8 +56,8 @@ class ChatterGizmo:
 			for option in self.Config.options(network):
 				options[option] = self.Config.get(network, option)
 			
-			conn = self.__ircobj.server()
-			self.Conns[conn] = WrapConn(conn, options)
+			conn = self.__irclib.server()
+			self.Conns[conn.sock] = conn
 			
 			self.Conns[conn].do_connect()
 	
