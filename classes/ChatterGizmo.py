@@ -39,7 +39,10 @@ class ChatterGizmo(Child):
 		for event in [ 'welcome', 'namreply', 'join', 'part', 'kick', 'quit',
 			'pubmsg', 'privmsg', 'ctcp' ]:
 			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
-		
+	
+	# -----------------------------------------------------------------------
+	
+	def run_once(self):
 		self.connect()
 	
 	def run_always(self):
@@ -49,9 +52,6 @@ class ChatterGizmo(Child):
 		except select.error, msg:
 			if msg[0] == errno.EINTR:
 				pass
-	
-	def run_sometimes(self, currtime):
-		pass
 	
 	# -----------------------------------------------------------------------
 	
@@ -271,6 +271,10 @@ class ChatterGizmo(Child):
 		
 		elif first == 'CLIENTINFO':
 			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
+		
+		elif first == 'TEST':
+			data = [REPLY_TEST, ('SELECT * FROM totals', [])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
 		else:
 			data = [conn, IRCT_CTCP, userinfo, None, text]

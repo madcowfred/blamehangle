@@ -27,32 +27,24 @@ MYSQL_ERROR_LOST_CONNECTION = 2013
 # --------------------------------------------------------------
 class Database:
 	db = None
+	done = 0
 	
-	def __init__(self, parent):
-		self.parent = parent
-		
-		self.db = None
-		self.done = 0
+	def __init__(self, Config):
+		self.Config = Config
 	
 	def __connect(self):
 		if self.db:
 			return
 		
-		self.db = MySQLdb.connect(	host=self.parent.Config.get('database', 'hostname'),
-									user=self.parent.get('database', 'username'),
-									passwd=self.parent.Config.get('database', 'password'),
-									db=self.parent.Config.get('database', 'database'),
+		self.db = MySQLdb.connect(	host=self.Config.get('database', 'hostname'),
+									user=self.Config.get('database', 'username'),
+									passwd=self.Config.get('database', 'password'),
+									db=self.Config.get('database', 'database'),
 									connect_timeout=30,
 									compress=1
 									)
 		
 		self.db.paramstyle = 'format'
-	
-	# Disconnect from the database if we're connected. Is this ever used?
-	def disconnect(self):
-		if self.db:
-			self.db.close()
-			self.db = None
 	
 	def query(self, query, *args):
 		self.__connect()
@@ -75,18 +67,21 @@ class Database:
 # A thread wrapper around the Database object.
 #
 # Config   -- a ConfigParser object
-# outQueue -- a Queue object to write the results too
-# queries  -- a list of some kind of query/data pairs
+# outQueue -- a Queue object where we will place the query results
+#             for distribution
+# message  -- a message object with the query data inside
 # --------------------------------------------------------------
-def database_thread(Config, outQueue, ident, queries):
+def DataThread(parent, db, message):
 	results = []
 	
-	db = Database(Config)
+	ident = message.data[0]
+	queries = message.data[1:]
 	
 	for query, args in queries:
 		results.append(db.query(query, *args))
 	
-	db.disconnect()
+	message = Message('DataMonkey', message.source, ident, results)
+	parent.outQueue.put(message)
 	
-	message = Message('Database', '<reply>', ident, results)
-	outQueue.put(message)
+	# Make our db object usable again
+	parent.DBs.append(db)

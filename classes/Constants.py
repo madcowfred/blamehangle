@@ -45,3 +45,8 @@ REQ_NOTICE = 'REQ_NOTICE'
 REQ_PRIVMSG = 'REQ_PRIVMSG'
 REQ_QUERY = 'REQ_QUERY'
 REQ_SHUTDOWN = 'REQ_SHUTDOWN'
+
+# ---------------------------------------------------------------------------
+# Reply constants
+# ---------------------------------------------------------------------------
+REPLY_TEST = 'REPLY_TEST'
