@@ -165,13 +165,10 @@ class GrabBT(Plugin):
 		# Split the last bit of the URL off
 		torrentfile = UnquoteURL(resp.url.split('/')[-1])
 		
-		# Bad news, look for a Content-Disposition header
-		if not torrentfile.endswith('.torrent'):
-			cd = resp.headers.get('Content-Disposition', None)
-			if cd is not None:
-				m = re.search('filename="(.*?)"', cd)
-				if m:
-					torrentfile = m.group(1)
+		# Look for a Content-Disposition header
+		m = re.search('filename="(.*?)"', resp.headers.get('Content-Disposition', ''))
+		if m:
+			torrentfile = m.group(1)
 		
 		# Bad news, do evil parsing of the URL
 		if not torrentfile.endswith('.torrent'):
