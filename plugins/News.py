@@ -4,7 +4,7 @@
 # This is the news-gatherer plugin for Blamehangle. It scours the web for
 # news, and reports it.
 # exciting stuff.
-
+#
 #CREATE TABLE news (
 #	title varchar(255) NOT NULL default '',
 #	url varchar(255) default NULL,
@@ -18,6 +18,8 @@ import cPickle
 import re
 import time
 import types
+
+# ---------------------------------------------------------------------------
 
 from classes.Constants import *
 from classes.Plugin import *
