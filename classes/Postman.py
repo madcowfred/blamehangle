@@ -184,8 +184,13 @@ class Postman:
 				
 				self.__Log(LOG_ALWAYS, '*******************************************************')
 				
+				# We crashed during shutdown? Not Good.
+				if self.__Stopping == 1:
+					self.__Log(LOG_ALWAYS, "Exception during shutdown, I'm outta here.")
+					sys.exit(-1)
 				
-				self.__Shutdown('Crashed!')
+				else:
+					self.__Shutdown('Crashed!')
 	
 	#------------------------------------------------------------------------
 	# Our own mangled version of sendMessage
