@@ -89,6 +89,8 @@ class Postman:
 		self.__logfile_filename = self.Config.get('logging', 'log_file')
 		self.__log_debug = self.Config.getboolean('logging', 'debug')
 		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
+		self.__log_debug_query = self.Config.getboolean('logging', 'debug_query')
+		
 		self.__plugin_list = self.Config.get('plugin', 'plugins').split()
 	
 	# -----------------------------------------------------------------------
@@ -277,11 +279,15 @@ class Postman:
 				self.__Shutdown('Ctrl-C pressed')
 			
 			except:
-				trace = sys.exc_info()
+				_type, _value, _tb = sys.exc_info()
 				
-				# If it's a SystemExit, we're really meant to be stopping now
-				if trace[0] == SystemExit:
+				# If it's a SystemExit exception, we're really meant to die now
+				if _type == SystemExit:
 					raise
+				
+				# Extract then delete, to avoid a circular reference thing
+				entries = traceback.extract_tb(_tb)
+				del _tb
 				
 				# Remember the last filename
 				last_file = ''
@@ -290,21 +296,18 @@ class Postman:
 				
 				self.__Log(LOG_ALWAYS, 'Traceback (most recent call last):')
 				
-				for entry in traceback.extract_tb(trace[2]):
+				for entry in entries:
 					last_file = entry[:-1][0]
 					tolog = '  File "%s", line %d, in %s' % entry[:-1]
 					self.__Log(LOG_ALWAYS, tolog)
 					tolog = '    %s' % entry[-1]
 					self.__Log(LOG_ALWAYS, tolog)
 				
-				for line in traceback.format_exception_only(trace[0], trace[1]):
+				for line in traceback.format_exception_only(_type, _value):
 					tolog = line.replace('\n', '')
 					self.__Log(LOG_ALWAYS, tolog)
 				
 				self.__Log(LOG_ALWAYS, '*******************************************************')
-				
-				# Better safe than sorry
-				del trace
 				
 				# We crashed during shutdown? Not Good.
 				if self.__Stopping == 1:
@@ -430,14 +433,17 @@ class Postman:
 		elif level == LOG_DEBUG:
 			if not self.__log_debug:
 				return
-			
 			text = '[DEBUG] %s' % text
 		
 		elif level == LOG_MSG:
 			if not self.__log_debug_msg:
 				return
-			
 			text = '[DEBUG] %s' % text
+		
+		elif level == LOG_QUERY:
+			if not self.__log_debug_query:
+				return
+			text = '[QUERY] %s' % text
 		
 		print timeshort, text
 		

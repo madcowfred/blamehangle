@@ -14,6 +14,7 @@ LOG_ALWAYS = 'LOG_ALWAYS'
 LOG_DEBUG = 'LOG_DEBUG'
 LOG_WARNING = 'LOG_WARNING'
 LOG_MSG = 'LOG_MSG'
+LOG_QUERY = 'LOG_QUERY'
 
 # ---------------------------------------------------------------------------
 # Plugin constants

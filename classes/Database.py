@@ -17,15 +17,6 @@ from classes.Constants import *
 
 sys.path.append(os.path.expanduser('~/lib/python'))
 
-#import MySQLdb
-#from _mysql_exceptions import OperationalError
-#from MySQLdb.cursors import DictCursor
-
-# --------------------------------------------------------------
-
-#MYSQL_ERROR_LOST_CONNECTION = 2013
-
-
 # --------------------------------------------------------------
 # Base class for database wrappers
 # --------------------------------------------------------------
@@ -161,22 +152,25 @@ def DataThread(parent, db, myindex):
 				else:
 					args = []
 				
-				#tolog = 'Query: %s, Args: %s' % (query, args)
-				#parent.putlog(LOG_DEBUG, tolog)
+				tolog = 'Query: "%s", Args: %s' % (query, repr(args))
+				parent.putlog(LOG_QUERY, tolog)
 				
-				#try:
-				result = db.query(query, *args)
+				try:
+					result = db.query(query, *args)
 				
-				#except OperationalError, msg:
-				#	tolog = 'Database error: %s' % msg[1]
-				#	parent.putlog(LOG_ALWAYS, tolog)
-				#	
-				#	results.append(())
-				#	
-				#	db.disconnect()
-				#
-				#else:
-				results.append(result)
+				except:
+					# Log the error
+					t, v = sys.exc_info()[:2]
+					
+					tolog = '%s - %s' % (t, v)
+					parent.putlog(LOG_WARNING, tolog)
+					
+					results.append(())
+					
+					db.disconnect()
+				
+				else:
+					results.append(result)
 			
 			data = [toreturn, results]
 			
