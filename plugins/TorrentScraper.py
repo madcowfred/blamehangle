@@ -26,6 +26,8 @@ ENTITY_RE = re.compile(r'&(?!amp;|lt;|gt;|quot;|apos;)')
 # ---------------------------------------------------------------------------
 
 class TorrentScraper(Plugin):
+	_QuietURLErrors = 1
+	
 	def setup(self):
 		self.URLs = {}
 		

@@ -72,7 +72,8 @@ class Plugin(Child):
 		
 		# Failed
 		if resp.data is None:
-			self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
+			if not hasattr(self, '_QuietURLErrors'):
+				self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
 			return
 		
 		# Call the method
