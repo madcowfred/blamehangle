@@ -118,14 +118,10 @@ class TorrentScraper(Plugin):
 		items = trigger.items
 		del trigger.items
 		
-		print 'items:', len(items)
-		
 		# We don't need to add any that are already in the database
 		for row in result:
 			descl = row['description'].lower()
 			items = [a for a in items if a[2].lower() != descl]
-		
-		print 'items:', len(items)
 		
 		# If we don't have any new items, go home now
 		if len(items) == 0:
@@ -134,19 +130,5 @@ class TorrentScraper(Plugin):
 		# Start adding the items to our database
 		for item in items:
 			self.dbQuery(trigger, None, INSERT_QUERY, *item)
-	
-	# An item has been inserted, try the next one if we have to
-	def __DB_Inserted(self, trigger, result):
-		# Error, just log it, we want to keep inserting news items
-		if result is None:
-			self.putlog(LOG_WARNING, '__DB_Inserted: A DB error occurred!')
-		
-		# If we have no more articles, go home now
-		#if len(trigger.items) == 0:
-		#	return
-		
-		# Do the next one
-		#item = trigger.items.pop(0)
-		#self.dbQuery(trigger, self.__DB_Inserted, INSERT_QUERY, *item)
 
 # ---------------------------------------------------------------------------
