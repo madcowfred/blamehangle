@@ -36,6 +36,24 @@ class WeatherMan(Plugin):
 	def rehash(self):
 		self.__Short_Parts = self.Config.get('WeatherMan', 'short').split()
 		self.__Long_Parts = self.Config.get('WeatherMan', 'long').split()
+		
+		self.__Formats = {'default': 'both'}
+		for option in self.Config.options('WeatherMan'):
+			if option.startswith('formats.'):
+				if option == 'formats.default':
+					self.__Formats['default'] = self.Config.get('WeatherMan', option)
+				else:
+					parts = option.lower().split('.')
+					if len(parts) == 3:
+						format = self.Config.get('WeatherMan', option)
+						if format in ('both', 'metric', 'imperial'):
+							self.__Formats.setdefault(parts[1], {})[parts[2]] = format
+						else:
+							tolog = 'Mangled option in WeatherMan config: %s' % (option)
+							self.putlog(LOG_WARNING, tolog)
+					else:
+						tolog = 'Mangled option in WeatherMan config: %s' % (option)
+						self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
 	
@@ -119,13 +137,13 @@ class WeatherMan(Plugin):
 					if line.startswith('Currently:'):
 						continue
 					elif re.match(r'^\d+$', line):
-						chunk = 'Currently: %s' % (CandF(line))
+						chunk = 'Currently: %s' % (self.GetTemp(trigger, line))
 						data['current'] = chunk
 					elif line.startswith('Hi:'):
-						chunk = 'High: %s' % (CandF(line[3:]))
+						chunk = 'High: %s' % (self.GetTemp(trigger, line[3:]))
 						data['high'] = chunk
 					elif line.startswith('Lo:'):
-						chunk = 'Low: %s' % (CandF(line[3:]))
+						chunk = 'Low: %s' % (self.GetTemp(trigger, line[3:]))
 						data['low'] = chunk
 					else:
 						data['conditions'] = line
@@ -137,12 +155,12 @@ class WeatherMan(Plugin):
 					lines = StripHTML(chunk)
 					
 					# Extract!
-					chunk = 'Feels Like: %s' % (CandF(lines[2]))
+					chunk = 'Feels Like: %s' % (self.GetTemp(trigger, lines[2]))
 					data['feels'] = chunk
 					
 					windbits = lines[-9].split()
 					if len(windbits) == 3:
-						chunk = 'Wind: %s %s kph (%s mph)' % (windbits[0], ToKilometers(windbits[1]), windbits[1])
+						chunk = 'Wind: %s %s' % (windbits[0], self.GetWind(trigger, windbits[1]))
 					else:
 						chunk = 'Wind: %s' % (windbits[0])
 					data['wind'] = chunk
@@ -173,7 +191,7 @@ class WeatherMan(Plugin):
 						high = lines[first+2]
 						low = lines[first+3][4:]
 						
-						forecast = '%s: %s, High: %s, Low: %s' % (day, conditions, CandF(high), CandF(low))
+						forecast = '%s: %s, High: %s, Low: %s' % (day, conditions, self.GetTemp(trigger, high), self.GetTemp(trigger, low))
 						fcs.append(forecast)
 					
 					data['forecast'] = ' - '.join(fcs)
@@ -200,13 +218,44 @@ class WeatherMan(Plugin):
 				else:
 					replytext = '%s %s' % (location, ', '.join(chunks))
 					self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	
+	def GetTemp(self, trigger, f_val):
+		f_val = f_val.strip()
+		c_val = ToCelsius(f_val)
+		
+		network = trigger.conn.options['name'].lower()
+		chan = trigger.target.lower()
+		
+		format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
+		if format == 'both':
+			return '%sC (%sF)' % (c_val, f_val)
+		elif format == 'metric':
+			return '%sC' % (c_val)
+		elif format == 'imperial':
+			return '%sF' % (f_val)
+		else:
+			raise ValueError, '%s is an invalid format' % format
+	
+	def GetWind(self, trigger, mph_val):
+		mph_val = mph_val.strip()
+		kph_val = ToKilometers(mph_val)
+		
+		network = trigger.conn.options['name'].lower()
+		chan = trigger.target.lower()
+		
+		format = self.__Formats.get(network, {}).get(chan, self.__Formats['default'])
+		if format == 'both':
+			return '%s kph (%s mph)' % (kph_val, mph_val)
+		elif format == 'metric':
+			return '%s kph' % (kph_val)
+		elif format == 'imperial':
+			return '%s mph' % (mph_val)
+		else:
+			raise ValueError, '%s is an invalid format' % format
 
 # ---------------------------------------------------------------------------
-
-def CandF(f_val):
-	c_val = ToCelsius(f_val)
-	f_val = f_val.strip()
-	return '%sC (%sF)' % (c_val, f_val)
 
 def ToCelsius(val):
 	try:
