@@ -15,8 +15,8 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-ANIDB_URL = "http://anidb.ath.cx/perl-bin/animedb.pl?show=animelist&adb.search=%s"
-AID_URL = 'http://anidb.ath.cx/perl-bin/animedb.pl?show=anime&aid=%s'
+ANIDB_URL = "http://anidb.info/perl-bin/animedb.pl?show=animelist&adb.search=%s"
+AID_URL = 'http://anidb.info/perl-bin/animedb.pl?show=anime&aid=%s'
 
 # Urgh.
 ANIDB_AKA_RE = re.compile(r'^(\d+)"><i>(.*?)</i></a>\s*<small>.*?aid=(\d+)" class="tiny">(.*?)</a>')
