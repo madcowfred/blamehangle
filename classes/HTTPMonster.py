@@ -132,19 +132,20 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# Connection succeeded
 	def handle_connect(self):
-		text = "GET %s HTTP/1.1\r\n" % (self.path)
+		#text = "GET %s HTTP/1.1\r\n" % (self.path)
+		text = "GET %s HTTP/1.0\r\n" % (self.path)
 		self.send(text)
 		text = "Host: %s\r\n" % (self.host)
 		self.send(text)
 		text = "User-Agent: %s\r\n" % (self.parent.user_agent)
 		self.send(text)
-		text = "Connection: close\r\n"
-		self.send(text)
+		#text = "Connection: close\r\n"
+		#self.send(text)
 		self.send("\r\n")
 	
 	# Connection has data to read
 	def handle_read(self):
-		self.data += self.recv(2048)
+		self.data += self.recv(4096)
 		
 		if not self.header:
 			chunks = self.data.split('\r\n\r\n', 1)
@@ -154,9 +155,8 @@ class async_http(asyncore.dispatcher_with_send):
 				if len(chunks) <= 1:
 					return
 			
-			header, data = chunks
-			self.header = header
-			self.data = data
+			self.header = chunks[0]
+			self.data = chunks[1]
 			
 			#print self.header.splitlines()
 	
