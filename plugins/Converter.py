@@ -57,11 +57,11 @@ class Converter(Plugin):
 		
 		elif data['from'] == 'c' and data['to'] == 'f':
 			value = (data['amt'] * 9.0 / 5) + 32
-			replytext = '%s °C == %s °F' % (amt, value)
+			replytext = '%s °C == %s °F' % (data['amt'], value)
 		
 		elif data['from'] == 'f' and data['to'] == 'c':
 			value = (data['amt'] - 32) * 5.0 / 9
-			replytext = '%s °F == %s °C' % (amt, value)
+			replytext = '%s °F == %s °C' % (data['amt'], value)
 		
 		else:
 			if DISTANCE.has_key(data['from']):
