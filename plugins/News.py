@@ -484,7 +484,7 @@ class News(Plugin):
 		
 		# If we found no real articles, cry a bit
 		if len(articles) == 0:
-			tolog "Failed to find any items for feed '%s'!" % (name)
+			tolog = "Failed to find any items for feed '%s'!" % (name)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
