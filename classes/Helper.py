@@ -7,10 +7,12 @@ from classes.Plugin import *
 from classes.Constants import *
 import re
 
-BASIC_HELP = "BASIC_HELP"
+# ---------------------------------------------------------------------------
 
+BASIC_HELP = "BASIC_HELP"
 BASIC_HELP_RE = re.compile("^help$")
 
+# ---------------------------------------------------------------------------
 # We cheat!
 # This needs to be a Plugin so that it can register irc events easily, instead
 # of putting a bunch of special-case code in the middle of PluginHandler or
@@ -131,5 +133,3 @@ class Helper(Plugin):
 		else:
 			errtext = "Helper got an unknown trigger: %s" % trigger.name
 			raise ValueError, errtext
-
-# ---------------------------------------------------------------------------

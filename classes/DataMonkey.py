@@ -4,7 +4,6 @@
 
 from Queue import *
 from threading import *
-#from thread import start_new_thread
 import time
 
 # ---------------------------------------------------------------------------
@@ -59,36 +58,19 @@ class DataMonkey(Child):
 	
 	def __stop_threads(self):
 		_sleep = time.sleep
-
+		
 		# set the flag telling each thread that we would like it to exit
 		for i in range(len(self.threads)):
 			self.threads[i][1] = 1
-
+		
 		# wait until all threads have exited
 		while [t for t,s in self.threads if t.isAlive()]:
 			_sleep(0.1)
-
+		
 		tolog = "All db threads shutdown"
 		self.putlog(LOG_DEBUG, tolog)
 	
 	# -----------------------------------------------------------------------
-	
-	#def run_sometimes(self, currtime):
-	#	if (currtime - self.Last_Status) > 5:
-	#		self.Last_Status = currtime
-	#		
-	#		#tolog = 'Requests: %d, DBs: %d' % (len(self.Requests), len(self.DBs))
-	#		#self.putlog(LOG_DEBUG, tolog)
-	#	
-	#	# If we have any pending requests, and a spare DB connection, action
-	#	# a request.
-	#	if self.Requests and self.DBs:
-	#		self.putlog(LOG_DEBUG, 'Actioning a request')
-	#		
-	#		message = self.Requests.pop(0)
-	#		db = self.DBs.pop(0)
-	#		
-	#		start_new_thread(DataThread, (self, db, message))
 	
 	# A database query, be afraid
 	def _message_REQ_QUERY(self, message):

@@ -9,10 +9,6 @@ from classes.irclib import ServerConnectionError, STATUS_DISCONNECTED, STATUS_CO
 
 # ---------------------------------------------------------------------------
 
-#STATUS_DISCONNECTED = 'Disconnected'
-#STATUS_CONNECTING = 'Connecting'
-#STATUS_CONNECTED = 'Connected'
-
 CONNECT_TIMEOUT = 40
 CONNECT_HOLDOFF = 5
 
