@@ -25,8 +25,12 @@ class WrapConn:
 		self.conn = conn
 		self.options = options
 
-		# nfi if this is what is needed...
 		self.connect_id = 0
+
+		# has ChatterGizmo asked us to close this connection?
+		# (note, this flag is only inspected in ChatterGizmo, it is never
+		#  touched here)
+		self.requested_quit = 0
 		
 		# Reset ourselves to the disconnected state
 		self.disconnected()

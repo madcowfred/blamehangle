@@ -52,6 +52,50 @@ class ChatterGizmo(Child):
 
 		self.__users = HangleUserList(self, 'GlobalUsers')
 	
+	# The bot has been rehashed.. re-load the global users info, and check if
+	# there are any changes to the servers/channels we have been requested to
+	# sit in
+	def rehash(self):
+		self.__users = HangleUserList(self, 'GlobalUsers')
+
+		old_nets = []
+		nets = []
+		for conn in self.Conns:
+			old_nets.append((conn, self.Conns[conn].options['name']))
+		
+		for section in self.Config.sections():
+			if section.startswith('network.'):
+				nets.append((section, self.Config.get(section, 'name')))
+
+		for conn, net in old_nets:
+			if net not in [name for section, name in nets]:
+				# this network has been removed from our config
+				for wrap in self.Conns.values():
+					if self.Conns[conn] == wrap and wrap.status == STATUS_CONNECTED:
+						wrap.conn.quit('bye')
+						wrap.requested_quit = 1
+						
+			else:
+				# we are meant to stay on this network, check if we need to
+				# join or part any channels
+				old_chans = self.Conns[conn].users.channels()
+				chans = self.Config.get(section, 'channels').split()
+
+				for chan in old_chans:
+					if chan not in chans:
+						# we are no longer supposed to be in this channel
+						conn.part(chan)
+				
+				self.Conns[conn].channels = chans
+				self.Conns[conn].join_channels()
+
+		for section, net in nets:
+			if net not in [name for conn, name in old_nets]:
+				# this is a new network that has been added to our config
+				self.connect(section=section)
+	
+	# -----------------------------------------------------------------------
+	
 	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
 		for wrap in self.Conns.values():
@@ -63,7 +107,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	
 	def run_once(self):
-		self.addTimer('moo', 5, 'cow')
+		#self.addTimer('moo', 5, 'cow')
 		
 		self.connect()
 	
@@ -104,25 +148,35 @@ class ChatterGizmo(Child):
 	
 	# -----------------------------------------------------------------------
 	
-	def connect(self):
-		networks = []
-		for section in self.Config.sections():
-			if section.startswith('network.'):
-				networks.append(section)
-		
-		if not networks:
-			raise Exception, 'No networks defined in config file'
-		
-		for network in networks:
+	def connect(self, section=None):
+		if section:
 			options = {}
-			for option in self.Config.options(network):
-				options[option] = self.Config.get(network, option)
-			
-			
+			for option in self.Config.options(section):
+				options[option] = self.Config.get(section, option)
+
 			conn = self.__ircobj.server()
 			self.Conns[conn] = WrapConn(self, conn, options)
-			
 			self.Conns[conn].connect()
+
+		else:
+			networks = []
+			for section in self.Config.sections():
+				if section.startswith('network.'):
+					networks.append(section)
+		
+			if not networks:
+				raise Exception, 'No networks defined in config file'
+		
+			for network in networks:
+				options = {}
+				for option in self.Config.options(network):
+					options[option] = self.Config.get(network, option)
+			
+			
+				conn = self.__ircobj.server()
+				self.Conns[conn] = WrapConn(self, conn, options)
+			
+				self.Conns[conn].connect()
 	
 	# -----------------------------------------------------------------------
 	
@@ -164,7 +218,11 @@ class ChatterGizmo(Child):
 		self.connlog(conn, LOG_ALWAYS, 'Disconnected from server')
 		
 		if not self.stopping:
-			self.addTimer(TIMER_RECONNECT, 5, conn)
+			if self.Conns[conn].requested_quit:
+				del self.Conns[conn]
+				del conn
+			else:
+				self.addTimer(TIMER_RECONNECT, 5, conn)
 	
 	# It was bad.
 	def _handle_error(self, conn, event):
@@ -225,7 +283,7 @@ class ChatterGizmo(Child):
 			# If it was our primary nickname, try and regain it
 			if nick == self.Conns[conn].nicks[0]:
 				conn.nick(nick)
-	
+
 	# -----------------------------------------------------------------------
 	# Someone just invited us to a channel
 	# -----------------------------------------------------------------------
