@@ -153,14 +153,14 @@ class News(Plugin):
 				
 
 				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
-				self.putlog(LOG_ALWAYS, tolog)
+				self.putlog(LOG_DEBUG, tolog)
 			self.__pickle(self.__outgoing, '.news.out_pickle')
 		
 		# Once an hour, go and check for old news and purge it from the
 		# db
 		if currtime - self.__Last_Clearout_Time >= 3600:
 			tolog = "Purging old news"
-			self.putlog(LOG_ALWAYS, tolog)
+			self.putlog(LOG_DEBUG, tolog)
 			self.__Last_Clearout_Time = currtime
 			old_time = currtime - self.__old_threshold
 			data = [(TIME_CHECK, None), (TIME_QUERY, [old_time])]
@@ -261,7 +261,7 @@ class News(Plugin):
 		else:
 			# We have a pickle!
 			tolog = "loading pickle from %s" % pickle
-			self.putlog(LOG_ALWAYS, tolog)
+			self.putlog(LOG_DEBUG, tolog)
 			obj = cPickle.load(f)
 			f.close()
 			return obj
