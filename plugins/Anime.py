@@ -15,10 +15,12 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-ANIDB_URL = "http://anidb.ath.cx/perl-bin/animedb.pl?show=animelist&noalias=1&adb.search=%s"
+ANIDB_URL = "http://anidb.ath.cx/perl-bin/animedb.pl?show=animelist&adb.search=%s"
 AID_URL = 'http://anidb.ath.cx/perl-bin/animedb.pl?show=anime&aid=%s'
 
-RESULT_RE = re.compile(r'^(\d+)">(?:<i>|)(.*?)(?:</i>|)$')
+# Urgh.
+ANIDB_AKA_RE = re.compile(r'^(\d+)"><i>(.*?)</i></a>\s*<small>.*?aid=(\d+)" class="tiny">(.*?)</a>')
+ANIDB_RESULT_RE = re.compile(r'^(\d+)">(.*?)</a>')
 
 # ---------------------------------------------------------------------------
 
@@ -76,39 +78,51 @@ class Anime(Plugin):
 		# If it's search results, parse them and spit them out
 		if resp.data.find('Search for:') >= 0:
 			# We need some results, damn you
-			chunks = FindChunks(resp.data, '<a href="animedb.pl?show=anime&aid=', '</a>')
+			chunks = FindChunks(resp.data, '<a href="animedb.pl?show=anime&aid=', '</td>')
 			if not chunks:
 				replytext = 'No results found for "%s"' % findme
 				self.sendReply(trigger, replytext)
 				return
 			
-			# See if any of them match our regexp
+			# See if any of them are useful
 			exact = None
-			results = []
+			names = {}
 			
 			for chunk in chunks:
-				m = RESULT_RE.match(chunk)
+				print repr(chunk)
+				
+				# See if it's a "blah (see: blah)" link
+				m = ANIDB_AKA_RE.search(chunk)
 				if m:
-					name = m.group(2)
-					
-					# If it's an exact match for what we're looking for, grab it
-					if name.lower() == findme:
-						exact = (name, m.group(1))
-					
-					result = '\x02[\x02%s\x02]\x02' % m.group(2)
-					results.append(result)
+					names[m.group(4)] = m.group(3)
+					if m.group(2).lower() == findme:
+						exact = (m.group(1), m.group(2))
+					elif m.group(4).lower() == findme:
+						exact = (m.group(3), m.group(4))
+					continue
+				
+				m = ANIDB_RESULT_RE.search(chunk)
+				if m:
+					names[m.group(2)] = m.group(1)
+					if m.group(2).lower() == findme:
+						exact = m.groups()
+					continue
+			
+			results = ['\x02[\x02%s\x02]\x02' % k for k in names.keys()]
 			
 			# Spit them out
+			if len(results) == 0:
+				replytext = 'Found no results, parse error?'
 			if len(results) > 10:
 				replytext = 'There were \002%s\002 results, first 10 :: %s' % (len(results), ' '.join(results[:10]))
 			else:
-				replytext = 'There were \002%s\002 results :: %s' % (len(results), ' '.join(results))
+				replytext = 'There were \002%s\002 result(s) :: %s' % (len(results), ' '.join(results))
 			
 			# If we found an exact match, go fetch it now
 			if exact is not None:
-				replytext += " :: Using '%s'" % (exact[0])
+				replytext += " :: Fetching '%s'" % (exact[1])
 				
-				url = AID_URL % exact[1]
+				url = AID_URL % exact[0]
 				self.urlRequest(trigger, self.__Parse_AniDB, url)
 			
 			self.sendReply(trigger, replytext)
