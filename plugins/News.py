@@ -60,16 +60,13 @@ SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 
 # ---------------------------------------------------------------------------
 
-ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
+ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/lp.html?keywords=Quirkies&menu=news.quirkies'
 GOOGLE_BIZ_URL = 'http://news.google.com/news/en/us/business.html'
 GOOGLE_HEALTH_URL = 'http://news.google.com/news/en/us/health.html'
 GOOGLE_SCI_URL = 'http://news.google.com/news/en/us/technology.html'
 GOOGLE_WORLD_URL = 'http://news.google.com/news/en/us/world.html'
 
 # ---------------------------------------------------------------------------
-
-ANANOVA_STORY_TITLE_RE = re.compile(r'^(story.*?)\?menu=" title="(.*?)">')
-ANANOVA_STORY_TEXT_RE = re.compile(r'<small>(.*?)</small>')
 
 GOOGLE_STORY_TITLE_RE = re.compile(r'<a class=y href="/url\?ntc=\S+&q=(.*?)">(.*?)</a>')
 GOOGLE_STORY_TEXT_RE = re.compile(r'</b><br>(.*?)<br>')
@@ -369,25 +366,21 @@ class News(Plugin):
 		currtime = int(time.time())
 		
 		for chunk in chunks:
-			# Look for the URL and story title
-			m = ANANOVA_STORY_TITLE_RE.search(chunk)
-			if not m:
-				print chunk
-				print '^^STORY_TITLE^^'
+			# Look for the story URL
+			n = chunk.find('?menu=')
+			if n < 0:
+				continue
+			url = '%s/%s' % ('http://www.ananova.com/news', chunk[:n])
+			
+			# Look for the story title
+			title = FindChunk(chunk, 'title="', '">')
+			if not title:
 				continue
 			
-			url = '%s/%s' % ('http://www.ananova.com/news', m.group(1))
-			title = m.group(2)
+			# Look for the story description
+			description = FindChunk(chunk, '<small>', '</small>') or ''
 			
-			# Look for the description
-			m = ANANOVA_STORY_TEXT_RE.search(chunk)
-			if not m:
-				print chunk
-				print '^^STORY_TEXT^^'
-				description = ''
-			else:
-				description = m.group(1).strip()
-			
+			# And keep it for later
 			data = [title, url, description, currtime]
 			articles.append(data)
 		
