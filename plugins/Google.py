@@ -17,8 +17,9 @@ GOOGLE_HELP = '\02google\02 <search term> : Search via Google!'
 GOOGLE_URL = 'http://www.google.com/search?q=%s'
 #GOOGLE_URL = 'http://www.google.com/search?q=%s&ie=UTF-8&oe=UTF-8&hl-en&btnI=I%27m+Feeling+Lucky&meta='
 
-RESULT_RE = re.compile('^<a href=[\'\"]?([^>]+)[\'\"]?>(.+)$')
+RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
 NOBOLD_RE = re.compile('</?b>')
+CALC_RE = re.compile('<font size=\+1><b>(?P<result>[^<>]+)</b>')
 
 # ---------------------------------------------------------------------------
 
@@ -58,22 +59,31 @@ class Google(Plugin):
 		else:
 			page_text = UnquoteHTML(page_text)
 			
+			# Find the result
 			chunk = FindChunk(page_text, '<!--m-->', '</a>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to find a result')
 				self.sendReply(trigger, 'Failed to parse page')
 				return
 			
+			# Try to match it against the regexp
 			m = RESULT_RE.match(chunk)
 			if not m:
 				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
 				self.sendReply(trigger, 'Failed to match result')
 				return
 			
-			url = m.group(1)
-			title = NOBOLD_RE.sub('', m.group(2))
+			# Build the reply string
+			url = m.group('url')
+			title = NOBOLD_RE.sub('', m.group('title'))
 			
 			replytext = '%s - %s' % (title, url)
+			
+			# If it was also a calculation, stick that at the end
+			m = CALC_RE.search(page_text)
+			if m:
+				replytext = '%s :: %s' % (replytext, m.group('result'))
+			
 			self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
