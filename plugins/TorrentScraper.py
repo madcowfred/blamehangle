@@ -35,8 +35,6 @@ class TorrentScraper(Plugin):
 		# Easy way to get general options
 		self.SetupOptions('TorrentScraper')
 		
-		print self.URLs.keys()
-		
 		# Get the list of URLs from our config
 		newurls = {}
 		for option in self.Config.options('TorrentScraper-URLs'):
@@ -51,8 +49,6 @@ class TorrentScraper(Plugin):
 		for url in self.URLs.keys():
 			if url not in newurls:
 				del self.URLs[url]
-		
-		print self.URLs.keys()
 	
 	def register(self):
 		self.setTimedEvent(SCRAPE_TIMER, int(self.Options['request_interval']), None)
