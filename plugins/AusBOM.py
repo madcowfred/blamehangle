@@ -139,7 +139,7 @@ class AusBOM(Plugin):
 			return
 		
 		# Find the Giant Table
-		chunk = FindChunk(page_text, 'END OF STANDARD BUREAU HEADER', '</table>')
+		chunk = FindChunk(page_text, 'Last updated:', '</table>')
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: data.')
 			return
@@ -241,9 +241,10 @@ class AusBOM(Plugin):
 		# If we're not updating, maybe spit out something
 		else:
 			if parts == []:
-				parts.append('no data found!')
+				replytext = 'no data found!'
+			else:
+				replytext = '%s :: %s' % (place, ' '.join(parts))
 			
-			replytext = '%s :: %s' % (place, ' '.join(parts))
 			self.sendReply(trigger, replytext, process=0)
 	
 	# -----------------------------------------------------------------------
