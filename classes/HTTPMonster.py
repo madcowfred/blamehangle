@@ -136,6 +136,10 @@ def URLThread(parent, myindex):
 						raise Exception,' connection timed out'
 		
 				the_page.close()
+				
+				# XXX This shouldn't be needed, but I suspect these are hanging
+				# around and not getting collected for whatever reason
+				del the_page
 			
 			except Exception, why:
 				# something borked
