@@ -164,16 +164,11 @@ class GrabBT(Plugin):
 		
 		# Bad news, look for a Content-Disposition header
 		if not torrentfile.endswith('.torrent'):
-			for header in resp.headers:
-				if header.lower().startswith('content-disposition'):
-					chunks = header.split(None, 1)
-					if len(chunks) < 2:
-						break
-					
-					m = re.search('filename="(.*?)"', chunks[1])
-					if m:
-						torrentfile = m.group(1)
-						break
+			cd = resp.headers.get('Content-Disposition', None)
+			if cd is not None:
+				m = re.search('filename="(.*?)"', cd)
+				if m:
+					torrentfile = m.group(1)
 		
 		# Bad news, do evil parsing of the URL
 		if not torrentfile.endswith('.torrent'):
