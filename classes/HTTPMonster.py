@@ -155,9 +155,8 @@ def URLThread(parent, myindex):
 					else:
 						print "bok"
 				
-				except IOError, msg:
-					tolog = "IOError: %s - %d bytes" % (msg, len(pagetext))
-					parent.putlog(LOG_DEBUG, tolog)
+				except IOError:
+					# Ignore IOErrors, they seem to just mean we're finished
 					pass
 				
 				else:
@@ -169,9 +168,6 @@ def URLThread(parent, myindex):
 			# Something bad happened
 			tolog = "Error while trying to fetch url: %s - %s" % (url, why)
 			parent.putlog(LOG_ALWAYS, tolog)
-			
-			#tolog = "Received %d bytes of data" % len(pagetext)
-			#parent.putlog(LOG_DEBUG, tolog)
 		
 		
 		# XXX This shouldn't be needed, but I suspect these are hanging
@@ -183,8 +179,7 @@ def URLThread(parent, myindex):
 		
 		# We have some data, might as well process it?
 		if len(pagetext) > 0:
-			#else:
-			# we have the page
+			# Dodgy HTML fix up time
 			m = dodgy_html_check(pagetext)
 			while m:
 				pre = pagetext[:m.start()]
