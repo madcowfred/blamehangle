@@ -1,5 +1,7 @@
 import time
+import types
 
+from classes.Constants import *
 from classes.Userlist import Userlist
 
 # ---------------------------------------------------------------------------
@@ -24,7 +26,8 @@ class WrapConn:
 	
 	users = Userlist()
 	
-	def __init__(self, conn, options):
+	def __init__(self, parent, conn, options):
+		self.parent = parent
 		self.conn = conn
 		self.options = options
 		
@@ -39,7 +42,7 @@ class WrapConn:
 				print 'invalid server thing'
 		
 		self.channels = self.options['channels'].split()
-
+		
 		self.nicks = self.options['nicks'].split()
 	
 	def connect(self):
@@ -52,10 +55,9 @@ class WrapConn:
 		
 		host, port = self.server
 		
-		tolog = 'bork! Connecting to %s:%d...' % (host, port)
-		print tolog
 		
-		#self.putlog(LOG_ALWAYS, tolog)
+		tolog = 'Connecting to %s:%d...' % (host, port)
+		self.parent.connlog(self.conn, LOG_ALWAYS, tolog)
 		
 		
 		try:
@@ -63,11 +65,11 @@ class WrapConn:
 				'blamehangle')
 		
 		except ServerConnectionError, x:
-			if type(x) == types.ListType:
+			if type(x) in (types.ListType, types.TupleType):
 				x = x[1]
 			
-			#tolog = 'Connection failed: %s' % x
-			#self.putlog(LOG_ALWAYS, tolog)
+			tolog = 'Connection failed: %s' % x
+			self.parent.connlog(self.conn, LOG_ALWAYS, tolog)
 			
 			self.status = STATUS_DISCONNECTED
 		
@@ -77,9 +79,9 @@ class WrapConn:
 		self.last_connect = time.time()
 	
 	def jump_server(self):
-		if len(self.server_list) > 1:
-			server = self.server_list.pop(0)
-			self.server_list.append(server)
+		if len(self.servers) > 1:
+			server = self.servers.pop(0)
+			self.servers.append(server)
 		
 		# Try and connect
 		self.connect()

@@ -80,7 +80,7 @@ class ChatterGizmo(Child):
 			
 			
 			conn = self.__ircobj.server()
-			self.Conns[conn] = WrapConn(conn, options)
+			self.Conns[conn] = WrapConn(self, conn, options)
 			
 			self.Conns[conn].connect()
 	
