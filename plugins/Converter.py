@@ -1,6 +1,8 @@
+# -*- coding: iso-8859-1 -*-
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
+#
 # Converts between different things
 
 import re
@@ -18,22 +20,36 @@ CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to
 
 MAPPINGS = {
 	'c': ('°C',
-		('f', lambda x: (x * 9.0 / 5) + 32)
+		('f', lambda x: (x * 9.0 / 5) + 32),
 	),
 	'f': ('°F',
-		('c', lambda x: (x - 32) * 5.0 / 9)
+		('c', lambda x: (x - 32) * 5.0 / 9),
 	),
 	'miles': ('miles',
+		('ft', lambda x: x * 5280),
 		('km', lambda x: x * 1.609),
-		('m', lambda x: x * 1609)
+	),
+	'ft': ('feet',
+		('miles', lambda x: x / 5280),
+		('in', lambda x: x * 12),
+	),
+	'in': ('inches',
+		('ft', lambda x: x / 12),
 	),
 	'km': ('kilometers',
-		('miles', lambda x: x * 0.621),
-		('m', lambda x: x * 1000)
+		('miles', lambda x: x / 1.609),
+		('m', lambda x: x * 1000),
 	),
 	'm': ('meters',
 		('km', lambda x: x / 1000),
-		('miles', lambda x: x * 0.000621)
+		('cm', lambda x: x * 100),
+	),
+	'cm': ('centimeters',
+		('m', lambda x: x / 100),
+		('mm', lambda x: x * 10),
+	),
+	'mm': ('millimeters',
+		('cm', lambda x: x / 10),
 	)
 }
 
@@ -68,13 +84,47 @@ class Converter(Plugin):
 			replytext = '%(to)s is not a valid measurement' % data
 		
 		else:
-			useme = [to for to in MAPPINGS[data['from']][1:] if to[0] == data['to']]
-			if useme:
-				value = '%.2f' % useme[0][1](data['amt'])
+			found = [m for m in MAPPINGS[data['from']][1:] if m[0] == data['to']]
+			if found:
+				value = '%.2f' % found[0][1](data['amt'])
 				result = '%s %s' % (value, MAPPINGS[data['to']][0])
 				replytext = '%s %s == %s' % (data['amt'], MAPPINGS[data['from']][0], result)
 			
 			else:
-				replytext = 'Unable to convert between %(from)s and %(to)s' % data
+				chain = []
+				ret = 0
+				try:
+					ret = self.__Convert_Recurse(chain, {}, data['from'], data['to'], None)
+				except RuntimeError:
+					replytext = 'Recursion limit reached while trying to find path from %(from)s to %(to)s' % data
+				else:
+					if ret:
+						chain.reverse()
+						
+						amt = data['amt']
+						for thing in chain:
+							amt = thing[1](amt)
+						
+						value = '%.2f' % amt
+						result = '%s %s' % (value, MAPPINGS[thing[0]][0])
+						replytext = '%s %s == %s' % (data['amt'], MAPPINGS[data['from']][0], result)
+					else:
+						replytext = 'Unable to find path from %(from)s to %(to)s' % data
 		
 		self.sendReply(trigger, replytext)
+	
+	
+	def __Convert_Recurse(self, chain, visited, start, findme, prev):
+		for m in MAPPINGS[start][1:]:
+			if visited.has_key(m[0]) or m[0] == prev:
+				continue
+			
+			if m[0] == findme:
+				chain.append(m)
+				return 1
+			
+			else:
+				ret = self.__Convert_Recurse(chain, visited, m[0], findme, start)
+				if ret:
+					chain.append(m)
+					return 1
