@@ -30,6 +30,8 @@ from classes.Common import *
 
 dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
+REDIRECT_LIMIT = 3
+
 # ---------------------------------------------------------------------------
 
 class HTTPMonster(Child):
@@ -109,13 +111,16 @@ class HTTPMonster(Child):
 # ---------------------------------------------------------------------------
 
 class async_http(asyncore.dispatcher_with_send):
-	def __init__(self, parent, message):
+	def __init__(self, parent, message, seen={}):
 		asyncore.dispatcher_with_send.__init__(self)
 		
 		self.data = ''
 		self.header = ''
 		
 		self.parent = parent
+		self.message = message
+		self.seen = seen
+		
 		self.source = message.source
 		self.returnme = message.data[0]
 		self.url = message.data[1]
@@ -135,6 +140,7 @@ class async_http(asyncore.dispatcher_with_send):
 			port = 80
 		
 		self.host = host
+		self.port = port
 		
 		# Fix up the path field
 		if not path:
@@ -193,22 +199,56 @@ class async_http(asyncore.dispatcher_with_send):
 	# Connection has been closed
 	def handle_close(self):
 		# We have some data, might as well process it?
-		if self.header and len(self.data) > 0:
-			pagetext = self.data
-			m = dodgy_html_check(pagetext)
-			while m:
-				pre = pagetext[:m.start()]
-				post = pagetext[m.end():]
-				start, end = m.span('href')
-				fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
-				pagetext = pre + 'href=' + fixed + post
-				m = dodgy_html_check(pagetext)
-			
-			tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(pagetext))
-			self.parent.putlog(LOG_DEBUG, tolog)
-			
-			data = [self.returnme, pagetext]
-			self.parent.sendMessage(self.source, REPLY_URL, data)
+		if self.header:
+			headlines = self.header.splitlines()
+			try:
+				response = headlines[0].split()[1]
+			except:
+				pass
+			else:
+				# Moved permanently, follow it
+				if response == '302':
+					for line in headlines[1:]:
+						if line.startswith('Location:'):
+							chunks = line.split(None, 1)
+							if len(chunks) != 2:
+								break
+							newurl = chunks[1]
+							if not newurl.startswith('http://'):
+								newurl = 'http://%s:%s%s' % (self.host, self.port, newurl)
+							
+							if newurl in self.seen:
+								tolog = 'Redirection loop encountered while trying to fetch %s' % (self.url)
+								self.parent.putlog(LOG_WARNING, tolog)
+							else:
+								self.seen[self.url] = 1
+								if len(self.seen) > REDIRECT_LIMIT:
+									tolog = 'Redirection limit reached while trying to fetch %s' % (self.url)
+									self.parent.putlog(LOG_WARNING, tolog)
+								else:
+									self.message.data[1] = newurl
+									async_http(self.parent, self.message, self.seen)
+							
+							break
+				
+				# Anything else
+				else:
+					if len(self.data) > 0:
+						pagetext = self.data
+						m = dodgy_html_check(pagetext)
+						while m:
+							pre = pagetext[:m.start()]
+							post = pagetext[m.end():]
+							start, end = m.span('href')
+							fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
+							pagetext = pre + 'href=' + fixed + post
+							m = dodgy_html_check(pagetext)
+						
+						tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(pagetext))
+						self.parent.putlog(LOG_DEBUG, tolog)
+						
+						data = [self.returnme, pagetext]
+						self.parent.sendMessage(self.source, REPLY_URL, data)
 		
 		self.close()
 
