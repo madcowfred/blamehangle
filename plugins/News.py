@@ -241,7 +241,7 @@ class News(Plugin):
 		RSS_LIST_HELP = "'\x02listfeeds\x02' : List the RSS feeds currently configured"
 		RSS_SHOW_HELP = "'\x02showfeed\x02 <feed name>' : Show some information about an RSS feed"
 		
-		self.setHelp('news', 'news search', NEWS_HELP)
+		self.setHelp('news', 'news', NEWS_HELP)
 		self.setHelp('news', 'listfeeds', RSS_LIST_HELP)
 		self.setHelp('news', 'showfeed', RSS_SHOW_HELP)
 	
