@@ -102,12 +102,15 @@ class Misc(Plugin):
 			return
 		
 		# Off we go
+		first = None
 		for m in [self._parse_re.search(chunk) for chunk in chunks]:
 			if m:
 				bits, typ, getlink, date, name, email = m.groups()
 				
 				done = 0
 				if '@' in findme:
+					if not first:
+						first = (name, email, bits, typ, date, urlparse.urljoin(PGP_URL, getlink))
 					if email == findme:
 						done = 1
 				else:
@@ -121,9 +124,12 @@ class Misc(Plugin):
 					self.sendReply(trigger, replytext)
 					return
 		
-		# Nothing matched here
-		if not chunks:
-			self.sendReply(trigger, "Page parsing failed: key parse.")
-			return
+		# Nothing matched here. If we got at least one match, spit it out instead.
+		if first:
+			replytext = "No exact match! PGP key for '%s' (%s): %sbit %sSA, added %s - %s" % first
+			self.sendReply(trigger, replytext)
+		
+		else:
+			self.sendReply(trigger, "No matches found, page might have changed!")
 
 # ---------------------------------------------------------------------------
