@@ -559,12 +559,7 @@ class News(Plugin):
 		# to the database.
 		ctime = time.time()
 		for title, url, description in newarticles:
-			# Only unquote HTTP urls
-			if url.startswith('http://'):
-				url = UnquoteURL(url).replace('&amp;', '&')
-				replytext = '%s - %s' % (title, url)
-			else:
-				replytext = '%s - %s' % (title, url)
+			replytext = '%s - %s' % (title, url)
 			
 			# Attach the spam prefix if we have to
 			if self.News_Options['spam_prefix']:
