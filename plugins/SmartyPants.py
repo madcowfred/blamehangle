@@ -443,15 +443,23 @@ class SmartyPants(Plugin):
 			# expect this behaviour
 			# replace "$nick" with the nick of the guy that requested this
 			# factoid
-			row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
+			row['value'] = re.sub(r'(?P<c>[^\\]|^)\$nick', \
+				'\g<c>' + trigger.userinfo.nick, row['value'])
+			#row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
+			
 			# replace "$channel" with the target if this was public
 			if trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
-				row['value'] = row['value'].replace('$channel', trigger.target)
+				row['value'] = re.sub(r'(?P<c>[^\\]|^)\$channel', \
+					'\g<c>' + trigger.target, row['value'])
+				#row['value'] = row['value'].replace('$channel', trigger.target)
+				
 			# replace "$date" with a shiny date
 			# TODO: return random dates to bug people?
 			datebit = time.strftime('%a %d %b %Y %H:%M:%S')
 			shinydate = '%s %s GMT' % (datebit, GetTZ())
-			row['value'] = row['value'].replace('$date', shinydate)
+			row['value'] = re.sub(r'(?P<c>[^\\]|^)\$date', \
+				'\g<c>' + shinydate, row['value'])
+			#row['value'] = row['value'].replace('$date', shinydate)
 			
 			# <reply> and <action> check
 			m = REPLY_ACTION_RE.match(row['value'])
