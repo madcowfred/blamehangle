@@ -87,12 +87,32 @@ class asyncIRC(buffered_dispatcher):
 			'channel_types': ['#'],
 			'max_targets': 3,
 			'nicklen': 9,
-			'user_modes': {'@': 'o', '+': 'v'},
+			'user_modes': {'o': '@', 'v': '+'},
 		}
 	
 	# Is this a channel?
 	def is_channel(self, chan):
 		return chan and chan[0] in self.features['channel_types']
+	
+	# Parse a mode string into something useful
+	def parse_modes(self, modestr, args):
+		if not modestr or modestr[0] not in '-+':
+			return None
+		
+		modes = []
+		
+		for char in modestr:
+			if char in '-+':
+				sign = char
+			elif char not in self.features['channel_modes'][3]:
+				if args:
+					modes.append([sign, char, args.pop(0)])
+				else:
+					modes.append([sign, char, None])
+			else:
+				modes.append([sign, char, None])
+		
+		return modes
 	
 	# -----------------------------------------------------------------------
 	# We have some extra connection state info to keep track of

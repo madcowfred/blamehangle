@@ -2,9 +2,9 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
-"Implements a user list for IRC."
+"Stores information about users on a channel."
 
-class Userlist:
+class ChanUsers:
 	def __init__(self):
 		self.__u = {}
 	

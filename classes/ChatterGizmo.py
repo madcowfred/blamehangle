@@ -12,7 +12,6 @@ import time
 from classes.asyncIRC import asyncIRC
 from classes.Children import Child
 from classes.Constants import *
-from classes.Userlist import Userlist
 from classes.WrapConn import *
 
 # ---------------------------------------------------------------------------
@@ -149,9 +148,9 @@ class ChatterGizmo(Child):
 			self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
 	
 	# -----------------------------------------------------------------------
-	# Raw 001 - Welcome to the server
+	# Raw 376 - End of MOTD (and 422 - No MOTD)
 	# -----------------------------------------------------------------------
-	def _handle_welcome(self, connid, conn, event):
+	def _handle_endofmotd(self, connid, conn, event):
 		wrap = self.Conns[connid]
 		
 		wrap.connect_id += 1
@@ -162,6 +161,9 @@ class ChatterGizmo(Child):
 		
 		# Set ourselves +i
 		wrap.conn.sendline('MODE %s +i' % wrap.conn.getnick())
+		
+		# Create our mode list
+		wrap.modes.modes = wrap.conn.features['channel_modes']
 		
 		# If we're supposed to use NickServ, do so
 		if wrap.nickserv_nick and wrap.nickserv_pass:
@@ -181,6 +183,8 @@ class ChatterGizmo(Child):
 		# Normal joining
 		else:
 			wrap.join_channels()
+	
+	_handle_nomotd = _handle_endofmotd
 		
 	# -----------------------------------------------------------------------
 	# We just got disconnected from the server
@@ -220,20 +224,25 @@ class ChatterGizmo(Child):
 	# Someone just joined a channel (including ourselves)
 	# -----------------------------------------------------------------------
 	def _handle_join(self, connid, conn, event):
-		conn = self.Conns[connid].conn
+		wrap = self.Conns[connid]
 		chan = event.target.lower()
 		nick = event.userinfo.nick
 		
 		# Us
 		if nick == conn.getnick():
-			self.Conns[connid].users.joined(chan)
-			
 			tolog = "Joined %s" % chan
 			self.connlog(connid, LOG_ALWAYS, tolog)
+			
+			# These need to know
+			wrap.modes.joined(chan)
+			wrap.users.joined(chan)
+			
+			# Request the modes set on this channel
+			wrap.conn.sendline('MODE %s' % chan)
 		
 		# Not us
 		else:
-			self.Conns[connid].users.joined(chan, nick)
+			wrap.users.joined(chan, nick)
 	
 	# -----------------------------------------------------------------------
 	# Someone just parted a channel (including ourselves)
@@ -270,45 +279,43 @@ class ChatterGizmo(Child):
 	# Someone just changed the mode on a channel we're in
 	# -----------------------------------------------------------------------
 	def _handle_mode(self, connid, conn, event):
-		chan = event.target.lower()
 		wrap = self.Conns[connid]
+		chan = event.target.lower()
 		
 		# Parse the mode list
-		modes = []
-		if not event.arguments:
-			return
-		
-		mode_part, args = event.arguments[0], event.arguments[1:]
-		if mode_part[0] not in '-+':
-			return
-		
-		for char in mode_part:
-			if char in '-+':
-				sign = char
-			elif char in 'behklvo':
-				if args:
-					modes.append([sign, char, args.pop(0)])
-				else:
-					modes.append([sign, char, None])
-			else:
-				modes.append([sign, char, None])
+		modes = wrap.conn.parse_modes(event.arguments[0], event.arguments[1:])
 		
 		# Now do something with them
 		for sign, mode, arg in modes:
-			# User mdoes
+			# User modes
 			if mode in wrap.conn.features['user_modes']:
 				if sign == '+':
 					wrap.users.add_mode(chan, arg, mode)
 				elif sign == '-':
 					wrap.users.del_mode(chan, arg, mode)
-			
-			# Channel basic modes
-			elif mode in 'iklmnpst':
-				pass
-			
-			# Channel list modes
-			elif mode in 'beI':
-				pass
+			# Guess it's a channel mode
+			else:
+				if sign == '+':
+					wrap.modes.add_mode(chan, mode, arg)
+				else:
+					wrap.modes.del_mode(chan, mode, arg)
+	
+	# -----------------------------------------------------------------------
+	# Raw 324 - Channel mode is
+	# -----------------------------------------------------------------------
+	def _handle_channelmodeis(self, connid, conn, event):
+		wrap = self.Conns[connid]
+		chan = event.arguments[0].lower()
+		
+		# Parse the mode list
+		modes = wrap.conn.parse_modes(event.arguments[1], event.arguments[2:])
+		
+		# Now do something with them
+		for sign, mode, arg in modes:
+			if sign == '+':
+				wrap.modes.add_mode(chan, mode, arg)
+			else:
+				wrap.modes.del_mode(chan, mode, arg)
 	
 	# -----------------------------------------------------------------------
 	# Someone just invited us to a channel
