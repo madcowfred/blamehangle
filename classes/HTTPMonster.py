@@ -41,6 +41,7 @@ class HTTPMonster(Child):
 			# Default to Mozilla running in windows
 			self.user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.2.1) Gecko/20021130"
 		
+		# Set up our semaphore
 		if self.Config.has_option('HTTP', 'connections'):
 			conns = self.Config.getint('HTTP', 'connections')
 			if conns < 1:
@@ -61,7 +62,8 @@ class HTTPMonster(Child):
 def URLThread(parent, message):
 	url, returnme = message.data
 	
-	# Acquire the semaphore. This will block if 2 threads are already using it.
+	# Acquire the semaphore. This will block if too many threads are already
+	# active.
 	parent.sem.acquire(1)
 	
 	tolog = 'Spawning thread to fetch URL: %s' % url
