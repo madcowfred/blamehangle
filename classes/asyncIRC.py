@@ -22,6 +22,9 @@ _linesep_regexp = re.compile(r'\r?\n')
 # Status stuff
 
 # ---------------------------------------------------------------------------
+
+CONNID = 0
+
 # Some basic status constants
 STATUS_DISCONNECTED = 'Disconnected'
 STATUS_CONNECTING = 'Connecting'
@@ -61,6 +64,11 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	def __init__(self):
 		asyncore.dispatcher_with_send.__init__(self)
 		
+		# Set our conn id
+		global CONNID
+		CONNID += 1
+		self.connid = CONNID
+		
 		self.status = STATUS_DISCONNECTED
 		
 		# stuff we need to keep track of
@@ -77,10 +85,10 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	# An event happened, off we go
 	def __trigger_event(self, *args):
-		print 'EVENT:', repr(args)
+		print self.connid, 'EVENT:', repr(args)
 		event = IRCEvent(*args)
 		for method in self.__handlers:
-			method(self, event)
+			method(self.connid, event)
 	
 	# Your basic 'send a line of text to the server' method
 	def sendline(self, line, *args):
@@ -239,6 +247,9 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	def disconnect(self):
 		# FIXME - do stuff here
 		pass
+	
+	def ctcp_reply(self, target, text):
+		self.notice(target, '\001%s\001' % text)
 	
 	def join(self, channel, key=''):
 		if key:
@@ -475,7 +486,7 @@ def _ctcp_dequote(message):
 	else:
 		# Split it into parts.  (Does any IRC client actually *use*
 		# CTCP stacking like this?)
-		chunks = string.split(message, _CTCP_DELIMITER)
+		chunks = message.split(_CTCP_DELIMITER)
 
 		messages = []
 		i = 0
@@ -486,7 +497,7 @@ def _ctcp_dequote(message):
 
 			if i < len(chunks)-2:
 				# Aye!  CTCP tagged data ahead!
-				messages.append(tuple(string.split(chunks[i+1], " ", 1)))
+				messages.append(tuple(chunks[i+1].split(' ', 1)))
 
 			i = i + 2
 

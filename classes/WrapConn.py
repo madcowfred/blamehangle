@@ -72,7 +72,7 @@ class WrapConn:
 		self.max_split_lines = int(self.options.get('max_split_lines', 2))
 	
 	def connlog(self, level, text):
-		self.parent.connlog(self.conn, level, text)
+		self.parent.connlog(self.conn.connid, level, text)
 	
 	def connect(self):
 		nick = self.nicks[self.trynick]
