@@ -158,8 +158,11 @@ class IMDb(Plugin):
 				
 				data['genres'] = ', '.join(genres)
 			
-			# Find the plot outline
+			# Find the plot outline, or maybe it's a summary today
 			chunk = FindChunk(page_text, 'Plot Outline:</b>', '<br>')
+			if not chunk:
+				chunk = FindChunk(page_text, 'Plot Summary:</b>', '<br>')
+			
 			if chunk:
 				n = chunk.find('<a')
 				if n >= 0:
