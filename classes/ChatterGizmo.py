@@ -115,6 +115,23 @@ class ChatterGizmo:
 			self.Conns[conn].parted(chan, nick)
 	
 	# -----------------------------------------------------------------------
+	# Someone just quit (including ourselves? not sure)
+	# -----------------------------------------------------------------------
+	def _handle_quit(self, conn, event):
+		nick = nm_to_n(event.source())
+		
+		if nick != connection.real_nickname:
+			self.Conns[conn].users.quit(nick)
+			
+			# If the user has left all our channels, tell FileMonster
+			#if not self.__Users.in_any_chan(nick):
+			#	self.sendMessage('FileMonster', USER_LEFT, nick)
+			
+			# If it was our primary nickname, try and regain it
+			#if nick == self.nicknames[0]:
+			#	self.connection.nick(nick)
+	
+	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
 	# -----------------------------------------------------------------------
 	def _handle_namreply(self, conn, event):
@@ -126,3 +143,4 @@ class ChatterGizmo:
 				nick = nick[1:]
 			
 			self.Conns[conn].joined(chan, nick)
+
