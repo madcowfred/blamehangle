@@ -36,7 +36,7 @@ TIME_CHECK = "TIME_CHECK"
 
 TITLE_QUERY = "SELECT title FROM news WHERE title = %s"
 INSERT_QUERY = "INSERT INTO news VALUES (%s,%s)"
-TIME_QUERY = "DELETE FROM news WHERE time - %s < %s"
+TIME_QUERY = "DELETE FROM news WHERE time < %s"
 
 # All this crap should be moved into the config, and then dealt with during
 # setup()
@@ -132,7 +132,7 @@ class News(Plugin):
 			self.__Last_Clearout_Time = currtime
 			two_days = 172800
 			two_days_ago = currtime - two_days
-			data = [(TIME_CHECK, None), (TIME_QUERY, [two_days, two_days_ago])]
+			data = [(TIME_CHECK, None), (TIME_QUERY, [two_days_ago])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 	# -----------------------------------------------------------------------
