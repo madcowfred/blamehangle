@@ -156,7 +156,7 @@ def URLThread(parent, myindex):
 						print "bok"
 				
 				except IOError, msg:
-					tolog = "IOError: %s" % msg
+					tolog = "IOError: %s - %d bytes" % (msg, len(pagetext))
 					parent.putlog(LOG_DEBUG, tolog)
 					pass
 				
@@ -194,7 +194,7 @@ def URLThread(parent, myindex):
 				pagetext = pre + 'href=' + fixed + post
 				m = dodgy_html_check(pagetext)
 			
-			tolog = 'Finished fetching URL: %s' % url
+			tolog = 'Finished fetching URL: %s - %d bytes' % (url, len(pagetext))
 			parent.putlog(LOG_DEBUG, tolog)
 			
 			data = [returnme, pagetext]
