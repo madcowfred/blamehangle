@@ -149,6 +149,7 @@ def UnquoteHTML(text, *keep):
 		'quot': '"',
 		'nbsp': ' ',
 		'ordm': '°',
+		'#65295': '/',
 	}
 	
 	# don't unquote these
@@ -165,13 +166,13 @@ def UnquoteHTML(text, *keep):
 			try:
 				return chr(int(thing[2:], 16))
 			except ValueError:
-				return whole
+				return quoted.get(thing, whole)
 		# decimal entity
 		elif thing.startswith('#'):
 			try:
 				return chr(int(thing[1:]))
 			except ValueError:
-				return whole
+				return quoted.get(thing, whole)
 		# named entity
 		else:
 			return quoted.get(thing, whole)
