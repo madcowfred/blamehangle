@@ -121,7 +121,7 @@ class News(Plugin):
 		# Do RSS feed setup
 		self.__rss_default_interval = self.Config.getint('RSS', 'default_interval') * 60
 		self.__rss_ignore_no_link = self.Config.getboolean('RSS', 'ignore_no_link')
-		self.__rss_maximum_new = min(1, self.Config.getint('RSS', 'maximum_new')
+		self.__rss_maximum_new = min(1, self.Config.getint('RSS', 'maximum_new'))
 		
 		self.__Setup_RSS_Feeds()
 	
