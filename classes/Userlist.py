@@ -11,18 +11,16 @@ class Userlist:
 	def channels(self):
 		return self.__u.keys()
 	
-	def self_join(self, chan):
-		self.__u[chan] = {}
-	
-	def self_part(self, chan):
-		del self.__u[chan]
-	
-	def user_join(self, chan, nick):
-		if nick not in self.__u[chan]:
+	def joined(self, chan, nick=None):
+		if nick is None:
+			self.__u[chan] = {}
+		elif nick not in self.__u[chan]:
 			self.__u[chan][nick] = 1
 	
-	def user_part(self, chan, nick):
-		if nick in self.__u[chan]:
+	def parted(self, chan, nick=None):
+		if nick is None:
+			del self.__u[chan]
+		elif nick in self.__u[chan]:
 			del self.__u[chan][nick]
 	
 	def user_quit(self, nick):
