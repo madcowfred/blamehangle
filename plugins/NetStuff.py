@@ -14,7 +14,7 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 NET_CCTLD = 'NET_CCTLD'
-CCTLD_HELP = "'\02cctld\02 <code> OR <country> : Look up the ccTLD for <code>, or search for the ccTLD for <country>."
+CCTLD_HELP = "\02cctld\02 <code> OR <country> : Look up the country for <code>, or search for the ccTLD for <country>."
 CCTLD_RE = re.compile('^cctld (.+)$')
 
 # ---------------------------------------------------------------------------

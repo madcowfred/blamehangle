@@ -18,7 +18,7 @@ KLOV_RE = re.compile(r'^klov (?P<title>.+)$')
 KLOV_URL = 'http://www.klov.com/results.php?search_desc=0&boolean=AND&q=%s'
 
 GAMESTUFF_MOBYGAMES = 'GAMESTUFF_MOBYGAMES'
-MOBYGAMES_HELP = '\02moby\02 <title> : Look up title at MobyGames.'
+MOBYGAMES_HELP = '\02moby\02 <title> : Look up title at MobyGames (DISABLED).'
 MOBYGAMES_RE = re.compile(r'^mobygames (?P<title>.+)$')
 MOBYGAMES_URL = 'http://www.mobygames.com/search/quick?q=%s'
 

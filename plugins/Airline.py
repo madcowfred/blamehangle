@@ -22,16 +22,16 @@ from classes.Plugin import *
 MAX_AIRLINE_MATCHES = 5
 
 AIRLINE_AIRLINE = 'AIRLINE_AIRLINE'
-AIRLINE_HELP = "'\02airline\02 <code>' OR '\02airline\02 <partial name>' : lookup the name for a carrier given the code, or lookup the code  for a carrier given the name (or start of the name)"
+AIRLINE_HELP = "\02airline\02 <code> OR <partial name> : Look up the name for a carrier given the code, or look up the code for a carrier given the name (or part of the name)."
 AIRLINE_RE = re.compile(r'^airline\s+(?P<airline>.+)$')
 
 AIRLINE_AIRPORT = 'AIRLINE_AIRPORT'
-AIRPORT_HELP = "\02airport\02 <code> : look up an airport by it's IATA code"
+AIRPORT_HELP = "\02airport\02 <code> : Look up an airport by it's IATA code."
 AIRPORT_RE = re.compile(r'^airport\s+(?P<code>\w+)$')
 AIRPORT_URL = 'http://www.flymig.com/iata/r/%s.htm'
 
 AIRLINE_FLIGHT = 'AIRLINE_FLIGHT'
-FLIGHT_HELP = "\02flight\02 <code> <flight number> <date> : look up the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)"
+FLIGHT_HELP = "\02flight\02 <code> <flight number> <date> : Look up the details of the specified flight. Date is in YYYY-MM-DD format, and is optional (defaults to today's date if omitted)."
 # what a bastard this was to get right. god damn i hate regexps.
 f1 = "^ *flight +"
 f2 = "(?P<code>[^ ]+)"

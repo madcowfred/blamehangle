@@ -14,7 +14,7 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 MAPQUEST_DISTANCE = 'MAPQUEST_DISTANCE'
-DISTANCE_HELP = "'\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip>' : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."
+DISTANCE_HELP = "\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip> : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."
 DISTANCE_RE = re.compile(r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$')
 
 TOTAL_TIME_RE = re.compile(r'Total Est. Time:.*?</font>\s*(.*?)\s*</td>')

@@ -25,8 +25,8 @@ PLUS_RE = re.compile("(?P<name>^.+)(?=\+\+$)")
 MINUS_RE = re.compile("(?P<name>^.+)(?=--$)")
 LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
-KARMA_CHANGE_HELP = "'<something>\02++\02' OR '<something>\02--\02' : Increment or decrement karma for <something>"
-KARMA_HELP = "'\02karma\02 <something>' : Look up <something>'s karma level"
+KARMA_CHANGE_HELP = "<something>\02++\02 OR <something>\02--\02 : Increment or decrement karma for <something>"
+KARMA_HELP = "\02karma\02 <something> : Look up <something>'s karma level"
 
 #----------------------------------------------------------------------------
 
