@@ -21,6 +21,8 @@ SELECT_QUERY = "SELECT url, description FROM torrents WHERE url IN (%s) OR descr
 RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
 INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
 
+AMP_RE = re.compile(r'&(?!amp;)')
+
 # ---------------------------------------------------------------------------
 
 class TorrentScraper(Plugin):
@@ -64,7 +66,7 @@ class TorrentScraper(Plugin):
 		now = int(time.time())
 		
 		# We don't want stupid HTML entities
-		resp.data = UnquoteHTML(resp.data)
+		resp.data = UnquoteHTML(resp.data, 'amp')
 		
 		# If it's a BNBT page, we have to do some yucky searching
 		if resp.data.find('POWERED BY BNBT') >= 0:
@@ -194,7 +196,7 @@ class TorrentScraper(Plugin):
 		for row in result:
 			lines = []
 			lines.append('<item>')
-			lines.append('<title>%s</title>' % row['description'])
+			lines.append('<title>%s</title>' % AMP_RE.sub('&amp;', row['description']))
 			lines.append('<guid>%s</guid>' % QuoteURL(row['url']))
 			lines.append('<pubDate>%s</pubDate>' % ISODate(row['added']))
 			lines.append('</item>')
