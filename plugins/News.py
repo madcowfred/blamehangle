@@ -10,6 +10,7 @@ want to use.
 import re
 import time
 import types
+import urlparse
 
 from random import Random
 #from sgmllib import SGMLParseError
@@ -140,31 +141,45 @@ class News(Plugin):
 			if not section.startswith('RSS.'):
 				continue
 			
-			name = section.split('.', 1)[1]
-			
 			feed = {}
 			
+			# Feed URL
+			feed['url'] = self.Config.get(section, 'url')
+			
+			# Feed title
 			if self.Config.has_option(section, 'title'):
 				feed['title'] = self.Config.get(section, 'title')
 			else:
 				feed['title'] = None
 			
-			if self.Config.has_option(section, 'maximum_new'):
-				feed['maximum_new'] = self.Config.getint(section, 'maximum_new')
-			else:
-				feed['maximum_new'] = self.RSS_Options['maximum_new']
-			
+			# Interval to check this feed
 			if self.Config.has_option(section, 'interval'):
 				feed['interval'] = self.Config.getint(section, 'interval')
 			else:
 				feed['interval'] = self.RSS_Options['default_interval']
 			feed['checked'] = currtime
 			
-			feed['url'] = self.Config.get(section, 'url')
+			# Maximum new items to care about
+			if self.Config.has_option(section, 'maximum_new'):
+				feed['maximum_new'] = self.Config.getint(section, 'maximum_new')
+			else:
+				# FIXME: temporary until people update their config
+				feed['maximum_new'] = self.RSS_Options.get('default_maximum_new', 10)
 			
+			# Find real URL
+			if self.Config.has_option(section, 'find_real_url'):
+				feed['find_real_url'] = self.Config.getint(section, 'find_real_url')
+			else:
+				feed['find_real_url'] = 0
+			
+			# Last modified time
 			feed['last-modified'] = None
 			
+			# Set up any targets this feed might want
 			self.__Setup_RSS_Target(section, feed)
+			
+			# And done
+			name = section.split('.', 1)[1]
 			self.RSS_Feeds[name] = feed
 		
 		# If we found some feeds, we'll be needing a parser
@@ -515,6 +530,17 @@ class News(Plugin):
 					article_link = item['link']
 			
 			description = item.get('description', '')
+			
+			# If we have to, see if we can find a real URL
+			if feed['find_real_url']:
+				parsed = urlparse.urlparse(article_link)
+				print repr(parsed)
+				if parsed[4]:
+					for key, val in [s.split('=', 1) for s in parsed[4].split('&')]:
+						uval = UnquoteURL(val)
+						if uval.startswith('http://'):
+							article_link = uval
+							break
 			
 			# Get rid of any annoying quoted HTML and eat any tabs
 			article_title = UnquoteHTML(article_title).replace('\t', ' ')
