@@ -36,6 +36,7 @@ class HTTPMonster(Child):
 	"""
 	
 	def setup(self):
+		self.active = 0
 		self.urls = []
 		
 		self.rehash()
@@ -58,13 +59,13 @@ class HTTPMonster(Child):
 	def run_always(self):
 		asyncore.poll()
 		
-		if self.urls and len(asyncore.socket_map) < self.max_conns:
+		if self.urls and self.active < self.max_conns:
 			async_http(self, self.urls.pop(0), {})
-
+	
 	# -----------------------------------------------------------------------
 	
 	def _message_REQ_URL(self, message):
-		if len(asyncore.socket_map) < self.max_conns:
+		if self.active < self.max_conns:
 			async_http(self, message, {})
 		else:
 			self.urls.append(message)
@@ -124,6 +125,8 @@ class async_http(asyncore.dispatcher_with_send):
 			tolog = "Error while trying to fetch url: %s - %s" % (self.url, msg)
 			self.parent.putlog(LOG_ALWAYS, tolog)
 			self.close()
+		else:
+			self.parent.active += 1
 	
 	# Connection succeeded
 	def handle_connect(self):
@@ -223,6 +226,7 @@ class async_http(asyncore.dispatcher_with_send):
 						self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
+		self.parent.active -= 1
 		del self.parent, self.message, self.seen, self.returnme, self.url
 		
 		self.close()
