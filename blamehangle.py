@@ -29,15 +29,17 @@ def main():
 	
 	# Parse our command line options
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "c:", [ "config=" ])
-	
+		opts, args = getopt.getopt(sys.argv[1:], 'c:p', [ 'config=', 'profile' ])
 	except getopt.GetoptError:
 		Show_Usage()
 	
 	ConfigFile = None
+	Profiled = 0
 	for opt, arg in opts:
 		if opt in ('-c', '--config'):
 			ConfigFile = arg
+		if opt in ('-p', '--profile'):
+			Profiled = 1
 	
 	# Load our config file
 	if not ConfigFile or not os.path.exists(ConfigFile):
@@ -47,8 +49,14 @@ def main():
 	Config.read(ConfigFile)
 	
 	# Start up the Postman, and run him forever
-	Post = Postman(ConfigFile, Config)
-	Post.run_forever()
+	if Profiled:
+		global Post
+		Post = Postman(ConfigFile, Config)
+		import profile
+		profile.run('Post.run_forever()', 'profile.data')
+	else:
+		Post = Postman(ConfigFile, Config)
+		Post.run_forever()
 
 # ---------------------------------------------------------------------------
 	
@@ -56,6 +64,7 @@ def Show_Usage():
 	print "USAGE: %s [OPTIONS]" % sys.argv[0]
 	print
 	print " -c, --config=FILE   config file to use"
+	print " -p, --profile       run with the profiler active, saves to 'profile.data'"
 	print
 	
 	sys.exit(-1)
