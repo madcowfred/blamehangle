@@ -61,8 +61,7 @@ class DatabaseWrapper:
 				for char in ('$'):
 					arg = arg.replace(char, '\\%s' % char)
 				# double up on quotes to stop evilness
-				for char in ("'", '"'):
-					arg = arg.replace(char, char+char)
+				arg = arg.replace("'", "''")
 				
 				arg = "'%s'" % arg
 			newargs.append(arg)
