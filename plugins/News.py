@@ -350,7 +350,7 @@ class News(Plugin):
 			feed['checked'] = currtime
 			
 			# Build a fake timed event trigger
-			new_trigger = PluginTimedEvent(NEWS_RSS, 1, feed['targets'], name)
+			new_trigger = PluginTimedTrigger(NEWS_RSS, 1, feed['targets'], [name])
 			self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
 	
 	# -----------------------------------------------------------------------

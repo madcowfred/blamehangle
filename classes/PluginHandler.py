@@ -43,7 +43,10 @@ class PluginHandler(Child):
 		for event, plugin in self.__Events[IRCT_TIMED].values():
 			if event.interval_elapsed(currtime):
 				event.last_trigger = currtime
-				trigger = PluginTimedTrigger(event)
+				# We make a trigger here so that it is a unique object each
+				# time we trigger. Hours of bug-hunting to discover this, of
+				# course.
+				trigger = PluginTimedTrigger(event.name, event.interval, event.targets, event.args)
 				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
 	# -----------------------------------------------------------------------
@@ -165,7 +168,7 @@ class PluginHandler(Child):
 		
 		else:
 			# wtf
-			errtext = "Bad reply object: %s" % reply
+			errtext = "Bad reply object: %s" % repr(reply)
 			raise ValueError, errtext
 
 # ---------------------------------------------------------------------------
