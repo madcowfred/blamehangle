@@ -105,9 +105,16 @@ def UnquoteHTML(text, *keep):
 		'lt': '<',
 		'gt': '>',
 		'amp': '&',
+		'apos': "'",
 		'quot': '"',
 		'nbsp': ' ',
 		'ordm': '\xb0',
+		'#8212': '-', # actually an em dash, but I don't care
+		'#8216': "'", # left smart apostrophe? wtf
+		'#8217': "'", # right smart apostrophe!
+		'#8220': '"', # left smart quote
+		'#8221': '"', # right smart quote
+		'#8230': '...',
 		'#65295': '/',
 	}
 	
