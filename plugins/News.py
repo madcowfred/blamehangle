@@ -333,13 +333,7 @@ class News(Plugin):
 				# we don't end up posting slabs of stories from the same
 				# site in a row
 				index = self.__rand_gen.randint(0, len(self.__outgoing) - 1)
-				line = self.__outgoing.pop(index)
-				
-				# attach the prefix if we have to
-				if self.__spam_prefix:
-					reply = '%s %s' % (self.__spam_prefix, line)
-				else:
-					reply = line
+				reply = self.__outgoing.pop(index)
 				
 				# spit it out
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
@@ -477,6 +471,11 @@ class News(Plugin):
 				else:
 					replytext = "%s - %s" % (title, url)
 				
+				# attach the prefix if we have to
+				if self.__spam_prefix:
+					replytext = '%s %s' % (self.__spam_prefix, replytext)
+				
+				# stick it in the outgoing queue
 				reply = PluginReply(event, replytext)
 				self.__outgoing.append(reply)
 				
