@@ -33,11 +33,11 @@ FORECAST_RE = re.compile('^forecast\s+(?P<location>.+)$')
 
 METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
 
-WEATHER_METAR = 'METAR'
+WEATHER_METAR = 'WEATHER_METAR'
 METAR_RE = re.compile('^metar (?P<station>\S+)$')
 METAR_HELP = '\02metar\02 <station id> : Retrieve coded METAR weather information.'
 
-WEATHER_METARD = 'METARD'
+WEATHER_METARD = 'WEATHER_METARD'
 METARD_RE = re.compile('^metard (?P<station>\S+)$')
 METARD_HELP = '\02metard\02 <station id> : Retrieve decoded METAR weather information.'
 
