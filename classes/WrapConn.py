@@ -17,6 +17,9 @@ OUTPUT_INTERVAL = 1
 STONED_INTERVAL = 40
 STONED_COUNT = 3
 
+MAX_LINE_LENGTH = 400
+MAX_SPLIT_LINES = 3
+
 # ---------------------------------------------------------------------------
 
 class WrapConn:
@@ -160,13 +163,49 @@ class WrapConn:
 	
 	# Stuff outgoing data into our queues
 	def privmsg(self, target, text):
-		self.__privmsg.append([target, text])
+		lines = self.__Split_Text(text)
+		for line in lines[:MAX_SPLIT_LINES]:
+			self.__privmsg.append([target, line])
 	
 	def notice(self, target, text):
-		self.__notice.append([target, text])
+		lines = self.__Split_Text(text)
+		for line in lines[:MAX_SPLIT_LINES]:
+			self.__notice.append([target, text])
 	
 	def ctcp_reply(self, target, text):
 		self.__ctcp_reply.append([target, text])
+	
+	# Split text into lines if it's too long
+	def __Split_Text(self, text):
+		# If it's not too long, give it back
+		if len(text) <= MAX_LINE_LENGTH:
+			return [text]
+		
+		# If it IS too long, split it
+		else:
+			found = 0
+			
+			for i in range(10, 100, 10):
+				print i
+				n = text.find(' ', MAX_LINE_LENGTH - i)
+				if n >= 0 and n < MAX_LINE_LENGTH:
+					found = 1
+					break
+			
+			# Found somewhere to split, yay
+			if found:
+				lines = [text[:n]]
+				leftover = text[n+1:]
+				
+				more_lines = self.__Split_Text(leftover)
+				lines.extend(more_lines)
+				
+				return lines
+			
+			# Nowhere, argh!
+			else:
+				self.connlog(LOG_WARNING, 'Refusing to send extremely long un-splittable line!')
+				return []
 	
 	# -----------------------------------------------------------------------
 	
