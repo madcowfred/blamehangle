@@ -18,39 +18,15 @@ CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to
 
 # ---------------------------------------------------------------------------
 
-MAPPINGS = {
-	'c': ('°C',
-		('f', lambda x: (x * 9.0 / 5) + 32),
-	),
-	'f': ('°F',
-		('c', lambda x: (x - 32) * 5.0 / 9),
-	),
-	'miles': ('miles',
-		('ft', lambda x: x * 5280),
-		('km', lambda x: x * 1.609),
-	),
-	'ft': ('feet',
-		('miles', lambda x: x / 5280),
-		('in', lambda x: x * 12),
-	),
-	'in': ('inches',
-		('ft', lambda x: x / 12),
-	),
-	'km': ('kilometers',
-		('miles', lambda x: x / 1.609),
-		('m', lambda x: x * 1000),
-	),
-	'm': ('meters',
-		('km', lambda x: x / 1000),
-		('cm', lambda x: x * 100),
-	),
-	'cm': ('centimeters',
-		('m', lambda x: x / 100),
-		('mm', lambda x: x * 10),
-	),
-	'mm': ('millimeters',
-		('cm', lambda x: x / 10),
-	)
+DISTANCE = {
+	'miles': ('miles', 1609.34),
+	'ft': ('feet', 0.3048),
+	'in': ('inches', 0.0254),
+	'inches': ('inches', 0.0254),
+	'km': ('kilometers', 1000),
+	'm': ('meters', 1),
+	'cm': ('centimeters', 0.01),
+	'mm': ('millimeters', 0.001),
 }
 
 # ---------------------------------------------------------------------------
@@ -77,54 +53,40 @@ class Converter(Plugin):
 		data['from'] = trigger.match.group('from').lower()
 		data['to'] = trigger.match.group('to').lower()
 		
-		if not MAPPINGS.has_key(data['from']):
-			replytext = '%(from)s is not a valid measurement' % data
+		if data['from'] == data['to']:
+			replytext = "Don't be an idiot"
 		
-		elif not MAPPINGS.has_key(data['to']):
-			replytext = '%(to)s is not a valid measurement' % data
+		elif data['from'] == 'c' and data['to'] == 'f':
+			value = (data['amt'] * 9.0 / 5) + 32
+			replytext = '%s °C == %s °F' % (amt, value)
+		
+		elif data['from'] == 'f' and data['to'] == 'c':
+			value = (data['amt'] - 32) * 5.0 / 9
+			replytext = '%s °F == %s °C' % (amt, value)
 		
 		else:
-			found = [m for m in MAPPINGS[data['from']][1:] if m[0] == data['to']]
-			if found:
-				value = '%.2f' % found[0][1](data['amt'])
-				result = '%s %s' % (value, MAPPINGS[data['to']][0])
-				replytext = '%s %s == %s' % (data['amt'], MAPPINGS[data['from']][0], result)
+			if DISTANCE.has_key(data['from']):
+				_from = DISTANCE[data['from']]
+			else:
+				found = [key for key,value in DISTANCE.items() if value[0] == data['from']]
+				if found:
+					_from = DISTANCE[found[0]]
+			
+			if DISTANCE.has_key(data['to']):
+				_to = DISTANCE[data['to']]
+			else:
+				found = [key for key,value in DISTANCE.items() if value[0] == data['to']]
+				if found:
+					_to = DISTANCE[found[0]]
+			
+			if _from is None:
+				replytext = '%(from)s is not a valid measurement' % data
+			
+			elif _to is None:
+				replytext = '%(to)s is not a valid measurement' % data
 			
 			else:
-				chain = []
-				ret = 0
-				try:
-					ret = self.__Convert_Recurse(chain, {}, data['from'], data['to'], None)
-				except RuntimeError:
-					replytext = 'Recursion limit reached while trying to find path from %(from)s to %(to)s' % data
-				else:
-					if ret:
-						chain.reverse()
-						
-						amt = data['amt']
-						for thing in chain:
-							amt = thing[1](amt)
-						
-						value = '%.2f' % amt
-						result = '%s %s' % (value, MAPPINGS[thing[0]][0])
-						replytext = '%s %s == %s' % (data['amt'], MAPPINGS[data['from']][0], result)
-					else:
-						replytext = 'Unable to find path from %(from)s to %(to)s' % data
+				value = '%.2f' % (data['amt'] * _from[1] / _to[1])
+				replytext = '%s %s == %s %s' % (data['amt'], _from[0], value, _to[0])
 		
 		self.sendReply(trigger, replytext)
-	
-	
-	def __Convert_Recurse(self, chain, visited, start, findme, prev):
-		for m in MAPPINGS[start][1:]:
-			if visited.has_key(m[0]) or m[0] == prev:
-				continue
-			
-			if m[0] == findme:
-				chain.append(m)
-				return 1
-			
-			else:
-				ret = self.__Convert_Recurse(chain, visited, m[0], findme, start)
-				if ret:
-					chain.append(m)
-					return 1
