@@ -152,21 +152,21 @@ class SiteBot(Plugin):
 		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(.*?)"$', data)
 		if m:
 			base, rel = Split_Dir(m.group(1))
-			return 'NEW: %s@%s drops %s in %s' % (m.group(2), m.group(3), rel, base)
+			return '\x02NEWDIR\x02: %s@%s drops %s in %s' % (m.group(2), m.group(3), rel, base)
 	
 	def parse_deldir(self, data):
 		# "dir" "user" "group" "tagline"
 		m = re.match(r'^"(.*?)" "(\S+)" "(\S+)" ".*?"$', data)
 		if m:
 			base, rel = Split_Dir(m.group(1))
-			return 'DELDIR: %s@%s threw %s in the trash' % (m.group(2), m.group(3), rel)
+			return '\x02DELDIR\x02: %s@%s threw %s in the trash' % (m.group(2), m.group(3), rel)
 	
 	def parse_wipe(self, data):
 		# "dir" "user" "group" "tagline"
 		m = re.match(r'^"(\S+)" "(\S+)" "(\S+)" "(.*?)"$', data)
 		if m:
 			base, rel = Split_Dir(m.group(1))
-			return 'WIPED: %s@%s wiped the floor with %s' % (m.group(2), m.group(3), rel)
+			return '\x02WIPED\x02: %s@%s wiped the floor with %s' % (m.group(2), m.group(3), rel)
 	
 	# ----------------------------------------------------------------------------
 	
