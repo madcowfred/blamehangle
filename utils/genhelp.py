@@ -54,7 +54,7 @@ tr.desc {
 	
 	for plugin in plugins:
 		# Nothing to see here
-		if plugin in ('__init__', 'NFOrce', 'SamplePlugin'):
+		if plugin in ('__init__', 'AntiLeech', 'GetBotOps', 'NFOrce', 'SamplePlugin', 'Seen'):
 			continue
 		
 		module = __import__('plugins.' + plugin, globals(), locals(), [plugin])
@@ -76,7 +76,7 @@ tr.desc {
 			line = line.strip()
 			
 			if line.startswith('help = ('):
-				help_text = eval(line[7:-1])[2]
+				help_text = eval(line[7:-1])[1]
 				
 				# Strip stupid junk
 				help_text = help_text.replace('\02', '')
