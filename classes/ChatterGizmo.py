@@ -6,6 +6,7 @@ __version__ = '$Id$'
 import errno
 import re
 import select
+import time
 import types
 
 from classes import irclib
@@ -40,6 +41,8 @@ class ChatterGizmo(Child):
 		
 		self.Conns = {}
 		self.stopping = 0
+		
+		self.__Rejoins = []
 	
 	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
@@ -55,6 +58,20 @@ class ChatterGizmo(Child):
 		self.connect()
 	
 	def run_sometimes(self, currtime):
+		# See if we have to try rejoining any channels
+		for rejoin in self.__Rejoins:
+			last, conn, connect_id, chan = rejoin
+			wrap = self.Conns[conn]
+			
+			if wrap.status != STATUS_CONNECTED or wrap.connect_id != connect_id:
+				self.__Rejoins.remove(rejoin)
+				continue
+			
+			elif (currtime - last) >= 20:
+				self.__Rejoins.remove(rejoin)
+				conn.join(chan)
+		
+		# Do other stuff here
 		for conn, wrap in self.Conns.items():
 			if wrap.status == STATUS_DISCONNECTED and (currtime - wrap.last_connect) >= 5:
 				wrap.jump_server()
@@ -66,6 +83,7 @@ class ChatterGizmo(Child):
 			elif wrap.status == STATUS_CONNECTED:
 				wrap.run_sometimes(currtime)
 	
+	# Process any data from IRC
 	def run_always(self):
 		try:
 			self.__ircobj.process_once()
@@ -90,8 +108,7 @@ class ChatterGizmo(Child):
 				networks.append(section)
 		
 		if not networks:
-			self.putlog(LOG_ALWAYS, 'no networks? how can this be?!')
-			return
+			raise Exception, 'No networks defined in config file'
 		
 		for network in networks:
 			options = {}
@@ -129,6 +146,8 @@ class ChatterGizmo(Child):
 		
 		# Tell FileMonster what our local IP is
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
+		
+		self.Conns[conn].connect_id += 1
 		
 		self.Conns[conn].join_channels()
 	
@@ -269,6 +288,23 @@ class ChatterGizmo(Child):
 		nick = event.arguments()[0]
 		
 		self.Conns[conn].nicknameinuse(nick)
+	
+	# -----------------------------------------------------------------------
+	# Various errors, all of which are saying that we can't join a channel.
+	# -----------------------------------------------------------------------
+	#for event in [	"unavailresource", "channelisfull", "inviteonlychan",
+	#	"bannedfromchan", "badchannelkey" ]:
+	def _joinerror(self, conn, event):
+		chan = event.arguments()[0].lower()
+		
+		# Try to join again soon
+		data = [time.time(), conn, self.Conns[conn].connect_id, chan]
+		self.__Rejoins.append(data)
+	
+	_handle_unavailresource = _joinerror
+	_handle_channelisfull = _joinerror
+	_handle_inviteonlychan = _joinerror
+	_handle_bannedfromchan = _joinerror
 	
 	# -----------------------------------------------------------------------
 	# Someone just said something in a channel we're in
