@@ -97,6 +97,8 @@ def StripHTML(text):
 
 # ---------------------------------------------------------------------------
 # Replace &blah; quoted things with the actual thing
+_unquote_regexp = re.compile(r'&([#A-Za-z0-9]+);')
+
 def UnquoteHTML(text, *keep):
 	# thing name -> char
 	quoted = {
@@ -135,7 +137,7 @@ def UnquoteHTML(text, *keep):
 			return quoted.get(thing, whole)
 	
 	# go!
-	return re.sub(r'&([#A-Za-z0-9]+);', unquote_things, text)
+	return _unquote_regexp.sub(unquote_things, text)
 
 # ---------------------------------------------------------------------------
 # urllib stuff
