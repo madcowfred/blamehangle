@@ -13,7 +13,7 @@ from classes.Plugin import *
 
 BEE_SPELL = 'BEE_SPELL'
 SPELL_HELP = "'\02spell\02' <word> : Check spelling for <word>"
-SPELL_RE = re.compile('^spell (?P<word>\S+)$')
+SPELL_RE = re.compile('^spell\s+(?P<word>\S+)$')
 
 # ---------------------------------------------------------------------------
 
