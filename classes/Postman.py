@@ -315,12 +315,13 @@ class Postman:
 					meth()
 				
 				# Do things that don't need to be done all that often
-				sometimes_counter += 1
-				if sometimes_counter == 4:
-					sometimes_counter = 0
+				sometimes_counter = (sometimes_counter + 1) % 4
+				if sometimes_counter == 0:
+					currtime = _time()
 					
 					# See if our log file has to rotate
-					self.__Log_Rotate()
+					if currtime >= self.__rotate_after:
+						self.__Log_Rotate()
 					
 					# If we're shutting down, see if all of our children have
 					# stopped.
@@ -328,7 +329,6 @@ class Postman:
 						return
 					
 					# Run anything our children want done occasionally
-					currtime = _time()
 					for meth in _sometimes:
 						meth(currtime)
 				
@@ -403,7 +403,9 @@ class Postman:
 		return 0
 	
 	# -----------------------------------------------------------------------
-	
+	# Open our log file and work out what time we should start thinking about
+	# rotating it.
+	# -----------------------------------------------------------------------
 	def __Log_Open(self):
 		try:
 			self.__logfile = open(self.__logfile_filename, 'a+')
@@ -426,10 +428,14 @@ class Postman:
 			
 			else:
 				self.__logdate = time.strftime("%Y/%m/%d")
+			
+			# Scary :|
+			t = time.localtime()
+			t2 = (t[0], t[1], t[2], 23, 59, 55, t[6], t[7], t[8])
+			self.__rotate_after = time.mktime(t2)
 	
 	# -----------------------------------------------------------------------
-	# Read the first line of our current log file. If it's date is older than
-	# our current date, rotate it and start a new one.
+	# See if it's time to rotate our log file yet.
 	# -----------------------------------------------------------------------
 	def __Log_Rotate(self):
 		today = time.strftime("%Y/%m/%d")
