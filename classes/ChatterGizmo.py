@@ -134,6 +134,8 @@ class ChatterGizmo(Child):
 		connid = args[0]
 		host = self.Conns[connid].server[0]
 		
+		self.Conns[connid].dnswait = 0
+		
 		# Resolve failure
 		if hosts is None:
 			tolog = 'Unable to resolve server: %s' % (host)

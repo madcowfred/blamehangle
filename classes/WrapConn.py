@@ -45,6 +45,8 @@ class WrapConn:
 		
 		self.channels = {}
 		
+		self.dnswait = 0
+		
 		# We increment this to keep track of things like channel rejoin attempts
 		self.connect_id = 0
 		
@@ -129,16 +131,18 @@ class WrapConn:
 		self.parent.putlog(level, newtext)
 	
 	def connect(self):
+		if self.dnswait:
+			return
+		
 		if not self.servers:
 			self.last_connect = time.time() + 25
 			self.connlog(LOG_WARNING, "No servers defined for this connection!")
 			return
 		
 		self.server = self.servers[0]
-		#host, port, password = self.server[:3]
 		
+		self.dnswait = 1
 		self.parent.dnsLookup(None, self.parent._DNS_Reply, self.server[0], self.conn.connid)
-		return
 	
 	def really_connect(self, hosts):
 		# We don't want to connect to an IP that we've tried recently
