@@ -22,13 +22,6 @@ RE_STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,
 # regexp to see if people are addressing someone
 RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
 
-# for NAMES reply parsing
-USER_MODES = {
-	'+': 'v',
-	'%': 'h',
-	'@': 'o',
-}
-
 # ---------------------------------------------------------------------------
 
 class ChatterGizmo(Child):
@@ -275,6 +268,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_mode(self, connid, conn, event):
 		chan = event.target.lower()
+		wrap = self.Conns[connid]
 		
 		# Parse the mode list
 		modes = []
@@ -299,11 +293,11 @@ class ChatterGizmo(Child):
 		# Now do something with them
 		for sign, mode, arg in modes:
 			# User mdoes
-			if mode in 'hov':
+			if mode in wrap.conn.features['user_modes']:
 				if sign == '+':
-					self.Conns[connid].users.add_mode(chan, arg, mode)
+					wrap.users.add_mode(chan, arg, mode)
 				elif sign == '-':
-					self.Conns[connid].users.del_mode(chan, arg, mode)
+					wrap.users.del_mode(chan, arg, mode)
 			
 			# Channel basic modes
 			elif mode in 'iklmnpst':
@@ -363,12 +357,16 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_namreply(self, connid, conn, event):
 		chan = event.arguments[1].lower()
+		wrap = self.Conns[connid]
+		
+		# We need this the other way around
+		sign_to_char = dict([(v, k) for k, v in wrap.conn.features['user_modes'].items()])
 		
 		# Add each nick to the channel user list
 		for nick in event.arguments[2].split():
-			if nick[0] in USER_MODES:
+			if nick[0] in sign_to_char:
 				self.Conns[connid].users.joined(chan, nick[1:])
-				self.Conns[connid].users.add_mode(chan, nick[1:], USER_MODES[nick[0]])
+				self.Conns[connid].users.add_mode(chan, nick[1:], sign_to_char[nick[0]])
 			else:
 				self.Conns[connid].users.joined(chan, nick)
 	

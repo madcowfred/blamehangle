@@ -86,6 +86,7 @@ class asyncIRC(buffered_dispatcher):
 			'channel_types': ['#'],
 			'max_targets': 3,
 			'nicklen': 9,
+			'user_modes': {'@': 'o', '+': 'v'},
 		}
 	
 	# Is this a channel?
@@ -222,6 +223,11 @@ class asyncIRC(buffered_dispatcher):
 						self.features['max_targets'] = int(v)
 					elif k == 'NICKLEN':
 						self.features['nicklen'] = int(v)
+					elif k == 'PREFIX':
+						self.features['user_modes'] = {}
+						chars, signs = v[1:].split(')', 1)
+						for i in range(len(chars)):
+							self.features['user_modes'][chars[i]] = signs[i]
 			
 			# We always have to answer a PING
 			elif command == 'ping':
