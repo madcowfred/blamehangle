@@ -82,13 +82,13 @@ class Helper(Plugin):
 			
 			for command in cmds.keys():
 				if command in self.__help[topic]:
-					del self.__help[topic]
+					del self.__help[topic][command]
 					
 					name = '__%s__%s__' % (topic, command)
 					names.append(name)
 			
 			# Empty topic, delete it too
-			if not self.__help[topic]:
+			if self.__help[topic] == {}:
 				del self.__help[topic]
 				
 				name = '**%s**' % (topic)
