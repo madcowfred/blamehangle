@@ -163,37 +163,37 @@ class News(Plugin):
 	# Register all our news pages that we want to check
 	def register(self):
 		# Various timed news checks
-		if self.News_Options['ananova_quirkies_interval']:
+		if self.News_Options.get('ananova_quirkies_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Ananova_Quirkies,
 				interval = self.News_Options['ananova_quirkies_interval'],
 				targets = self._Targets['ananova_quirkies'],
 			)
-		if self.News_Options['google_business_interval']:
+		if self.News_Options.get('google_business_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Business,
 				interval = self.News_Options['google_business_interval'],
 				targets = self._Targets['google_business'],
 			)
-		if self.News_Options['google_health_interval']:
+		if self.News_Options.get('google_health_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Health,
 				interval = self.News_Options['google_health_interval'],
 				targets = self._Targets['google_health'],
 			)
-		if self.News_Options['google_science_interval']:
+		if self.News_Options.get('google_science_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Science,
 				interval = self.News_Options['google_science_interval'],
 				targets = self._Targets['google_science'],
 			)
-		if self.News_Options['google_sport_interval']:
+		if self.News_Options.get('google_sport_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Sport,
 				interval = self.News_Options['google_sport_interval'],
 				targets = self._Targets['google_sport'],
 			)
-		if self.News_Options['google_world_interval']:
+		if self.News_Options.get('google_world_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Google_World,
 				interval = self.News_Options['google_world_interval'],
