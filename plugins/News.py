@@ -217,7 +217,7 @@ class News(Plugin):
 		self.setTextEvent(RSS_SHOW, RSS_SHOW_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# RSS feeds should be checked for readiness every 30 seconds
 		if self.RSS_Feeds:
-			self.setTimedEvent(NEWS_RSS, 30, None)
+			self.setTimedEvent(NEWS_RSS, 10, None)
 			tolog = 'Registered %d RSS feeds' % len(self.RSS_Feeds)
 			self.putlog(LOG_ALWAYS, tolog)
 		# Timed event for cleaning up the database once an hour
@@ -332,6 +332,7 @@ class News(Plugin):
 	def _trigger_NEWS_RSS(self, trigger):
 		# see if any feeds should be triggering around about now
 		currtime = time.time()
+		
 		for name, feed in self.RSS_Feeds.items():
 			if currtime - feed['checked'] < feed['interval']:
 				continue
@@ -341,6 +342,9 @@ class News(Plugin):
 			# Build a fake timed event trigger
 			new_trigger = PluginTimedTrigger(NEWS_RSS, 1, feed['targets'], [name])
 			self.urlRequest(new_trigger, self.__Parse_RSS, feed['url'])
+			
+			# All done
+			break
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
