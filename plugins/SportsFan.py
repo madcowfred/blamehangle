@@ -82,7 +82,8 @@ class SportsFan(Plugin):
 				home = self.__parse(line)
 
 				# there are two lines with only html in them that follow
-				line = s.readline()
+				# yahoo have changed their html, only one line now
+				# line = s.readline()
 				line = s.readline()
 
 				# the next line has the scores
