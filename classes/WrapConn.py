@@ -24,6 +24,9 @@ class WrapConn:
 		self.parent = parent
 		self.conn = conn
 		self.options = options
+
+		# nfi if this is what is needed...
+		self.connect_id = 0
 		
 		# Reset ourselves to the disconnected state
 		self.disconnected()
