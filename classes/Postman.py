@@ -30,26 +30,25 @@ class Postman:
 		self.__Stopping = 0
 		
 		self.__logfile_filename = self.Config.get('logging', 'log_file')
+		self.__log_debug = self.Config.getboolean('logging', 'debug')
+		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
 		
 		
 		# Open our log file and rotate it if we have to
 		self.__Log_Open()
 		self.__Log_Rotate()
 		
-		
 		# Initialise the global message queue
 		self.inQueue = Queue(0)
-
-
+		
 		# Load all the configs supplied for plugins
 		self.__Load_Configs()
 		
 		
 		# Create our children
 		self.__Children = {}
-
-		system = [ DataMonkey, PluginHandler, ChatterGizmo, HTTPMonster ]
 		
+		system = [ DataMonkey, PluginHandler, ChatterGizmo, HTTPMonster ]
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
 			self.__Log(LOG_DEBUG, tolog)
@@ -58,7 +57,6 @@ class Postman:
 			self.__Children[cls.__name__] = instance
 		
 		plugins = self.__Children['PluginHandler'].pluginList()
-		
 		for clsname in plugins:
 			tolog = "Starting plugin object '%s'" % clsname
 			self.__Log(LOG_DEBUG, tolog)
@@ -290,30 +288,24 @@ class Postman:
 		timeshort = time.strftime("[%H:%M:%S]", currtime)
 		timelong = time.strftime("%Y/%m/%d %H:%M:%S", currtime)
 		
-		if level == LOG_ALWAYS:
-			print timeshort, text
-			
-			tolog = "%s %s\n" % (timelong, text)
-		
-		elif level == LOG_WARNING:
-			print timeshort, 'WARNING:', text
-			
-			tolog = '%s WARNING: %s\n' % (timelong, text)
+		if level == LOG_WARNING:
+			text = 'WARNING: %s' % text
 		
 		elif level == LOG_DEBUG:
-			if self.Config.getint('logging', 'debug'):
-				print timeshort, '[DEBUG]', text
-				
-				tolog = "%s [DEBUG] %s\n" % (timelong, text)
-
-		elif level == LOG_MSG:
-			if self.Config.getint('logging', 'debug_msg'):
-				print timeshort, '[DEBUG]', text
-				tolog = "%s [DEBUG] %s\n" % (timelong, text)
-			
-			else:
+			if not self.__log_debug:
 				return
+			
+			text = '[DEBUG] %s' % text
 		
+		elif level == LOG_MSG:
+			if not self.__log_debug_msg:
+				return
+			
+			text = '[DEBUG] %s' % text
+		
+		print timeshort, text
+		
+		tolog = '%s %s\n' % (timelong, text)
 		self.__logfile.write(tolog)
 		self.__logfile.flush()
 
