@@ -41,8 +41,8 @@ class BotStatus(Plugin):
 		data['memory'] = int(parts[5])
 		
 		mins, secs = parts[9].split(':')
-		secs = (int(mins) * 60) + (int(secs) * 60)
-		data['cputime'] = NiceTime(secs)
+		totalsecs = (int(mins) * 60) + float(secs)
+		data['cputime'] = NiceTime(totalsecs)
 		
 		# Make something up
 		running = NiceTime(time.time() - data['started'])
