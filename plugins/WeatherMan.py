@@ -11,6 +11,8 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
+from classes import pymetar
+
 # ---------------------------------------------------------------------------
 
 WEATHER_URL = "http://search.weather.yahoo.com/search/weather2?p=%s"
@@ -26,6 +28,14 @@ LONG_HELP = '\02weatherlong\02 <location> : Retrieve weather information for loc
 WEATHER_FORECAST = 'WEATHER_FORECAST'
 FORECAST_RE = re.compile('^forecast\s+(?P<location>.+)$')
 FORECAST_HELP = '\02forecast\02 <location> : Retrieve weather forecast for location'
+
+# ---------------------------------------------------------------------------
+
+METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
+
+WEATHER_METAR = 'METAR'
+METAR_RE = re.compile('^metar (?P<station>\S+)$')
+METAR_HELP = '\02metar\02 <station id> : Retrieve METAR weather information.'
 
 # ---------------------------------------------------------------------------
 
@@ -64,12 +74,15 @@ class WeatherMan(Plugin):
 		long_msg = PluginTextEvent(WEATHER_LONG, IRCT_MSG, LONG_RE)
 		forecast_dir = PluginTextEvent(WEATHER_FORECAST, IRCT_PUBLIC_D, FORECAST_RE)
 		forecast_msg = PluginTextEvent(WEATHER_FORECAST, IRCT_MSG, FORECAST_RE)
-		self.register(short_dir, short_msg, long_dir, long_msg, forecast_dir, forecast_msg)
+		metar_dir = PluginTextEvent(WEATHER_METAR, IRCT_PUBLIC_D, METAR_RE)
+		metar_msg = PluginTextEvent(WEATHER_METAR, IRCT_MSG, METAR_RE)
+		self.register(short_dir, short_msg, long_dir, long_msg, forecast_dir, forecast_msg,
+			metar_dir, metar_msg)
 		
 		self.setHelp('weather', 'weather', SHORT_HELP)
 		self.setHelp('weather', 'weatherlong', LONG_HELP)
 		self.setHelp('weather', 'forecast', FORECAST_HELP)
-		
+		self.setHelp('weather', 'metar', METAR_HELP)
 		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
@@ -78,146 +91,230 @@ class WeatherMan(Plugin):
 		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
 			url = WEATHER_URL % quote(trigger.match.group('location'))
 			self.urlRequest(trigger, url)
+		
+		elif trigger.name == WEATHER_METAR:
+			url = METAR_URL % trigger.match.group('station').upper()
+			self.urlRequest(trigger, url)
 	
 	def _message_REPLY_URL(self, message):
 		trigger, page_text = message.data
 		
 		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
-			# No results
-			if page_text.find('No match found') >= 0:
-				replytext = "No matches found for '%s'" % trigger.match.group('location')
-				self.sendReply(trigger, replytext)
-			
-			# More than one result... assume the first one is right
-			elif page_text.find('location matches') >= 0:
-				m = re.search(r'<a href="(/forecast/\S+\.html)">', page_text)
-				if m:
-					url = 'http://search.weather.yahoo.com' + m.group(1)
-					self.urlRequest(trigger, url)
-				else:
-					tolog = "Weather page parsing failed for '%s'!" % trigger.match.group('location')
-					self.putlog(LOG_WARNING, tolog)
-					
-					replytext = "Page parsing failed for '%s'!" % trigger.match.group('location')
-					self.sendReply(trigger, replytext)
-			
-			# Only one result, hopefully?
+			self.__Parse_Weather(trigger, page_text)
+		
+		elif trigger.name == WEATHER_METAR:
+			self.__Parse_METAR(trigger, page_text)
+	
+	# -----------------------------------------------------------------------
+	
+	def __Parse_Weather(self, trigger, page_text):
+		# No results
+		if page_text.find('No match found') >= 0:
+			replytext = "No matches found for '%s'" % trigger.match.group('location')
+			self.sendReply(trigger, replytext)
+		
+		# More than one result... assume the first one is right
+		elif page_text.find('location matches') >= 0:
+			m = re.search(r'<a href="(/forecast/\S+\.html)">', page_text)
+			if m:
+				url = 'http://search.weather.yahoo.com' + m.group(1)
+				self.urlRequest(trigger, url)
 			else:
-				location = None
-				data = {}
+				tolog = "Weather page parsing failed for '%s'!" % trigger.match.group('location')
+				self.putlog(LOG_WARNING, tolog)
 				
-				# Eat the degree symbols
-				page_text = page_text.replace('°', '')
-				
-				
-				# Find the chunk that tells us where we are
-				chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<script')
-				if chunk is None:
-					self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
-					self.sendReply(trigger, 'Failed to parse page properly')
-					return
-				lines = StripHTML(chunk)
-				
-				# Extract location!
-				loc1 = lines[-1]
-				loc2 = lines[-2][:-2]
-				location = '[%s, %s]' % (loc1, loc2)
-				
-				
-				# Find the chunk with the weather data we need
-				chunk = FindChunk(page_text, '<!--CURCON-->', '<!--END CURCON-->')
-				if chunk is None:
-					self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
-					self.sendReply(trigger, 'Failed to parse page properly')
-					return
-				lines = StripHTML(chunk)
-				
-				# Extract current conditions!
-				for line in lines:
-					if line.startswith('Currently:'):
-						continue
-					elif re.match(r'^\d+$', line):
-						chunk = 'Currently: %s' % (self.GetTemp(trigger, line))
-						data['current'] = chunk
-					elif line.startswith('Hi:'):
-						chunk = 'High: %s' % (self.GetTemp(trigger, line[3:]))
-						data['high'] = chunk
-					elif line.startswith('Lo:'):
-						chunk = 'Low: %s' % (self.GetTemp(trigger, line[3:]))
-						data['low'] = chunk
-					else:
-						data['conditions'] = line
-				
-				
-				# Maybe find some more weather data
-				chunk = FindChunk(page_text, '<!--MORE CC-->', '<!--ENDMORE CC-->')
-				if chunk is not None:
-					lines = StripHTML(chunk)
-					
-					# Extract!
-					chunk = 'Feels Like: %s' % (self.GetTemp(trigger, lines[2]))
-					data['feels'] = chunk
-					
-					windbits = lines[-9].split()
-					if len(windbits) == 3:
-						chunk = 'Wind: %s %s' % (windbits[0], self.GetWind(trigger, windbits[1]))
-					else:
-						chunk = 'Wind: %s' % (windbits[0])
-					data['wind'] = chunk
-					
-					chunk = 'Humidity: %s' % (lines[-7])
-					data['humidity'] = chunk
-					chunk = 'Visibility: %s' % (lines[-3])
-					data['visibility'] = chunk
-					chunk = 'Sunrise: %s' % (lines[-5])
-					data['sunrise'] = chunk
-					chunk = 'Sunset: %s' % (lines[-1])
-					data['sunset'] = chunk
-				
-				
-				# Maybe find the forecast
-				chunk = FindChunk(page_text, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
-				if chunk is not None:
-					lines = StripHTML(chunk)
-					
-					# Extract!
-					fcs = []
-					
-					for i in range(1, 5):
-						day = lines[i]
-						
-						first = i + (6 - i) + (i * 4)
-						conditions = lines[first]
-						high = lines[first+2]
-						low = lines[first+3][4:]
-						
-						forecast = '%s: %s, High: %s, Low: %s' % (day, conditions, self.GetTemp(trigger, high), self.GetTemp(trigger, low))
-						fcs.append(forecast)
-					
-					data['forecast'] = ' - '.join(fcs)
-				
-				
-				chunks = []
-				
-				if trigger.name == WEATHER_SHORT:
-					for part in self.__Short_Parts:
-						if data.has_key(part):
-							chunks.append(data[part])
-				
-				elif trigger.name == WEATHER_LONG:
-					for part in self.__Long_Parts:
-						if data.has_key(part):
-							chunks.append(data[part])
-				
-				elif trigger.name == WEATHER_FORECAST:
-					chunks.append(data['forecast'])
-				
-				
-				if chunks == []:
-					self.sendReply(trigger, "Weather format is broken.")
+				replytext = "Page parsing failed for '%s'!" % trigger.match.group('location')
+				self.sendReply(trigger, replytext)
+		
+		# Only one result, hopefully?
+		else:
+			location = None
+			data = {}
+			
+			# Eat the degree symbols
+			page_text = page_text.replace('°', '')
+			
+			
+			# Find the chunk that tells us where we are
+			chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<script')
+			if chunk is None:
+				self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
+				self.sendReply(trigger, 'Failed to parse page properly')
+				return
+			lines = StripHTML(chunk)
+			
+			# Extract location!
+			loc1 = lines[-1]
+			loc2 = lines[-2][:-2]
+			location = '[%s, %s]' % (loc1, loc2)
+			
+			
+			# Find the chunk with the weather data we need
+			chunk = FindChunk(page_text, '<!--CURCON-->', '<!--END CURCON-->')
+			if chunk is None:
+				self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
+				self.sendReply(trigger, 'Failed to parse page properly')
+				return
+			lines = StripHTML(chunk)
+			
+			# Extract current conditions!
+			for line in lines:
+				if line.startswith('Currently:'):
+					continue
+				elif re.match(r'^\d+$', line):
+					chunk = 'Currently: %s' % (self.GetTemp(trigger, line))
+					data['current'] = chunk
+				elif line.startswith('Hi:'):
+					chunk = 'High: %s' % (self.GetTemp(trigger, line[3:]))
+					data['high'] = chunk
+				elif line.startswith('Lo:'):
+					chunk = 'Low: %s' % (self.GetTemp(trigger, line[3:]))
+					data['low'] = chunk
 				else:
-					replytext = '%s %s' % (location, ', '.join(chunks))
-					self.sendReply(trigger, replytext)
+					data['conditions'] = line
+			
+			
+			# Maybe find some more weather data
+			chunk = FindChunk(page_text, '<!--MORE CC-->', '<!--ENDMORE CC-->')
+			if chunk is not None:
+				lines = StripHTML(chunk)
+				
+				# Extract!
+				chunk = 'Feels Like: %s' % (self.GetTemp(trigger, lines[2]))
+				data['feels'] = chunk
+				
+				windbits = lines[-9].split()
+				if len(windbits) == 3:
+					chunk = 'Wind: %s %s' % (windbits[0], self.GetWind(trigger, windbits[1]))
+				else:
+					chunk = 'Wind: %s' % (windbits[0])
+				data['wind'] = chunk
+				
+				chunk = 'Humidity: %s' % (lines[-7])
+				data['humidity'] = chunk
+				chunk = 'Visibility: %s' % (lines[-3])
+				data['visibility'] = chunk
+				chunk = 'Sunrise: %s' % (lines[-5])
+				data['sunrise'] = chunk
+				chunk = 'Sunset: %s' % (lines[-1])
+				data['sunset'] = chunk
+			
+			
+			# Maybe find the forecast
+			chunk = FindChunk(page_text, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
+			if chunk is not None:
+				lines = StripHTML(chunk)
+				
+				# Extract!
+				fcs = []
+				
+				for i in range(1, 5):
+					day = lines[i]
+					
+					first = i + (6 - i) + (i * 4)
+					conditions = lines[first]
+					high = lines[first+2]
+					low = lines[first+3][4:]
+					
+					forecast = '%s: %s, High: %s, Low: %s' % (day, conditions, self.GetTemp(trigger, high), self.GetTemp(trigger, low))
+					fcs.append(forecast)
+				
+				data['forecast'] = ' - '.join(fcs)
+			
+			
+			chunks = []
+			
+			if trigger.name == WEATHER_SHORT:
+				for part in self.__Short_Parts:
+					if data.has_key(part):
+						chunks.append(data[part])
+			
+			elif trigger.name == WEATHER_LONG:
+				for part in self.__Long_Parts:
+					if data.has_key(part):
+						chunks.append(data[part])
+			
+			elif trigger.name == WEATHER_FORECAST:
+				chunks.append(data['forecast'])
+			
+			
+			if chunks == []:
+				self.sendReply(trigger, "Weather format is broken.")
+			else:
+				replytext = '%s %s' % (location, ', '.join(chunks))
+				self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	
+	def __Parse_METAR(self, trigger, page_text):
+		stationid = trigger.match.group('station').upper()
+		
+		# No results
+		if page_text.find('Not Found') >= 0:
+			replytext = "No such station ID '%s'" % stationid
+			self.sendReply(trigger, replytext)
+		
+		# Use pymetar to parse it
+		else:
+			# Create the un-mangled report?
+			report = pymetar.WeatherReport(stationid)
+			report.fullreport = page_text
+			
+			# Parse the report
+			report = pymetar.ReportParser(report).ParseReport()
+			
+			# Gather data
+			chunks = []
+			
+			# Weather
+			if report.getWeather() is not None:
+				chunk = 'Weather: %s' % report.getWeather()
+				chunks.append(chunk)
+			
+			# Sky conditions
+			if report.getSkyConditions() is not None:
+				chunk = 'Sky: %s' % report.getSkyConditions()
+				chunks.append(chunk)
+			
+			# Temperature
+			if report.getTemperatureCelsius() is not None:
+				chunk = 'Temp: %.1fC' % report.getTemperatureCelsius()
+				chunks.append(chunk)
+			
+			# Wind
+			if report.getWindSpeed() and report.getWindCompass():
+				kmh = report.getWindSpeed() * 1000.0 / 60.0
+				chunk = 'Wind: %.1fkm/h %s' % (kmh, report.getWindCompass())
+				chunks.append(chunk)
+			
+			# Visibility
+			if report.getVisibilityKilometers() is not None:
+				chunk = 'Visibility: %.1fkm' % report.getVisibilityKilometers()
+				chunks.append(chunk)
+			
+			# Humidity
+			if report.getHumidity() is not None:
+				chunk = 'Humidity: %s%%' % report.getHumidity()
+				chunks.append(chunk)
+			
+			# Air pressure
+			if report.getPressure() is not None:
+				chunk = 'Pressure: %.0f hPa' % report.getPressure()
+				chunks.append(chunk)
+			
+			# Spit it out
+			if chunks:
+				# Add location
+				location = '[%s] ' % report.getStationName()
+				# Add updated time
+				chunk = 'Updated: %s' % report.getISOTime()
+				chunks.insert(0, chunk)
+				
+				replytext = location + ', '.join(chunks)
+			else:
+				replytext = 'Unable to find any weather info.'
+			
+			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	
