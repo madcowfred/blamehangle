@@ -156,8 +156,11 @@ class async_http(asyncore.dispatcher_with_send):
 		self.send(text)
 		text = "Host: %s\r\n" % (self.host)
 		self.send(text)
-		text = "User-Agent: %s\r\n\r\n" % (self.parent.user_agent)
+		text = "User-Agent: %s\r\n" % (self.parent.user_agent)
 		self.send(text)
+		text = "Connection: close\r\n"
+		self.send(text)
+		self.send("\r\n")
 	
 	# An exception occured somewhere
 	def handle_error(self):
