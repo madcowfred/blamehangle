@@ -21,10 +21,15 @@ MAX_AIRLINE_MATCHES = 5
 
 AIRLINE_AIRLINE = 'AIRLINE_AIRLINE'
 AIRLINE_HELP = "'\02airline\02 <code>' OR '\02airline\02 <partial name>' : lookup the name for a carrier given the code, or lookup the code  for a carrier given the name (or start of the name)"
-AIRLINE_RE = re.compile("^airline +(?P<airline>.+)$")
+AIRLINE_RE = re.compile(r'^airline\s+(?P<airline>.+)$')
+
+AIRLINE_AIRPORT = 'AIRLINE_AIRPORT'
+AIRPORT_HELP = "\02airport\02 <code> : look up an airport by it's IATA code"
+AIRPORT_RE = re.compile(r'^airport\s+(?P<code>\w+)$')
+AIRPORT_URL = 'http://www.flymig.com/iata/r/%s.htm'
 
 AIRLINE_FLIGHT = 'AIRLINE_FLIGHT'
-FLIGHT_HELP = "'\02flight\02 <code> <flight number> <date>' : Lookup the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)"
+FLIGHT_HELP = "'\02flight\02 <code> <flight number> <date>' : look up the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)"
 # what a bastard this was to get right. god damn i hate regexps.
 f1 = "^ *flight +"
 f2 = "(?P<code>[^ ]+)"
@@ -59,10 +64,12 @@ class Airline(Plugin):
 	
 	def _message_PLUGIN_REGISTER(self, message):
 		self.setTextEvent(AIRLINE_AIRLINE, AIRLINE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(AIRLINE_AIRPORT, AIRPORT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(AIRLINE_FLIGHT, FLIGHT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		
 		self.setHelp('travel', 'airline', AIRLINE_HELP)
+		self.setHelp('travel', 'airport', AIRPORT_HELP)
 		self.setHelp('travel', 'flight', FLIGHT_HELP)
 		self.registerHelp()
 	
@@ -105,6 +112,70 @@ class Airline(Plugin):
 					matches.append((code, self.Airlines[code]))
 			
 			return matches
+	
+	# -----------------------------------------------------------------------
+	# Someone wants to look up an IATA code
+	def _trigger_AIRLINE_AIRPORT(self, trigger):
+		code = trigger.match.group('code').upper()
+		
+		# IATA codes are 3 letters
+		if len(code) == 3:
+			url = AIRPORT_URL % code
+			self.urlRequest(trigger, self.__Parse_IATA, url)
+		
+		# Someone is stupid
+		else:
+			replytext = "'%s' is not a valid IATA code!"
+			self.sendReply(trigger, replytext)
+	
+	# Site replied
+	def __Parse_IATA(self, trigger, page_text):
+		code = trigger.match.group('code').upper()
+		page_text = page_text.replace('&deg;', '°')
+		
+		# 404 error
+		if page_text.find('Requested File was not found') >= 0:
+			replytext = "No such IATA code: '%s'" % code
+			self.sendReply(trigger, replytext)
+		
+		# Find the chunk we need
+		chunk = FindChunk(page_text, '<PRE>', '</PRE>')
+		if not chunk:
+			self.putlog(LOG_WARNING, 'IATA page parsing failed: no data')
+			self.sendReply(trigger, 'Failed to parse page.')
+			return
+		
+		# Split it into lines
+		lines = StripHTML(chunk)
+		
+		# Split each line into data
+		data = {}
+		
+		for line in lines:
+			# Find the key
+			n = line.find(': .')
+			key = line[:n]
+			
+			# Find the value
+			n = line.find('. ')
+			data[key] = line[n+2:]
+		
+		# Build our output
+		loctext = '%s, %s' % (data['Country'], data['Airport'])
+		
+		parts = []
+		for key in ('IATA', 'ICAO', 'Latitude', 'Longitude', 'Elevation'):
+			if key in data:
+				part = '\02[\02%s: %s\02]\02' % (key, data[key])
+				parts.append(part)
+		
+		# If we had some data, spit it out now
+		if parts:
+			replytext = '%s :: %s' % (loctext, ' '.join(parts))
+		else:
+			replytext = 'No data found!'
+		
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to look up info on a flight.
