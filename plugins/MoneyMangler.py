@@ -376,17 +376,24 @@ class MoneyMangler(Plugin):
 			return
 		
 		# Find the options
-		chunks = FindChunks(chunk, '<option value="', '</option>')
+		chunks = FindChunks(chunk, '<option ', '</option>')
 		if not chunks:
 			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
 			return
 		
 		# Parse 'em
 		for chunk in chunks:
-			code = chunk[:3]
-			country = chunk[5:-6]
-			if code and country:
-				self.__Currencies[code] = country
+			vn = chunk.find('value=')
+			if vn >= 0:
+				code = chunk[vn+7:vn+10]
+				country = chunk[vn+12:-6]
+				if code and country:
+					self.__Currencies[code] = country
+					print 'yep:', code, '=', country
+				#else:
+				#	print 'nope:', repr(chunk), repr(code), repr(country)
+			#else:
+			#	print 'nope:', repr(chunk)
 		
 		# We's done
 		if self.__Currencies:
