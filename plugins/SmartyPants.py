@@ -17,6 +17,7 @@ from classes.Constants import *
 
 FACT_SET = "FACT_SET"
 FACT_GET = "FACT_GET"
+FACT_REDIRECT = "FACT_GET_REDIR"
 FACT_ALSO = "FACT_ALSO"
 FACT_DEL = "FACT_DEL"
 FACT_REPLACE = "FACT_REPLACE"
@@ -64,6 +65,9 @@ TELL_RE = re.compile(r'^tell +(?P<nick>.+?) +about +(?P<name>.+)$')
 
 REPLY_ACTION_RE = re.compile(r'^<(?P<type>reply|action)>\s*(?P<value>.+)$', re.I)
 NULL_RE = re.compile(r'^<null>\s*$', re.I)
+
+# match redirected factoids
+REDIRECT_RE = re.compile(r'^see(: *| +)(?P<factoid>.+)$')
 
 #----------------------------------------------------------------------------
 
@@ -201,7 +205,7 @@ class SmartyPants(Plugin):
 			self.register(get_pub)
 		if self.__set_pub:
 			self.register(set_pub)
-
+		
 		self.__set_help_messages()
 	
 	#------------------------------------------------------------------------
@@ -219,7 +223,7 @@ class SmartyPants(Plugin):
 		FACT_STATUS_HELP = "'\02status\02' : Generate some brief stats about the bot."
 		FACT_TELL_HELP = "'\02tell\02 <someone> \02about\02 <factoid name>' : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."
 		FACT_INFO_HELP = "'\02factinfo\02 <factoid name>' : View some statistics about the given factoid."
-
+		
 		self.setHelp('infobot', 'get', FACT_GET_HELP)
 		self.setHelp('infobot', 'set', FACT_SET_HELP)
 		self.setHelp('infobot', '=~', FACT_MOD_HELP)
@@ -377,6 +381,9 @@ class SmartyPants(Plugin):
 		if trigger.name == FACT_GET:
 			self.__Fact_Get(trigger, results)
 		
+		elif trigger.name == FACT_REDIRECT:
+			self.__Fact_Redirect(trigger, results)
+		
 		elif trigger.name == FACT_SET:
 			self.__Fact_Set(trigger, results)
 		
@@ -434,7 +441,7 @@ class SmartyPants(Plugin):
 	# A user asked to lookup a factoid. We've already dug it out of the
 	# database, so all we need to do is formulate a reply and send it out.
 	# -----------------------------------------------------------------------
-	def __Fact_Get(self, trigger, results):
+	def __Fact_Get(self, trigger, results, redirect=1):
 		replytext = ''
 		
 		if results == [()]:
@@ -457,6 +464,17 @@ class SmartyPants(Plugin):
 			if m:
 				return
 			
+			# If we have to, check for a redirected factoid
+			if redirect:
+				m = REDIRECT_RE.match(row['value'])
+				if m:
+					query = (GET_QUERY, m.group('factoid'))
+					trigger.name = FACT_REDIRECT
+					trigger.temp = (row['name'], m.group('factoid'))
+					self.dbQuery(trigger, query)
+					
+					return
+			
 			# This factoid wasn't a <null>, so update stats and generate the
 			# reply
 			self.__requests += 1
@@ -477,7 +495,6 @@ class SmartyPants(Plugin):
 				#row['value'] = row['value'].replace('$channel', trigger.target)
 				
 			# replace "$date" with a shiny date
-			# TODO: return random dates to bug people?
 			datebit = time.strftime('%a %d %b %Y %H:%M:%S')
 			shinydate = '%s %s GMT' % (datebit, GetTZ())
 			row['value'] = re.sub(r'(?P<c>[^\\]|^)\$date', \
@@ -508,6 +525,37 @@ class SmartyPants(Plugin):
 			now = int(time.time())
 			query = (REQUESTED_QUERY, requester_nick, requester_host, now, name)
 			self.dbQuery(trigger, query)
+	
+	# -----------------------------------------------------------------------
+	# We've finished looking up a redirected factoid, inform the user.
+	# -----------------------------------------------------------------------
+	def __Fact_Redirect(self, trigger, results):
+		# No result, redirect failed
+		if results == [()]:
+			# Don't say anything if it was a public request
+			if trigger.event.IRCType == IRCT_PUBLIC:
+				return
+			else:
+				replytext = "'%s' redirects to '%s', which doesn't exist" % trigger.temp
+				self.sendReply(trigger, replytext)
+				
+				self.__dunnos += 1
+		
+		# Result.. yay
+		else:
+			row = results[0][0]
+			
+			# If it's another redirect, give up
+			m = REDIRECT_RE.match(row['value'])
+			if m:
+				replytext = "'%s' redirects to '%s', which also redirects!" % trigger.temp
+				self.sendReply(trigger, replytext)
+				
+				return
+			
+			# Otherwise, do the normal GET stuff
+			else:
+				self.__Fact_Get(trigger, results, redirect=0)
 	
 	# -----------------------------------------------------------------------
 	# A user just tried to set a factoid.. if it doesn't already exist, we
