@@ -83,8 +83,19 @@ class HTTPMonster(Child):
 	# We got a DNS reply, deal with it. This is quite yucky.
 	def _message_REPLY_DNS(self, message):
 		_, _, hosts, (origmsg, chunks) = message.data
+		# We got no hosts, DNS failure!
 		if hosts is None:
-			# log an error here
+			trigger, method, url = origmsg.data[:3]
+			
+			# Log an error
+			tolog = "Error while trying to fetch URL '%s': %s" % (url, 'DNS failure')
+			self.putlog(LOG_WARNING, tolog)
+			
+			# Build the response and return it
+			resp = HTTPResponse(url, None, None, None)
+			data = [trigger, method, resp]
+			self.sendMessage(origmsg.source, REPLY_URL, data)
+			
 			return
 		
 		# We want to prefer IPv4 connections
@@ -326,7 +337,7 @@ class async_http(buffered_dispatcher):
 	
 	# Failed!
 	def failed(self, errormsg):
-		tolog = "Error while trying to fetch url: %s - %s" % (self.url, errormsg)
+		tolog = "Error while trying to fetch URL '%s': %s" % (self.url, errormsg)
 		self.parent.putlog(LOG_ALWAYS, tolog)
 		
 		# Build the response and return it
