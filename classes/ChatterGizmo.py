@@ -590,14 +590,16 @@ class ChatterGizmo(Child):
 			# If they have access, rehash
 			if self.Userlist.Has_Flag(userinfo, 'Global', 'admin'):
 				tolog = "Admin '%s' (%s@%s) requested a rehash." % (userinfo.nick, userinfo.ident, userinfo.host)
-				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
+				self.connlog(conn, LOG_WARNING, tolog)
 				
 				self.Conns[conn].notice(userinfo.nick, 'Rehashing...')
+				
+				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
+			
 			# If not, cry
 			else:
 				tolog = "Unknown lamer '%s' (%s@%s) requested rehash!" % (userinfo.nick, userinfo.ident, userinfo.host)
-			
-			self.connlog(conn, LOG_WARNING, tolog)
+				self.connlog(conn, LOG_WARNING, tolog)
 		
 		# No idea, see if a plugin cares
 		else:
