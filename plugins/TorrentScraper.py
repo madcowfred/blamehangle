@@ -34,7 +34,7 @@ class TorrentScraper(Plugin):
 			self.URLs[self.Config.get('TorrentScraper-URLs', option)] = 0
 	
 	def register(self):
-		self.setTimedEvent(SCRAPE_TIMER, 60, None)
+		self.setTimedEvent(SCRAPE_TIMER, int(self.Options['request_interval']), None)
 		
 		self.registerEvents()
 	
@@ -45,9 +45,9 @@ class TorrentScraper(Plugin):
 		now = time.time()
 		
 		ready = [k for k, v in self.URLs.items() if now - v > interval]
-		for url in ready[:int(self.Options['urls_per_minute'])]:
-			self.URLs[url] = now
-			self.urlRequest(trigger, self.__Parse_Page, url)
+		if ready:
+			self.URLs[ready[0]] = now
+			self.urlRequest(trigger, self.__Parse_Page, ready[0])
 	
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
@@ -113,10 +113,6 @@ class TorrentScraper(Plugin):
 		# Error!
 		if result is None:
 			self.putlog(LOG_WARNING, '__DB_Check: A DB error occurred!')
-			return
-		
-		if not hasattr(trigger, 'items'):
-			self.putlog(LOG_WARNING, 'items has gone missing again! ARGH!')
 			return
 		
 		items = trigger.items
