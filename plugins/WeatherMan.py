@@ -64,13 +64,11 @@ class WeatherMan(Plugin):
 				
 				
 				# Find the chunk that tells us where we are
-				m = re.search(r'<\!--BROWSE: ADD BREADCRUMBS-->(.*?)<script', page_text, re.M | re.S)
-				if not m:
+				lines = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '<script')
+				if lines == []:
 					self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
 					self.sendReply(trigger, 'Failed to parse page properly')
 					return
-				
-				lines = StripHTML(m.group(1))
 				
 				# Extract location!
 				loc1 = lines[-1]
@@ -79,14 +77,11 @@ class WeatherMan(Plugin):
 				
 				
 				# Find the chunk with the weather data we need
-				m = re.search(r'<\!--CURCON-->(.*?)<\!--END CURCON-->', page_text, re.M | re.S)
-				if not m:
+				lines = FindChunk(page_text, '<!--CURCON-->', '<!--END CURCON-->')
+				if lines == []:
 					self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
 					self.sendReply(trigger, 'Failed to parse page properly')
 					return
-				
-				# Split into lines that aren't empty
-				lines = StripHTML(m.group(1))
 				
 				# Extract current conditions!
 				for line in lines:
@@ -106,15 +101,8 @@ class WeatherMan(Plugin):
 				
 				
 				# Find some more weather data
-				m = re.search(r'<\!--MORE CC-->(.*?)<\!--ENDMORE CC-->', page_text, re.M | re.S)
-				if m:
-					#self.putlog(LOG_WARNING, 'Weather page parsing failed: no extra data')
-					#self.sendReply(trigger, 'Failed to parse page properly')
-					#return
-					
-					# Split into lines that aren't empty
-					lines = StripHTML(m.group(1))
-					
+				lines = FindChunk(page_text, '<!--MORE CC-->', '<!--ENDMORE CC-->')
+				if lines != []:
 					# Extract!
 					chunk = 'Feels Like: %s' % (CandF(lines[2]))
 					chunks.append(chunk)
@@ -143,6 +131,33 @@ class WeatherMan(Plugin):
 				
 				replytext = '%s %s' % (location, ', '.join(chunks))
 				self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------
+# Search through text, finding the text between start and end. Then run
+# StripHTML on it and return it.
+def FindChunk(text, start, end):
+	# Can we find the start?
+	startpos = text.find(start)
+	if startpos < 0:
+		return []
+	
+	# Can we find the end?
+	endpos = text.find(end, startpos)
+	if endpos <= startpos:
+		return []
+	
+	# No (or null range) text?
+	startspot = startpos + len(start)
+	if endpos <= startspot:
+		return []
+	
+	# Ok, we have some text now
+	chunk = text[startspot:endpos]
+	if len(chunk) == 0:
+		return []
+	
+	# Return some mangled text!
+	return StripHTML(chunk)
 
 # ---------------------------------------------------------------------------
 
