@@ -1,7 +1,7 @@
 critical:
 	* HTTPMonster - work on making the page fetching not block the entire
 	                app (anyone)
-	* SmartyPants (anyone)
+	* SmartyPants - is there any more to add? (anyone)
 	* News - think up a replacement for HTMLParser, since it seems to
 	         suck -- I may have fixed this, leave it be and see if it 
 			 breaks -- More HTMLParser woe, google news sometimes generates
@@ -10,7 +10,6 @@ critical:
 
 important:
 	* Port the global ignore list from MCO? (fred)
-	* user/access list for the SmartyPants (zhar?)
 	* convert db.dump once the bot is ready for it, and we have a newer dump
 	  (both + dene)
 	* Go through plugins and move hardcoded stuff out of them into files in
