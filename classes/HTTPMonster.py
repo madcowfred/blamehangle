@@ -9,11 +9,12 @@
 # This is done so that url requests will not cause the bot to hang if the
 # remote http server responds slowly.
 
+import time
+
 from Queue import Queue
 from select import select
 from thread import start_new_thread
 from threading import BoundedSemaphore
-from time import sleep
 # we have our own version so we can mess with the user-agent string
 from classes.urllib2 import urlopen
 
@@ -62,12 +63,17 @@ class HTTPMonster(Child):
 def URLThread(parent, message):
 	url, returnme = message.data
 	
+	tolog = 'Spawning thread to fetch URL: %s' % url
+	parent.putlog(LOG_DEBUG, tolog)
+	
 	# Acquire the semaphore. This will block if too many threads are already
 	# active.
 	parent.sem.acquire(1)
 	
-	tolog = 'Spawning thread to fetch URL: %s' % url
-	parent.putlog(LOG_DEBUG, tolog)
+	_sleep = time.sleep
+	_time = time.time
+	
+	last_read = _time()
 	
 	try:
 		# get the page
@@ -82,7 +88,12 @@ def URLThread(parent, message):
 					break
 				pagetext += data
 				
-				sleep(0.05)
+				last_read = _time()
+				
+				_sleep(0.05)
+			
+			elif (_time() - last_read >= 30):
+				raise Exception,' connection timed out'
 	
 	except Exception, why:
 		# something borked
