@@ -77,14 +77,22 @@ class SpellingBee(Plugin):
 		# were also right :|
 		if line.startswith('*') or line.startswith('+'):
 			replytext = "'%s' is probably spelled correctly." % word
-		# If it starts with '#', we were pretty wrong! '?' means we were
-		# pretty wrong, but we may have been right in an alternate universe.
-		elif line.startswith('#') or line.startswith('?'):
+		# If it starts with '#', we were pretty far wrong!
+		elif line.startswith('#'):
 			replytext = "'%s' isn't even CLOSE to being a real word!" % word
 		# We weren't right, but we might be close
 		elif line.startswith('&'):
 			words = line.split(None, 4)[4]
 			replytext = "Possible matches for '%s': %s" % (word, words)
+		# We weren't right, but we may have a mangled form of a word
+		elif line.startswith('?'):
+			mangled = line.split(None, 4)[4]
+			plus = mangled.find('+')
+			minus = mangled.find('-')
+			if plus >= 0 and plus < minus:
+				replytext = "'%s' is probably a mangled form of '%s'" % (word, mangled[:plus])
+			elif minus >= 0 and minus < plus:
+				replytext = "'%s' is probably a mangled form of '%s'" % (word, mangled[:minus])
 		# Err?
 		else:
 			replytext = 'I have no idea what just happened.'
