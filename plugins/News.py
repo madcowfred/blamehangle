@@ -404,7 +404,7 @@ class News(Plugin):
 			
 			if self.__rss_ignore_no_link:
 				if not item.has_key('link'):
-					tolog = "RSS item '%s' has no link!" % title
+					tolog = "RSS item '%s' has no link!" % item_title
 					self.putlog(LOG_DEBUG, tolog)
 					continue
 				link = item['link']
