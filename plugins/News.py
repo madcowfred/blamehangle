@@ -347,7 +347,6 @@ class News(Plugin):
 		
 		for name, feed in self.RSS_Feeds.items():
 			if currtime - feed['checked'] < feed['interval']:
-				print 'not yet'
 				continue
 			
 			feed['checked'] = currtime
@@ -416,8 +415,6 @@ class News(Plugin):
 				# Look for the URL and story title
 				m = GOOGLE_STORY_TITLE_RE.search(table)
 				if not m:
-					print table
-					print '^^STORY_TITLE^^'
 					continue
 				
 				url, title = m.groups()
@@ -425,8 +422,6 @@ class News(Plugin):
 				# Look for the story text
 				m = GOOGLE_STORY_TEXT_RE.search(table)
 				if not m:
-					print table
-					print '^^STORY_TEXT^^'
 					description = ''
 				else:
 					description = m.group(1).strip()
