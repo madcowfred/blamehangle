@@ -39,11 +39,11 @@ class ChatterGizmo(Child):
 		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
 		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
 		for event in [ 'welcome', 'namreply', 'join', 'part', 'kick', 'quit',
-			'pubmsg' ]:
+			'pubmsg', 'privmsg' ]:
 			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
 		
 		self.connect()
-
+	
 	def run_always(self):
 		try:
 			self.__ircobj.process_once()
@@ -222,3 +222,19 @@ class ChatterGizmo(Child):
 		else:
 			data = [conn, IRCT_PUBLIC, userinfo, chan, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
+	
+	# -----------------------------------------------------------------------
+	# Someone just said something to us in private!
+	# -----------------------------------------------------------------------
+	def _handle_privmsg(self, conn, event):
+		#chan = event.target().lower()
+		userinfo = UserInfo(event.source())
+		
+		# Strip any codes from the text
+		text = STRIP_CODES.sub('', event.arguments()[0])
+		
+		if text == '':
+			return
+		
+		data = [conn, IRCT_MSG, userinfo, None, text]
+		self.sendMessage('PluginHandler', IRC_EVENT, data)
