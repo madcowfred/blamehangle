@@ -40,7 +40,7 @@ class MoneyMangler(Plugin):
 				self.Currencies = cPickle.load(f)
 			except:
 				self.Currencies = {}
-				tolog = "error loading data from %s, Airlines plugin will not work as intended!" % config_fie
+				tolog = "error loading data from %s, MoneyMangler plugin will not work as intended!" % config_fie
 				self.putlog(LOG_WARNING, tolog)
 			else:
 				f.close()
