@@ -45,10 +45,17 @@ class Postman:
 		
 		# Create our children
 		self.__Children = {}
+
+		system = [ ChatterGizmo, PluginHandler, WhateverTheDatabaseIs ]
 		
-		for cls in [ PackMan, FileMonster, Queuer, Chatterbox, HeadHoncho ]:
+		for cls in system:
 			instance = cls(cls.__name__, self.inQueue, self.Config)
-			
+			self.__Children[cls.__name__] = instance
+
+		plugins = self.__Children['PluginHandler'].pluginList()
+
+		for cls in plugins:
+			instance = cls(cls.__name__, self.inQueue, self.Config)
 			self.__Children[cls.__name__] = instance
 	
 	# -----------------------------------------------------------------------
@@ -58,6 +65,10 @@ class Postman:
 		_time = time.time
 		
 		sometimes_counter = 0
+		
+		for child in self.__Children.values():
+			if hasattr(child, 'run_once'):
+				child.run_once()
 		
 		while 1:
 			try:
@@ -111,7 +122,7 @@ class Postman:
 				for child in self.__Children.values():
 					child.handleMessages()
 					
-					child.run_once()
+					child.main_loop()
 				
 				
 				# Do things that don't need to be done all that often
