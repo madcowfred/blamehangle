@@ -637,6 +637,8 @@ class ChatterGizmo(Child):
 						break
 		
 		else:
-			raise TypeError, 'unknown parameter type'
+			tolog = "Unknown REQ_PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
+			self.putlog(LOG_WARNING, tolog)
+			#raise TypeError, 'unknown parameter type'
 
 # ---------------------------------------------------------------------------
