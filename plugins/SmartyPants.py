@@ -87,6 +87,7 @@ LISTVALUES_RE = re.compile("^listvalues +(?P<name>.+)$")
 TELL_RE = re.compile("^tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 
 REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
+NULL_RE = re.compile("^<null>\s*$", re.I)
 
 
 MAX_FACT_NAME_LENGTH = 32
@@ -449,8 +450,16 @@ class SmartyPants(Plugin):
 		
 		else:
 			# We found it!
-			self.__requests += 1
 			row = results[0][0]
+			
+			# <null> check
+			m = NULL_RE.match(row['value'])
+			if m:
+				return
+			
+			# This factoid wasn't a <null>, so update stats and generate the
+			# reply
+			self.__requests += 1
 			
 			# <reply> and <action> check
 			m = REPLY_ACTION_RE.match(row['value'])
