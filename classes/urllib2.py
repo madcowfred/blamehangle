@@ -131,10 +131,10 @@ from urllib import localhost, url2pathname
 __version__ = "2.0a1"
 
 _opener = None
-def urlopen(url, user_agent, data=None):
+def urlopen(url, data=None):
     global _opener
     if _opener is None:
-        _opener = build_opener(user_agent)
+        _opener = build_opener()
     return _opener.open(url, data)
 
 def install_opener(opener):
@@ -243,9 +243,9 @@ class Request:
         self.headers[key] = val
 
 class OpenerDirector:
-    def __init__(self, user_agent):
-        server_version = user_agent
-        self.addheaders = [('User-agent', server_version)]
+    def __init__(self):
+        #server_version = "Python-urllib/%s" % __version__
+        #self.addheaders = [('User-agent', server_version)]
         # manage the individual handlers
         self.handlers = []
         self.handle_open = {}
@@ -352,7 +352,7 @@ class OpenerDirector:
 # would also know when it makes sense to skip a superclass in favor of
  # a subclass and when it might make sense to include both
 
-def build_opener(user_agent, *handlers):
+def build_opener(*handlers):
     """Create an opener object from a list of handlers.
 
     The opener will use several default handlers, including support
@@ -363,7 +363,7 @@ def build_opener(user_agent, *handlers):
     default handlers, the default handlers will not be used.
     """
 
-    opener = OpenerDirector(user_agent)
+    opener = OpenerDirector()
     default_classes = [ProxyHandler, UnknownHandler, HTTPHandler,
                        HTTPDefaultErrorHandler, HTTPRedirectHandler,
                        FTPHandler, FileHandler]
@@ -768,8 +768,8 @@ class AbstractHTTPHandler(BaseHandler):
         scheme, sel = splittype(req.get_selector())
         sel_host, sel_path = splithost(sel)
         h.putheader('Host', sel_host or host)
-        for args in self.parent.addheaders:
-            h.putheader(*args)
+        #for args in self.parent.addheaders:
+        #    h.putheader(*args)
         for k, v in req.headers.items():
             h.putheader(k, v)
         h.endheaders()
@@ -1025,8 +1025,8 @@ class OpenerFactory:
     def replace_handler(self, h):
         pass
 
-    def build_opener(self, user_agent):
-        opener = OpenerDirector(user_agent)
+    def build_opener(self):
+        opener = OpenerDirector()
         for ph in self.proxy_handlers:
             if inspect.isclass(ph):
                 ph = ph()
@@ -1088,7 +1088,7 @@ if __name__ == "__main__":
 ##    ph = CustomProxyHandler(p)
 
 ##    install_opener(build_opener(dauth, bauth, cfh, GopherHandler, ph))
-    install_opener(build_opener("test", cft, GopherHandler))
+    install_opener(build_opener(cfh, GopherHandler))
 
     for url in urls:
         if isinstance(url, types.TupleType):
