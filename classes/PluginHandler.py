@@ -43,7 +43,8 @@ class PluginHandler(Child):
 		for event, plugin in self.__Events[IRCT_TIMED].values():
 			if event.interval_elapsed(currtime):
 				event.last_trigger = currtime
-				self.sendMessage(plugin, PLUGIN_TRIGGER, event)
+				trigger = PluginTimedTrigger(event)
+				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
 	# -----------------------------------------------------------------------
 	# Postman has asked us to rehash our config.

@@ -252,6 +252,21 @@ class PluginTimedEvent:
 	def interval_elapsed(self, currtime):
 		return currtime - self.last_trigger >= self.interval
 
+class PluginTimedTrigger:
+	def __init__(self, event):
+		self.name = event.name
+		self.interval = event.interval
+		self.targets = event.targets
+		self.IRCType = IRCT_TIMED
+		self.last_trigger = event.last_trigger
+		self.args = event.args
+	
+	def __str__(self):
+		return self.name
+	
+	def __repr__(self):
+		return "<class PluginTimedTrigger: %s>" % self.__str__()
+
 # ---------------------------------------------------------------------------
 
 class PluginTextTrigger:
