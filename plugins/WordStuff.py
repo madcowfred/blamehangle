@@ -56,7 +56,7 @@ SPELL_RE = re.compile('^spell\s+(?P<word>\S+)$')
 
 WORD_URBAN = 'WORD_URBAN'
 URBAN_HELP = '\02urban\02 [n] <term> : Look up <term> on urbandictionary.com, possibly getting definition <n>.'
-URBAN_RE = re.compile('^urban\s+(?P<n>\d+|)\s*(?P<term>.+)$')
+URBAN_RE = re.compile('^urban(?P<n>\s+\d+\s+|\s+)(?P<term>.+)$')
 URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 # ---------------------------------------------------------------------------
