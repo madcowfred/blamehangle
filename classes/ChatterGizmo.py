@@ -101,10 +101,10 @@ class ChatterGizmo:
 	# -----------------------------------------------------------------------
 	def _handle_part(self, conn, event):
 		chan = event.target().lower()
-		nick = nm_to_n(event.source())
+		nick = irclib.nm_to_n(event.source())
 		
 		# Us
-		if nick == connection.real_nickname:
+		if nick == conn.real_nickname:
 			self.Conns[conn].parted(chan)
 			
 			#tolog = 'Left %s' % chan
@@ -118,7 +118,7 @@ class ChatterGizmo:
 	# Someone just quit (including ourselves? not sure)
 	# -----------------------------------------------------------------------
 	def _handle_quit(self, conn, event):
-		nick = nm_to_n(event.source())
+		nick = irclib.nm_to_n(event.source())
 		
 		if nick != connection.real_nickname:
 			self.Conns[conn].users.quit(nick)
@@ -132,6 +132,28 @@ class ChatterGizmo:
 			#	self.connection.nick(nick)
 	
 	# -----------------------------------------------------------------------
+	# Someone was just kicked from a channel (including ourselves)
+	# -----------------------------------------------------------------------
+	def _handle_kick(self, conn, event):
+		chan = event.target().lower()
+		kicker = irclib.nm_to_n(event.source())
+		kicked = event.arguments()[0]
+		
+		if kicked == connection.real_nickname:
+			#tolog = 'I just got kicked from %s by %s, rejoining...' % (chan, kicker)
+			#self.putlog(LOG_ALWAYS, tolog)
+			
+			self.Conns[conn].users.parted(chan)
+			conn.join(chan)
+		
+		else:
+			self.__Users.parted(chan, kicked)
+			
+			# If the user has left all our channels, tell FileMonster
+			#if not self.__Users.in_any_chan(nick):
+			#	self.sendMessage('FileMonster', USER_LEFT, nick)
+	
+	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
 	# -----------------------------------------------------------------------
 	def _handle_namreply(self, conn, event):
@@ -143,4 +165,3 @@ class ChatterGizmo:
 				nick = nick[1:]
 			
 			self.Conns[conn].joined(chan, nick)
-
