@@ -519,10 +519,18 @@ class ChatterGizmo(Child):
 		
 		elif first == 'CLIENTINFO':
 			self.Conns[conn].ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
-
+		
 		elif first == 'REHASH':
+			# If they have access, rehash
 			if self.Userlist.Has_Flag(userinfo, 'Global', 'admin'):
+				tolog = "Admin '%s' (%s@%s) requested a rehash." % (userinfo.nick, userinfo.ident, userinfo.host)
 				self.sendMessage('Postman', REQ_LOAD_CONFIG, [])
+			# If not, cry
+			else:
+				tolog = "Unknown lamer '%s' (%s@%s) requested rehash!" % (userinfo.nick, userinfo.ident, userinfo.host)
+			
+			# Log it
+			self.connlog(conn, LOG_WARNING, tolog)
 		
 		else:
 			wrap = self.Conns[conn]
