@@ -42,6 +42,7 @@ FACT_GET = "FACT_GET"
 FACT_ALSO = "FACT_ALSO"
 FACT_DEL = "FACT_DEL"
 FACT_REPLACE = "FACT_REPLACE"
+FACT_NO = "FACT_NO"
 FACT_INFO = "FACT_INFO"
 FACT_STATUS = "FACT_STATUS"
 FACT_LOCK = "FACT_LOCK"
@@ -68,7 +69,8 @@ LISTKEYS_QUERY = 'SELECT name FROM factoids WHERE name LIKE "%%%s%%"'
 LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
 
 GET_RE = re.compile("^(?P<name>.+?)\??$")
-SET_RE = re.compile("^(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
+SET_RE = re.compile("^(?!no, )(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
+NO_RE = re.compile("^no, (?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
 ALSO_RE = re.compile("(?P<name>.+?) (is|are) also (?P<value>.+)$")
 DEL_RE = re.compile("^forget (?P<name>.+)$")
 REP_RE = re.compile("^(?P<name>.+?) =~ (?P<modstring>.+)$")
@@ -128,12 +130,15 @@ class SmartyPants(Plugin):
 		self.__dunnos = 0
 		self.__sets = 0
 		self.__modifys = 0
+		self.__dels = 0
 	
 	def _message_PLUGIN_REGISTER(self, message):
 		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_RE, exclusive=1)
 		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_RE, exclusive=1)
 		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE)
 		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE)
+		no_dir = PluginTextEvent(FACT_NO, IRCT_PUBLIC_D, NO_RE)
+		no_msg = PluginTextEvent(FACT_NO, IRCT_MSG, NO_RE)
 		also_dir = PluginTextEvent(FACT_ALSO, IRCT_PUBLIC_D, ALSO_RE)
 		also_msg = PluginTextEvent(FACT_ALSO, IRCT_MSG, ALSO_RE)
 		del_dir = PluginTextEvent(FACT_DEL, IRCT_PUBLIC_D, DEL_RE)
@@ -153,7 +158,7 @@ class SmartyPants(Plugin):
 		listval_dir = PluginTextEvent(FACT_LISTVALUES, IRCT_PUBLIC_D, LISTVALUES_RE)
 		listval_msg = PluginTextEvent(FACT_LISTVALUES, IRCT_MSG, LISTVALUES_RE)
 		
-		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg, listkey_dir, listkey_msg, listval_dir, listval_msg)
+		self.register(get_dir, get_msg, set_dir, set_msg, no_dir, no_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg, listkey_dir, listkey_msg, listval_dir, listval_msg)
 	
 	#------------------------------------------------------------------------
 	
@@ -163,8 +168,8 @@ class SmartyPants(Plugin):
 		# Someone wants to view a factoid.
 		if trigger.name == FACT_GET:
 			name = trigger.match.group('name')
-			data = [trigger, (GET_QUERY, [name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (GET_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone wants to set a factoid. If the name is too long, tell them
 		# to go to hell.
@@ -174,8 +179,15 @@ class SmartyPants(Plugin):
 				replytext = "factoid name is too long"
 				self.sendReply(trigger, replytext)
 			else:
-				data = [trigger, (GET_QUERY, [name])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				query = (GET_QUERY, name)
+				self.dbQuery(trigger, query)
+
+		# Somone just told us to replace the definition of a factoid with
+		# a new one
+		elif trigger.name == FACT_NO:
+			name = trigger.match.group('name')
+			query = (GET_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone wants to add to the definition of a factoid
 		elif trigger.name == FACT_ALSO:
@@ -184,55 +196,55 @@ class SmartyPants(Plugin):
 				replytext = "factoid name is too long"
 				self.sendReply(trigger, replytext)
 			else:
-				data = [trigger, (GET_QUERY, [name])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				query = (GET_QUERY, name)
+				self.dbQuery(trigger, query)
 		
 		# Someone wants to delete a factoid
 		elif trigger.name == FACT_DEL:
 			name = trigger.match.group('name')
-			data = [trigger, (GET_QUERY, [name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (GET_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone wants to do a search/replace on a factoid
 		elif trigger.name == FACT_REPLACE:
 			name = trigger.match.group('name')
-			data = [trigger, (GET_QUERY, [name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (GET_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone wants to lock a factoid
 		elif trigger.name == FACT_LOCK:
 			name = trigger.match.group('name')
-			data = [trigger, (GET_QUERY, [name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (GET_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone wants to unlock a factoid
 		elif trigger.name == FACT_UNLOCK:
 			name = trigger.match.group('name')
-			data = [trigger, (GET_QUERY, [name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (GET_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone wants information on a factoid
 		elif trigger.name == FACT_INFO:
 			name = trigger.match.group('name')
-			data = [trigger, (INFO_QUERY, [name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (INFO_QUERY, name)
+			self.dbQuery(trigger, query)
 		
 		# Someone asked for our runtime status
 		elif trigger.name == FACT_STATUS:
-			data = [trigger, (STATUS_QUERY, [])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (STATUS_QUERY, )
+			self.dbQuery(trigger, query)
 		
 		# Someone asked to search by key
 		elif trigger.name == FACT_LISTKEYS:
 			name = trigger.match.group('name')
-			data = [trigger, (LISTKEYS_QUERY % name, [])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query =  (LISTKEYS_QUERY % name, )
+			self.dbQuery(trigger, query)
 		
 		# Someone asked to search by value
 		elif trigger.name == FACT_LISTVALUES:
 			name = trigger.match.group('name')
-			data = [trigger, (LISTVALUES_QUERY % name, [])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query =  (LISTVALUES_QUERY % name, )
+			self.dbQuery(trigger, query)
 	
 	#------------------------------------------------------------------------
 	
@@ -244,6 +256,9 @@ class SmartyPants(Plugin):
 		
 		elif trigger.name == FACT_SET:
 			self.__Fact_Set(trigger, results)
+
+		elif trigger.name == FACT_NO:
+			self.__Fact_No(trigger, results)
 
 		elif trigger.name == FACT_ALSO:
 			self.__Fact_Also(trigger, results)
@@ -312,8 +327,8 @@ class SmartyPants(Plugin):
 			requester_nick = trigger.userinfo.nick
 			requester_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
 			now = int(time.time())
-			data = [trigger, (REQUESTED_QUERY, [requester_nick, requester_host, now, name])]
-			self.sendMessage('DataMonkey', REQ_QUERY, data)
+			query = (REQUESTED_QUERY, requester_nick, requester_host, now, name)
+			self.dbQuery(trigger, query)
 		
 		self.sendReply(trigger, replytext)
 	
@@ -330,15 +345,18 @@ class SmartyPants(Plugin):
 				# The factoid wasn't in our database, so insert it
 				#
 				#INSERT INTO factoids (name, value, author_nick, author_host, created_time)
-				self.__sets += 1
 				name = trigger.match.group('name')
 				value = trigger.match.group('value')
-				author_nick = trigger.userinfo.nick
-				author_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
-				created_time = int(time.time())
-				data = [trigger, (SET_QUERY, [name, value, author_nick, author_host, created_time])]
-				
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
+				if len(value) > MAX_FACT_VAL_LENGTH:
+					replytext = "that's too long"
+					self.sendReply(trigger, replytext)
+				else:
+					self.__sets += 1
+					author_nick = trigger.userinfo.nick
+					author_host = '%s@%s' % (trigger.userinfo.ident, trigger.userinfo.host)
+					created_time = int(time.time())
+					query = (SET_QUERY, name, value, author_nick, author_host, created_time)
+					self.dbQuery(trigger, query)
 			
 			else:
 				# It was already in our database
@@ -355,6 +373,75 @@ class SmartyPants(Plugin):
 				replytext = self.__Random(OK)
 			self.sendReply(trigger, replytext)
 
+	# -----------------------------------------------------------------------
+	# A user just tried to update a factoid by replacing the existing
+	# definition with a new one
+	# -----------------------------------------------------------------------
+	def __Fact_No(self, trigger, results):
+		typ = type(results[0])
+		name = trigger.match.group('name')
+		value = trigger.match.group('value')
+
+		if len(value) > MAX_FACT_VAL_LENGTH:
+			replytext = "that's too long"
+			self.sendReply(trigger, replytext)
+			return
+
+		# SELECT reply
+		if typ == types.TupleType:
+			if results == [()]:
+				# this factoid wasn't in the db
+				self.__sets += 1
+				author_nick = trigger.userinfo.nick
+				author_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
+				created_time = int(time.time())
+				query = (SET_QUERY, name, value, author_nick, author_host, created_time)
+				self.dbQuery(trigger, query)
+
+			else:
+				# This factoid was in our db
+				row = results[0][0]
+				if row['locker_nick']:
+					if not self.__Check_User_Flags(trigger.userinfo, 'lock'):
+						replytext = "You don't have permission to alter locked factoids"
+						self.sendReply(trigger, replytext)
+						return
+				if self.__Check_User_Flags(trigger.userinfo, 'delete'):
+					# This user is okay
+					self.__modifys += 1
+					author_nick = trigger.userinfo.nick
+					author_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
+					created_time = int(time.time())
+					del_q = (DEL_QUERY, name)
+					set_q = (SET_QUERY, name, value, author_nick, author_host, created_time)
+					self.dbQuery(trigger, del_q, set_q)
+				else:
+					# This user is not allowed to delete factoids, so
+					# we won't let them overwrite either
+					replytext = "You don't have permission to overwrite factoids"
+					self.sendReply(trigger, replytext)
+
+		# UPDATE reply
+		elif typ == types.LongType:
+			if len(results) == 2:
+				result1, result2 = results
+				if result1:
+					if result2:
+						replytext = self.__Random(OK)
+					else:
+						replytext = "factoid insertion failed, warning, warning!"
+				else:
+					replytext = "factoid deletion failed, warning, warning!"
+			else:
+				result = results[0]
+				if result:
+					replytext = self.__Random(OK)
+				else:
+					replytext = "factoid insertion failed, warning, warning!"
+			
+			self.sendReply(trigger, replytext)
+			
+	
 	# -----------------------------------------------------------------------
 	# A user just tried to update a factoid. If it exists, we add to its
 	# definition, otherwise we make a new factoid.
@@ -405,9 +492,8 @@ class SmartyPants(Plugin):
 		modifier_nick = trigger.userinfo.nick
 		modifier_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
 		name = trigger.match.group('name')
-		data = [trigger, (MOD_QUERY, [value, modifier_nick, modifier_host, modified_time, name])]
-		self.sendMessage('DataMonkey', REQ_QUERY, data)
-							
+		query = (MOD_QUERY, value, modifier_nick, modifier_host, modified_time, name)
+		self.dbQuery(trigger, query)
 					
 
 	# -----------------------------------------------------------------------
@@ -431,8 +517,9 @@ class SmartyPants(Plugin):
 			else:
 				# It was in our database, delete it!
 				if self.__Check_User_Flags(trigger.userinfo, 'delete'):
-					data = [trigger, (DEL_QUERY, [name])]
-					self.sendMessage('DataMonkey', REQ_QUERY, data)
+					self.__dels += 1
+					query = (DEL_QUERY, name)
+					self.dbQuery(trigger, query)
 				else:
 					replytext = "you don't have permission to delete factoids"
 					self.sendReply(trigger, replytext)
@@ -564,8 +651,8 @@ class SmartyPants(Plugin):
 						locker_nick = trigger.userinfo.nick
 						locker_host = "%s@%s" % (trigger.userinfo.ident, trigger.userinfo.host)
 						locked_time = int(time.time())
-						data = [trigger, (LOCK_QUERY, [locker_nick, locker_host, locked_time, name])]
-						self.sendMessage('DataMonkey', REQ_QUERY, data)
+						query = (LOCK_QUERY, locker_nick, locker_host, locked_time, name)
+						self.dbQuery(trigger, query)
 				else:
 					# this user is not allowed to lock factoids
 					replytext = "you don't have permission to lock factoids"
@@ -604,8 +691,8 @@ class SmartyPants(Plugin):
 				if self.__Check_User_Flags(trigger.userinfo, 'lock'):
 					# check if the factoid is actually locked
 					if row['locker_nick']:
-						data = [trigger, (UNLOCK_QUERY, [name])]
-						self.sendMessage('DataMonkey', REQ_QUERY, data)
+						query =  (UNLOCK_QUERY, name)
+						self.dbQuery(trigger, query)
 					else:
 						# this factoid wasn't locked
 						replytext = "'\02%s\02' wasn't locked" % name
@@ -719,7 +806,7 @@ class SmartyPants(Plugin):
 	def __Fact_Status(self, trigger, results):
 		row = results[0][0]
 		num = row['total']
-		replytext = "Since %s, there have been \02%d\02 requests, \02%d\02 modifications, \02%d\02 new factoids, and \02%d\02 dunnos. I currently reference \02%d\02 factoids." % (self.__start_time, self.__requests, self.__modifys, self.__sets, self.__dunnos, num)
+		replytext = "Since %s, there have been \02%d\02 requests, \02%d\02 modifications, \02%d\02 new factoids, \02%d\02 deletions, and \02%d\02 dunnos. I currently reference \02%d\02 factoids." % (self.__start_time, self.__requests, self.__modifys, self.__sets, self.__dels, self.__dunnos, num)
 		self.sendReply(trigger, replytext)
 
 	
