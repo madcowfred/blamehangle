@@ -42,6 +42,8 @@ IRCT_TIMED = 'IRCT_TIMED'
 # ---------------------------------------------------------------------------
 # Request constants
 # ---------------------------------------------------------------------------
+REQ_ADD_TIMER = 'REQ_ADD_TIMER'
+REQ_DEL_TIMER = 'REQ_DEL_TIMER'
 REQ_LOG = 'REQ_LOG'
 REQ_NOTICE = 'REQ_NOTICE'
 REQ_PRIVMSG = 'REQ_PRIVMSG'
@@ -56,4 +58,5 @@ REQ_REHASH = 'REQ_REHASH'
 # Reply constants
 # ---------------------------------------------------------------------------
 REPLY_QUERY = 'REPLY_QUERY'
+REPLY_TIMER_TRIGGER = 'REPLY_TIMER_TRIGGER'
 REPLY_URL = 'REPLY_URL'

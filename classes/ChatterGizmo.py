@@ -20,6 +20,11 @@ from classes.Users import *
 
 # ---------------------------------------------------------------------------
 
+TIMER_RECONNECT = 'TIMER_RECONNECT'
+TIMER_TIMED_OUT = 'TIMER_TIMED_OUT'
+
+# ---------------------------------------------------------------------------
+
 # bold | codes off | reverse | underline | 3 forms of colours
 STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,2}|\x03)')
 
@@ -58,6 +63,8 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	
 	def run_once(self):
+		self.addTimer('moo', 5, 'cow')
+		
 		self.connect()
 	
 	def run_sometimes(self, currtime):
@@ -76,14 +83,7 @@ class ChatterGizmo(Child):
 		
 		# Do other stuff here
 		for conn, wrap in self.Conns.items():
-			if wrap.status == STATUS_DISCONNECTED and (currtime - wrap.last_connect) >= 5:
-				wrap.jump_server()
-			
-			elif wrap.status == STATUS_CONNECTING and (currtime - wrap.last_connect) >= 30:
-				self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
-				wrap.jump_server()
-			
-			elif wrap.status == STATUS_CONNECTED:
+			if wrap.status == STATUS_CONNECTED:
 				wrap.run_sometimes(currtime)
 	
 	# Process any data from IRC
@@ -162,6 +162,8 @@ class ChatterGizmo(Child):
 		self.Conns[conn].last_connect = time.time()
 		
 		self.connlog(conn, LOG_ALWAYS, 'Disconnected from server')
+		
+		self.addTimer(TIMER_RECONNECT, 5, conn)
 	
 	# It was bad.
 	def _handle_error(self, conn, event):
@@ -441,3 +443,27 @@ class ChatterGizmo(Child):
 		
 		else:
 			raise TypeError, 'unknown parameter type'
+	
+	# A timer has triggered, yay
+	def _message_REPLY_TIMER_TRIGGER(self, message):
+		ident, data = message.data
+		
+		if ident == TIMER_RECONNECT:
+			conn = data[0]
+			self.Conns[conn].jump_server()
+		
+		#elif ident == TIMER_TIMED_OUT:
+		#	conn = data[0]
+		#	self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
+		#	
+		#	self._handle_disconnect(self, conn, event):
+		#	
+		#	if conn.sock:
+		#		conn.sock.close()
+		#	
+		#	self.Conns[conn].disconnected()
+		#	conn.disconnect()
+		#	
+		#	elif wrap.status == STATUS_CONNECTING and (currtime - wrap.last_connect) >= 30:
+		#		self.connlog(conn, LOG_ALWAYS, 'Connection failed: connection timed out')
+		#		wrap.jump_server()

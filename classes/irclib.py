@@ -626,9 +626,9 @@ class ServerConnection(Connection):
 
 			message -- Quit message.
 		"""
-		if self.connected == 0:
-			return
-
+		#if self.connected == 0:
+		#	return
+		
 		self.connected = 0
 		try:
 			self.sock.close()
@@ -636,11 +636,11 @@ class ServerConnection(Connection):
 			pass
 		self.sock = None
 		self._handle_event(Event("disconnect", self.server, "", [message]))
-
+	
 	def globops(self, text):
 		"""Send a GLOBOPS command."""
 		self.send_raw("GLOBOPS :" + text)
-
+	
 	def info(self, server=""):
 		"""Send an INFO command."""
 		self.send_raw(string.strip(string.join(["INFO", server])))

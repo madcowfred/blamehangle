@@ -40,16 +40,12 @@ class Child:
 		if self.stopnow:
 			return
 		
-		
-		try:
+		if not self.inQueue.empty():
 			message = self.inQueue.get(0)
-		
-		except Empty:
-			return
-		
-		else:
+			
 			try:
-				method = getattr(self, '_message_%s' % message.ident)
+				name = '_message_%s' % message.ident
+				method = getattr(self, name)
 			
 			except AttributeError:
 				tolog = 'Unhandled message in %s: %s' % (self.__name, message.ident)
@@ -103,3 +99,12 @@ class Child:
 	def dbQuery(self, returnme, *queries):
 		data = [returnme, queries]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
+	
+	# Timer support?
+	def addTimer(self, ident, interval, *args):
+		data = [ident, interval, args]
+		self.sendMessage('TimeKeeper', REQ_ADD_TIMER, data)
+	
+	def delTimer(self, ident):
+		data = [ident]
+		self.sendMessage('TimeKeeper', REQ_DEL_TIMER, data)
