@@ -251,7 +251,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	# Disconnect from the server (duh)
 	def disconnect(self):
 		if self.status != STATUS_DISCONNECTED:
-			self.close()
+			self.handle_close()
 	
 	# -----------------------------------------------------------------------
 	
