@@ -143,7 +143,7 @@ class PluginHandler(Child):
 	def _message_PLUGIN_REPLY(self, message):
 		reply = message.data
 		
-		if isinstance(reply.trigger, PluginTimedEvent):
+		if isinstance(reply.trigger, PluginTimedTrigger):
 			self.privmsg(reply.trigger.targets, None, reply.replytext)
 		
 		elif isinstance(reply.trigger, PluginTextTrigger):
