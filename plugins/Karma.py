@@ -47,26 +47,26 @@ class Karma(Plugin):
 	#------------------------------------------------------------------------
 
 	def _message_PLUGIN_TRIGGER(self, message):
-		[key], event, IRCtype, userinfo = message.data
+		[key], event, conn, IRCtype, userinfo = message.data
 		
-		queryObj = whatever(__SELECT_QUERY, key, [key, event, IRCtype, userinfo])
+		queryObj = whatever(__SELECT_QUERY, key, [key, event, conn, IRCtype, userinfo])
 		self.sendMessage('TheDatabase', DB_QUERY, queryObj)
 	
 	#------------------------------------------------------------------------
 
 	def _message_WHATEVER_THE_DB_SENDS_BACK(self, message):
-		result, [key, event, IRCtype, userinfo] = message.data
+		result, [key, event, conn, IRCtype, userinfo] = message.data
 		
 		if event == KARMA_LOOKUP:
 			if result == "":
 				# no karma!
 				replytext = "%s has neutral karma." % key
-				reply = [replytext, IRCtype, userinfo]
+				reply = [replytext, conn, IRCtype, userinfo]
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 			else:
 				key, value = result
 				replytext = "%s has karma of %d" % (key, value)
-				reply = [replytext, IRCtype, userinfo]
+				reply = [replytext, conn, IRCtype, userinfo]
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 		elif event == KARMA_PLUS:
