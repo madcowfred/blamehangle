@@ -18,6 +18,7 @@ ASX_URL = 'http://www.asx.com.au/asx/markets/EquitySearchResults.jsp?method=get&
 EXCHANGE_URL = 'http://finance.yahoo.com/currency/convert?amt=%(amt)s&from=%(from)s&to=%(to)s&submit=Convert'
 QUOTE_URL = 'http://finance.yahoo.com/q?d=v1&s=%s'
 SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
+USDEBT_URL = 'http://www.brillig.com/debt_clock/'
 
 TITLE_RE = re.compile('<title>(\S+): Summary for (.*?) -')
 
@@ -111,6 +112,11 @@ class MoneyMangler(Plugin):
 			regexp = re.compile('^symbol (?P<findme>.+)$'),
 			help = ('symbol', '\02symbol\02 <findme> : Look up a ticker symbol.'),
 		)
+		self.addTextEvent(
+			method = self.__Fetch_USDebt,
+			regexp = re.compile('^usdebt$'),
+			help = ('usdebt', '\02usdebt\02 : Look up the current US National Debt.'),
+		)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to lookup a stock or stocks on the ASX
@@ -156,6 +162,10 @@ class MoneyMangler(Plugin):
 		findme = trigger.match.group('findme').upper()
 		url = SYMBOL_URL % findme
 		self.urlRequest(trigger, self.__Symbol, url)
+	
+	# Someone wants to see how far in the hole the US is
+	def __Fetch_USDebt(self, trigger):
+		self.urlRequest(trigger, self.__Parse_USDebt, USDEBT_URL)
 	
 	# -----------------------------------------------------------------------
 	# Parse the ASX page and spit out any results
@@ -421,5 +431,18 @@ class MoneyMangler(Plugin):
 			self.putlog(LOG_WARNING, 'Currency update failed, found 0 currencies!')
 			if os.path.isfile(filename):
 				self.__Load_Currencies(filename)
+	
+	# -----------------------------------------------------------------------
+	# Parse the US National Debt Clock page
+	def __Parse_USDebt(self, trigger, resp):
+		# Find the info
+		chunk = FindChunk(resp.data, 'HEIGHT=41 ALT="', '"')
+		if not chunk:
+			self.sendReply(trigger, 'Page parsing failed.')
+			return
+		
+		# Spit it out
+		replytext = 'Current U.S. National Debt: %s' % (chunk.replace(' ', ''))
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
