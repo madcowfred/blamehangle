@@ -414,24 +414,50 @@ class SmartyPants(Plugin):
 				
 				modstring = trigger.match.group('modstring')
 				if modstring.startswith("s"):
-					bits = modstring.split(modstring[1])
 					# break the modstring into its components
+					bits = modstring.split(modstring[1])
 					if len(bits) == 4:
 						search = bits[1]
 						replace = bits[2]
-						try:
-							s = re.compile(search)
-						except:
-							replytext = "'%s is not a valid regexp" % search
+
+						new_value = value.replace(search, replace)
+						if new_value == value:
+							replytext = "that doesn't contain '%s'" % search
+							self.sendReply(trigger, replytext)
+							return
+
+						# bitch at the user if they made the factoid too
+						# long
+						if len(new_value) > MAX_FACT_VAL_LENGTH:
+							replytext = "that will wake the factoid too long"
 							self.sendReply(trigger, replytext)
 						else:
-							new_value = re.sub(s, replace, value)
-							if len(new_value) > MAX_FACT_VAL_LENGTH:
-								replytext = "that will make the factoid too long"
-								self.sendReply(trigger, replytext)
-							else:
-								# make the changes!
-								self.__Fact_Update(trigger, new_value)
+							# everything is okay, make the change
+							self.__Fact_Update(trigger, new_value)
+
+						# The following code is an alternative to the above
+						# block, starting from new_value = ...
+						# This code allows for arbitrary regexps in the
+						# search/replace string, instead of just words.
+						# I've commented this out and replaced it with the
+						# above code because I'm not sure we should let
+						# people on irc do this sort of thing, since it is
+						# quite easy to get a regexp wrong and destroy an
+						# entire factoid.
+						#
+						#try:
+						#	s = re.compile(search)
+						#except:
+						#	replytext = "'%s is not a valid regexp" % search
+						#	self.sendReply(trigger, replytext)
+						#else:
+						#	new_value = re.sub(s, replace, value)
+						#	if len(new_value) > MAX_FACT_VAL_LENGTH:
+						#		replytext = "that will make the factoid too long"
+						#		self.sendReply(trigger, replytext)
+						#	else:
+						#		# make the changes!
+						#		self.__Fact_Update(trigger, new_value)
 								
 					else:
 						# we got a junk modstring
