@@ -661,6 +661,11 @@ class SmartyPants(Plugin):
 		# Already in our database
 		else:
 			row = result[0]
+			
+			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
+				replytext = "You don't have permission to alter factoids."
+				self.sendReply(trigger, replytext)
+				return
 			if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 				self.sendReply(trigger, "You are not allowed to alter locked factoids.")
 				return
