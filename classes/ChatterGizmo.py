@@ -371,7 +371,7 @@ class ChatterGizmo(Child):
 		for nick in event.arguments[2].split():
 			if nick[0] in USER_MODES:
 				self.Conns[connid].users.joined(chan, nick[1:])
-				self.Conns[connid].users.add_mode(chan, '+', USER_MODES[nick[0]])
+				self.Conns[connid].users.add_mode(chan, nick[1:], USER_MODES[nick[0]])
 			else:
 				self.Conns[connid].users.joined(chan, nick)
 	
