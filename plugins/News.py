@@ -67,8 +67,9 @@ class News(Plugin):
 		
 		currtime = time.time()
 		self.__Last_Clearout_Time = currtime
-		
 		self.__rand_gen = Random(currtime)
+		
+		self.RSS_Feeds = {}
 		
 		self.rehash()
 	
@@ -99,26 +100,12 @@ class News(Plugin):
 			self.__Targets[target] = self.News_Options.pop(target, {})
 		self.__Targets['rss_default'] = self.RSS_Options.pop('default_targets', {})
 		
-		# And set up our RSS feeds
-		self.__Setup_RSS_Feeds()
-	
-	# Make extra sure our news queue is saved
-	def shutdown(self, message):
-		self.savePickle('.news.outgoing', self.__outgoing)
-	
-	# -----------------------------------------------------------------------
-	# Do stuff
-	def __Setup_RSS_Feeds(self):
-		self.RSS_Feeds = {}
-		
+		# Update our RSS feed list
 		currtime = time.time()
-		
-		for section in self.Config.sections():
-			if not section.startswith('RSS.'):
-				continue
-			
-			feed = {}
+		sections = [s for s in self.Config.sections() if s.startswith('RSS.')]
+		for section in sections:
 			feedopts = self.OptionsDict(section)
+			name = section.split('.', 1)[1]
 			
 			feed = {
 				'url': feedopts['url'],
@@ -131,13 +118,24 @@ class News(Plugin):
 				'last-modified': None,
 			}
 			
-			# And done
-			name = section.split('.', 1)[1]
-			self.RSS_Feeds[name] = feed
+			# If the feed is new, just add it to the list
+			if name not in self.RSS_Feeds:
+				self.RSS_Feeds[name] = feed
+			# It's already there, just update the bits we need to update
+			else:
+				for k in feed.keys():
+					if k not in ('checked', 'last-modified'):
+						self.RSS_Feeds[name][k] = feed[k]
 		
-		# If we found some feeds, we'll be needing a parser
-		#if self.RSS_Feeds:
-		#	self.__Parser = FeedParser()
+		# And remove any that are no longer around
+		for name in self.RSS_Feeds.keys():
+			section = 'RSS.%s' % name
+			if section not in sections:
+				del self.RSS_Feeds[name]
+	
+	# Make extra sure our news queue is saved
+	def shutdown(self, message):
+		self.savePickle('.news.outgoing', self.__outgoing)
 	
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check
@@ -202,7 +200,7 @@ class News(Plugin):
 				method = self.__RSS_Check,
 				interval = 10,
 			)
-			tolog = 'Registered %d RSS feeds' % len(self.RSS_Feeds)
+			tolog = 'Registered %d RSS feed(s)' % (len(self.RSS_Feeds))
 			self.putlog(LOG_ALWAYS, tolog)
 		# Timed event for cleaning up the database once an hour
 		self.addTimedEvent(
