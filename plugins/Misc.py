@@ -105,12 +105,21 @@ class Misc(Plugin):
 		for m in [self._parse_re.search(chunk) for chunk in chunks]:
 			if m:
 				bits, typ, getlink, date, name, email = m.groups()
-				geturl = urlparse.urljoin(PGP_URL, getlink)
 				
-				replytext = "PGP key for '%s' (%s): %sbit %sSA, added %s - %s" % (
-					name, email, bits, typ, date, geturl)
-				self.sendReply(trigger, replytext)
-				return
+				done = 0
+				if '@' in findme:
+					if email == findme:
+						done = 1
+				else:
+					done = 1
+				
+				if done:
+					geturl = urlparse.urljoin(PGP_URL, getlink)
+					
+					replytext = "PGP key for '%s' (%s): %sbit %sSA, added %s - %s" % (
+						name, email, bits, typ, date, geturl)
+					self.sendReply(trigger, replytext)
+					return
 		
 		# Nothing matched here
 		if not chunks:
