@@ -25,7 +25,7 @@ SYNONYM_URL = 'http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1
 # Match the results line
 RESULTS_RE = re.compile(r'^\((\d+) res')
 # Match a proper word
-WORD_RE = re.compile(r'^([A-Za-z\-]+)\,?$')
+WORD_RE = re.compile(r'^([A-Za-z\- ]+)\,?$')
 
 # Limit the number of results we come up with
 RHYMEZONE_LIMIT = 40
