@@ -47,6 +47,11 @@ class Database:
 		
 		self.db.paramstyle = 'format'
 	
+	def disconnect(self):
+		if self.db:
+			self.db.close()
+			self.db = None
+	
 	def query(self, query, *args):
 		self.__connect()
 		
@@ -79,7 +84,19 @@ def DataThread(parent, db, message):
 	queries = message.data[1:]
 	
 	for query, args in queries:
-		results.append(db.query(query, *args))
+		try:
+			result = db.query(query, *args)
+		
+		except OperationalError, msg:
+			tolog = 'Database error: %s' % msg[1]
+			parent.putlog(LOG_ALWAYS, tolog)
+			
+			results.append(())
+			
+			db.disconnect()
+		
+		else:
+			results.append(db.query(query, *args))
 	
 	data = [results, toreturn]
 	
