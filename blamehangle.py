@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 
+import gc
 import getopt
 import os
 import sys
 import time
-import gc
 
 from ConfigParser import ConfigParser
 
-#from classes.ChatterGizmo import ChatterGizmo
 from classes.Postman import Postman
 
 # ---------------------------------------------------------------------------
 
 def main():
-	"The initial setup, config reading, and probably main loop."
-
+	"""
+	The initial setup for blamehangle. Parse command line options, read config
+	file, and start the Postman.
+	"""
+	
 	#gc.set_debug(gc.DEBUG_STATS|gc.DEBUG_COLLECTABLE|gc.DEBUG_UNCOLLECTABLE|gc.DEBUG_INSTANCES|gc.DEBUG_OBJECTS)
 	# set our own gc thresholds, to keep mem usage from creeping. It seems
 	# that the default is extremely slow, and since blamehangle is not an
