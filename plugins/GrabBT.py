@@ -100,15 +100,21 @@ class GrabBT(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
+		# If the user has the grabany flag, go for it
+		if self.Userlist.Has_Flag(trigger.userinfo, 'GrabBT', 'grabany'):
+			found = 1
+		
 		# See if the URL matches any of our regexps
-		found = 0
-		url = trigger.match.group(1)
+		else:
+			found = 0
+			url = trigger.match.group(1)
+			
+			for r in self.__grab_res:
+				if r.match(url):
+					found = 1
+					break
 		
-		for r in self.__grab_res:
-			if r.match(url):
-				found = 1
-				break
-		
+		# If we found something, grab it
 		if found:
 			self.sendReply(trigger, "Downloading torrent...")
 			self.urlRequest(trigger, self.__Save_Torrent, url)
@@ -116,6 +122,7 @@ class GrabBT(Plugin):
 			tolog = "%s (%s@%s) on %s/%s asked me to download a torrent" % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
 			self.putlog(LOG_ALWAYS, tolog)
 		
+		# And if we didn't, cry
 		else:
 			self.sendReply(trigger, "That URL is not allowed.")
 			
