@@ -16,6 +16,19 @@ from classes.Plugin import Plugin
 from classes.Constants import *
 import re
 
+SELECT_QUERY = "SELECT value FROM karma WHERE name = %s"
+INSERT_QUERY = "INSERT INTO karma VALUES ('%s',%d)"
+UPDATE_QUERY = "UPDATE karma SET value = value + %d WHERE name = %s"
+
+KARMA_PLUS = "KARMA_PLUS"
+KARMA_MINUS = "KARMA_MINUS"
+KARMA_LOOKUP = "KARMA_LOOKUP"
+KARMA_MOD = "KARMA_MOD"
+
+PLUS_RE = re.compile("^.*(?=\+\+$)")
+MINUS_RE = re.compile("^.*(?=--$)")
+LOOKUP_RE = re.compile("^karma .*(?P<name>?=$|\?$)")
+
 class Karma(Plugin):
 	"""
 	This is a plugin for Blamehangle that implements user-defined karma.
@@ -28,21 +41,6 @@ class Karma(Plugin):
 	karma, meaning zero.
 	"""
 	
-	SELECT_QUERY = "SELECT value FROM karma WHERE name = %s"
-	INSERT_QUERY = "INSERT INTO karma VALUES ('%s',%d)"
-	UPDATE_QUERY = "UPDATE karma SET value = value + %d WHERE name = %s"
-	
-	KARMA_PLUS = "KARMA_PLUS"
-	KARMA_MINUS = "KARMA_MINUS"
-	KARMA_LOOKUP = "KARMA_LOOKUP"
-	KARMA_MOD = "KARMA_MOD"
-
-	PLUS_RE = re.compile("^.*(?=\+\+$)")
-	MINUS_RE = re.compile("^.*(?=--$)")
-	LOOKUP_RE = re.compile("^karma .*(?P<name>?=$|\?$)")
-	
-	#------------------------------------------------------------------------
-
 	def _message_PLUGIN_REGISTER(self, message):
 		reply = [
 		(IRCT_PUBLIC, PLUS_RE, [0], KARMA_PLUS),
@@ -56,13 +54,14 @@ class Karma(Plugin):
 
 	def _message_PLUGIN_TRIGGER(self, message):
 		[name], event, conn, IRCtype, target, userinfo = message.data
-		
-		queryObj = whatever(SELECT_QUERY, name, [name, event, conn, IRCtype, target, userinfo])
-		self.sendMessage('TheDatabase', DB_QUERY, queryObj)
+
+		returnme = [name, event, conn, IRCtype, target, userinfo]
+		data = [returnme, (SELECT_QUERY, [])]
+		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	#------------------------------------------------------------------------
 
-	def _message_WHATEVER_THE_DB_SENDS_BACK(self, message):
+	def _message_REPLY_QUERY(self, message):
 		result, [name, event, conn, IRCtype, target, userinfo] = message.data
 		
 		if event == KARMA_LOOKUP:
@@ -78,25 +77,27 @@ class Karma(Plugin):
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 		elif event == KARMA_PLUS:
+			returnme = [text, KARMA_MOD, conn, IRCtype, target, userinfo]
 			if result == []:
 				# no karma, so insert as 1
-				queryObj = whatever(INSERT_QUERY, (1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
-				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
+				data = [returnme, (INSERT_QUERY, [1, name])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
 			else:
 				# increment existing karma
 				name, value = result
-				queryObj = whatever(UPDATE_QUERY, (1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
-				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
+				data = [returnme, (UPDATE_QUERY, [1, name])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
 				
 		elif event == KARMA_MINUS:
+			returnme = [text, KARMA_MOD, conn, IRCtype, target, userinfo]
 			if result == []:
 				# no karma, so insert as -1
-				queryObj =  whatever(INSERT_QUERY, (-1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
-				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
+				data = [returnme, (INSERT_QUERY, [1, name])]
+				self.sendMessage('DataMonkey', DB_QUERY, data)
 			else:
 				# decrement existing karma
-				queryObj = whatever(UPDATE_QUERY, (-1, name), [text, KARMA_MOD, conn, IRCtype, target, userinfo])
-				self.sendMessage('TheDatabase', DB_QUERY, queryObj)
+				data = [returnme, (UPDATE_QUERY, [-1, name])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 		elif event == KARMA_MOD:
 			# The database just made our requested modifications to the karma
@@ -105,6 +106,7 @@ class Karma(Plugin):
 
 		else:
 			# We got a wrong message, what the fuck?
-			raise ValueError, "Database sent Karma an erroneous %s" % event
+			errtext = "Database sent Karma an erroneous %s" % event
+			raise ValueError, errtext
 
 	#------------------------------------------------------------------------

@@ -74,13 +74,15 @@ class Database:
 def DataThread(parent, db, message):
 	results = []
 	
-	ident = message.data[0]
+	toreturn = message.data[0]
 	queries = message.data[1:]
 	
 	for query, args in queries:
 		results.append(db.query(query, *args))
 	
-	message = Message('DataMonkey', message.source, ident, results)
+	data = [results, toreturn]
+	
+	message = Message('DataMonkey', message.source, REPLY_QUERY, data)
 	parent.outQueue.put(message)
 	
 	# Make our db object usable again

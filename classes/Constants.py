@@ -31,7 +31,7 @@ PLUGIN_REPLY = 'PLUGIN_REPLY'
 IRC_EVENT = 'IRC_EVENT'
 
 IRCT_PUBLIC = 'IRCT_PUBLIC'
-IRCT_PUBLIC_D = 'IRCT_PUBLIC_D' # public lines directed to the bot, "Blamhangle: blah"
+IRCT_PUBLIC_D = 'IRCT_PUBLIC_D'
 IRCT_MSG = 'IRCT_MSG'
 IRCT_NOTICE = 'IRCT_NOTICE'
 IRCT_CTCP = 'IRCT_CTCP'
@@ -51,4 +51,5 @@ REQ_SHUTDOWN = 'REQ_SHUTDOWN'
 # Reply constants
 # ---------------------------------------------------------------------------
 REPLY_CONN = 'REPLY_CONN'
+REPLY_QUERY = 'REPLY_QUERY'
 REPLY_TEST = 'REPLY_TEST'
