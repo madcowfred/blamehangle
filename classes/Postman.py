@@ -7,6 +7,7 @@
 
 import asyncore
 import os
+import select
 import signal
 import smtplib
 import sys
@@ -73,6 +74,9 @@ class Postman:
 		self.__Log_Open()
 		self.__Log_Rotate()
 		
+		
+		# Create a poll object for async bits to use
+		asyncore.poller = select.poll()
 		
 		# Create our children
 		self.__Children = {}
@@ -284,8 +288,27 @@ class Postman:
 					
 					#child.handleMessages()
 				
-				# Poll any of our sockets
-				asyncore.poll()
+				
+				# Poll our sockets
+				results = asyncore.poller.poll(0)
+				for fd, event in results:
+					obj = asyncore.socket_map.get(fd)
+					if obj is None:
+						tolog = 'Invalid FD for poll()? %d' % fd
+						self.__Log(LOG_WARNING, tolog)
+						continue
+					
+					if event & select.POLLIN:
+						asyncore.read(obj)
+					elif event & select.POLLOUT:
+						asyncore.write(obj)
+					elif event & select.POLLNVAL:
+						tolog = "FD %d is still in the poll, but it's closed!" % fd
+						self.__Log(LOG_WARNING, tolog)
+					else:
+						tolog = 'Bizarre poll response! %d: %d' % (fd, event)
+						self.__Log(LOG_WARNING, tolog)
+				
 				
 				# Run any always loops
 				for meth in _always:
