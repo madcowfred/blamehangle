@@ -2,7 +2,6 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-#
 # Converts between different things
 
 import re
@@ -17,7 +16,7 @@ CONVERT_HELP = '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert betw
 CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\S+)(?: to | )(?P<to>\S+)$')
 
 # ---------------------------------------------------------------------------
-
+# Mapping of measurements to SI units (meters)
 DISTANCE = {
 	'miles': ('miles', 1609.34),
 	'ft': ('feet', 0.3048),
@@ -86,12 +85,12 @@ class Converter(Plugin):
 			
 			if _from is None:
 				replytext = '%(from)s is not a valid measurement' % data
-			
 			elif _to is None:
 				replytext = '%(to)s is not a valid measurement' % data
-			
 			else:
 				value = '%.2f' % (data['amt'] * _from[1] / _to[1])
 				replytext = '%s %s == %s %s' % (data['amt'], _from[0], value, _to[0])
 		
 		self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------

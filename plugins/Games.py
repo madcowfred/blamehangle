@@ -50,3 +50,5 @@ class Games(Plugin):
 				break
 		
 		self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------

@@ -3,11 +3,11 @@
 # ---------------------------------------------------------------------------
 # Lookup rhymes, synonyms, or antonyms of words using rhymezone.com
 
-from classes.Plugin import *
-from classes.Constants import *
-
 import re
 from cStringIO import StringIO
+
+from classes.Plugin import *
+from classes.Constants import *
 
 # ---------------------------------------------------------------------------
 
@@ -173,4 +173,4 @@ class WordStuff(Plugin):
 			text = text[:-1]
 		return text.strip()
 
-	# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------

@@ -20,9 +20,10 @@ SPELL_RE = re.compile('^spell\s+(?P<word>\S+)$')
 class SpellingBee(Plugin):
 	def setup(self):
 		self.__bin = ''
-		self.__setup_config()
+		
+		self.rehash()
 	
-	def __setup_config(self):
+	def rehash(self):
 		bin	= self.Config.get('SpellingBee', 'bin_location')
 		if bin:
 			if not os.path.isfile(bin):
@@ -35,9 +36,6 @@ class SpellingBee(Plugin):
 			
 			else:
 				self.__bin = '%s -a -S' % bin
-	
-	def _message_REQ_REHASH(self, message):
-		self.__setup_config()
 	
 	# -----------------------------------------------------------------------
 	
@@ -102,3 +100,5 @@ class SpellingBee(Plugin):
 			self.putlog(LOG_DEBUG, line)
 		
 		self.sendReply(trigger, replytext)
+
+# ---------------------------------------------------------------------------

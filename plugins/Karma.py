@@ -3,9 +3,12 @@
 #----------------------------------------------------------------------------
 # Karma plugin
 
+import re
+
 from classes.Plugin import *
 from classes.Constants import *
-import re
+
+#----------------------------------------------------------------------------
 
 SELECT_QUERY = "SELECT value FROM karma WHERE name = %s"
 INSERT_QUERY = "INSERT INTO karma VALUES (%s,%s)"
@@ -20,6 +23,10 @@ PLUS_RE = re.compile("(?P<name>^.+)(?=\+\+$)")
 MINUS_RE = re.compile("(?P<name>^.+)(?=--$)")
 LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
+KARMA_CHANGE_HELP = "'<something>\02++\02' OR '<something>\02--\02' : Increment or decrement karma for <something>"
+KARMA_HELP = "'\02karma\02 <something>' : Look up <something>'s karma level"
+
+#----------------------------------------------------------------------------
 
 class Karma(Plugin):
 	"""
@@ -38,13 +45,8 @@ class Karma(Plugin):
 		dec = PluginTextEvent(KARMA_MINUS, IRCT_PUBLIC, MINUS_RE)
 		lookup_pub = PluginTextEvent(KARMA_LOOKUP, IRCT_PUBLIC_D, LOOKUP_RE)
 		lookup_msg = PluginTextEvent(KARMA_LOOKUP, IRCT_MSG, LOOKUP_RE)
-
+		
 		self.register(inc, dec, lookup_pub, lookup_msg)
-		self.__set_help_msgs()
-	
-	def __set_help_msgs(self):
-		KARMA_CHANGE_HELP = "'<something>\02++\02' OR '<something>\02--\02' : Increment or decrement karma for <something>"
-		KARMA_HELP = "'\02karma\02 <something>' : Look up <something>'s karma level"
 		
 		self.setHelp('karma', 'karma', KARMA_HELP)
 		self.setHelp('karma', 'modify', KARMA_CHANGE_HELP)
@@ -52,7 +54,7 @@ class Karma(Plugin):
 		self.registerHelp()
 	
 	#------------------------------------------------------------------------
-
+	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		name = trigger.match.group('name')
@@ -61,7 +63,7 @@ class Karma(Plugin):
 		self.dbQuery(trigger, query)
 	
 	#------------------------------------------------------------------------
-
+	
 	def _message_REPLY_QUERY(self, message):
 		trigger, result = message.data
 		name = trigger.match.group('name')
@@ -111,4 +113,4 @@ class Karma(Plugin):
 			errtext = "Database sent Karma an erroneous %s" % event
 			raise ValueError, errtext
 	
-	#------------------------------------------------------------------------
+#----------------------------------------------------------------------------
