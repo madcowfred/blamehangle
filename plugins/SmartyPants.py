@@ -730,6 +730,9 @@ class SmartyPants(Plugin):
 		
 		# It was in our database, modify it!
 		else:
+			row = result[0]
+			value = row['value']
+			
 			if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'alter'):
 				replytext = "You don't have permission to alter factoids."
 				self.sendReply(trigger, replytext)
@@ -737,9 +740,6 @@ class SmartyPants(Plugin):
 			if row['locker_nick'] and not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'lock'):
 				self.sendReply(trigger, "You don't have permission to alter locked factoids.")
 				return
-			
-			row = result[0]
-			value = row['value']
 			
 			modstring = trigger.match.group('modstring')
 			if modstring.startswith("s"):
