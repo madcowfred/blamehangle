@@ -242,7 +242,7 @@ class Postman:
 					
 					#child.handleMessages()
 					
-					for meth in self.__run_always:
+					for meth in _always:
 						meth()
 					#if hasattr(child, 'run_always'):
 					#	child.run_always()
@@ -265,7 +265,7 @@ class Postman:
 					currtime = _time()
 					
 					for child in children:
-						for meth in self.__run_sometimes:
+						for meth in _sometimes:
 							meth(currtime)
 						#if hasattr(child, 'run_sometimes'):
 						#	child.run_sometimes(currtime)
