@@ -164,7 +164,7 @@ def URLThread(parent, myindex):
 					last_read = _time()
 					_sleep(0.05)
 		
-		except Exception, msg:
+		except Exception, why:
 			# Something bad happened
 			tolog = "Error while trying to fetch url: %s - %s" % (url, why)
 			parent.putlog(LOG_ALWAYS, tolog)
