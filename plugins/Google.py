@@ -155,6 +155,13 @@ class Google(Plugin):
 					if [u for t, u in results if url.startswith(u)]:
 						continue
 					
+					# Fix up evil annoying URLs
+					if url.startswith('/url'):
+						for chunk in url.split('&'):
+							if chunk.startswith('q='):
+								url = chunk[2:]
+								break
+					
 					# Keep the result
 					results.append([title, url])
 				
