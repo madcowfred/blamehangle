@@ -44,11 +44,14 @@ RHYMEZONE_LIMIT = 40
 
 # ---------------------------------------------------------------------------
 
+WORD_ACRONYM = 'WORD_ACRONYM'
+ACRONYM_HELP = '\02acro\02 [n] <acronym> : Look up <acronym>, possibly getting definition [n].'
+ACRONYM_RE = re.compile('^acronym(?P<n>\s+\d+\s+|\s+)(?P<acronym>.+)$')
+ACRONYM_URL = 'http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=%s&Find=Find'
+
 WORD_DICT = 'WORD_DICT'
 DICT_HELP = '\02dict\02 <word> : Look up the dictionary meaning of a word.'
 DICT_RE = re.compile(r'^dict (?P<word>\S+)$')
-
-# ---------------------------------------------------------------------------
 
 WORD_SPELL = 'WORD_SPELL'
 SPELL_HELP = '\02spell\02 <word> : Check spelling of a word.'
@@ -68,6 +71,9 @@ class WordStuff(Plugin):
 		self.rehash()
 	
 	def rehash(self):
+		# Acronym stuff
+		self.__Acronym_Defs = {}
+		
 		# DICT stuff
 		self._dict_host = self.Config.get('WordStuff', 'dict_host')
 		self._dict_port = self.Config.getint('WordStuff', 'dict_port')
@@ -95,6 +101,8 @@ class WordStuff(Plugin):
 		self.setTextEvent(WORD_ANTONYM, ANTONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(WORD_RHYME, RHYME_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(WORD_SYNONYM, SYNONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		# AcronymFinder
+		self.setTextEvent(WORD_ACRONYM, ACRONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# DICT
 		self.setTextEvent(WORD_DICT, DICT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# Spell
@@ -107,6 +115,7 @@ class WordStuff(Plugin):
 		self.setHelp('words', 'antonyms', ANTONYM_HELP)
 		self.setHelp('words', 'rhyme', RHYME_HELP)
 		self.setHelp('words', 'synonyms', SYNONYM_HELP)
+		self.setHelp('words', 'acronym', ACRONYM_HELP)
 		self.setHelp('words', 'dict', DICT_HELP)
 		self.setHelp('words', 'spell', SPELL_HELP)
 		self.setHelp('words', 'urban', URBAN_HELP)
@@ -128,6 +137,27 @@ class WordStuff(Plugin):
 		word = quote(trigger.match.group('word').lower())
 		url = SYNONYM_URL % word
 		self.urlRequest(trigger, self.__RhymeZone, url)
+	
+	# -----------------------------------------------------------------------
+	
+	def _trigger_WORD_ACRONYM(self, trigger):
+		acronym = trigger.match.group('acronym').upper()
+		if len(acronym) > 10:
+			self.sendReply(trigger, "That's too long!")
+		
+		else:
+			if acronym in self.__Acronym_Defs:
+				# Older than 12 hours, kill it
+				if (time.time() - self.__Acronym_Defs[acronym]['time']) > 43200:
+					del self.__Acronym_Defs[acronym]
+				# Use the cached one
+				else:
+					self.__Acronym_Reply(trigger)
+					return
+			
+			# Fetch a new one
+			url = ACRONYM_URL % QuoteURL(acronym)
+			self.urlRequest(trigger, self.__AcronymFinder, url)
 	
 	def _trigger_WORD_DICT(self, trigger):
 		word = trigger.match.group('word').lower()
@@ -165,6 +195,74 @@ class WordStuff(Plugin):
 			# Fetch a new one
 			url = URBAN_URL % QuoteURL(term)
 			self.urlRequest(trigger, self.__Urban, url)
+	
+	# -----------------------------------------------------------------------
+	# Parse the output of an AcronymFinder page
+	def __AcronymFinder(self, trigger, resp):
+		acronym = trigger.match.group('acronym').upper()
+		
+		# No match!
+		if resp.data.find('was not found in the database') >= 0:
+			replytext = "No definitions found for '%s'" % acronym
+			self.sendReply(trigger, replytext)
+		
+		# Some matches!
+		else:
+			# Find the definition block
+			chunk = FindChunk(resp.data, '<table border="0" cellspacing="0" cellpadding="4" width="80%">', '</table>')
+			if not chunk:
+				self.sendReply(trigger, 'Page parsing failed: definition table.')
+				return
+			
+			# Find the rows
+			trs = FindChunks(chunk, '<tr bgcolor', '</tr>')
+			if not trs:
+				self.sendReply(trigger, 'Page parsing failed: table rows.')
+				return
+			
+			# Parse the definitions
+			defs = []
+			
+			for tr in trs:
+				bits = StripHTML(tr)
+				if len(bits) == 2:
+					defs.append(bits[1])
+			
+			# If we got some definitions, add them to the cache and spit
+			# something out
+			if defs:
+				self.__Acronym_Defs[acronym] = {
+					'time': time.time(),
+					'defs': defs
+				}
+				
+				self.__Acronym_Reply(trigger)
+			
+			# If not, cry
+			else:
+				replytext = 'Page parsing failed: definition.'
+				self.sendReply(trigger, replytext)
+	
+	# Spit out something from our AcronymFinder cache
+	def __Acronym_Reply(self, trigger):
+		try:
+			n = int(trigger.match.group('n'))
+		except ValueError:
+			n = 1
+		acronym = trigger.match.group('acronym').upper()
+		
+		# See if they're being stupid
+		numdefs = len(self.__Acronym_Defs[acronym]['defs'])
+		
+		if n > numdefs:
+			replytext = "There are only %d definitions for '%s'!"% (numdefs, acronym)
+		
+		# Guess they're not
+		else:
+			replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (acronym, n, numdefs, self.__Acronym_Defs[acronym]['defs'][n-1])
+		
+		# Spit it out
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of a RhymeZone page
