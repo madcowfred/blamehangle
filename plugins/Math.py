@@ -1,10 +1,13 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
+
+"""
+Various mathetmatical commands.
+"""
+
 import re
 
-#from classes.Common import *
-#from classes.Constants import *
 from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
@@ -31,7 +34,7 @@ class Math(Plugin):
 		self.addTextEvent(
 			method = self.__Calc,
 			regexp = re.compile(r'^[ ()0-9e.+\-*/%^]+$'),
-			help = ('math', 'calc', '\x02calc\x02 <expr> : Calculate the result of <expr>.'),
+			help = ('math', 'calc', '<expr> : Calculate the result of <expr>.'),
 		)
 	
 	# --------------------------------------------------------------------------
