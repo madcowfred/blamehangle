@@ -140,7 +140,7 @@ def StripHTML(text):
 
 # ---------------------------------------------------------------------------
 # Replace &blah; quoted things with the actual thing
-def UnquoteHTML(text):
+def UnquoteHTML(text, *keep):
 	# thing name -> char
 	quoted = {
 		'lt': '<',
@@ -150,6 +150,11 @@ def UnquoteHTML(text):
 		'nbsp': ' ',
 		'ordm': '°',
 	}
+	
+	# don't unquote these
+	for k in keep:
+		if k in quoted:
+			del quoted[k]
 	
 	# regexp helper function to do the replacement
 	def unquote_things(m):
