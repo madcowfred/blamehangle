@@ -10,6 +10,7 @@
 # remote http server responds slowly.
 
 import asyncore
+import re
 import socket
 import sys
 import time
@@ -121,7 +122,8 @@ class async_http(asyncore.dispatcher_with_send):
 		self.seen = seen
 		
 		self.returnme = message.data[0]
-		self.url = message.data[1]
+		# we need '+' instead of ' '
+		self.url = re.sub(r'\s+', '+', message.data[1])
 		
 		# Log what we're doing
 		tolog = 'Fetching URL: %s' % (self.url)
