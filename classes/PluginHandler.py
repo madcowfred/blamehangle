@@ -31,6 +31,11 @@ class PluginHandler(Child):
 		for IRCType in [IRCT_PUBLIC, IRCT_PUBLIC_D, IRCT_MSG, IRCT_NOTICE, IRCT_CTCP, IRCT_TIMED]:
 			self.__Events[IRCType] = {}
 	
+	# When we're shutting down, we don't want to answer any events any more
+	def shutdown(self, message):
+		for k in self.__Events.keys():
+			self.__Events[k] = {}
+	
 	# -----------------------------------------------------------------------
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
