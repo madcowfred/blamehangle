@@ -12,7 +12,6 @@ not important but more than whatever:
 	  everything and change all the sendMessage('HTTPMonster, blahblah) things
 	  to use urlQuery() (anyone)
 	* dict plugin (anyone)
-	* <null> as a factoid definition to make the bot ignore that factoid
 
 whatever:
 	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
