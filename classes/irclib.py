@@ -416,7 +416,7 @@ class ServerConnection(Connection):
 		self.password = password
 		self.localhost = socket.gethostname()
 		
-		if vhost is not None:
+		if vhost:
 			try:
 				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
 				af, socktype, proto, canonname, sa = res
