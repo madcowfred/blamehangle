@@ -18,8 +18,10 @@ GOOGLE_URL = 'http://www.google.com/search?q=%s'
 #GOOGLE_URL = 'http://www.google.com/search?q=%s&ie=UTF-8&oe=UTF-8&hl-en&btnI=I%27m+Feeling+Lucky&meta='
 
 RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
+CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
+
 NOBOLD_RE = re.compile('</?b>')
-CALC_RE = re.compile('<font size=\+1><b>(?P<result>[^<>]+)</b>')
+NOFONT_RE = re.compile('</?font[^<>]*?>')
 
 # ---------------------------------------------------------------------------
 
@@ -59,31 +61,44 @@ class Google(Plugin):
 		else:
 			page_text = UnquoteHTML(page_text)
 			
+			# Go go calculator
+			m = CALC_RE.search(page_text)
+			if m:
+				calc = '%s' % NOFONT_RE.sub('', m.group('result'))
+			else:
+				calc = None
+			
 			# Find the result
 			chunk = FindChunk(page_text, '<!--m-->', '</a>')
-			if chunk is None:
+			if chunk:
+				# Try to match it against the regexp
+				m = RESULT_RE.match(chunk)
+				if not m:
+					self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
+					self.sendReply(trigger, 'Failed to match result')
+					return
+				
+				# Build the reply string
+				url = m.group('url')
+				title = NOBOLD_RE.sub('', m.group('title'))
+				
+				replytext = '%s - %s' % (title, url)
+				
+				# If there was a calculation, stick that on the end
+				if calc is not None:
+					replytext = '%s :: %s' % (replytext, calc)
+			
+			# No normal result, was it the calculator?
+			elif calc:
+				replytext = calc
+			
+			# Beep, failed
+			else:
 				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to find a result')
 				self.sendReply(trigger, 'Failed to parse page')
 				return
 			
-			# Try to match it against the regexp
-			m = RESULT_RE.match(chunk)
-			if not m:
-				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
-				self.sendReply(trigger, 'Failed to match result')
-				return
-			
-			# Build the reply string
-			url = m.group('url')
-			title = NOBOLD_RE.sub('', m.group('title'))
-			
-			replytext = '%s - %s' % (title, url)
-			
-			# If it was also a calculation, stick that at the end
-			m = CALC_RE.search(page_text)
-			if m:
-				replytext = '%s :: %s' % (replytext, m.group('result'))
-			
+			# Spit out the reply
 			self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
