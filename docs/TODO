@@ -10,7 +10,6 @@ whatever:
 
 
 plugins:
-	* Stock quotes & symbol lookups
 	* dictionary.com lookup
 	* Spam text at intervals (easy way to use PluginTimedEvent?
 	* MapQuest: return URL with other data (?)
