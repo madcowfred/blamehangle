@@ -11,7 +11,8 @@ import time
 
 from classes.Children import Child
 from classes.Constants import *
-from classes.Database import *
+
+from classes import Database
 
 # ---------------------------------------------------------------------------
 
@@ -36,10 +37,20 @@ class DataMonkey(Child):
 	def shutdown(self, message):
 		self.__stop_threads()
 	
+	# we start our threads here so that a plugin compile error lets us exit
+	# cleanly
 	def run_once(self):
+		DBclass = None
+		
+		module = self.Config.get('database', 'module').lower()
+		if module == 'mysql':
+			DBclass = Database.MySQL
+		elif module == 'postgres':
+			DBclass = Database.Postgres
+		
 		for i in range(self.conns):
-			db = Database(self.Config)
-			the_thread = Thread(target=DataThread, args=(self,db,i))
+			db = DBclass(self.Config)
+			the_thread = Thread(target=Database.DataThread, args=(self,db,i))
 			self.threads.append([the_thread, 0])
 			the_thread.start()
 			
@@ -55,7 +66,7 @@ class DataMonkey(Child):
 
 		# wait until all threads have exited
 		while [t for t,s in self.threads if t.isAlive()]:
-			_sleep(0.25)
+			_sleep(0.1)
 
 		tolog = "All db threads shutdown"
 		self.putlog(LOG_DEBUG, tolog)
