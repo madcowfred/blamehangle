@@ -76,6 +76,7 @@ class async_http(asyncore.dispatcher_with_send):
 	def __init__(self, parent, message, seen):
 		asyncore.dispatcher_with_send.__init__(self)
 		
+		self.closed = 0
 		self.data = ''
 		self.header = ''
 		
@@ -139,19 +140,6 @@ class async_http(asyncore.dispatcher_with_send):
 		text = "Connection: close\r\n"
 		self.send(text)
 		self.send("\r\n")
-	
-	# An exception occured somewhere
-	def handle_error(self):
-		t, v, tb = sys.exc_info()
-		del tb
-		
-		if t == 'KeyboardInterrupt':
-			raise
-		else:
-			tolog = "Error while trying to fetch url: %s - %s" % (self.url, v)
-			self.parent.putlog(LOG_ALWAYS, tolog)
-		
-		self.close()
 	
 	# Connection has data to read
 	def handle_read(self):
@@ -226,7 +214,28 @@ class async_http(asyncore.dispatcher_with_send):
 						self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
-		self.parent.active -= 1
-		del self.parent, self.message, self.seen, self.returnme, self.url
+		if not self.closed:
+			self.closed = 1
+			self.parent.active -= 1
 		
 		self.close()
+	
+	# An exception occured somewhere
+	def handle_error(self):
+		t, v, tb = sys.exc_info()
+		del tb
+		
+		if t == 'KeyboardInterrupt':
+			raise
+		else:
+			tolog = "Error while trying to fetch url: %s - %s" % (self.url, v)
+			self.parent.putlog(LOG_ALWAYS, tolog)
+		
+		# Clean up
+		if not self.closed:
+			self.closed = 1
+			self.parent.active -= 1
+		
+		self.close()
+
+# ---------------------------------------------------------------------------
