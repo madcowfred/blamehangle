@@ -230,9 +230,11 @@ class PluginReply:
 		self.process = process
 	
 	def __str__(self):
-		name = self.trigger.name
-		text = self.replytext
-		return "%s: %s" % (name, text)
+		if self.trigger is None:
+			name = 'None'
+		else:
+			name = self.trigger.name
+		return "%s: %s" % (name, self.replytext)
 	
 	def __repr__(self):
 		return "<class PluginReply: " + self.__str__() + ">"
