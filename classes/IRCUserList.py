@@ -9,6 +9,7 @@
 # Shiny way to look at a channel.
 class ChanInfo:
 	def __init__(self, modelist):
+		self.synched = False
 		self.modes = {}
 		self.users = {}
 		
@@ -187,8 +188,8 @@ class IRCUserList:
 		if None in (ui1, ui2):
 			return False
 		
-		for uis in self._c.values():
-			if ui1 in uis and ui2 in uis:
+		for ci in self._c.values():
+			if ui1 in ci.users and ui2 in ci.users:
 				return True
 		return False
 	
@@ -197,6 +198,16 @@ class IRCUserList:
 		assert ui is not None
 		
 		return mode in self._c[chan].users[ui]
+	
+	def user_matches(self, chan, m):
+		matches = []
+		
+		_match = m.match
+		for ui in self._c[chan].users.keys():
+			if _match(ui.hostmask()):
+				matches.append(ui)
+		
+		return matches
 
 # ---------------------------------------------------------------------------
 
