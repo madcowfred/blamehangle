@@ -104,6 +104,8 @@ class TorrentScraper(Plugin):
 				
 				# Build the new URL
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				# Dirty filthy ampersands
+				newurl = newurl.replace('&amp;', '&')
 				if newurl in items:
 					continue
 				

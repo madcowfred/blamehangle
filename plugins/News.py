@@ -542,11 +542,12 @@ class News(Plugin):
 		for title, url, description, ctime in articles:
 			# Only unquote HTTP urls
 			if url.startswith('http://'):
-				replytext = '%s - %s' % (title, UnquoteURL(url))
+				url = UnquoteURL(url).replace('&amp;', '&')
+				replytext = '%s - %s' % (title, url)
 			else:
 				replytext = '%s - %s' % (title, url)
 			
-			# Attach the spam prefix if we have ot
+			# Attach the spam prefix if we have to
 			if self.__spam_prefix:
 				replytext = '%s %s' % (self.__spam_prefix, replytext)
 			
