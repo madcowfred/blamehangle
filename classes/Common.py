@@ -43,11 +43,11 @@ class Message:
 	# Return a printable string with info about ourself, including
 	# how long it's been since we were sent.
 	def __str__(self):
-		if self.ident == REPLY_URL:
-			return '%s --> %s: (%s) <data omitted>' % (self.source, self.targetstring, self.ident)
-		else:
-			return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, self.data)
-
+		data = repr(self.data)
+		if len(data) >= 100:
+			data = '<data omitted>'
+		
+		return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, data)
 
 # ---------------------------------------------------------------------------
 # Shiny way to look at a user.
