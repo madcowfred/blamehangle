@@ -25,8 +25,8 @@ KARMA_MINUS = "KARMA_MINUS"
 KARMA_LOOKUP = "KARMA_LOOKUP"
 KARMA_MOD = "KARMA_MOD"
 
-PLUS_RE = re.compile("(?P<name>^.*)(?=\+\+$)")
-MINUS_RE = re.compile("(?P<name>^.*)(?=--$)")
+PLUS_RE = re.compile("(?P<name>^.+)(?=\+\+$)")
+MINUS_RE = re.compile("(?P<name>^.+)(?=--$)")
 LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
 class Karma(Plugin):

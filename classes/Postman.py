@@ -39,6 +39,10 @@ class Postman:
 		
 		# Initialise the global message queue
 		self.inQueue = Queue(0)
+
+
+		# Load all the configs supplied for plugins
+		self.__Load_Configs()
 		
 		
 		# Create our children
@@ -90,6 +94,7 @@ class Postman:
 							self.__Log(LOG_ALWAYS, 'Rehashing config...')
 							
 							self.Config.read(self.ConfigFile)
+							self.__Load_Configs()
 							
 							self.sendMessage(None, REQ_REHASH, None)
 							self.sendMessage('HeadHoncho', REPLY_LOAD_CONFIG, message.data)
@@ -307,4 +312,14 @@ class Postman:
 		self.__logfile.write(tolog)
 		self.__logfile.flush()
 
+	# -----------------------------------------------------------------------
+
+	# Load config info
+	def __Load_Configs(self):
+		config_dir = self.Config.get('plugin', 'config_dir')
+		if os.path.exists(config_dir):
+			for config_file in os.listdir(config_dir):
+				if config_file[-5:] == ".conf":
+					self.Config.read(config_dir + config_file)
+					
 # ---------------------------------------------------------------------------

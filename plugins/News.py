@@ -77,15 +77,45 @@ class News(Plugin):
 		self.__Last_Clearout_Time = time.time()
 
 		self.__rand_gen = Random(time.time())
+
+		self.__spam_delay = self.Config.getint('News', 'spam_delay')
 		
+		old_days = self.Config.getint('News', 'old_threshold')
+		self.__old_threshold = old_days * 86400
+
+		self.__gwn_targets = {}
+		self.__gsci_targets = {}
+		self.__anaq_targets = {}
+		self.__setup_targets()
+
+		self.__gwn_interval = self.Config.getint('News', 'google_world_interval')
+		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval')
+		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')
+	
+	# -----------------------------------------------------------------------
+
+	def __setup_targets(self):
+		for option in self.Config.options('News'):
+			if option.startswith('google_world.'):
+				network = option.split('.')[1]
+				targets = self.Config.get('News', option).split()
+				self.__gwn_targets[network] = targets
+			elif option.startswith('google_sci.'):
+				network = option.split('.')[1]
+				targets = self.Config.get('News', option).split()
+				self.__gsci_targets[network] = targets
+			elif option.startswith('ananova.'):
+				network = option.split('.')[1]
+				targets = self.Config.get('News', option).split()
+				self.__anaq_targets[network] = targets
 	
 	# -----------------------------------------------------------------------
 
 	# Check google news every 5 minutes, and ananova every 6 hours
 	def _message_PLUGIN_REGISTER(self, message):
-		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, 300, GOOGLE_WORLD_TARGETS)
-		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, 1800, GOOGLE_SCI_TARGETS)
-		anaq = PluginTimedEvent(NEWS_ANANOVA, 3600, ANANOVA_TARGETS)
+		gwn = PluginTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
+		gsci = PluginTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
+		anaq = PluginTimedEvent(NEWS_ANANOVA, self.__anaq_interval, self.__anaq_targets)
 
 		self.register(gwn, gsci, anaq)
 	
