@@ -83,6 +83,7 @@ class asyncIRC(buffered_dispatcher):
 		
 		# Sane defaults for features
 		self.features = {
+			'channel_modes': ['b', 'k', 'l', 'imnpst']
 			'channel_types': ['#'],
 			'max_targets': 3,
 			'nicklen': 9,
@@ -217,7 +218,9 @@ class asyncIRC(buffered_dispatcher):
 					except ValueError:
 						continue
 					
-					if k == 'CHANTYPES':
+					if k == 'CHANMODES':
+						self.features['channel_modes'] = CHANMODES.split(',')
+					elif k == 'CHANTYPES':
 						self.features['channel_types'] = [c for c in v]
 					elif k == 'MAXTARGETS':
 						self.features['max_targets'] = int(v)

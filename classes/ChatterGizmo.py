@@ -160,6 +160,9 @@ class ChatterGizmo(Child):
 		tolog = 'Connected to %s' % (wrap.server[0])
 		self.connlog(connid, LOG_ALWAYS, tolog)
 		
+		# Set ourselves +i
+		wrap.conn.sendline('MODE %s +i' % wrap.getnick())
+		
 		# If we're supposed to use NickServ, do so
 		if wrap.nickserv_nick and wrap.nickserv_pass:
 			tolog = 'Identifying with %s' % (wrap.nickserv_nick)
