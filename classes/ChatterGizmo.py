@@ -229,3 +229,8 @@ class ChatterGizmo(Child):
 				return
 			
 			text = text[addr:]
+		
+		# It's not addressed to anyone, so do whatever we do here
+		else:
+			a = 'b'
+	
