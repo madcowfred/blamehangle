@@ -473,7 +473,9 @@ class News(Plugin):
 					self.putlog(LOG_DEBUG, tolog)
 					continue
 			
-			if not article_link:
+			if article_link:
+				article_link = article_link.replace('&amp;', '&')
+			else:
 				article_link = '<no link>'
 			
 			description = item.get('description', '')
