@@ -266,6 +266,10 @@ class WeatherMan(Plugin):
 			# Gather data
 			chunks = []
 			
+			# Add updated time
+			chunk = 'Updated: %s' % report.getISOTime()
+			chunks.insert(0, chunk)
+			
 			# Weather
 			if report.getWeather() is not None:
 				chunk = 'Weather: %s' % report.getWeather()
@@ -282,10 +286,11 @@ class WeatherMan(Plugin):
 				chunks.append(chunk)
 			
 			# Wind
-			if report.getWindSpeed() and report.getWindCompass():
-				kmh = report.getWindSpeed() * 1000.0 / 60.0
-				chunk = 'Wind: %.1fkm/h %s' % (kmh, report.getWindCompass())
-				chunks.append(chunk)
+			if report.getWindSpeed() > 0.0:
+				chunk = 'Wind: %.1fkm/h %s' % (report.getWindSpeed(), report.getWindCompass())
+			else:
+				chunk = 'Wind: calm'
+			chunks.append(chunk)
 			
 			# Visibility
 			if report.getVisibilityKilometers() is not None:
@@ -304,12 +309,7 @@ class WeatherMan(Plugin):
 			
 			# Spit it out
 			if chunks:
-				# Add location
 				location = '[%s] ' % report.getStationName()
-				# Add updated time
-				chunk = 'Updated: %s' % report.getISOTime()
-				chunks.insert(0, chunk)
-				
 				replytext = location + ', '.join(chunks)
 			else:
 				replytext = 'Unable to find any weather info.'

@@ -440,7 +440,7 @@ class WeatherReport:
 
     def getWindSpeed(self):
         """
-        Return the wind speed in meters per second.
+        Return the wind speed in kilometers per hour.
         """
         return self.windspeed
 
@@ -817,15 +817,17 @@ class ReportParser:
                 elif (data.find("Variable")!=-1):
                     #print "var"
                     v,a,speed,r=data.split(" ",3)
-                    self.Report.windspeed=(float(speed)*0.44704)
+                    print speed
+                    self.Report.windspeed=float(speed)*1.609344
                     self.Report.winddir=None
                     self.Report.windcomp=None
                 else:
                     #print "elab"
                     f,t,comp,deg,r,d,speed,r=data.split(" ",7)
+                    print speed
                     self.Report.winddir=int(deg[1:])
                     self.Report.windcomp=comp.strip()
-                    self.Report.windspeed=(float(speed)*0.44704)
+                    self.Report.windspeed=float(speed)*1.609344
 
             # visibility
 
