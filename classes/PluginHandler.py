@@ -3,9 +3,6 @@
 # ---------------------------------------------------------------------------
 # This file contains the code that deals with all the plugins
 
-import time
-import types
-
 from classes.Children import Child
 from classes.Constants import *
 from classes.Plugin import *
@@ -22,12 +19,10 @@ class PluginHandler(Child):
 	def setup(self):
 		self.Plugins = self.Config.get('plugin', 'plugins').split()
 		self.Plugins.append('Helper')
-		self.__PUBLIC_Events = {}
-		self.__PUBLIC_D_Events = {}
-		self.__MSG_Events = {}
-		self.__NOTICE_Events = {}
-		self.__CTCP_Events = {}
-		self.__TIMED_Events = {}
+		
+		self.__Events = {}
+		for IRCType in [IRCT_PUBLIC, IRCT_PUBLIC_D, IRCT_MSG, IRCT_NOTICE, IRCT_CTCP, IRCT_TIMED]:
+			self.__Events[IRCType] = {}
 	
 	# -----------------------------------------------------------------------
 	# Upon startup, we send a message out to every plugin asking them for
@@ -36,31 +31,12 @@ class PluginHandler(Child):
 		self.sendMessage(self.Plugins, PLUGIN_REGISTER, [])
 	
 	# -----------------------------------------------------------------------
-	# Check to see if we have any TIMED events that have expired their delai
-	# time
+	# Check to see if we have any TIMED events that need to trigger
 	def run_sometimes(self, currtime):
-		for name in self.__TIMED_Events:
-			event, plugin = self.__TIMED_Events[name]
+		for event, plugin in self.__Events[IRCT_TIMED].values():
 			if event.interval_elapsed(currtime):
 				event.last_trigger = currtime
 				self.sendMessage(plugin, PLUGIN_TRIGGER, event)
-	
-	# -----------------------------------------------------------------------
-	# Generate a list of all the plugins.
-	# This is a rather ugly hack, but I can't think of any better way to do
-	# this.
-	def pluginList(self):
-		import Plugins
-		plugin_list = []
-		for name in dir(Plugins):
-			obj = getattr(Plugins, name)
-			if type(obj) == types.ClassType:
-				if issubclass(obj, Plugin):
-					plugin_list.append(name)
-		
-		# hack, because we cheat and make Helper a plugin that isn't a plugin
-		plugin_list.append('Helper')
-		return plugin_list
 	
 	# -----------------------------------------------------------------------
 	# Postman has asked us to rehash our config.
@@ -76,38 +52,33 @@ class PluginHandler(Child):
 		events = message.data
 		
 		for event in events:
-			eventStore = self.__getRelevantStore(event.IRCType)
-			
 			name = event.name
 			if hasattr(event, 'args'):
 				if len(event.args) > 0:
 					name = '%s:%s' % (event.name, event.args)
 			
-			if name in eventStore:
+			if name in self.__Events[event.IRCType]:
 				errtext = "%s already has an event for %s" % (event.name, event.IRCType)
 				raise ValueError, errtext
 			else:
-				eventStore[name] = (event, message.source)
+				self.__Events[event.IRCType][name] = (event, message.source)
 	
 	# A plugin wants to unregister an event (by name only for now)
 	def _message_PLUGIN_UNREGISTER(self, message):
 		IRCType, names = message.data
-		eventStore = self.__getRelevantStore(IRCType)
 		
 		for name in names:
-			if name in eventStore:
-				del eventStore[name]
+			if name in self.__Events[IRCType]:
+				del self.__Events[IRCType][name]
 	
 	# A plugin has died, unregister all of it's events
 	def _message_PLUGIN_DIED(self, message):
 		dead_name = message.data
 		
-		for store in (self.__PUBLIC_Events, self.__PUBLIC_D_Events, self.__MSG_Events,
-			self.__NOTICE_Events, self.__CTCP_Events, self.__TIMED_Events):
-			
-			for event_name, (event, plugin_name) in store.items():
+		for IRCType, events in self.__Events.items():
+			for event_name, (event, plugin_name) in events.items():
 				if plugin_name == dead_name:
-					del store[event_name]
+					del events[event_name]
 	
 	# -----------------------------------------------------------------------
 	# Something has happened on IRC, and we are being told about it. Search
@@ -120,12 +91,10 @@ class PluginHandler(Child):
 	def _message_IRC_EVENT(self, message):
 		conn, IRCtype, userinfo, target, text = message.data
 		
-		eventStore = self.__getRelevantStore(IRCtype)
-		
 		triggered = {}
 		
-		for name in eventStore:
-			event, plugin = eventStore[name]
+		# Collect the events that have triggered
+		for event, plugin in self.__Events[IRCtype].values():
 			m = event.regexp.match(text)
 			if m:
 				trigger = PluginTextTrigger(event, m, conn, target, userinfo)
@@ -167,24 +136,5 @@ class PluginHandler(Child):
 			# wtf
 			errtext = "Bad reply object: %s" % reply
 			raise ValueError, errtext
-	
-	# -----------------------------------------------------------------------
-	
-	def __getRelevantStore(self, IRCType):
-		if IRCType == IRCT_PUBLIC:
-			return self.__PUBLIC_Events
-		elif IRCType == IRCT_PUBLIC_D:
-			return self.__PUBLIC_D_Events
-		elif IRCType == IRCT_MSG:
-			return self.__MSG_Events
-		elif IRCType == IRCT_NOTICE:
-			return self.__NOTICE_Events
-		elif IRCType == IRCT_CTCP:
-			return self.__CTCP_Events
-		elif IRCType == IRCT_TIMED:
-			return self.__TIMED_Events
-		else:
-			# Some smartass has come up with a new IRCType
-			raise AttributeError, "no such event IRCType: %s" % IRCType
 
 # ---------------------------------------------------------------------------
