@@ -141,7 +141,7 @@ class SiteBot(Plugin):
 								targets[network].append(chan)
 			
 			else:
-				self.privmsg(self.__logme['ALL'], None, replytext)
+				targets = self.__logme['ALL']
 		
 		return targets
 	
