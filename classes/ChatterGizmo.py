@@ -202,8 +202,8 @@ class ChatterGizmo(Child):
 		#self.sendMessage('FileMonster', REPLY_LOCALADDR, self.connection.socket.getsockname())
 		
 		# If we're supposed to use NickServ, do so
-		_nick = wrap.options.get('nickserv_nick')
-		_pass = wrap.options.get('nickserv_pass')
+		_nick = wrap.options.get('nickserv_nick', None)
+		_pass = wrap.options.get('nickserv_pass', None)
 		
 		if _nick and _pass:
 			tolog = 'Identifying with %s' % (_nick)
