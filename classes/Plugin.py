@@ -25,10 +25,12 @@ class Plugin(Child):
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
-	def _message_REQ_SHUTDOWN(self, *args, **kwargs):
-		Child._message_REQ_SHUTDOWN(self, *args, **kwargs)
+	def _message_REQ_SHUTDOWN(self, message):
+		Child._message_REQ_SHUTDOWN(self, message)
 		
-		if self.__Help:
+		# Only unset our help if we're being shut down without a reason. We
+		# should only get a reason when the entire bot is shutting down.
+		if message.data is None and self.__Help:
 			self.unregisterHelp()
 	
 	# -----------------------------------------------------------------------
