@@ -94,6 +94,16 @@ class News(Plugin):
 		self.__anaq_targets = {}
 		self.__setup_targets()
 
+		if self.Config.getint('News', 'google_verbose'):
+			tolog = "Using verbose mode for google news"
+			self.__google = GoogleVerbose()
+		else:
+			tolog = "Using brief mode for google news"
+			self.__google = GoogleBrief()
+		self.putlog(LOG_DEBUG, tolog)			
+		self.__ananova = Ananova()
+		
+
 		self.__gwn_interval = self.Config.getint('News', 'google_world_interval')
 		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval')
 		self.__gh_interval = self.Config.getint('News', 'google_health_interval')
@@ -198,13 +208,14 @@ class News(Plugin):
 		if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI \
 			or event.name == NEWS_GOOGLE_HEALTH or event.name == NEWS_GOOGLE_BIZ:
 
-			parser = Google()
+			parser = self.__google
 		elif event.name == NEWS_ANANOVA:
-			parser = Ananova()
+			parser = self.__anavova
 		else:
 			errtext = "Unknown: %s" % event.name
 			raise ValueError, errtext
-			
+
+		parser.reset_news()
 		self.__do_news(page_text, parser, event)
 	
 	# -----------------------------------------------------------------------
@@ -225,12 +236,6 @@ class News(Plugin):
 				self.__to_process[title] = parser.news[title]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 				
-				#if not title in store:
-					## this is a new item!
-					#store[title] = (parser.news[title], time.time())
-					#replytext = "%s - %s" % (title, parser.news[title])
-					#self.__outgoing.append(replytext)
-	
 	# -----------------------------------------------------------------------
 	
 	def _message_REPLY_QUERY(self, message):
@@ -296,10 +301,13 @@ class News(Plugin):
 # ---------------------------------------------------------------------------
 
 # A parser for google's news pages. Looks for the main story titles.
-class Google(HTMLParser):
+# Produces brief output: "headline - URL"
+class GoogleBrief(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
-		
+		self.reset_news()
+	
+	def reset_news(self):
 		self.news = {}
 		self.__temp_href = None
 		self.__found = 0
@@ -324,11 +332,65 @@ class Google(HTMLParser):
 
 # ---------------------------------------------------------------------------
 
+# A parser for google's news pages. Looks for the main story titles.
+# Produces verbose output: "headline - URL - summary"
+class GoogleVerbose(HTMLParser):
+	def __init__(self):
+		HTMLParser.__init__(self)
+		self.reset_news()
+	
+	def reset_news(self):
+		self.news = {}
+		self.__temp_href = None
+		self.__temp_title = None
+		self.__found_a = 0
+		self.__found_br1 = 0
+		self.__found_br2 = 0
+		
+	# -----------------------------------------------------------------------
+	
+	# Scan through the HTML, looking for a tag of the form <a class=y ..>
+	def handle_starttag(self, tag, attributes):
+		if tag == 'a':
+			for attr, value in attributes:
+				if attr == 'class' and value == 'y':
+					# We have found a main headline
+					self.__found_a = 1
+				if self.__found_a and attr == 'href':
+					self.__temp_href = value
+
+		if self.__found_a and tag == 'br':
+			if self.__found_br1:
+				self.__found_br2 = 1
+			else:
+				self.__found_br1 = 1
+	
+	# -----------------------------------------------------------------------
+	
+	# Check to see if we have found a new headline, and if so, the data
+	# between the <a ..> </a> tags is what we want to grab as the title.
+	# Also, if we have found a headline, we check to see if we have found
+	# two <br> tags, if so, the data between the second <br> and </br> is
+	# our one-line summary of this article.
+	def handle_data(self, data):
+		if self.__found_a and not self.__found_br1:
+			self.__temp_title = data
+		elif self.__found_a and self.__found_br2:
+			item = "%s - %s" % (self.__temp_href, data)
+			self.news[self.__temp_title] = item
+			self.__found_a = 0
+			self.__found_br1 = 0
+			self.__found_br2 = 0
+			
+# ---------------------------------------------------------------------------
+
 # A parser for ananov'a news pages. Looks for story titles?
 class Ananova(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
-		
+		self.reset_news()
+
+	def reset_news(self):
 		self.news = {}
 	
 	def handle_starttag(self, tag, attributes):
