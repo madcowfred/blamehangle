@@ -285,3 +285,14 @@ class ChatterGizmo(Child):
 	def _message_REQ_PRIVMSG(self, message):
 		conn, target, text = message.data
 		self.privmsg(conn, target, text)
+	
+	# Return the conn object for <foo> network
+	def _message_REQ_CONN(self, message):
+		network = message.data.lower()
+		conn = None
+		for wrap in self.Conns:
+			if wrap.options['name'].lower() == network:
+				conn = wrap.conn
+				break
+		
+		self.sendMessage(message.source, REPLY_CONN, conn)
