@@ -45,7 +45,10 @@ class TorrentScraper(Plugin):
 		# Add any new ones to the list
 		for url in newurls.keys():
 			if url not in self.URLs:
-				self.URLs[url] = 0
+				self.URLs[url] = {
+					'checked': 0,
+					'last-modified': None,
+				}
 		
 		# Remove any old ones
 		for url in self.URLs.keys():
@@ -64,10 +67,17 @@ class TorrentScraper(Plugin):
 	def _trigger_SCRAPE_TIMER(self, trigger):
 		now = time.time()
 		
-		ready = [k for k, v in self.URLs.items() if now - v > self.Options['scrape_interval']]
-		if ready:
-			self.URLs[ready[0]] = now
-			self.urlRequest(trigger, self.__Parse_Page, ready[0])
+		ready = [(v['checked'], v, k) for k, v in self.URLs.items() if now - v['checked'] > self.Options['scrape_interval']]
+		ready.sort()
+		for checked, info, url in ready[:1]:
+			info['checked'] = now
+			
+			# Maybe send an If-Modified-Since header
+			if info['last-modified'] is not None:
+				headers = {'If-Modified-Since': info['last-modified']}
+				self.urlRequest(trigger, self.__Parse_Page, url, headers=headers)
+			else:
+				self.urlRequest(trigger, self.__Parse_Page, url)
 	
 	def _trigger_RSS_TIMER(self, trigger):
 		self.dbQuery(trigger, self.__Generate_RSS, RECENT_QUERY)
@@ -75,6 +85,13 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
 	def __Parse_Page(self, trigger, resp):
+		# If it hasn't been modified, we can continue on our merry way
+		if resp.response == '304':
+			return
+		
+		# Remember the Last-Modified header if it was sent
+		self.URLs[resp.url]['last-modified'] = resp.headers.get('Last-Modified', None)
+		
 		items = {}
 		
 		# We don't want stupid HTML entities
