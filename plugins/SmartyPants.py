@@ -322,6 +322,8 @@ class SmartyPants(Plugin):
 	# database, so all we need to do is formulate a reply and send it out.
 	# -----------------------------------------------------------------------
 	def __Fact_Get(self, trigger, results):
+		replytext = ''
+		
 		if results == [()]:
 			if trigger.event.IRCType == IRCT_PUBLIC:
 				return
@@ -346,7 +348,8 @@ class SmartyPants(Plugin):
 			query = (REQUESTED_QUERY, requester_nick, requester_host, now, name)
 			self.dbQuery(trigger, query)
 		
-		self.sendReply(trigger, replytext)
+		if replytext:
+			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# A user just tried to set a factoid.. if it doesn't already exist, we
