@@ -27,7 +27,7 @@ class Message:
 			self.targets = []
 			self.targetstring = 'ALL'
 		
-		elif t == types.ListType:
+		elif t in (types.ListType, types.TupleType):
 			self.targets = targets
 			if targets:
 				self.targetstring = ', '.join(targets)
@@ -37,6 +37,9 @@ class Message:
 		elif t == types.StringType:
 			self.targets = [targets]
 			self.targetstring = targets
+		
+		else:
+			print 'WTF? Invalid targets type: %s' % t
 	
 	# Return a printable string with info about ourself, including
 	# how long it's been since we were sent.
