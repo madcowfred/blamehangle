@@ -46,6 +46,10 @@ class DataMonkey(Child):
 			DBclass = Database.MySQL
 		elif module == 'postgres':
 			DBclass = Database.Postgres
+		elif module == 'sqlite':
+			DBclass = Database.SQLite
+		else:
+			raise Exception, 'Invalid database module: %s' % module
 		
 		for i in range(self.conns):
 			db = DBclass(self.Config)

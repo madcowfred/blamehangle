@@ -1,9 +1,9 @@
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # $Id$
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # This file contains the Database class, which handles the DB
 # communication and most of the abstraction.
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 import os
 import sys
@@ -13,13 +13,12 @@ from Queue import *
 from classes.Common import *
 from classes.Constants import *
 
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 sys.path.append(os.path.expanduser('~/lib/python'))
 
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Base class for database wrappers
-# --------------------------------------------------------------
 class DatabaseWrapper:
 	def __init__(self, Config):
 		self.Config = Config
@@ -76,9 +75,8 @@ class DatabaseWrapper:
 		
 		return tuple(result)
 
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Wrapper class for MySQLdb
-# --------------------------------------------------------------
 class MySQL(DatabaseWrapper):
 	def _connect(self):
 		if self.db:
@@ -94,9 +92,8 @@ class MySQL(DatabaseWrapper):
 									compress=1,
 									)
 
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Wrapper class for pyGreSQL
-# --------------------------------------------------------------
 class Postgres(DatabaseWrapper):
 	def _connect(self):
 		if self.db:
@@ -110,7 +107,18 @@ class Postgres(DatabaseWrapper):
 									password=self.Config.get('database', 'password'),
 								)
 
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Wrapper class for pyGreSQL
+class SQLite(DatabaseWrapper):
+	def _connect(self):
+		if self.db:
+			return
+		
+		module = __import__('sqlite', globals(), locals(), [])
+		
+		self.db = module.connect(self.Config.get('database', 'database'))
+
+# ---------------------------------------------------------------------------
 # A thread wrapper around the Database object.
 #
 # parent  -- something with an outQueue attribute, so we can send
@@ -118,7 +126,7 @@ class Postgres(DatabaseWrapper):
 # db      -- a pre-made Database object
 # myindex -- an index into parent.threads for the item describing
 #            this thread
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------
 def DataThread(parent, db, myindex):
 	myname = parent.threads[myindex][0].getName()
 	_sleep = time.sleep
@@ -164,3 +172,5 @@ def DataThread(parent, db, myindex):
 			
 			# Clean up
 			del trigger, method, query, args, result
+
+# ---------------------------------------------------------------------------
