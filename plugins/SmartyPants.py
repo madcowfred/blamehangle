@@ -115,23 +115,24 @@ class SmartyPants(Plugin):
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		
-		# Someone wants to lookup a factoid. Make sure they're not really
-		# trying to set it first (?)
+		# Someone wants to view a factoid.
 		if trigger.name == FACT_GET:
-			name = trigger.match.group('name')
-			if SET_RE.match(name):
-				return
-			else:
-				data = [trigger, (GET_QUERY, [name])]
-				self.sendMessage('DataMonkey', REQ_QUERY, data)
-		
-		# Someone wants to set a factoid.
-		elif trigger.name == FACT_SET:
 			name = trigger.match.group('name')
 			data = [trigger, (GET_QUERY, [name])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 		
-		# Someone wants do delete a factoid
+		# Someone wants to set a factoid. If the name is too long, tell them
+		# to go to hell.
+		elif trigger.name == FACT_SET:
+			name = trigger.match.group('name')
+			if len(name) > 63:
+				replytext = "factoid name is too long"
+				self.sendReply(trigger, replytext)
+			else:
+				data = [trigger, (GET_QUERY, [name])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
+		
+		# Someone wants to delete a factoid
 		elif trigger.name == FACT_DEL:
 			name = trigger.match.group('name')
 			data = [trigger, (GET_QUERY, [name])]
@@ -171,18 +172,11 @@ class SmartyPants(Plugin):
 			raise ValueError, errtext
 	
 	# -----------------------------------------------------------------------
-	# Return a random OK string
+	# Return a random item from stuff
 	# -----------------------------------------------------------------------
-	def __Random_OK(self):
-		a = random.randint(0, len(OK)-1)
-		return OK[a]
-	
-	# -----------------------------------------------------------------------
-	# Return a random dunno string
-	# -----------------------------------------------------------------------
-	def __Random_Dunno(self):
-		a = random.randint(0, len(DUNNO)-1)
-		return DUNNO[a]
+	def __Random(self, stuff):
+		a = random.randint(0, len(stuff)-1)
+		return stuff[a]
 	
 	# -----------------------------------------------------------------------
 	# A user asked to lookup a factoid. We've already dug it out of the
@@ -191,7 +185,7 @@ class SmartyPants(Plugin):
 	def __Fact_Get(self, trigger, results):
 		if results == [()]:
 			# The factoid wasn't in our database
-			replytext = self.__Random_Dunno()
+			replytext = self.__Random(DUNNO)
 		
 		else:
 			# We found it!
@@ -244,7 +238,7 @@ class SmartyPants(Plugin):
 			if result == 0:
 				replytext = 'factoid insertion failed, warning, warning!'
 			elif result == 1:
-				replytext = self.__Random_OK()
+				replytext = self.__Random(OK)
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
@@ -276,7 +270,7 @@ class SmartyPants(Plugin):
 			if result == 0:
 				replytext = 'factoid deletion failed, warning, warning!'
 			elif result == 1:
-				replytext = self.__Random_OK()
+				replytext = self.__Random(OK)
 			self.sendReply(trigger, replytext)
 	
 	#------------------------------------------------------------------------
@@ -294,7 +288,7 @@ class SmartyPants(Plugin):
 			
 			text = '%(name)s -- created by %(author_nick)s (%(author_host)s), some time ago'
 			if row['request_count']:
-				#diff = row['requested_time'] - 
+				#diff = row['requested_time'] - time.time()
 				text += '; requested %(request_count)d time(s), last by %(requester_nick)s, some time ago'
 			if row['modifier_nick']:
 				text += '; last modified by %(modifier_nick)s (%(modifier_host)s), some time ago'
