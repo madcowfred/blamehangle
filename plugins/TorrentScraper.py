@@ -10,6 +10,8 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
+from classes.BeautifulSoup import BeautifulSoup
+
 # ---------------------------------------------------------------------------
 
 SCRAPE_TIMER = 'SCRAPE_TIMER'
@@ -90,30 +92,26 @@ class TorrentScraper(Plugin):
 		
 		# Otherwise, go the easy way
 		else:
-			# Find all of our URLs
-			chunks = FindChunks(resp.data, '<a ', '</a>')
-			if not chunks:
+			# Parse it with BeautifulSoup
+			soup = BeautifulSoup()
+			soup.feed(resp.data)
+			
+			# Find all of the URLs
+			links = soup('a', {'href': '%.torrent%'})
+			if not links:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
 			
-			# See if any are talking about torrents
-			for chunk in chunks:
-				# Find the URL
-				href = FindChunk(chunk, 'href="', '"')
-				if not href or href.find('.torrent') < 0:
-					continue
-				
+			for link in links:
 				# Build the new URL
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, link['href']))
 				if newurl in items:
 					continue
 				
 				# Get some text to describe it
-				bits = chunk.split('>', 1)
-				if len(bits) != 2:
-					continue
+				desc = str(link.contents[0])
 				
-				lines = StripHTML(bits[1])
+				lines = StripHTML(desc)
 				if len(lines) != 1:
 					continue
 				
