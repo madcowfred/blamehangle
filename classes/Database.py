@@ -57,8 +57,13 @@ class DatabaseWrapper:
 		
 		for arg in args:
 			if type(arg) in types.StringTypes:
-				arg = arg.replace('\\', '\\\\')
-				arg = arg.replace("'", "\\'")
+				# escape annoying chars
+				for char in ('$'):
+					arg = arg.replace(char, '\\%s' % char)
+				# double up on quotes to stop evilness
+				for char in ("'", '"'):
+					arg = arg.replace(char, char+char)
+				
 				arg = "'%s'" % arg
 			newargs.append(arg)
 		
