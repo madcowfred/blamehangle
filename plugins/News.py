@@ -140,11 +140,6 @@ class News(Plugin):
 				network = option.split('.', 1)[1]
 				self.__Targets['rss_default'][network] = value.split()
 	
-	#def __setup_target(self, target_store, section, option):
-	#	network = option.split('.')[1]
-	#	targets = self.Config.get(section, option).split()
-	#	target_store[network] = targets
-	
 	# -----------------------------------------------------------------------
 	# Do stuff
 	def __Setup_RSS_Feeds(self):
@@ -439,7 +434,6 @@ class News(Plugin):
 		
 		# Try to parse it
 		try:
-			#r = FeedParser()
 			r = self.__Parser
 			r.reset()
 			r.feed(resp.data)
@@ -576,20 +570,6 @@ class News(Plugin):
 		# Insert the rows now
 		for article in articles:
 			self.dbQuery(trigger, None, INSERT_QUERY, *article)
-	
-	# A news item has been inserted, try the next one if we have to
-	#def __News_Inserted(self, trigger, result):
-	#	# Error, just log it, we want to keep inserting news items
-	#	if result is None:
-	#		self.putlog(LOG_WARNING, '__News_Inserted: A DB error occurred!')
-	#	
-	#	# If we have no more articles, go home now
-	#	if len(trigger.insertme) == 0:
-	#		return
-	#	
-	#	# Do the next one
-	#	article = trigger.insertme.pop(0)
-	#	self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
 	
 	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title
