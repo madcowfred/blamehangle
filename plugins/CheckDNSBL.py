@@ -55,6 +55,10 @@ class CheckDNSBL(Plugin):
 	# -----------------------------------------------------------------------
 	# We got a reply to a hostname lookup.
 	def __DNS_Host(self, trigger, hosts, args):
+		# Error!
+		if hosts is None:
+			return
+		
 		# Strip any non-IPv4 or RFC 1918 hosts
 		hosts = [h[1] for h in hosts if h[0] == 4 and not RFC1918_RE.search(h[1])]
 		if not hosts:
