@@ -14,6 +14,9 @@ whatever:
 plugins:
 	* Stock quotes & symbol lookups
 	* dictionary.com lookup
-	* Spam text at intervals (easy way to use PluginTimedEvent?)
+	* Spam text at intervals (easy way to use PluginTimedEvent?
+	* MapQuest: return URL with other data
 	* SmartyPants: random factoid spam at interval(s)
+	* Karma: combine nicknames
+	* Karma: top/bottom <n> karmas
 	* animenfo.com lookup
