@@ -81,7 +81,8 @@ class News(Plugin):
 	
 	# Make extra sure our news queue is saved
 	def shutdown(self, message):
-		self.__pickle(self.__outgoing, '.news.out_pickle')
+		if self.__outgoing:
+			self.__pickle(self.__outgoing, '.news.out_pickle')
 	
 	def __setup_config(self):
 		self.__spam_delay = self.Config.getint('News', 'spam_delay')
