@@ -192,7 +192,7 @@ class News(Plugin):
 		for option in self.Config.options(section):
 			bits = option.split('.', 1)
 			if len(bits) == 2 and bits[0].startswith('targets'):
-				feed['targets'][bits[0]][bits[1]] = self.Config.get(section, option).split()
+				feed['targets'][bits[1]] = self.Config.get(section, option).split()
 		
 		# Couldn't find any, use the default
 		if not feed['targets']:
