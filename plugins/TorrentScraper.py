@@ -125,8 +125,9 @@ class TorrentScraper(Plugin):
 		
 		# We don't need to add any that are already in the database
 		for row in result:
-			descl = row['description'].lower()
-			items = [a for a in items if a[2].lower() != descl]
+			lurl = row['url'].lower()
+			ldesc = row['description'].lower()
+			items = [a for a in items if a[1].lower() != lurl and a[2].lower() != ldesc]
 		
 		# If we don't have any new items, go home now
 		if len(items) == 0:
