@@ -20,7 +20,7 @@
 #	created_time int(11) default NULL,
 #	modified_time int(11) default NULL,
 #	requested_time int(11) default NULL,
-#	PRIMARY KEY (key)
+#	PRIMARY KEY (name)
 # ) TYPE=MyISAM;
 #
 # CREATE TABLE factoid_locks (
@@ -28,7 +28,7 @@
 #	lock_nick varchar(64) default NULL,
 #	lock_host varchar(192) default NULL
 #	lock_time int(11) default NULL,
-#	PRIMARY KEY (key)
+#	PRIMARY KEY (name)
 # ) TYPE=MyISAM;
 #
 
