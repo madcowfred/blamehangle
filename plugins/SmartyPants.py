@@ -70,20 +70,20 @@ STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 LISTKEYS_QUERY = 'SELECT name FROM factoids WHERE name LIKE "%%%s%%"'
 LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
 
-GET_D_RE = re.compile("^ *(?P<name>.+?)\??$")
-GET_RE = re.compile("^ *(?P<name>.+?)\?$")
-SET_RE = re.compile("^ *(?!no, +)(?P<name>.+?) +(is|are) (?!also +)(?P<value>.+)$")
+GET_D_RE = re.compile("^(?P<name>.+?)\??$")
+GET_RE = re.compile("^(?P<name>.+?)\?$")
+SET_RE = re.compile("^(?!no, +)(?P<name>.+?) +(is|are) (?!also +)(?P<value>.+)$")
 NO_RE = re.compile("^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$")
-ALSO_RE = re.compile("^ *(?P<name>.+?) +(is|are) +also +(?P<value>.+)$")
-DEL_RE = re.compile("^ *forget +(?P<name>.+)$")
-REP_RE = re.compile("^ *(?P<name>.+?) +=~ +(?P<modstring>.+)$")
-LOCK_RE = re.compile("^ *lock +(?P<name>.+)$")
-UNLOCK_RE = re.compile("^ *unlock +(?P<name>.+)$")
-INFO_RE = re.compile("^ *factinfo +(?P<name>.+)\??$")
-STATUS_RE = re.compile("^ *status$")
-LISTKEYS_RE = re.compile("^ *listkeys +(?P<name>.+)$")
-LISTVALUES_RE = re.compile("^ *listvalues +(?P<name>.+)$")
-TELL_RE = re.compile("^ *tell +(?P<nick>.+?) +about +(?P<name>.+)$")
+ALSO_RE = re.compile("^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$")
+DEL_RE = re.compile("^forget +(?P<name>.+)$")
+REP_RE = re.compile("^(?P<name>.+?) +=~ +(?P<modstring>.+)$")
+LOCK_RE = re.compile("^lock +(?P<name>.+)$")
+UNLOCK_RE = re.compile("^unlock +(?P<name>.+)$")
+INFO_RE = re.compile("^factinfo +(?P<name>.+)\??$")
+STATUS_RE = re.compile("^status$")
+LISTKEYS_RE = re.compile("^listkeys +(?P<name>.+)$")
+LISTVALUES_RE = re.compile("^listvalues +(?P<name>.+)$")
+TELL_RE = re.compile("^tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 
 REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
 
@@ -137,6 +137,9 @@ class SmartyPants(Plugin):
 		self.__sets = 0
 		self.__modifys = 0
 		self.__dels = 0
+
+		self.__get_pub = self.Config.getboolean('Infobot', 'public_requests')
+		self.__set_pub = self.Config.getboolean('Infobot', 'public_assignment')
 	
 	def _message_PLUGIN_REGISTER(self, message):
 		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_D_RE, exclusive=1)
@@ -144,6 +147,7 @@ class SmartyPants(Plugin):
 		get_pub = PluginTextEvent(FACT_GET, IRCT_PUBLIC, GET_RE, exclusive=1)
 		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE)
 		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE)
+		set_pub = PluginTextEvent(FACT_SET, IRCT_PUBLIC, SET_RE)
 		no_dir = PluginTextEvent(FACT_NO, IRCT_PUBLIC_D, NO_RE)
 		no_msg = PluginTextEvent(FACT_NO, IRCT_MSG, NO_RE)
 		also_dir = PluginTextEvent(FACT_ALSO, IRCT_PUBLIC_D, ALSO_RE)
@@ -167,10 +171,14 @@ class SmartyPants(Plugin):
 		tell_dir = PluginTextEvent(FACT_TELL, IRCT_PUBLIC_D, TELL_RE)
 		tell_msg = PluginTextEvent(FACT_TELL, IRCT_MSG, TELL_RE)
 		
-		self.register(get_dir, get_msg, get_pub, set_dir, set_msg, no_dir, no_msg,
+		self.register(get_dir, get_msg, set_dir, set_msg, no_dir, no_msg,
 			also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg,
 			unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg,
 			listkey_dir, listkey_msg, listval_dir, listval_msg, tell_dir, tell_msg)
+		if self.__get_pub:
+			self.register(get_pub)
+		if self.__set_pub:
+			self.register(set_pub)
 	
 	#------------------------------------------------------------------------
 	
@@ -414,6 +422,10 @@ class SmartyPants(Plugin):
 			
 			else:
 				# It was already in our database
+
+				# don't say anything if this was an undirected public
+				if trigger.event.IRCType == IRCT_PUBLIC:
+					return
 				row = results[0][0]
 				replytext = "...but '%(name)s' is already something else..." % row
 				self.sendReply(trigger, replytext)
@@ -424,6 +436,9 @@ class SmartyPants(Plugin):
 			if result == 0:
 				replytext = 'factoid insertion failed, warning, warning!'
 			elif result == 1:
+				if trigger.event.IRCType == IRCT_PUBLIC:
+					# don't send a reply to an undirected public set
+					return
 				replytext = self.__Random(OK)
 			self.sendReply(trigger, replytext)
 
