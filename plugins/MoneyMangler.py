@@ -15,7 +15,7 @@ from classes.Plugin import *
 MONEY_CONVERT = 'MONEY_CONVERT'
 MONEY_CURRENCY = 'MONEY_CURRENCY'
 
-CONVERT_RE = re.compile('^convert (?P<amt>[\d\.]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
+CONVERT_RE = re.compile('^convert (?P<amt>[\d\.\,]+) (?P<from>\w\w\w)(?: to | )(?P<to>\w\w\w)$')
 CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
 
 EXCHANGE_URL = 'http://finance.yahoo.com/m5?a=%(amt)s&s=%(from)s&t=%(to)s&c=0'
