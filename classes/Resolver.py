@@ -56,7 +56,7 @@ class Resolver(Child):
 			self.Threads.append([t, 0])
 			t.start()
 			
-			tolog = "Started DNS thread: %s" % t.getName()
+			tolog = 'Started DNS thread: %s' % t.getName()
 			self.putlog(LOG_DEBUG, tolog)
 	
 	# Stop our threads!
@@ -97,6 +97,8 @@ class Resolver(Child):
 # ---------------------------------------------------------------------------
 
 def ResolverThread(parent, myindex):
+	_sleep = time.sleep
+	
 	while 1:
 		# see if we have to die now
 		if parent.Threads[myindex][1]:
@@ -104,9 +106,10 @@ def ResolverThread(parent, myindex):
 		
 		# see if there's something to look up
 		try:
-			message = parent.Requests.get(True, 0.25)
+			message = parent.Requests.get_nowait()
 		
 		except Empty:
+			_sleep(0.25)
 			continue
 		
 		# well, off we go then

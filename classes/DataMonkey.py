@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 
 from Queue import *
-from threading import *
+from threading import Thread
 import time
 
 # ---------------------------------------------------------------------------
@@ -53,11 +53,12 @@ class DataMonkey(Child):
 		
 		for i in range(self.conns):
 			db = DBclass(self.Config)
-			the_thread = Thread(target=Database.DataThread, args=(self,db,i))
-			self.threads.append([the_thread, 0])
-			the_thread.start()
+			t = Thread(target=Database.DataThread, args=(self,db,i))
+			t.setName('Database %d' % i)
+			self.threads.append([t, 0])
+			t.start()
 			
-			tolog = "Started db thread: %s" % the_thread.getName()
+			tolog = 'Started DB thread: %s' % t.getName()
 			self.putlog(LOG_DEBUG, tolog)
 	
 	def __stop_threads(self):

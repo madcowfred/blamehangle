@@ -9,7 +9,7 @@ import os
 import sys
 import time
 import types
-from Queue import *
+from Queue import Empty, Queue
 
 from classes.Constants import *
 from classes.Message import Message
@@ -160,34 +160,34 @@ def DataThread(parent, db, myindex):
 		# if not, zzzzzz
 		except Empty:
 			_sleep(0.25)
+			continue
 		
 		# we have a query
-		else:
-			trigger, method, query, args = message.data
+		trigger, method, query, args = message.data
+		
+		tolog = 'Query: "%s", Args: %s' % (query, repr(args))
+		parent.putlog(LOG_QUERY, tolog)
+		
+		try:
+			result = db.query(query, *args)
+		
+		except:
+			# Log the error
+			t, v = sys.exc_info()[:2]
 			
-			tolog = 'Query: "%s", Args: %s' % (query, repr(args))
-			parent.putlog(LOG_QUERY, tolog)
+			tolog = '%s - %s' % (t, v)
+			parent.putlog(LOG_WARNING, tolog)
 			
-			try:
-				result = db.query(query, *args)
+			result = None
 			
-			except:
-				# Log the error
-				t, v = sys.exc_info()[:2]
-				
-				tolog = '%s - %s' % (t, v)
-				parent.putlog(LOG_WARNING, tolog)
-				
-				result = None
-				
-				db.disconnect()
-			
-			# Return our results
-			data = [trigger, method, result]
-			message = Message('DataMonkey', message.source, REPLY_QUERY, data)
-			parent.outQueue.append(message)
-			
-			# Clean up
-			del trigger, method, query, args, result
+			db.disconnect()
+		
+		# Return our results
+		data = [trigger, method, result]
+		message = Message('DataMonkey', message.source, REPLY_QUERY, data)
+		parent.outQueue.append(message)
+		
+		# Clean up
+		del trigger, method, query, args, result
 
 # ---------------------------------------------------------------------------
