@@ -202,8 +202,11 @@ class Postman:
 								# If it's really being reloaded, do that
 								if self.__reloadme.has_key(child):
 									self.__Plugin_Load(child, runonce=1)
-									self.sendMessage(child, PLUGIN_REGISTER, None)
 									del self.__reloadme[child]
+									
+									# If reloadme is empty, rehash now
+									if not self.__reloadme:
+										self.sendMessage(None, REQ_REHASH, None)					
 					
 					else:
 						# Log the message if debug is enabled
@@ -501,5 +504,7 @@ class Postman:
 		# that are no longer needed to go, but instead we put it in the handler
 		# for the REPLY_SHUTDOWN message we get.
 		
-		# Tell everyone we reloaded
-		self.sendMessage(None, REQ_REHASH, None)
+		# If no plugins are being reloaded, tell everyone that we have reloaded.
+		# Otherwise, we can do that once it's loaded itself :|
+		if not self.__reloadme:
+			self.sendMessage(None, REQ_REHASH, None)
