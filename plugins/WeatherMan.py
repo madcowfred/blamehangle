@@ -116,7 +116,7 @@ class WeatherMan(Plugin):
 				
 				windbits = lines[-9].split()
 				if len(windbits) == 3:
-					data['wind'] = '%s kph (%s mph)' % (ToKilometers(windbits[1]), windbits[1])
+					data['wind'] = '%s %s kph (%s mph)' % (windbits[0], ToKilometers(windbits[1]), windbits[1])
 				else:
 					data['wind'] = windbits[0]
 				
