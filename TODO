@@ -2,17 +2,16 @@ critical:
 
 important:
 	* convert db.dump once the bot is ready for it, and we have a newer dump
-	  (both + dene) -- do we really need a newer dump? it's not like people
-	  have been setting new stuff on efnet
+	  (both + dene)
 	* add/port the 'stoned check' from MadCowOffer, so the bot doesn't get
 	  stuck thinking it's connected when the server died ages ago (fred)
 
 not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
-	* Mobygames/HOTU searches (fred?)
 	* dict plugin (anyone)
 
 whatever:
+	* Mobygames/HOTU searches (fred?)
 	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
 	* Speaking of random text spammer, random factoid spam? (anyone)
 	* testing! :) (anyone)
