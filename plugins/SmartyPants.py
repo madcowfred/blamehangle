@@ -26,7 +26,7 @@
 # CREATE TABLE factoid_locks (
 #	name varchar(64) NOT NULL default '',
 #	lock_nick varchar(64) default NULL,
-#	lock_host varchar(192) default NULL
+#	lock_host varchar(192) default NULL,
 #	lock_time int(11) default NULL,
 #	PRIMARY KEY (name)
 # ) TYPE=MyISAM;
