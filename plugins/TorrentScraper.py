@@ -232,7 +232,7 @@ class TorrentScraper(Plugin):
 		builddate = ISODate(time.time())
 		
 		print >>rssfile, """<?xml version="1.0" encoding="iso-8859-1"?>
-<rss version="2.0">
+<rss version="2.0" xmlns="http://backend.userland.com/rss2">
 <channel>
 <title>TorrentScraper</title>
 <link>http://www.nowhere.com</link>
@@ -248,7 +248,7 @@ class TorrentScraper(Plugin):
 			lines.append('<item>')
 			lines.append('<title>%s</title>' % ENTITY_RE.sub('&amp;', row['description']))
 			quotedurl = ENTITY_RE.sub('&amp;', urllib.quote(row['url'], ':/&'))
-			lines.append('<guid>%s</guid>' % quotedurl)
+			lines.append('<link>%s</link>' % quotedurl)
 			lines.append('<pubDate>%s</pubDate>' % ISODate(row['added']))
 			lines.append('</item>')
 			print >>rssfile, '\n'.join(lines)
