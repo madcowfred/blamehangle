@@ -8,6 +8,7 @@
 #CREATE TABLE news (
 #	title varchar(255) NOT NULL default '',
 #	url varchar(255) default NULL,
+#	description text default NULL,
 #	time bigint UNSIGNED default NULL,
 #	PRIMARY KEY (title)
 #	) TYPE=MyISAM;
@@ -40,10 +41,10 @@ TIME_CHECK = "TIME_CHECK"
 NEWS_SEARCH = "NEWS_SEARCH"
 MAX_NEWS_SEARCH_RESULTS = 5
 
-NEWS_QUERY = "SELECT title, url FROM news WHERE title = %s"
-INSERT_QUERY = "INSERT INTO news (title, url, time) VALUES (%s,%s,%s)"
+NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
+INSERT_QUERY = "INSERT INTO news (title, url, description, time) VALUES (%s,%s,%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE time < %s"
-SEARCH_QUERY = 'SELECT title, url FROM news WHERE title like "%%%s%%"'
+SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE title like "%%%s%%"'
 
 NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
 
@@ -99,13 +100,15 @@ class News(Plugin):
 		
 		if self.Config.getboolean('News', 'verbose'):
 			tolog = "Using verbose mode for news"
-			self.__google = GoogleVerbose()
-			self.__ananova = AnanovaVerbose()
+			self.__verbose = 1
 		else:
 			tolog = "Using brief mode for news"
-			self.__google = GoogleBrief()
-			self.__ananova = AnanovaBrief()
+			self.__verbose = 0
+			
 		self.putlog(LOG_DEBUG, tolog)
+
+		self.__google = Google()
+		self.__ananova = Ananova()
 		
 		
 		self.__gwn_interval = self.Config.getint('News', 'google_world_interval') * 60
@@ -184,7 +187,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_REQ_REHASH(self, message):
+	def rehash(self):
 		self.__setup_config()
 	
 	# Register all our news pages that we want to check
@@ -397,7 +400,7 @@ class News(Plugin):
 			queries = []
 			
 			for i in range(len(articles)):
-				title, url = articles[i]
+				title, (url, description) = articles[i]
 				result = results[i]
 				
 				
@@ -408,13 +411,16 @@ class News(Plugin):
 				#replytext = "%s - %s" % (title, self.__to_process[title])
 				#del self.__to_process[title]
 				
-				replytext = "%s - %s" % (title, url)
+				if self.__verbose:
+					replytext = "%s - %s : %s" % (title, url, description)
+				else:
+					replytext = "%s - %s" % (title, url)
 				
 				reply = PluginReply(event, replytext)
 				self.__outgoing.append(reply)
 				
 				# add it to the db!
-				query = (INSERT_QUERY, title, url, currtime)
+				query = (INSERT_QUERY, title, url, description, currtime)
 				queries.append(query)
 			
 			if queries:
@@ -470,7 +476,7 @@ class News(Plugin):
 			else:
 				# We found exactly one item, so reply with the headline and
 				# url
-				replytext = "%s - %s" % (results[0]['title'], results[0]['url'])
+				replytext = "%s - %s : %s" % (results[0]['title'], results[0]['url'], results[0]['description'])
 				self.sendReply(trigger, replytext)
 
 	# -----------------------------------------------------------------------
@@ -509,41 +515,7 @@ class News(Plugin):
 # ---------------------------------------------------------------------------
 
 # A parser for google's news pages. Looks for the main story titles.
-# Produces brief output: "headline - URL"
-class GoogleBrief(HTMLParser):
-	def __init__(self):
-		HTMLParser.__init__(self)
-		self.reset_news()
-	
-	def reset_news(self):
-		self.news = {}
-		self.__temp_href = None
-		self.__found = 0
-		self.reset()
-	
-	# Scan through the HTML, looking for a tag of the form <a class=y ..>
-	def handle_starttag(self, tag, attributes):
-		if tag == 'a':
-			for attr, value in attributes:
-				if attr == 'class' and value == 'y':
-					# We have found a main headline
-					self.__found = 1
-				if self.__found and attr == 'href':
-					self.__temp_href = value
-	
-	# Check to see if we have found a new headline, and if so, the data
-	# between the <a ..> </a> tags is what we want to grab as the title.
-	def handle_data(self, data):
-		if self.__found:
-			self.news[data] = self.__temp_href
-			self.__found = 0
-			self.__temp_href = None
-
-# ---------------------------------------------------------------------------
-
-# A parser for google's news pages. Looks for the main story titles.
-# Produces verbose output: "headline - URL - summary"
-class GoogleVerbose(HTMLParser):
+class Google(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
 		self.reset_news()
@@ -586,42 +558,18 @@ class GoogleVerbose(HTMLParser):
 		if self.__found_a and not self.__found_br1:
 			self.__temp_title = data
 		elif self.__found_a and self.__found_br2:
-			item = "%s - %s" % (self.__temp_href, data)
-			self.news[self.__temp_title] = item
+			#item = "%s - %s" % (self.__temp_href, data)
+			self.news[self.__temp_title] = (self.__temp_href, data)
 			self.__found_a = 0
 			self.__found_br1 = 0
 			self.__found_br2 = 0
 			
-## ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
-# A parser for ananov'a news pages. Looks for story titles?
-class AnanovaBrief(HTMLParser):
-	def __init__(self):
-		HTMLParser.__init__(self)
-		self.reset_news()
-
-	def reset_news(self):
-		self.news = {}
-		self.reset()
-	
-	def handle_starttag(self, tag, attributes):
-		if tag == 'a':
-			href = None
-			title = None
-			for attr, value in attributes:
-				if attr == 'href' and value.startswith('./story'):
-					# chop off the starting . and the ending ?menu=
-					realvalue = value[1:-6]
-					href = 'http://www.ananova.com/news' + realvalue
-				elif attr == 'title':
-					title = value
-			
-			if href and title:
-				self.news[title] = href
 # ---------------------------------------------------------------------------
 
 # A parser for ananov'a news pages. Looks for story titles?
-class AnanovaVerbose(HTMLParser):
+class Ananova(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
 		self.reset_news()
@@ -656,7 +604,7 @@ class AnanovaVerbose(HTMLParser):
 	
 	def handle_data(self, data):
 		if self.__found_small:
-			item = "%s - %s" % (self.__temp_href, data)
-			self.news[self.__temp_title] = item
+			#item = "%s - %s" % (self.__temp_href, data)
+			self.news[self.__temp_title] = (self.__temp_href, data)
 			self.__found_a = 0
 			self.__found_small = 0
