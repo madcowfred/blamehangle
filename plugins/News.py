@@ -608,6 +608,7 @@ class News(Plugin):
 		else:
 			# Some matches
 			if len(result) > 1:
+				# TEMP: fix this once people update their configs
 				search_items = self.News_Options.get('search_items', 5)
 				
 				if len(result) > search_items:
