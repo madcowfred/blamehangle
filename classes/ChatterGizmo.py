@@ -344,7 +344,7 @@ class ChatterGizmo(Child):
 		
 		# It's probably addressed to someone, see if it's us
 		if addr:
-			if not text.startswith(conn.real_nickname):
+			if not text[:addr-2].lower() == conn.real_nickname.lower():
 				return
 			
 			text = text[addr:]
