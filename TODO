@@ -9,7 +9,12 @@ critical:
 important:
 	* Port the global ignore list from MCO? (fred)
 	* user/access list for the SmartyPants (zhar?)
-	* finalise the factoid table structure, and convert db.dump (both)
+	* convert db.dump once the bot is ready for it, and we have a newer dump
+	  (both + dene)
+	* configs/ dir, with a config file for the main bot and each plugin (that
+	  needs one) (anyone)
+	* to go with the above, make plugins use configs instead of hardcoded crap
+	  all over the place (anyone)
 
 whatever:
 	* testing! :) (anyone)
