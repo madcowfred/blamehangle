@@ -73,6 +73,7 @@ def URLThread(parent, message):
 	_sleep = time.sleep
 	_time = time.time
 	
+	the_page = None
 	last_read = _time()
 	
 	try:
@@ -101,7 +102,7 @@ def URLThread(parent, message):
 		parent.putlog(LOG_ALWAYS, tolog)
 	
 	else:
-		# we have the page
+		# we have the page, mangle the HTML so it's no longer dodgy
 		m = dodgy_html_check(pagetext)
 		while m:
 			pre = pagetext[:m.start()]
@@ -117,6 +118,10 @@ def URLThread(parent, message):
 		data = [pagetext, returnme]
 		message = Message('HTTPMonster', message.source, REPLY_URL, data)
 		parent.outQueue.put(message)
+	
+	# Ensure the page is closed
+	if the_page:
+		the_page.close()
 	
 	# Release the semaphore
 	parent.sem.release()
