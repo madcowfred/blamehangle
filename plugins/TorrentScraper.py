@@ -55,7 +55,8 @@ class TorrentScraper(Plugin):
 		# Find all of our URLs
 		chunks = FindChunks(resp.data, '<a ', '</a>')
 		if not chunks:
-			self.sendReply(trigger, 'Page parsing failed: links.')
+			#self.sendReply(trigger, 'Page parsing failed: links.')
+			self.putlog(LOG_WARNING, "Page parsing failed: links.")
 			return
 		
 		# See if any are talking about torrents
