@@ -54,7 +54,7 @@ SET_RE = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<va
 NO_RE = re.compile(r'^no, +(?P<name>.+?) +(is|are) +(?!also +)(?P<value>.+)$')
 ALSO_RE = re.compile(r'^(?P<name>.+?) +(is|are) +also +(?P<value>.+)$')
 DEL_RE = re.compile(r'^forget +(?P<name>.+)$')
-REP_RE = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$')
+REPLACE_RE = re.compile(r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$')
 LOCK_RE = re.compile(r'^lock +(?P<name>.+)$')
 UNLOCK_RE = re.compile(r'^unlock +(?P<name>.+)$')
 INFO_RE = re.compile(r'^factinfo +(?P<name>.+)\??$')
@@ -168,43 +168,28 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def _message_PLUGIN_REGISTER(self, message):
-		get_dir = PluginTextEvent(FACT_GET, IRCT_PUBLIC_D, GET_D_RE, priority=0)
-		get_msg = PluginTextEvent(FACT_GET, IRCT_MSG, GET_D_RE, priority=0)
-		get_pub = PluginTextEvent(FACT_GET, IRCT_PUBLIC, GET_RE, priority=0)
-		set_dir = PluginTextEvent(FACT_SET, IRCT_PUBLIC_D, SET_RE, priority=1)
-		set_msg = PluginTextEvent(FACT_SET, IRCT_MSG, SET_RE, priority=1)
-		set_pub = PluginTextEvent(FACT_SET, IRCT_PUBLIC, SET_RE, priority=1)
-		no_dir = PluginTextEvent(FACT_NO, IRCT_PUBLIC_D, NO_RE)
-		no_msg = PluginTextEvent(FACT_NO, IRCT_MSG, NO_RE)
-		also_dir = PluginTextEvent(FACT_ALSO, IRCT_PUBLIC_D, ALSO_RE)
-		also_msg = PluginTextEvent(FACT_ALSO, IRCT_MSG, ALSO_RE)
-		del_dir = PluginTextEvent(FACT_DEL, IRCT_PUBLIC_D, DEL_RE)
-		del_msg = PluginTextEvent(FACT_DEL, IRCT_MSG, DEL_RE)
-		rep_dir = PluginTextEvent(FACT_REPLACE, IRCT_PUBLIC_D, REP_RE)
-		rep_msg = PluginTextEvent(FACT_REPLACE, IRCT_MSG, REP_RE)
-		lock_dir = PluginTextEvent(FACT_LOCK, IRCT_PUBLIC_D, LOCK_RE)
-		lock_msg = PluginTextEvent(FACT_LOCK, IRCT_MSG, LOCK_RE)
-		unlock_dir = PluginTextEvent(FACT_UNLOCK, IRCT_PUBLIC_D, UNLOCK_RE)
-		unlock_msg = PluginTextEvent(FACT_UNLOCK, IRCT_MSG, UNLOCK_RE)
-		info_dir = PluginTextEvent(FACT_INFO, IRCT_PUBLIC_D, INFO_RE)
-		info_msg = PluginTextEvent(FACT_INFO, IRCT_MSG, INFO_RE)
-		status_dir = PluginTextEvent(FACT_STATUS, IRCT_PUBLIC_D, STATUS_RE)
-		status_msg = PluginTextEvent(FACT_STATUS, IRCT_MSG, STATUS_RE)
-		listkey_dir = PluginTextEvent(FACT_LISTKEYS, IRCT_PUBLIC_D, LISTKEYS_RE)
-		listkey_msg = PluginTextEvent(FACT_LISTKEYS, IRCT_MSG, LISTKEYS_RE)
-		listval_dir = PluginTextEvent(FACT_LISTVALUES, IRCT_PUBLIC_D, LISTVALUES_RE)
-		listval_msg = PluginTextEvent(FACT_LISTVALUES, IRCT_MSG, LISTVALUES_RE)
-		tell_dir = PluginTextEvent(FACT_TELL, IRCT_PUBLIC_D, TELL_RE)
-		tell_msg = PluginTextEvent(FACT_TELL, IRCT_MSG, TELL_RE)
-		
-		self.register(get_dir, get_msg, set_dir, set_msg, no_dir, no_msg,
-			also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg,
-			unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg,
-			listkey_dir, listkey_msg, listval_dir, listval_msg, tell_dir, tell_msg)
+		# Gets are lowest priority
+		self.setTextEventPriority(0, FACT_GET, GET_D_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		if self.__get_pub:
-			self.register(get_pub)
+			self.setTextEventPriority(0, FACT_GET, GET_RE, IRCT_PUBLIC)
+		# Sets aren't much better
+		self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		if self.__set_pub:
-			self.register(set_pub)
+			self.setTextEventPriority(1, FACT_SET, SET_RE, IRCT_PUBLIC)
+		# Rest are normal
+		self.setTextEvent(FACT_NO, NO_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_ALSO, ALSO_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_DEL, DEL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_REPLACE, REPLACE_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_LOCK, LOCK_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_UNLOCK, UNLOCK_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_INFO, INFO_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_STATUS, STATUS_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_LISTKEYS, LISTKEYS_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_LISTVALUES, LISTVALUES_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		self.setTextEvent(FACT_TELL, TELL_RE, IRCT_PUBLIC_D, IRCT_MSG)
+		
+		self.registerEvents()
 		
 		self.__set_help_messages()
 	
