@@ -123,14 +123,17 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	
 	# An exception occured somewhere
 	def handle_error(self):
-		raise
-		
 		_type, _value = sys.exc_info()[:2]
 		
+		# ^C = die now please, let Postman handle it
 		if _type == 'KeyboardInterrupt':
 			raise
+		# Otherwise, trigger a disconnect event
 		else:
-			print 'ERROR!', _value
+			if type(_value) is types.TupleType:
+				self.__trigger_event(None, None, 'disconnect', None, [_value[-1]])
+			else:
+				self.__trigger_event(None, None, 'disconnect', None, [_value])
 	
 	# There is some data waiting to be read
 	def handle_read(self):
@@ -242,9 +245,12 @@ class asyncIRC(asyncore.dispatcher_with_send):
 		else:
 			self.status = STATUS_CONNECTING
 	
+	# Disconnect from the server (duh)
 	def disconnect(self):
-		# FIXME - do stuff here
-		pass
+		if self.status != STATUS_DISCONNECTED:
+			self.close()
+	
+	# -----------------------------------------------------------------------
 	
 	def ctcp_reply(self, target, text):
 		self.notice(target, '\001%s\001' % text)

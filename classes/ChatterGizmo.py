@@ -264,7 +264,12 @@ class ChatterGizmo(Child):
 		self.Conns[connid].disconnected()
 		self.Conns[connid].last_connect = time.time()
 		
-		self.connlog(connid, LOG_ALWAYS, 'Disconnected from server')
+		# Log something useful
+		if event.arguments is not None:
+			tolog = 'Disconnected from server: %s' % (event.arguments[0])
+		else:
+			tolog = 'Disconnected from server'
+		self.connlog(connid, LOG_ALWAYS, tolog)
 		
 		if not self.stopping:
 			if self.Conns[connid].requested_quit:
