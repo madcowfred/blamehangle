@@ -1,4 +1,3 @@
-# -*- coding: iso-8859-1 -*-
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
@@ -116,7 +115,7 @@ class WeatherMan(Plugin):
 			data = {}
 			
 			# Eat the degree symbols
-			resp.data = resp.data.replace('&deg;', '').replace('&ordm;', '').replace('°', '')
+			resp.data = resp.data.replace('&deg;', '').replace('&ordm;', '').replace('\xb0', '')
 			
 			
 			# Find the chunk that tells us where we are
