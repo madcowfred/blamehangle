@@ -1,23 +1,21 @@
-#----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # $Id$
-#----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # This file contains the code that deals with all the plugins
-# Blah, stuff
-#----------------------------------------------------------------------------
 
-import types, time
-
-from classes.Plugin import *
-from classes.Constants import *
+import time
+import types
 
 from classes.Children import Child
+from classes.Constants import *
+from classes.Plugin import *
 
-#----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class PluginHandler(Child):
 	"""
 	This is the class that handles all the program <-> plugin communication.
-
+	
 	add detail here when there is detail to add.
 	"""
 	
@@ -31,15 +29,13 @@ class PluginHandler(Child):
 		self.__CTCP_Events = {}
 		self.__TIMED_Events = {}
 	
-	#------------------------------------------------------------------------
-	
+	# -----------------------------------------------------------------------
 	# Upon startup, we send a message out to every plugin asking them for
 	# the events they would like to trigger on.
 	def run_once(self):
 		self.sendMessage(self.Plugins, PLUGIN_REGISTER, [])
 	
-	#------------------------------------------------------------------------
-
+	# -----------------------------------------------------------------------
 	# Check to see if we have any TIMED events that have expired their delai
 	# time
 	def run_sometimes(self, currtime):
@@ -49,8 +45,7 @@ class PluginHandler(Child):
 				event.last_trigger = currtime
 				self.sendMessage(plugin, PLUGIN_TRIGGER, event)
 	
-	#------------------------------------------------------------------------
-
+	# -----------------------------------------------------------------------
 	# Generate a list of all the plugins.
 	# This is a rather ugly hack, but I can't think of any better way to do
 	# this.
@@ -62,13 +57,12 @@ class PluginHandler(Child):
 			if type(obj) == types.ClassType:
 				if issubclass(obj, Plugin):
 					plugin_list.append(name)
-
+		
 		# hack, because we cheat and make Helper a plugin that isn't a plugin
 		plugin_list.append('Helper')
 		return plugin_list
-
-	#------------------------------------------------------------------------
-
+	
+	# -----------------------------------------------------------------------
 	# Postman has asked us to rehash our config.
 	# For PluginHandler, this involves clearing out all our plugin triggers,
 	# and sending out a PLUGIN_REGISTER message again.
@@ -133,7 +127,7 @@ class PluginHandler(Child):
 			for plugin, trigger in triggered[priorities[-1]]:
 				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
 	
-	#------------------------------------------------------------------------		
+	# -----------------------------------------------------------------------
 	# We just got a reply from a plugin.
 	def _message_PLUGIN_REPLY(self, message):
 		reply = message.data
@@ -153,13 +147,17 @@ class PluginHandler(Child):
 				self.privmsg(conn, target, tosend)
 			else:
 				self.privmsg(conn, nick, reply.replytext)
-
+		
+		elif isinstance(reply.trigger, PluginFakeTrigger):
+			tolog = "PluginFakeTrigger: '%s'" % reply.replytext
+			self.putlog(LOG_ALWAYS, tolog)
+		
 		else:
 			# wtf
 			errtext = "Bad reply object: %s" % reply
 			raise ValueError, errtext
 	
-	#------------------------------------------------------------------------		
+	# -----------------------------------------------------------------------
 	
 	def __getRelevantStore(self, IRCType):
 		if IRCType == IRCT_PUBLIC:
@@ -178,4 +176,4 @@ class PluginHandler(Child):
 			# Some smartass has come up with a new IRCType
 			raise AttributeError, "no such event IRCType: %s" % IRCType
 
-	#------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
