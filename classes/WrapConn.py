@@ -373,12 +373,12 @@ class WrapConn:
 			# Stoned check
 			elif (currtime - self.last_stoned) >= STONED_INTERVAL:
 				self.last_stoned = currtime
+				self.stoned += 1
 				
 				if self.stoned > STONED_COUNT:
 					self.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
 					self.conn.disconnect()
 				else:
-					self.stoned += 1
 					self.privmsg(self.conn.getnick(), "Stoned yet?")
 
 # ---------------------------------------------------------------------------
