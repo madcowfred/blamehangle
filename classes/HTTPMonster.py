@@ -206,8 +206,8 @@ class async_http(asyncore.dispatcher_with_send):
 			except:
 				pass
 			else:
-				# Moved permanently, follow it
-				if response == '302':
+				# Various redirect responses
+				if response in ('301', '302', '303', '307'):
 					for line in headlines[1:]:
 						if line.startswith('Location:'):
 							chunks = line.split(None, 1)
