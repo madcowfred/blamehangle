@@ -48,6 +48,9 @@ class PluginTextEvent:
 	def __str__(self):
 		return "%s: %s" % (self.IRCType, self.name)
 
+	def __repr__(self):
+		return "<class PluginTextEvent:" + self.__str__() + ">"
+
 # ---------------------------------------------------------------------------
 
 class PluginTimedEvent:
@@ -78,6 +81,9 @@ class PluginTimedEvent:
 
 	def __str__(self):
 		return "%s: %s" % (IRCT_TIMED, self.name)
+	
+	def __repr__(self):
+		return "<class PluginTimedEvent:" + self.__str__() + ">"
 	
 	def interval_elapsed(self, currtime):
 		return currtime - self.last_trigger >= self.interval
@@ -113,6 +119,9 @@ class PluginTextTrigger:
 		target = self.target
 		return "%s, %s: %s, %s" % (name, IRCType, nick, target)
 
+	def __repr__(self):
+		return "<class PluginTextTrigger:" + self.__str__() + ">"
+
 # ---------------------------------------------------------------------------
 
 class PluginReply:
@@ -133,3 +142,6 @@ class PluginReply:
 		name = self.trigger.name
 		text = self.replytext
 		return "%s: %s" % (name, text)
+
+	def __repr__(self):
+		return "<class PluginReply:" + self.__str__() + ">"
