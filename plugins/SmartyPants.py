@@ -323,9 +323,12 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	def __Fact_Get(self, trigger, results):
 		if results == [()]:
-			# The factoid wasn't in our database
-			replytext = self.__Random(DUNNO)
-			self.__dunnos += 1
+			if trigger.event.IRCType == IRCT_PUBLIC:
+				return
+			else:
+				# The factoid wasn't in our database
+				replytext = self.__Random(DUNNO)
+				self.__dunnos += 1
 		
 		else:
 			# We found it!
@@ -529,6 +532,13 @@ class SmartyPants(Plugin):
 			
 			else:
 				# It was in our database, delete it!
+				row = results[0][0]
+				if row['locker_nick']:
+					if not self.__Check_User_Flags(trigger.userinfo, 'lock'):
+						replytext = "You don't have permission to alter locked factoids"
+						self.sendReply(trigger, replytext)
+						return
+
 				if self.__Check_User_Flags(trigger.userinfo, 'delete'):
 					self.__dels += 1
 					query = (DEL_QUERY, name)
