@@ -18,7 +18,7 @@ STONED_INTERVAL = 40
 STONED_COUNT = 3
 
 MAX_LINE_LENGTH = 400
-MAX_SPLIT_LINES = 3
+MAX_SPLIT_LINES = 2
 
 # ---------------------------------------------------------------------------
 
