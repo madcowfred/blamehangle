@@ -69,8 +69,11 @@ class Calculator(Plugin):
 				if newstr.endswith("e+") or newstr.endswith("e-"):
 					newstr += piece
 				else:
-					newstr += "%s" % float(piece)
-
+					try:
+						newstr += "%s" % float(piece)
+					except ValueError:
+						newstr += "0"
+		
 		# Try to evaluate the expression!
 		# if it evals, give back the result, otherwise report an error
 		try:
