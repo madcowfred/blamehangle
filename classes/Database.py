@@ -74,7 +74,14 @@ class DatabaseWrapper:
 		for row in rows:
 			thisrow = {}
 			for i in range(len(columns)):
-				thisrow[columns[i][0]] = row[i]
+				arg = row[i]
+				# unescape annoying chars
+				if type(arg) == types.StringType:
+					for char in ('$'):
+						arg = arg.replace('\\%s' % char, char)
+				
+				thisrow[columns[i][0]] = arg
+			
 			result.append(thisrow)
 		
 		return tuple(result)
