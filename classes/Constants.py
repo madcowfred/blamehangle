@@ -39,7 +39,8 @@ TIMED = 'IRCT_TIMED'
 # ---------------------------------------------------------------------------
 # Request constants
 # ---------------------------------------------------------------------------
-REQ_PRIVMSG = 'REQ_PRIVMSG'
-REQ_NOTICE = 'REQ_NOTICE'
 REQ_LOG = 'REQ_LOG'
+REQ_NOTICE = 'REQ_NOTICE'
+REQ_PRIVMSG = 'REQ_PRIVMSG'
+REQ_QUERY = 'REQ_QUERY'
 REQ_SHUTDOWN = 'REQ_SHUTDOWN'
