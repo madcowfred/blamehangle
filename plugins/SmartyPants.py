@@ -104,7 +104,7 @@ class SmartyPants(Plugin):
 	too.
 	"""
 	
-	# -----------------------------------------------------------------------
+	_UsesDatabase = 'SmartyPants'
 	
 	def setup(self):
 		self.__start_time = time.asctime()

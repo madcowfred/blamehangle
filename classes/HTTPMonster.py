@@ -70,7 +70,7 @@ class HTTPMonster(Child):
 			a.timeout_check(currtime)
 	
 	# -----------------------------------------------------------------------
-	
+	# Someone wants us to go fetch a URL
 	def _message_REQ_URL(self, message):
 		self._requests += 1
 		
@@ -82,11 +82,12 @@ class HTTPMonster(Child):
 		
 		# And go off to resolve the host
 		host = chunks[1].split(":", 1)[0]
-		self.dnsLookup(None, None, host, message, chunks)
+		self.dnsLookup(None, self.__DNS_Reply, host, message, chunks)
 	
 	# We got a DNS reply, deal with it. This is quite yucky.
-	def _message_REPLY_DNS(self, message):
-		_, _, hosts, (origmsg, chunks) = message.data
+	def __DNS_Reply(self, trigger, hosts, args):
+		origmsg, chunks = args
+		
 		# We got no hosts, DNS failure!
 		if hosts is None:
 			trigger, method, url = origmsg.data[:3]
@@ -110,6 +111,7 @@ class HTTPMonster(Child):
 		else:
 			self.urls.append((hosts[0][1], origmsg, chunks))
 	
+	# -----------------------------------------------------------------------
 	# Someone wants some stats
 	def _message_GATHER_STATS(self, message):
 		message.data['http_reqs'] = self._requests

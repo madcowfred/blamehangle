@@ -60,6 +60,8 @@ class News(Plugin):
 	Quirkies (!), and reply with the title of and link to any that it finds.
 	"""
 	
+	_UsesDatabase = 'News'
+	
 	def setup(self):
 		# Load our outgoing queue
 		self.__outgoing = self.loadPickle('.news.outgoing') or []

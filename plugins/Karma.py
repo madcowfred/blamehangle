@@ -32,6 +32,8 @@ class Karma(Plugin):
 	karma, meaning zero.
 	"""
 	
+	_UsesDatabase = 'Karma'
+	
 	def setup(self):
 		# build our translation string
 		self.__Build_Translation()

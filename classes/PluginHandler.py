@@ -23,7 +23,10 @@ class PluginHandler(Child):
 	"""
 	
 	def setup(self):
+		# If log_commands is on, we need to create our table.
 		self._log_commands = self.Config.getboolean('logging', 'log_commands')
+		if self._log_commands:
+			self._UsesDatabase = 'CommandLog'
 		
 		self.Plugins = self.Config.get('plugin', 'plugins').split()
 		
@@ -156,13 +159,11 @@ class PluginHandler(Child):
 				user_host = '%s@%s' % (userinfo.ident, userinfo.host)
 				
 				data = (time.time(), irct, conn.options['name'], target, userinfo.nick, user_host, text)
-				self.dbQuery(None, None, LOG_QUERY, *data)
+				self.dbQuery(None, self.__Query_Log, LOG_QUERY, *data)
 	
 	# -----------------------------------------------------------------------
 	# We just got a reply from the database.
-	def _message_REPLY_QUERY(self, message):
-		trigger, method, result = message.data
-		
+	def __Query_Log(self, trigger, result):
 		# Error!
 		if result is None:
 			self.putlog(LOG_WARNING, "Database error occurred while inserting command log entry.")
