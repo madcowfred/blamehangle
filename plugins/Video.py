@@ -150,13 +150,8 @@ class Video(Plugin):
 			data['title'] = m.group(1)
 			data['year'] = m.group(2)
 			
-			# Find the movie's number for a URL
-			m = re.search(r'"/title/tt(\d+)/"', resp.data)
-			if not m:
-				self.sendReply(trigger, 'Page parsing failed: number.')
-				return
-			
-			data['url'] = 'http://us.imdb.com:80/title/tt%s' % m.group(1)
+			# We need to use our URL
+			data['url'] = resp.url
 			
 			# Find the movie's genre(s)
 			chunk = FindChunk(resp.data, 'Genre:</b>', '<br>')
