@@ -203,17 +203,21 @@ class Postman:
 						# "unimport" it.
 						elif message.ident == REPLY_SHUTDOWN:
 							child = message.source
-							if issubclass(globals()[child], Plugin):
-								self.__Plugin_Unload(child)
-								
-								# If it's really being reloaded, do that
-								if self.__reloadme.has_key(child):
-									self.__Plugin_Load(child, runonce=1)
-									del self.__reloadme[child]
+							try:
+								if issubclass(globals()[child], Plugin):
+									self.__Plugin_Unload(child)
 									
-									# If reloadme is empty, rehash now
-									if not self.__reloadme:
-										self.sendMessage(None, REQ_REHASH, None)					
+									# If it's really being reloaded, do that
+									if self.__reloadme.has_key(child):
+										self.__Plugin_Load(child, runonce=1)
+										del self.__reloadme[child]
+										
+										# If reloadme is empty, rehash now
+										if not self.__reloadme:
+											self.sendMessage(None, REQ_REHASH, None)
+							except KeyError:
+								tolog = "Postman received a message from '%s', but it's dead!" % (child)
+								self.__Log(LOG_WARNING, tolog)
 					
 					else:
 						# Log the message if debug is enabled
