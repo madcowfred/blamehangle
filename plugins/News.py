@@ -94,14 +94,15 @@ class News(Plugin):
 		self.__anaq_targets = {}
 		self.__setup_targets()
 
-		if self.Config.getint('News', 'google_verbose'):
-			tolog = "Using verbose mode for google news"
+		if self.Config.getboolean('News', 'verbose'):
+			tolog = "Using verbose mode for news"
 			self.__google = GoogleVerbose()
+			self.__ananova = AnanovaVerbose()
 		else:
-			tolog = "Using brief mode for google news"
+			tolog = "Using brief mode for news"
 			self.__google = GoogleBrief()
-		self.putlog(LOG_DEBUG, tolog)			
-		self.__ananova = Ananova()
+			self.__ananova = AnanovaBrief()
+		self.putlog(LOG_DEBUG, tolog)
 		
 
 		self.__gwn_interval = self.Config.getint('News', 'google_world_interval')
@@ -210,7 +211,7 @@ class News(Plugin):
 
 			parser = self.__google
 		elif event.name == NEWS_ANANOVA:
-			parser = self.__anavova
+			parser = self.__ananova
 		else:
 			errtext = "Unknown: %s" % event.name
 			raise ValueError, errtext
@@ -382,10 +383,10 @@ class GoogleVerbose(HTMLParser):
 			self.__found_br1 = 0
 			self.__found_br2 = 0
 			
-# ---------------------------------------------------------------------------
+## ---------------------------------------------------------------------------
 
 # A parser for ananov'a news pages. Looks for story titles?
-class Ananova(HTMLParser):
+class AnanovaBrief(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
 		self.reset_news()
@@ -407,3 +408,44 @@ class Ananova(HTMLParser):
 			
 			if href and title:
 				self.news[title] = href
+# ---------------------------------------------------------------------------
+
+# A parser for ananov'a news pages. Looks for story titles?
+class AnanovaVerbose(HTMLParser):
+	def __init__(self):
+		HTMLParser.__init__(self)
+		self.reset_news()
+
+	def reset_news(self):
+		self.news = {}
+		self.__found_a = 0
+		self.__found_small = 0
+		self.__temp_href = None
+		self.__temp_title = None
+	
+	def handle_starttag(self, tag, attributes):
+		if tag == 'a':
+			href = None
+			title = None
+			for attr, value in attributes:
+				if attr == 'href' and value.startswith('./story'):
+					# chop off the starting . and the ending ?menu=
+					realvalue = value[1:-6]
+					href = 'http://www.ananova.com/news' + realvalue
+				elif attr == 'title':
+					title = value
+			
+			if href and title:
+				self.__temp_href = href
+				self.__temp_title = title
+				self.__found_a = 1
+
+		elif self.__found_a and tag == 'small':
+			self.__found_small = 1
+	
+	def handle_data(self, data):
+		if self.__found_small:
+			item = "%s - %s" % (self.__temp_href, data)
+			self.news[self.__temp_title] = item
+			self.__found_a = 0
+			self.__found_small = 0
