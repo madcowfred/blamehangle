@@ -225,7 +225,7 @@ class Postman:
 									self.__Log(LOG_WARNING, tolog)
 				
 				
-				# Check for messages, and run any _always loops
+				# Check for messages
 				children = self.__Children.values()
 				
 				for child in children:
@@ -242,10 +242,10 @@ class Postman:
 						self.__Log(LOG_DEBUG, tolog)
 					
 					#child.handleMessages()
-					
-					for meth in _always:
-						meth()
 				
+				# Run any always loops
+				for meth in _always:
+					meth()
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
