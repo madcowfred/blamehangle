@@ -126,7 +126,7 @@ class TorrentScraper(Plugin):
 		
 		# Start adding the items to our database
 		item = items.pop(0)
-		trigger.insertme = items
+		trigger.items = items
 		self.dbQuery(trigger, self.__DB_Inserted, INSERT_QUERY, *item)
 	
 	# An item has been inserted, try the next one if we have to
@@ -136,11 +136,12 @@ class TorrentScraper(Plugin):
 			self.putlog(LOG_WARNING, '__DB_Inserted: A DB error occurred!')
 		
 		# If we have no more articles, go home now
-		if len(trigger.insertme) == 0:
+		if len(trigger.items) == 0:
+			del trigger.items
 			return
 		
 		# Do the next one
-		item = trigger.insertme.pop(0)
+		item = trigger.items.pop(0)
 		self.dbQuery(trigger, self.__DB_Inserted, INSERT_QUERY, *item)
 
 # ---------------------------------------------------------------------------
