@@ -190,6 +190,7 @@ class MapQuest(Plugin):
 			dest = "%s, %s" % (dest_city, dest_state)
 			distance = distance[15:].strip()
 			distance = distance.replace(" miles", "\02 miles")
+			distance = distance.replace(" km", "\02 km")
 			travel_time = travel_time[21:].strip()
 
 			replytext = "\02%s\02 is about \02%s" % (source, distance)
