@@ -666,9 +666,7 @@ class SmartyPants(Plugin):
 
 	# -----------------------------------------------------------------------
 	# Someone asked to delete a factoid.
-	#
-	# This should be expanded to include user permission stuff, so not just
-	# anyone can delete factoids.
+	# Check their flags to see if they have permission, then delete or refuse
 	# -----------------------------------------------------------------------
 	def __Fact_Del(self, trigger, results):
 		typ = type(results[0])
@@ -688,6 +686,10 @@ class SmartyPants(Plugin):
 				if row['locker_nick']:
 					if not self.__users.check_user_flags(trigger.userinfo, 'lock'):
 						replytext = "You don't have permission to alter locked factoids"
+						self.sendReply(trigger, replytext)
+						return
+					else:
+						replytext = "This factoid is locked, unlock it before deleting"
 						self.sendReply(trigger, replytext)
 						return
 
