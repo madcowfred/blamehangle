@@ -7,6 +7,7 @@
 
 from random import Random
 import cPickle
+import re
 import time
 import types
 
@@ -71,6 +72,10 @@ GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
 GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
 
+
+FEED_LIST = 'FEED_LIST'
+LIST_RE = re.compile('^listfeeds$')
+
 # ---------------------------------------------------------------------------
 
 class News(Plugin):
@@ -81,7 +86,7 @@ class News(Plugin):
 	Quirkies (!), and reply with the title of and link to any that it finds.
 	"""
 	
-	RSS_Feeds = []
+	RSS_Feeds = {}
 	
 	def setup(self):
 		self.__outgoing = self.__unpickle('.news.out_pickle') or []
@@ -154,6 +159,8 @@ class News(Plugin):
 			if not section.startswith('RSS.'):
 				continue
 			
+			name = section.split('.', 1)[1]
+			
 			feed = {}
 			
 			if self.Config.has_option(section, 'title'):
@@ -170,7 +177,7 @@ class News(Plugin):
 			
 			feed['lastcheck'] = 0
 			
-			self.RSS_Feeds.append(feed)
+			self.RSS_Feeds[name] = (feed)
 	
 	# -----------------------------------------------------------------------
 	
@@ -193,13 +200,13 @@ class News(Plugin):
 		#if self.__anaq_interval:
 		#	self.register(anaq)
 		
-		for i in range(len(self.RSS_Feeds)):
-			feed = self.RSS_Feeds[i]
+		for name in self.RSS_Feeds:
+			feed = self.RSS_Feeds[name]
 			
-			tolog = 'Registering RSS feed %d: %s' % (i+1, feed['url'])
+			tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
 			self.putlog(LOG_DEBUG, tolog)
 			
-			event = PluginTimedEvent(NEWS_RSS, feed['interval'], {'GoonNET':['#grax']}, i)
+			event = PluginTimedEvent(NEWS_RSS, feed['interval'], {'GoonNET':['#grax']}, name)
 			self.register(event)
 	
 	# -----------------------------------------------------------------------
@@ -228,10 +235,10 @@ class News(Plugin):
 	def __Check_RSS(self, event):
 		currtime = time.time()
 		
-		i = event.args[0]
-		feed = self.RSS_Feeds[i]
+		name = event.args[0]
+		feed = self.RSS_Feeds[name]
 		
-		data = [feed['url'], (event, i)]
+		data = [feed['url'], (event, name)]
 		self.sendMessage('HTTPMonster', REQ_URL, data)
 	
 	# -----------------------------------------------------------------------
@@ -270,8 +277,8 @@ class News(Plugin):
 		
 		# RSS feed
 		if type(event) == types.TupleType:
-			event, i = event
-			self.__do_rss(page_text, event, i)
+			event, name = event
+			self.__do_rss(page_text, event, name)
 		
 		else:
 			if event.name == NEWS_GOOGLE_WORLD or event.name == NEWS_GOOGLE_SCI \
@@ -307,8 +314,8 @@ class News(Plugin):
 				self.__to_process[title] = parser.news[title]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
-	def __do_rss(self, page_text, event, i):
-		feed = self.RSS_Feeds[i]
+	def __do_rss(self, page_text, event, name):
+		feed = self.RSS_Feeds[name]
 		
 		r = RSSParser()
 		r.feed(page_text)
