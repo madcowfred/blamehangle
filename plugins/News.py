@@ -18,13 +18,19 @@ NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
 # All this crap should be moved into the config, and then dealt with during
 # setup()
 GOOGLE_WORLD_TARGETS = {
-						'GoonNET' : ['#grax']
+						'GoonNET' : ['#grax'],
+						'EFnet': ['#sausages']
+
 				 		}
 GOOGLE_SCI_TARGETS = {
-						'GoonNET' : ['#grax']
+						'GoonNET' : ['#grax'],
+						'EFnet': ['#sausages']
 						}
 						
-ANANOVA_TARGETS = {'GoonNET' : ['#grax']}
+ANANOVA_TARGETS = {
+	'GoonNET' : ['#grax'],
+	'EFnet': ['#sausages']
+}
 
 GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
 GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
@@ -155,7 +161,6 @@ class News(Plugin):
 				replytext = "%s - %s" % (title, parser.news[title])
 				reply = [replytext, None, IRCtype, targets, None]
 				self.__outgoing.append(reply)
-		#pass
 	
 	# -----------------------------------------------------------------------
 
