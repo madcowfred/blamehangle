@@ -9,7 +9,10 @@ class ChatterGizmo:
 	server handling, and so on.
 	"""
 	
-	def __init__(self):
+	def __init__(self, Config):
 		self.__ircobj = irclib.IRC()
 		
 		self.__Connections = {}
+	
+	def run_once(self):
+		print 'honk!'

@@ -3,8 +3,11 @@
 import getopt
 import os
 import sys
+import time
 
 from ConfigParser import ConfigParser
+
+from ChatterGizmo import ChatterGizmo
 
 # ---------------------------------------------------------------------------
 
@@ -30,12 +33,20 @@ def main():
 	Config = ConfigParser()
 	Config.read(ConfigFile)
 	
-	print Config.sections()
+	# Start up the ChatterGizmo
+	Gizmo = ChatterGizmo(Config)
+	
+	# Shortcut!
+	_sleep = time.sleep
+	
+	while 1:
+		Gizmo.run_once()
+		_sleep(0.05)
 
 # ---------------------------------------------------------------------------
 	
 def Show_Usage():
-	print "USAGE: %s [OPTIONS]" % argv[0]
+	print "USAGE: %s [OPTIONS]" % sys.argv[0]
 	print
 	print " -b, --background    run in the background (no screen output)(doesn't work)"
 	print " -c, --config=FILE   config file to use"
