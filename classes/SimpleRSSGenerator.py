@@ -4,9 +4,14 @@
 
 "Implements a very simple RSS feed generator."
 
+import re
 import time
 
 from classes.Constants import LOG_DEBUG, LOG_WARNING
+
+# ---------------------------------------------------------------------------
+# ARGH!
+ENTITY_RE = re.compile(r'&(?![a-z]{1,4};)')
 
 # ---------------------------------------------------------------------------
 
@@ -41,11 +46,11 @@ def SimpleRSSGenerator(filename, feedinfo, items, putlog=None):
 		
 		lines.append('<item>')
 		
-		line = '<title>%s</title>' % (item['title'])
+		line = '<title>%s</title>' % (ENTITY_RE.sub('&amp;', item['title']))
 		lines.append(line)
 		
 		if item.get('link', None) is not None:
-			line = '<link>%s</link>' % (item['link'])
+			line = '<link>%s</link>' % (ENTITY_RE.sub('&amp;', item['link']))
 			lines.append(line)
 		
 		if item.get('pubdate', None) is not None:
