@@ -32,8 +32,6 @@ class ChatterGizmo(Child):
 	Conns = {}
 	
 	def setup(self):
-		print 'setup'
-
 		self.__ircobj = irclib.IRC()
 		# Add handlers for each event in this array to call handle_event
 		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
