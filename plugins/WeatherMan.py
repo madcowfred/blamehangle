@@ -35,7 +35,11 @@ METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
 
 WEATHER_METAR = 'METAR'
 METAR_RE = re.compile('^metar (?P<station>\S+)$')
-METAR_HELP = '\02metar\02 <station id> : Retrieve METAR weather information.'
+METAR_HELP = '\02metar\02 <station id> : Retrieve decoded METAR weather information.'
+
+WEATHER_METARC = 'METARC'
+METARC_RE = re.compile('^metarc (?P<station>\S+)$')
+METARC_HELP = '\02metar\02 <station id> : Retrieve coded METAR weather information.'
 
 # ---------------------------------------------------------------------------
 
@@ -74,15 +78,19 @@ class WeatherMan(Plugin):
 		long_msg = PluginTextEvent(WEATHER_LONG, IRCT_MSG, LONG_RE)
 		forecast_dir = PluginTextEvent(WEATHER_FORECAST, IRCT_PUBLIC_D, FORECAST_RE)
 		forecast_msg = PluginTextEvent(WEATHER_FORECAST, IRCT_MSG, FORECAST_RE)
+		self.register(short_dir, short_msg, long_dir, long_msg, forecast_dir, forecast_msg)
+		
 		metar_dir = PluginTextEvent(WEATHER_METAR, IRCT_PUBLIC_D, METAR_RE)
 		metar_msg = PluginTextEvent(WEATHER_METAR, IRCT_MSG, METAR_RE)
-		self.register(short_dir, short_msg, long_dir, long_msg, forecast_dir, forecast_msg,
-			metar_dir, metar_msg)
+		metarc_dir = PluginTextEvent(WEATHER_METARC, IRCT_PUBLIC_D, METARC_RE)
+		metarc_msg = PluginTextEvent(WEATHER_METARC, IRCT_MSG, METARC_RE)
+		self.register(metar_dir, metar_msg, metarc_dir, metarc_msg)
 		
 		self.setHelp('weather', 'weather', SHORT_HELP)
 		self.setHelp('weather', 'weatherlong', LONG_HELP)
 		self.setHelp('weather', 'forecast', FORECAST_HELP)
 		self.setHelp('weather', 'metar', METAR_HELP)
+		self.setHelp('weather', 'metarc', METARC_HELP)
 		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
@@ -92,7 +100,7 @@ class WeatherMan(Plugin):
 			url = WEATHER_URL % quote(trigger.match.group('location'))
 			self.urlRequest(trigger, url)
 		
-		elif trigger.name == WEATHER_METAR:
+		elif trigger.name in (WEATHER_METAR, WEATHER_METARC):
 			url = METAR_URL % trigger.match.group('station').upper()
 			self.urlRequest(trigger, url)
 	
@@ -102,7 +110,7 @@ class WeatherMan(Plugin):
 		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
 			self.__Parse_Weather(trigger, page_text)
 		
-		elif trigger.name == WEATHER_METAR:
+		elif trigger.name in (WEATHER_METAR, WEATHER_METARC):
 			self.__Parse_METAR(trigger, page_text)
 	
 	# -----------------------------------------------------------------------
@@ -262,50 +270,58 @@ class WeatherMan(Plugin):
 			
 			# Parse the report
 			report = pymetar.ReportParser(report).ParseReport()
-			
+
 			# Gather data
 			chunks = []
 			
-			# Add updated time
-			chunk = 'Updated: %s' % report.getISOTime()
-			chunks.insert(0, chunk)
+			# A decoded report
+			if trigger.name == WEATHER_METAR:
+				# Add updated time
+				chunk = 'Updated: %s' % report.getISOTime()
+				chunks.insert(0, chunk)
+				
+				# Weather
+				if report.getWeather() is not None:
+					chunk = 'Weather: %s' % report.getWeather()
+					chunks.append(chunk)
+				
+				# Sky conditions
+				if report.getSkyConditions() is not None:
+					chunk = 'Sky: %s' % report.getSkyConditions()
+					chunks.append(chunk)
+				
+				# Temperature
+				if report.getTemperatureCelsius() is not None:
+					chunk = 'Temp: %.1fC' % report.getTemperatureCelsius()
+					chunks.append(chunk)
+				
+				# Wind
+				if report.getWindSpeed() > 0.0:
+					chunk = 'Wind: %dkt %s' % (report.getWindSpeed(), report.getWindCompass())
+				else:
+					chunk = 'Wind: calm'
+				chunks.append(chunk)
+				
+				# Visibility
+				if report.getVisibility() is not None:
+					chunk = 'Visibility: %s' % report.getVisibility()
+					chunks.append(chunk)
+				
+				# Humidity
+				if report.getHumidity() is not None:
+					chunk = 'Humidity: %s%%' % report.getHumidity()
+					chunks.append(chunk)
+				
+				# Air pressure
+				if report.getPressure() is not None:
+					chunk = 'Pressure: %.0f hPa' % report.getPressure()
+					chunks.append(chunk)
 			
-			# Weather
-			if report.getWeather() is not None:
-				chunk = 'Weather: %s' % report.getWeather()
+			# A coded report, for masochists
+			elif trigger.name == WEATHER_METARC:
+				chunk = report.getRawMetarCode()
 				chunks.append(chunk)
 			
-			# Sky conditions
-			if report.getSkyConditions() is not None:
-				chunk = 'Sky: %s' % report.getSkyConditions()
-				chunks.append(chunk)
-			
-			# Temperature
-			if report.getTemperatureCelsius() is not None:
-				chunk = 'Temp: %.1fC' % report.getTemperatureCelsius()
-				chunks.append(chunk)
-			
-			# Wind
-			if report.getWindSpeed() > 0.0:
-				chunk = 'Wind: %.1fkm/h %s' % (report.getWindSpeed(), report.getWindCompass())
-			else:
-				chunk = 'Wind: calm'
-			chunks.append(chunk)
-			
-			# Visibility
-			if report.getVisibilityKilometers() is not None:
-				chunk = 'Visibility: %.1fkm' % report.getVisibilityKilometers()
-				chunks.append(chunk)
-			
-			# Humidity
-			if report.getHumidity() is not None:
-				chunk = 'Humidity: %s%%' % report.getHumidity()
-				chunks.append(chunk)
-			
-			# Air pressure
-			if report.getPressure() is not None:
-				chunk = 'Pressure: %.0f hPa' % report.getPressure()
-				chunks.append(chunk)
 			
 			# Spit it out
 			if chunks:
