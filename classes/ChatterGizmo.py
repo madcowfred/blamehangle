@@ -396,7 +396,7 @@ class ChatterGizmo(Child):
 			if not text[:addr-2].lower() == conn.real_nickname.lower():
 				return
 			
-			text = text[addr:]
+			text = text[addr:].strip()
 			
 			data = [wrap, IRCT_PUBLIC_D, userinfo, chan, text]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
