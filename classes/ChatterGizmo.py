@@ -184,7 +184,8 @@ class ChatterGizmo(Child):
 		self.connlog(connid, LOG_ALWAYS, tolog)
 		
 		# Set ourselves +i
-		wrap.conn.sendline('MODE %s +i' % wrap.conn.getnick())
+		text = 'MODE %s +i' % (wrap.conn.getnick())
+		wrap.sendline(text)
 		
 		# Create our mode list
 		wrap.ircul._modelist = wrap.conn.features['channel_modes']
@@ -259,17 +260,20 @@ class ChatterGizmo(Child):
 			
 			# Our userlist needs to know that we joined
 			wrap.ircul.user_joined(chan)
-			wrap.ircul.user_joined(chan, event.userinfo.hostmask())
+			wrap.ircul.user_joined(chan, ui=event.userinfo)
 			
 			# Request the modes set on this channel
-			wrap.conn.sendline('MODE %s' % chan)
+			text = 'MODE %s' % (chan)
+			wrap.sendline(text)
 			
-			# Request the list of users on this channel
-			wrap.conn.sendline('WHO %s' % chan)
+			# Request a list of info for users on this channel at some point
+			if not wrap.wholist:
+				wrap.wholist.append(time.time())
+			wrap.wholist.append(chan)
 		
 		# Not us
 		else:
-			wrap.ircul.user_joined(chan, nick)
+			wrap.ircul.user_joined(chan, ui=event.userinfo)
 	
 	# -----------------------------------------------------------------------
 	# Someone just parted a channel (including ourselves)
@@ -288,7 +292,7 @@ class ChatterGizmo(Child):
 		
 		# Not us
 		else:
-			wrap.ircul.user_parted(chan, nick)
+			wrap.ircul.user_parted(chan, ui=event.userinfo)
 	
 	# -----------------------------------------------------------------------
 	# Someone just quit (including ourselves? not sure)
@@ -298,7 +302,7 @@ class ChatterGizmo(Child):
 		nick = event.userinfo.nick
 		
 		if nick != conn.getnick():
-			wrap.ircul.user_quit(nick)
+			wrap.ircul.user_quit(event.userinfo)
 			
 			# If it was our primary nickname, try and regain it
 			if nick == self.Conns[connid].nicks[0]:
@@ -376,7 +380,7 @@ class ChatterGizmo(Child):
 			wrap.join_channel(chan)
 		
 		else:
-			wrap.ircul.user_parted(chan, kicked)
+			wrap.ircul.user_parted(chan, nick=kicked)
 	
 	# -----------------------------------------------------------------------
 	# Someone just changed their name (including ourselves)
@@ -387,7 +391,7 @@ class ChatterGizmo(Child):
 		after = event.target
 		
 		# Update the userlist
-		wrap.ircul.user_nick(before, after)
+		wrap.ircul.user_nick(event.userinfo, after)
 		
 		# If it was our primary nickname, try and regain it
 		if after != conn.getnick() and before == wrap.nicks[0]:
@@ -404,9 +408,10 @@ class ChatterGizmo(Child):
 		nick = event.arguments[4]
 		modes = event.arguments[5]
 		
-		# Add this user to the userlist
-		hostmask = '%s!%s@%s' % (nick, ident, host)
-		wrap.ircul.user_joined(chan, hostmask)
+		# Update this user's host in the userlist
+		ui = wrap.ircul._u[nick]
+		ui.ident = ident
+		ui.host = host
 		
 		# Add any modes this user seems to have
 		for sign in modes:
@@ -415,34 +420,35 @@ class ChatterGizmo(Child):
 				wrap.ircul.user_add_mode(chan, nick, mode)
 	
 	# -----------------------------------------------------------------------
-	# Numeric 315 : WHO reply
+	# Numeric 315 : End of WHO reply
 	# -----------------------------------------------------------------------
 	def _handle_endofwho(self, connid, conn, event):
 		wrap = self.Conns[connid]
-		chan = event.arguments[0].lower()
+		chans = event.arguments[0].lower()
 		
-		wrap.ircul._c[chan].synched = True
-		
-		tolog = 'Userlist synched for %s' % (event.arguments[0])
-		self.connlog(connid, LOG_ALWAYS, tolog)
+		for chan in chans.split(','):
+			wrap.ircul._c[chan].synched = True
+			
+			tolog = 'Userlist synched for %s' % (chan)
+			self.connlog(connid, LOG_ALWAYS, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
 	# -----------------------------------------------------------------------
-	def _dont_handle_namreply(self, connid, conn, event):
+	def _handle_namreply(self, connid, conn, event):
 		wrap = self.Conns[connid]
 		chan = event.arguments[1].lower()
 		
-		# We need this the other way around
-		sign_to_char = dict([(v, k) for k, v in wrap.conn.features['user_modes'].items()])
+		sign_to_char = wrap.conn.features['user_modes_r']
 		
 		# Add each nick to the channel user list
 		for nick in event.arguments[2].split():
 			if nick[0] in sign_to_char:
-				wrap.ircul.user_joined(chan, nick[1:])
-				wrap.ircul.user_add_mode(chan, nick[1:], sign_to_char[nick[0]])
+				hostmask = '%s!@' % (nick[1:])
 			else:
-				wrap.ircul.user_joined(chan, nick)
+				hostmask = '%s!@' % (nick)
+			
+			wrap.ircul.user_joined(chan, hostmask=hostmask)
 	
 	# -----------------------------------------------------------------------
 	# Our nickname is in use!

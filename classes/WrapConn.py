@@ -35,6 +35,12 @@ MAX_LINE_LENGTH = 500
 MIN_SPLIT_LINES = 1
 MAX_SPLIT_LINES = 4
 
+# Priority levels for output
+PRIORITY_COMMAND = 0
+PRIORITY_CTCPREPLY = 1
+PRIORITY_NOTICE = 2
+PRIORITY_PRIVMSG = 3
+
 # ---------------------------------------------------------------------------
 
 class WrapConn:
@@ -48,6 +54,7 @@ class WrapConn:
 		self.channels = {}
 		
 		self.dnswait = 0
+		self.wholist = []
 		
 		# We increment this to keep track of things like channel rejoin attempts
 		self.connect_id = 0
@@ -143,10 +150,8 @@ class WrapConn:
 		self.last_output = 0
 		self.last_stoned = 0
 		
-		# Outgoing queues
-		self.__privmsg = []
-		self.__notice = []
-		self.__ctcp_reply = []
+		# Outgoing queue
+		self.__outgoing = PriorityList()
 		
 		self.ircul = IRCUserList()
 	
@@ -300,19 +305,22 @@ class WrapConn:
 		self.conn.join(chan, self.channels[chan])
 	
 	# -----------------------------------------------------------------------
-	# Stuff outgoing data into our queues
-	def privmsg(self, target, text):
-		lines = self.__Split_Text(text)
-		for line in lines[:self.max_split_lines]:
-			self.__privmsg.append([target, line])
+	# Stuff outgoing data into our queue
+	def sendline(self, text):
+		self.__outgoing.priority_insert(PRIORITY_COMMAND, text)
+	
+	def ctcp_reply(self, target, text):
+		self.__outgoing.priority_insert(PRIORITY_CTCPREPLY, target, text)
 	
 	def notice(self, target, text):
 		lines = self.__Split_Text(text)
 		for line in lines[:self.max_split_lines]:
-			self.__notice.append([target, text])
+			self.__outgoing.priority_insert(PRIORITY_NOTICE, target, text)
 	
-	def ctcp_reply(self, target, text):
-		self.__ctcp_reply.append([target, text])
+	def privmsg(self, target, text):
+		lines = self.__Split_Text(text)
+		for line in lines[:self.max_split_lines]:
+			self.__outgoing.priority_insert(PRIORITY_PRIVMSG, target, text)
 	
 	# -----------------------------------------------------------------------
 	# Split text into lines if it's too long
@@ -349,13 +357,15 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	
 	def run_sometimes(self, currtime):
-		if self.conn.status == STATUS_DISCONNECTED and (currtime - self.last_connect) >= CONNECT_HOLDOFF:
-			self.jump_server()
+		if self.conn.status == STATUS_DISCONNECTED:
+			if (currtime - self.last_connect) >= CONNECT_HOLDOFF:
+				self.jump_server()
 		
 		# Connecting stuff
-		elif self.conn.status == STATUS_CONNECTING and (currtime - self.last_connect) >= CONNECT_TIMEOUT:
-			self.connlog(LOG_ALWAYS, "Connection failed: timed out")
-			self.conn.disconnect()
+		elif self.conn.status == STATUS_CONNECTING:
+			if (currtime - self.last_connect) >= CONNECT_TIMEOUT:
+				self.connlog(LOG_ALWAYS, "Connection failed: timed out")
+				self.conn.disconnect()
 		
 		# Connected stuff!
 		elif self.conn.status == STATUS_CONNECTED:
@@ -365,22 +375,28 @@ class WrapConn:
 					self.last_nick = currtime
 					self.conn.nick(self.nicks[0])
 			
-			# Send some stuff from our output queues if we have to
+			# See if we have to do our /WHO yet
+			if self.wholist and (currtime - self.wholist[0]) >= 1:
+				text = 'WHO %s' % (','.join(self.wholist[1:]))
+				self.__outgoing.priority_insert(PRIORITY_COMMAND, text)
+				
+				self.wholist = []
+			
+			# Send something from our output queue if we have to
 			if (currtime - self.last_output) >= OUTPUT_INTERVAL:
-				if self.__ctcp_reply or self.__notice or self.__privmsg:
+				if self.__outgoing:
 					self.last_output = currtime
-				
-				if self.__ctcp_reply:
-					target, text = self.__ctcp_reply.pop(0)
-					self.conn.ctcp_reply(target, text)
-				
-				elif self.__notice:
-					target, text = self.__notice.pop(0)
-					self.conn.notice(target, text)
-				
-				elif self.__privmsg:
-					target, text = self.__privmsg.pop(0)
-					self.conn.privmsg(target, text)
+					
+					data = self.__outgoing.pop(0)
+					
+					if data[0] == PRIORITY_COMMAND:
+						self.conn.sendline(data[1])
+					elif data[0] == PRIORITY_CTCPREPLY:
+						self.conn.ctcp_reply(data[1], data[2])
+					elif data[0] == PRIORITY_NOTICE:
+						self.conn.notice(data[1], data[2])
+					elif data[0] == PRIORITY_PRIVMSG:
+						self.conn.privmsg(data[1], data[2])
 			
 			# Set our stoned time to now if we've just connected
 			if self.last_stoned == 0:
@@ -401,5 +417,19 @@ class WrapConn:
 	# Are we connected?
 	def connected(self):
 		return (self.conn.status == STATUS_CONNECTED)
+
+# ---------------------------------------------------------------------------
+# Simple priority list, similar to the bisect module, but only sorting by the
+# first value.
+class PriorityList(list):
+	def priority_insert(self, *data):
+		if len(self) == 0:
+			self.append(data)
+		else:
+			for i in range(len(self)):
+				if self[i][0] > data[0]:
+					self.insert(i, data)
+					return
+			self.append(data)
 
 # ---------------------------------------------------------------------------

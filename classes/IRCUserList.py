@@ -99,52 +99,48 @@ class IRCUserList:
 	
 	# -----------------------------------------------------------------------
 	
-	def user_joined(self, chan, hostmask=None):
+	def user_joined(self, chan, hostmask=None, ui=None):
 		# Us
-		if hostmask is None:
+		if hostmask is None and ui is None:
 			self._c[chan] = ChanInfo(self._modelist)
 		# Someone else
-		else:
+		elif hostmask is not None:
 			nick = hostmask.split('!')[0]
 			if nick not in self._u:
 				self._u[nick] = UserInfo(hostmask)
 			self._c[chan].users[self._u[nick]] = []
+		elif ui is not None:
+			self._c[chan].users[ui] = []
 	
-	def user_parted(self, chan, nick=None):
+	def user_parted(self, chan, nick=None, ui=None):
 		# Us
-		if nick is None:
+		if nick is None and ui is None:
 			uis = self._c[chan].users.keys()
 			del self._c[chan]
 			
 			_clean = self.__cleanup_user
 			for ui in uis:
 				_clean(ui)
-			
 		# Someone else
 		else:
-			ui = self._u.get(nick, None)
-			assert ui is not None and ui in self._c[chan].users
+			if nick is not None:
+				ui = self._u.get(nick, None)
+				assert ui is not None
+			
+			assert ui in self._c[chan].users
 			
 			del self._c[chan].users[ui]
-			
 			self.__cleanup_user(ui)
 	
-	def user_quit(self, hostmask=None, nick=None):
-		if nick is None:
-			nick = hostmask.split('!')[0]
-		ui = self._u.get(nick, None)
-		assert ui is not None
-		
+	def user_quit(self, ui):
 		for chan, ci in self._c.items():
 			if ui in ci.users:
 				del ci.users[ui]
 		
-		del self._u[nick]
+		del self._u[ui.nick]
 	
-	def user_nick(self, oldnick, newnick):
-		ui = self._u.get(oldnick, None)
-		assert ui is not None
-		
+	def user_nick(self, ui, newnick):
+		oldnick = ui.nick
 		ui.nick = newnick
 		self._u[newnick] = ui
 		del self._u[oldnick]
