@@ -26,7 +26,9 @@ class Quotes(Plugin):
 		self.__from = self.Config.get('Quotes', 'mail_from')
 		self.__to = self.Config.get('Quotes', 'mail_to')
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	# ---------------------------------------------------------------------------
+	
+	def register(self):
 		self.setTextEvent(QUOTES_ADDQUOTE, ADDQUOTE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		

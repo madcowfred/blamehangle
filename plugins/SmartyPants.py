@@ -173,7 +173,7 @@ class SmartyPants(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		# Gets are lowest priority (default = 10)
 		self.setTextEventPriority(0, FACT_GET, GET_D_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		if self.__get_pub:

@@ -25,7 +25,7 @@ MOBYGAMES_URL = 'http://www.mobygames.com/search/quick?q=%s'
 # ---------------------------------------------------------------------------
 
 class GameStuff(Plugin):
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(GAMESTUFF_KLOV, KLOV_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		#self.setTextEvent(GAMESTUFF_MOBYGAMES, MOBYGAMES_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()

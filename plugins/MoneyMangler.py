@@ -58,7 +58,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(MONEY_ASX, ASX_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(MONEY_CURRENCY, CURRENCY_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(MONEY_EXCHANGE, EXCHANGE_RE, IRCT_PUBLIC_D, IRCT_MSG)

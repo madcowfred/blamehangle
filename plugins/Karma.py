@@ -42,7 +42,7 @@ class Karma(Plugin):
 	karma, meaning zero.
 	"""
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(KARMA_PLUS, PLUS_RE, IRCT_PUBLIC)
 		self.setTextEvent(KARMA_MINUS, MINUS_RE, IRCT_PUBLIC)
 		self.setTextEvent(KARMA_LOOKUP, LOOKUP_RE, IRCT_PUBLIC_D, IRCT_MSG)

@@ -64,7 +64,7 @@ class Airline(Plugin):
 	
 	# --------------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(AIRLINE_AIRLINE, AIRLINE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(AIRLINE_AIRPORT, AIRPORT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(AIRLINE_FLIGHT, FLIGHT_RE, IRCT_PUBLIC_D, IRCT_MSG)

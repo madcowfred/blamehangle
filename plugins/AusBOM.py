@@ -79,7 +79,7 @@ class AusBOM(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(AUSBOM_AUSBOM, AUSBOM_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		

@@ -20,7 +20,7 @@ DATE_RE = re.compile('^date (?P<city>\w+)$')
 # ---------------------------------------------------------------------------
 
 class TimeDate(Plugin):
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		# Sorry, no windows timezone stuff
 		if os.name == 'nt':
 			self.putlog(LOG_WARNING, "Unable to get timezone information on Windows systems.")

@@ -44,7 +44,7 @@ class MapQuest(Plugin):
 	
 	# -----------------------------------------------------------------------
 
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(MAPQUEST_DISTANCE, DISTANCE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		

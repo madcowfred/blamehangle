@@ -39,7 +39,9 @@ class FunStuff(Plugin):
 			if option.startswith('response'):
 				self.__eightball_responses.append(self.Config.get('eightball', option))
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	# ---------------------------------------------------------------------------
+	
+	def register(self):
 		self.setTextEvent(FUN_EASTER, EASTER_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FUN_EIGHTBALL, EIGHTBALL_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(FUN_MUDDLE, MUDDLE_RE, IRCT_PUBLIC_D, IRCT_MSG)

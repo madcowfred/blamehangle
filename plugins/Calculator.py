@@ -2,7 +2,14 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
-' A simple calculator'
+"""
+A calculator for simple expressions.
+Operations allowed are addition, subtraction, division, multiplication,
+modulo, and exponentiation.
+
+Won't divide by zero or lame things like that.
+"""
+
 
 import re
 
@@ -18,15 +25,7 @@ CALC_RE = re.compile("^ *[ ()0-9e.+\-*/%^]+$")
 # ---------------------------------------------------------------------------
 
 class Calculator(Plugin):
-	"""
-	A calculator for simple expressions.
-	Operations allowed are addition, subtraction, division, multiplication,
-	modulo, and exponentiation.
-	
-	Won't divide by zero or lame things like that.
-	"""
-	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(CALC, CALC_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 	

@@ -80,7 +80,7 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		# Yahoo Weather
 		self.setTextEvent(WEATHER_FORECAST, FORECAST_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(WEATHER_LONG, LONG_RE, IRCT_PUBLIC_D, IRCT_MSG)

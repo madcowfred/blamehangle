@@ -23,8 +23,15 @@ class Plugin(Child):
 		self.__Events = {}
 		self.__Help = {}
 	
+	# Default PLUGIN_REGISTER handler. We have to reset things here!
 	def _message_PLUGIN_REGISTER(self, message):
-		raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self.__name
+		if hasattr(self, 'register'):
+			self.__Events = {}
+			self.__Help = {}
+			self.register()
+		
+		else:
+			raise Exception, 'need to overwrite PLUGIN_REGISTER message handler in %s' % self.__name
 	
 	# Default trigger handler, looks for _trigger_EVENT_NAME
 	def _message_PLUGIN_TRIGGER(self, message):

@@ -54,7 +54,7 @@ ANIMENFO_SEND = '<ANIME><TITLE>%s</TITLE><FIELD>TITLE CATEGORY TOTAL GENRE YEAR 
 # ---------------------------------------------------------------------------
 
 class Anime(Plugin):
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(ANIME_ANIDB, ANIDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(ANIME_ANIMENFO, ANIMENFO_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()

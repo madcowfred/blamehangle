@@ -88,7 +88,7 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		# RhymeZone
 		self.setTextEvent(WORD_ANTONYM, ANTONYM_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(WORD_RHYME, RHYME_RE, IRCT_PUBLIC_D, IRCT_MSG)

@@ -209,7 +209,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		# Various timed news checks
 		if self.__anaq_interval:
 			self.setTimedEvent(NEWS_ANANOVA_QUIRKIES, self.__anaq_interval, self.__anaq_targets)

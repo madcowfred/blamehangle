@@ -48,7 +48,7 @@ LANG_MAP = {
 # ---------------------------------------------------------------------------
 
 class Google(Plugin):
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(GOOGLE_GOOGLE, GOOGLE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(GOOGLE_TRANSLATE, TRANSLATE_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(GOOGLE_TRANSMANGLE, TRANSMANGLE_RE, IRCT_PUBLIC_D, IRCT_MSG)

@@ -54,7 +54,7 @@ WEIGHT = {
 # ---------------------------------------------------------------------------
 
 class Converter(Plugin):
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(CONVERT_CONVERT, CONVERT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		

@@ -30,7 +30,7 @@ class SportsFan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(SPORTS_SCORES, SCORES_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
 		

@@ -31,7 +31,7 @@ TVTOME_URL = 'http://www.tvtome.com/tvtome/servlet/Search'
 # ---------------------------------------------------------------------------
 
 class Video(Plugin):
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(VIDEO_IMDB, IMDB_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(VIDEO_TVTOME, TVTOME_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.registerEvents()
@@ -39,6 +39,8 @@ class Video(Plugin):
 		self.setHelp('video', 'imdb', IMDB_HELP)
 		self.setHelp('video', 'tvtome', TVTOME_HELP)
 		self.registerHelp()
+	
+	# ---------------------------------------------------------------------------
 	
 	def _trigger_VIDEO_IMDB(self, trigger):
 		url = IMDB_URL % QuoteURL(trigger.match.group(1))

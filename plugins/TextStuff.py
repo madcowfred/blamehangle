@@ -56,7 +56,7 @@ class TextStuff(Plugin):
 		
 		self.__ROT13 = ''.join(chars)
 	
-	def _message_PLUGIN_REGISTER(self, message):
+	def register(self):
 		self.setTextEvent(TEXT_CRC32, CRC32_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(TEXT_MD5, MD5_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(TEXT_ROT13, ROT13_RE, IRCT_PUBLIC_D, IRCT_MSG)
