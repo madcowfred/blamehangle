@@ -24,9 +24,6 @@ class Karma(Plugin):
 	KARMA_LOOKUP = "KARMA_LOOKUP"
 	KARMA_MOD = "KARMA_MOD"
 	
-	def setup(self):
-		pass
-
 #----------------------------------------------------------------------------
 
 	def _message_PLUGIN_REGISTER(self, message):
