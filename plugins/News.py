@@ -45,10 +45,10 @@ NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
 RSS_LIST_RE = re.compile(r'^listfeeds$')
 RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
 
-GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
-GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
-GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
-GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
+GOOGLE_WORLD = 'http://news.google.com/news/en/us/world.html'
+GOOGLE_SCI = 'http://news.google.com/news/en/us/technology.html'
+GOOGLE_HEALTH = 'http://news.google.com/news/en/us/health.html'
+GOOGLE_BIZ = 'http://news.google.com/news/en/us/business.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
 
 # ---------------------------------------------------------------------------
