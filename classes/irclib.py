@@ -371,7 +371,7 @@ class ServerConnection(Connection):
 		self.connected = 0  # Not connected yet.
 
 	def connect(self, server, port, nickname, password=None, username=None,
-				ircname=None):
+				ircname=None, vhost=None):
 		"""Connect/reconnect to a server.
 
 		Arguments:
@@ -407,7 +407,19 @@ class ServerConnection(Connection):
 		self.ircname = ircname or nickname
 		self.password = password
 		self.localhost = socket.gethostname()
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		
+		if vhost is not None:
+			try:
+				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
+				af, socktype, proto, canonname, sa = res
+			except socket.gaierror:
+				raise
+			else:
+				self.sock = socket.socket(af, socktype, proto)
+				self.sock.bind(sa)
+		else:
+			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		
 		try:
 			self.sock.connect((self.server, self.port))
 		except socket.error, x:

@@ -4,6 +4,8 @@ import types
 from classes.Constants import *
 from classes.Userlist import Userlist
 
+from classes.irclib import ServerConnectionError
+
 # ---------------------------------------------------------------------------
 
 STATUS_DISCONNECTED = 'Disconnected'
@@ -44,6 +46,8 @@ class WrapConn:
 		self.channels = self.options['channels'].split()
 		
 		self.nicks = self.options['nicks'].split()
+		
+		self.vhost = self.options['vhost'] or None
 	
 	def connect(self):
 		# Initialise the variables to default values
@@ -62,7 +66,7 @@ class WrapConn:
 		
 		try:
 			self.conn.connect(host, port, self.trynick, None, self.options['username'],
-				'blamehangle')
+				'blamehangle', vhost=self.vhost)
 		
 		except ServerConnectionError, x:
 			if type(x) in (types.ListType, types.TupleType):
