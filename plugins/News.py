@@ -8,7 +8,7 @@
 from classes.Plugin import Plugin
 from classes.Constants import *
 
-from HTMLParser import HTMLParser
+from classes.HTMLParser import HTMLParser, HTMLParseError
 from random import Random
 import cPickle, time
 
