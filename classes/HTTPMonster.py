@@ -60,8 +60,6 @@ class HTTPMonster(Child):
 	# -----------------------------------------------------------------------
 	
 	def run_always(self):
-		asyncore.poll()
-		
 		if self.urls and self.active < self.max_conns:
 			host, message, chunks = self.urls.pop(0)
 			async_http(self, host, message, chunks, {})

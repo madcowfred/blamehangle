@@ -5,6 +5,7 @@
 # and logging. Try not to touch this :)
 # ---------------------------------------------------------------------------
 
+import asyncore
 import signal
 import smtplib
 import sys
@@ -282,6 +283,9 @@ class Postman:
 						self.__Log(LOG_DEBUG, tolog)
 					
 					#child.handleMessages()
+				
+				# Poll any of our sockets
+				asyncore.poll()
 				
 				# Run any always loops
 				for meth in _always:
