@@ -22,11 +22,10 @@ MUDDLE_HELP = '\02muddle\02 <text> : Muddles your text by rearranging words.'
 # ---------------------------------------------------------------------------
 
 class FunStuff(Plugin):
-	#def setup(self):
-	#	self.rehash()
+	def setup(self):
+		self.rehash()
 	
 	def rehash(self):
-		print 'honk'
 		self.__eightball_last = ''
 		# Load the 8ball responses
 		self.__eightball_responses = []

@@ -63,8 +63,8 @@ AUSBOM_UPDATE = 'AUSBOM_UPDATE'
 # ---------------------------------------------------------------------------
 
 class AusBOM(Plugin):
-	#def setup(self):
-	#	self.rehash()
+	def setup(self):
+		self.rehash()
 	
 	def rehash(self):
 		# Load our location data from the pickle.
