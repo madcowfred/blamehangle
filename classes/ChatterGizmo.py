@@ -391,6 +391,10 @@ class ChatterGizmo(Child):
 			
 			# Guess it's a channel mode
 			else:
+				# If we've left the channel already (ban on join?), bail
+				if chan not in wrap.ircul._c:
+					return
+				
 				if sign == '+':
 					wrap.ircul.chan_add_mode(chan, mode, arg)
 				else:
@@ -408,6 +412,10 @@ class ChatterGizmo(Child):
 		
 		# Now do something with them
 		for sign, mode, arg in modes:
+			# If we've left the channel already (ban on join?), bail
+			if chan not in wrap.ircul._c:
+				return
+			
 			if sign == '+':
 				wrap.ircul.chan_add_mode(chan, mode, arg)
 			else:
@@ -505,6 +513,10 @@ class ChatterGizmo(Child):
 	def _handle_endofwho(self, connid, conn, event):
 		wrap = self.Conns[connid]
 		chan = event.arguments[0].lower()
+		
+		# If we've left the channel already (ban on join?), bail
+		if chan not in wrap.ircul._c:
+			return
 		
 		# We're synched now, woo
 		wrap.ircul._c[chan].synched = True
