@@ -49,6 +49,8 @@ RSS_SHOW = 'RSS_SHOW'
 RSS_SHOW_HELP = "\02showfeed\02 <feed name> : Show some information about an RSS feed."
 RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
 
+MAX_TITLE_LENGTH = 200
+
 # ---------------------------------------------------------------------------
 
 NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
@@ -488,6 +490,11 @@ class News(Plugin):
 		# If we have no articles, we can go home now
 		if len(articles) == 0:
 			return
+		
+		# Chop off any ridiculously long titles
+		for article in articles:
+			if len(article[0]) > MAX_TITLE_LENGTH:
+				article[0] = '%s...' % article[0][:MAX_TITLE_LENGTH]
 		
 		trigger.articles = articles
 		
