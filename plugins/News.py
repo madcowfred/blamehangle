@@ -144,32 +144,45 @@ class News(Plugin):
 
 	def __do_google(self, page_text, store, targets, token, IRCtype):
 		parser = Google()
-		parser.feed(page_text)
-		parser.close()
-
-		for title in parser.news:
-			if not title in store:
-				# this is a new item!
-				store[title] = (parser.news[title], time.time())
-				replytext = "%s - %s" % (title, parser.news[title])
-				reply = [replytext, None, IRCtype, targets, None]
-				self.__outgoing.append(reply)
+		try:
+			parser.feed(page_text)
+			parser.close()
+		
+		except HTMLParseError, e:
+			# something fucked up
+			tolog = "Error parsing google - %s" % e
+			self.putlog(LOG_WARNING, tolog)
+		
+		else:
+			for title in parser.news:
+				if not title in store:
+					# this is a new item!
+					store[title] = (parser.news[title], time.time())
+					replytext = "%s - %s" % (title, parser.news[title])
+					reply = [replytext, None, IRCtype, targets, None]
+					self.__outgoing.append(reply)
 	
 	# -----------------------------------------------------------------------
 	
 	# haven't looked at ananova yet
 	def __do_ananova(self, page_text, store, targets, token, IRCtype):
 		parser = Ananova()
-		parser.feed(page_text)
-		parser.close()
+		try:
+			parser.feed(page_text)
+			parser.close()
+
+		except HTMLParseError e:
+			tolog = "Error parsing ananova - %s" % e
+			self.putlog(LOG_WARNING, tolog)
 		
-		for title in parser.news:
-			if not title in store:
-				# this is a new item!
-				store[title] = (parser.news[title], time.time())
-				replytext = "%s - %s" % (title, parser.news[title])
-				reply = [replytext, None, IRCtype, targets, None]
-				self.__outgoing.append(reply)
+		else:
+			for title in parser.news:
+				if not title in store:
+					# this is a new item!
+					store[title] = (parser.news[title], time.time())
+					replytext = "%s - %s" % (title, parser.news[title])
+					reply = [replytext, None, IRCtype, targets, None]
+					self.__outgoing.append(reply)
 	
 	# -----------------------------------------------------------------------
 
