@@ -516,7 +516,7 @@ class News(Plugin):
 			if len(article[0]) > MAX_TITLE_LENGTH:
 				article[0] = '%s...' % article[0][:MAX_TITLE_LENGTH]
 			# Unquote HTTP urls
-			if url.startswith('http://'):
+			if article[1].startswith('http://'):
 				article[1] = UnquoteURL(article[1]).replace('&amp;', '&')
 		
 		# Build our query
