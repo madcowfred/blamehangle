@@ -55,17 +55,17 @@ class MapQuest(Plugin):
 	_HelpSection = 'travel'
 	
 	def setup(self):
-		self.__canada = [
+		self.__canada = (
 			'AB', 'BC', 'MB', 'NB', 'NF', 'NT', 'NS', 'NU', 'ON', 'PE', 'QC',
 			'SK', 'YT'
-			]
-		self.__america = [
+		)
+		self.__america = (
 			'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
 			'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA',
 			'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY',
 			'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX',
 			'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
-			]
+		)
 	
 	# -----------------------------------------------------------------------
 	
