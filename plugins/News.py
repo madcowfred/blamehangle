@@ -34,6 +34,8 @@ NEWS_GOOGLE_BIZ = "NEWS_GOOGLE_BIZ"
 NEWS_ANANOVA = "NEWS_CHECK_ANANOVA"
 
 NEWS_RSS = "NEWS_RSS"
+RSS_LIST = 'RSS_LIST'
+RSS_SHOW = 'RSS_SHOW'
 
 NEWS_INSERT = "NEWS_INSERT"
 TIME_CHECK = "TIME_CHECK"
@@ -47,13 +49,14 @@ TIME_QUERY = "DELETE FROM news WHERE time < %s"
 SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE title like "%%%s%%"'
 
 NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
+RSS_LIST_RE = re.compile(r'^listfeeds$')
+RSS_SHOW_RE = re.compile(r'^showfeed (?P<feed>.+)$')
 
 GOOGLE_WORLD = 'http://news.google.com/news/gnworldleftnav.html'
 GOOGLE_SCI = 'http://news.google.com/news/gntechnologyleftnav.html'
 GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
 GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
-
 
 # ---------------------------------------------------------------------------
 
@@ -214,6 +217,13 @@ class News(Plugin):
 		
 		self.register(ns_dir, ns_msg)
 		
+		
+		list_pub = PluginTextEvent(RSS_LIST, IRCT_PUBLIC_D, RSS_LIST_RE)
+		list_msg = PluginTextEvent(RSS_LIST, IRCT_MSG, RSS_LIST_RE)
+		show_pub = PluginTextEvent(RSS_SHOW, IRCT_PUBLIC_D, RSS_SHOW_RE)
+		show_msg = PluginTextEvent(RSS_SHOW, IRCT_MSG, RSS_SHOW_RE)
+		self.register(list_pub, list_msg, show_pub, show_msg)
+		
 		for name in self.RSS_Feeds:
 			feed = self.RSS_Feeds[name]
 			
@@ -222,13 +232,18 @@ class News(Plugin):
 			
 			event = PluginTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
 			self.register(event)
-
+		
 		self.__setup_help_msgs()
 	
 	def __setup_help_msgs(self):
 		NEWS_HELP = "'\02news\02 <partial headline>' : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given"
-
+		
+		RSS_LIST_HELP = "'\x02listfeeds\x02' : List the RSS feeds currently configured"
+		RSS_SHOW_HELP = "'\x02showfeed\x02 <feed name>' : Show some information about an RSS feed"
+		
 		self.setHelp('news', 'news search', NEWS_HELP)
+		self.setHelp('news', 'listfeeds', RSS_LIST_HELP)
+		self.setHelp('news', 'showfeed', RSS_SHOW_HELP)
 	
 	# -----------------------------------------------------------------------
 	
@@ -259,6 +274,25 @@ class News(Plugin):
 			feed = self.RSS_Feeds[name]
 			data = [feed['url'], (event, name)]
 			self.sendMessage('HTTPMonster', REQ_URL, data)
+		
+		elif event.name == RSS_LIST:
+			names = self.RSS_Feeds.keys()
+			if names:
+				replytext = 'I currently check \x02%d\x02 RSS feeds: %s' % (len(names), ', '.join(names))
+			else:
+				replytext = 'Sorry, I have no RSS feeds configured.'
+			self.sendReply(event, replytext)
+		
+		elif event.name == RSS_SHOW:
+			findme = event.match.group('feed').lower()
+			matches = [name for name in self.RSS_Feeds.keys() if name.lower() == findme]
+			if matches:
+				feed = self.RSS_Feeds[matches[0]]
+				replytext = "'%s' is %s every %d minutes" % (matches[0], feed['url'], feed['interval'] / 60)
+			else:
+				replytext = 'Sorry, no feed by that name.'
+			self.sendReply(event, replytext)
+		
 		else:
 			errstring = "News has no event: %s" % event.name
 			raise ValueError, errstring
