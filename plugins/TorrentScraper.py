@@ -63,20 +63,14 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
 	def __Parse_Page(self, trigger, resp):
-		t1 = time.time()
-		
 		items = {}
 		now = int(time.time())
 		
 		# We don't want stupid HTML entities
 		resp.data = UnquoteHTML(resp.data)
 		
-		t2 = time.time()
-		
 		# But we do want to quote the damn ampersands properly
 		resp.data = ENTITY_RE.sub('&amp;', resp.data)
-		
-		t3 = time.time()
 		
 		# If it's a BNBT page, we have to do some yucky searching
 		if resp.data.find('POWERED BY BNBT') >= 0:
@@ -85,8 +79,6 @@ class TorrentScraper(Plugin):
 			if not chunks:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
-			
-			t4 = time.time()
 			
 			# Yuck
 			for chunk in chunks:
@@ -113,8 +105,6 @@ class TorrentScraper(Plugin):
 			if not chunks:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
- 			
- 			t4 = time.time()
  			
 			# See if any are talking about torrents
 			for chunk in chunks:
@@ -143,8 +133,6 @@ class TorrentScraper(Plugin):
 				# Keep it for a bit
 				items[newurl] = (now, newurl, lines[0])
 		
-		t5 = time.time()
-		
 		# If we found nothing, bug out
 		if items == {}:
 			tolog = "Found no torrents at %s!" % resp.url
@@ -162,8 +150,6 @@ class TorrentScraper(Plugin):
 		querybit = ', '.join(['%s'] * len(items))
 		
 		query = SELECT_QUERY % (querybit, querybit)
-		
-		print 'Page parsed - %.3fs %.3fs %.3fs %.3fs %.3fs' % (t2-t1, t3-t2, t4-t3, t5-t4, time.time()-t5)
 		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
