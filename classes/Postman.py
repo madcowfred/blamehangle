@@ -70,6 +70,9 @@ class Postman:
 		
 		sometimes_counter = 0
 		
+		sometimes = []
+		always = []
+		
 		for child in self.__Children.values():
 			if hasattr(child, 'run_once'):
 				child.run_once()
@@ -145,7 +148,7 @@ class Postman:
 						self.__Shutdown_Check()
 					
 					# Run anything our children want done occasionally
-					for child in self.__Children.values():
+					for child in sometimes:
 						if hasattr(child, 'run_sometimes'):
 							child.run_sometimes(currtime)
 				

@@ -24,12 +24,6 @@ class Child:
 		self.stoperror = ''
 		self.stopnow = 0
 		
-		# If we don't have one or more of the run_ methods, alias them to
-		# 'empty'
-		for meth in ('run_once', 'run_sometimes', 'run_always'):
-			if not hasattr(self, meth):
-				setattr(self, meth, self.empty)
-		
 		# Rehash (usually read some Config items) if we have to
 		if hasattr(self, 'rehash'):
 			self.rehash()
@@ -37,9 +31,6 @@ class Child:
 		# Run our specific setup stuff if we have to
 		if hasattr(self, 'setup'):
 			self.setup()
-	
-	def empty(self, *args, **kwargs):
-		pass
 	
 	# -----------------------------------------------------------------------
 	# Check our message queue. If it's not empty, try to find a method to
