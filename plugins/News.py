@@ -591,11 +591,11 @@ class Google(HTMLParser):
 					# We have found a main headline
 					self.__found_a = 1
 				if self.__found_a and attr == 'href':
-					if value.startswith('/url?q='):
-						self.__temp_href = value[7:]
+					if value.startswith('/url?ntc='):
+						self.__temp_href = value[9:]
 					else:
 						self.__temp_href = value
-
+					
 					# fix up google's mangling of the url. this seems to be
 					# causing breakage when following the links to some sites
 					self.__temp_href = self.__temp_href.replace('%3F', '?')

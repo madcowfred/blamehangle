@@ -71,6 +71,8 @@ class Converter(Plugin):
 				found = [key for key,value in DISTANCE.items() if value[0] == data['from']]
 				if found:
 					_from = DISTANCE[found[0]]
+				else:
+					_from = None
 			
 			if DISTANCE.has_key(data['to']):
 				_to = DISTANCE[data['to']]
@@ -78,6 +80,8 @@ class Converter(Plugin):
 				found = [key for key,value in DISTANCE.items() if value[0] == data['to']]
 				if found:
 					_to = DISTANCE[found[0]]
+				else:
+					_to = None
 			
 			if _from is None:
 				replytext = '%(from)s is not a valid measurement' % data
