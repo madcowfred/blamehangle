@@ -115,7 +115,9 @@ class SmartyPants(Plugin):
 		self.__dels = 0
 		
 		# build our translation string
-		self.__Build_Translation()
+		self.__trans = '\x00' * 32
+		for i in range(32, 256):
+			self.__trans += chr(i)
 		
 		self.rehash()
 	
@@ -332,7 +334,8 @@ class SmartyPants(Plugin):
 	# Someone asked to search by key
 	def __Query_List_Keys(self, trigger):
 		name = self.__Sane_Name(trigger)
-		name = name.replace("%", "\%")
+		name = name.replace('%', '\%')
+		name = name.replace('*', '\*')
 		name = name.replace('"', '\\\"')
 		name = name.replace("'", "\\\'")
 		query =  LISTKEYS_QUERY % name
@@ -342,7 +345,8 @@ class SmartyPants(Plugin):
 	# Someone asked to search by value
 	def __Query_List_Values(self, trigger):
 		name = self.__Sane_Name(trigger)
-		name = name.replace("%", "\%")
+		name = name.replace('%', '\%')
+		name = name.replace('*', '\*')
 		name = name.replace('"', '\\\"')
 		name = name.replace("'", "\\\'")
 		query =  LISTVALUES_QUERY % name
@@ -965,25 +969,6 @@ class SmartyPants(Plugin):
 		self.__Query_Handle(trigger, result, 'modification')
 	
 	# -----------------------------------------------------------------------
-	# Build our translation table
-	def __Build_Translation(self):
-		#    space   #   '   +   -   .   [   ]   ^   _   |
-		chars = [32, 35, 39, 43, 45, 46, 91, 93, 94, 95, 124]
-		# 0-9 (48-57)
-		chars += range(48, 58)
-		# A-Z (65-90)
-		chars += range(65, 91)
-		# a-z (97-122)
-		chars += range(97, 123)
-		
-		# Build the table! \x00 is our 'bad' char
-		self.__trans = ''
-		for i in range(256):
-			if i in chars:
-				self.__trans += chr(i)
-			else:
-				self.__trans += '\x00'
-	
 	# Return a sanitised factoid name.
 	def __Sane_Name(self, trigger):
 		# If it's just a string, use it instead
