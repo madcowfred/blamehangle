@@ -141,11 +141,11 @@ class WrapConn:
 					nick = self.nicks[self.trynick]
 				
 				else:
-					nick = self.nicknames[0]
+					nick = self.nicks[0]
 					if len(nick) < 9:
 						nick += '-'
 					else:
-						nick[8] = '-'
+						nick[-1] = '-'
 				
 				self.conn.nick(nick)
 		
