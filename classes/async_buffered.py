@@ -36,6 +36,9 @@ class buffered_dispatcher(asyncore.dispatcher):
 	
 	# Send some data from our buffer when we can write
 	def handle_write(self):
+		if len(self.out_buffer) == 0:
+			return
+		
 		sent = asyncore.dispatcher.send(self, self.out_buffer)
 		self.out_buffer = self.out_buffer[sent:]
 	
