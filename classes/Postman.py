@@ -132,6 +132,7 @@ class Postman:
 		for child in self.__Children.values():
 			if hasattr(child, 'run_once'):
 				child.run_once()
+			
 			if hasattr(child, 'run_always'):
 				__always.append(child.run_always)
 			if hasattr(child, 'run_sometimes'):
@@ -168,7 +169,7 @@ class Postman:
 						self.__Log(LOG_MSG, message)
 						
 						# If it's a global message, send it to everyone
-						if len(message.targets) == 0:
+						if message.targetstring == 'ALL':
 							for child in self.__Children.values():
 								child.inQueue.put(message)
 						
@@ -181,8 +182,6 @@ class Postman:
 								except KeyError:
 									tolog = "invalid target for Message ('%s') : %s" % (name, message)
 									self.__Log(LOG_WARNING, tolog)
-									
-									pass
 				
 				
 				# Check for messages, then run the main loops
@@ -195,7 +194,7 @@ class Postman:
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
-				if sometimes_counter == 5:
+				if sometimes_counter == 4:
 					sometimes_counter = 0
 					
 					currtime = _time()
@@ -213,7 +212,7 @@ class Postman:
 						func(currtime)
 				
 				# Sleep for a while
-				_sleep(0.04)
+				_sleep(0.05)
 		
 			except KeyboardInterrupt:
 				self.__Shutdown('Ctrl-C pressed')
