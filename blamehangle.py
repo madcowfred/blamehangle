@@ -25,7 +25,7 @@ def main():
 	# collection won't even be noticable.
 	#
 	# The default is (700, 10, 10) !
-	gc.set_threshold(50, 5, 2)
+	gc.set_threshold(25, 5, 2)
 	
 	# Parse our command line options
 	try:

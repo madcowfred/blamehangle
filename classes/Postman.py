@@ -12,8 +12,6 @@ import traceback
 from Queue import *
 from exceptions import SystemExit
 
-import gc
-
 # ---------------------------------------------------------------------------
 
 from classes.Common import *
@@ -190,9 +188,7 @@ class Postman:
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
 				if sometimes_counter % 10 == 0:
-					#sometimes_counter = 0
-					
-					#gc.collect()
+					sometimes_counter = 0
 					
 					currtime = _time()
 					
@@ -209,11 +205,6 @@ class Postman:
 						if hasattr(child, 'run_sometimes'):
 							child.run_sometimes(currtime)
 
-				if sometimes_counter == 1000:
-					sometimes_counter = 0
-					gc.collect()
-				
-				
 				# Sleep for a while
 				_sleep(0.02)
 		
