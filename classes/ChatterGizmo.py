@@ -160,16 +160,22 @@ class ChatterGizmo(Child):
 		
 		event = IRCEvent(prefix, userinfo, command, target, arguments)
 		
-		# Trigger any local events
+		# Trigger any local event
 		name = '_handle_%s' % (event.command)
 		method = getattr(self, name, None)
-		if method is not None:
-			method(connid, self.Conns[connid].conn, event)
+		if method is None:
+			data = [wrap, event]
+		else:
+			args = method(connid, self.Conns[connid].conn, event)
+			if args is None:
+				data = [wrap, event.command, event]
+			else:
+				data = [wrap, event.command, args]
 		
 		# Trigger any other events
-		#for name, events in self.__Handlers.items():
-		#	if event.command in events or 'ALL' in events:
-		#		self.sendMessage(name, IRC_EVENT, [self.Conns[connid], event])
+		for name, events in self.__Handlers.items():
+			if event.command in events or 'ALL' in events:
+				self.sendMessage(name, IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
 	# Raw 376 - End of MOTD (and 422 - No MOTD)
@@ -271,10 +277,16 @@ class ChatterGizmo(Child):
 			if len(wrap.wholist) == 1:
 				text = 'WHO %s' % (chan)
 				wrap.sendline(text)
+			
+			args = (chan, None)
 		
 		# Not us
 		else:
 			wrap.ircul.user_joined(chan, ui=event.userinfo)
+			
+			args = (chan, event.userinfo)
+		
+		return args
 	
 	# -----------------------------------------------------------------------
 	# Someone just parted a channel (including ourselves)
@@ -286,14 +298,20 @@ class ChatterGizmo(Child):
 		
 		# Us
 		if nick == conn.getnick():
-			wrap.ircul.user_parted(chan)
-			
 			tolog = 'Left %s' % chan
 			self.connlog(connid, LOG_ALWAYS, tolog)
+			
+			wrap.ircul.user_parted(chan)
+			
+			args = (chan, None)
 		
 		# Not us
 		else:
 			wrap.ircul.user_parted(chan, ui=event.userinfo)
+			
+			args = (chan, event.userinfo)
+		
+		return args
 	
 	# -----------------------------------------------------------------------
 	# Someone just quit (including ourselves? not sure)
@@ -640,19 +658,21 @@ class ChatterGizmo(Child):
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 	
 	# -----------------------------------------------------------------------
-	# Something wants to receive all IRC events, crazy
-	def _message_REQ_IRC_EVENTS(self, message):
-		self.__Handlers[message.source] = message.data
+	# Something wants to send a notice or privmsg
+	def _message_REQ_NOTICE(self, message):
+		self.__SendMessage(message, self.notice)
 	
-	# Something wants to send a privmsg
 	def _message_REQ_PRIVMSG(self, message):
+		self.__SendMessage(message, self.privmsg)
+	
+	def __SendMessage(self, message, method):
 		conn, target, text = message.data
 		
 		if isinstance(conn, asyncIRC):
-			self.privmsg(conn.connid, target, text)
+			method(conn.connid, target, text)
 		
 		elif isinstance(conn, WrapConn):
-			self.privmsg(conn.conn.connid, target, text)
+			method(conn.conn.connid, target, text)
 		
 		elif isinstance(conn, dict):
 			for network, targets in conn.items():
@@ -665,22 +685,27 @@ class ChatterGizmo(Child):
 							max_targets = wrap.conn.features['max_targets']
 							for i in range(0, len(targets), max_targets):
 								target = ','.join(targets[i:i+max_targets])
-								self.privmsg(wrap.conn.connid, target, text)
+								method(wrap.conn.connid, target, text)
 						# Oh well, do it the slow way
 						else:
 							for target in targets:
-								self.privmsg(wrap.conn.connid, target, text)
+								method(wrap.conn.connid, target, text)
 						
 						found = 1
 						break
 				
 				if found == 0:
-					tolog = "Invalid network in PRIVMSG from '%s': %s" % (message.source, net)
+					tolog = "Invalid network in NOTICE/PRIVMSG from '%s': %s" % (message.source, net)
 					self.putlog(LOG_WARNING, tolog)
 		
 		else:
-			tolog = "Unknown REQ_PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
+			tolog = "Unknown NOTICE/PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
 			self.putlog(LOG_WARNING, tolog)
+	
+	# -----------------------------------------------------------------------
+	# Something wants to receive some raw-ish IRC events
+	def _message_REQ_IRC_EVENTS(self, message):
+		self.__Handlers[message.source] = message.data
 	
 	# Someone wants some WrapConn objects
 	def _message_REQ_WRAPS(self, message):
