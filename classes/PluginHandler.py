@@ -9,7 +9,6 @@ import types, time
 
 from classes.Plugin import *
 from classes.Constants import *
-from Plugins import *
 
 from classes.Children import Child
 
