@@ -18,13 +18,6 @@ WEATHER_RE = re.compile('^weather\s+(?P<location>.+)$')
 WEATHER_HELP = '\02weather\02 <location> : Retrieve weather information for location'
 WEATHER_URL = "http://search.weather.yahoo.com/search/weather2?p=%s"
 
-s1 = '[%(location)s] %(weather)s, Currently: %(currently_c)s°C (%(currently_f)s°F)'
-s2 = ', High: %(hi_c)s°C (%(hi_f)s°F), Low: %(lo_c)s°C (%(lo_f)s°F)'
-s3 = ', Wind: %(wind)s, Feels Like: %(like_c)s°C (%(like_f)s°F)'
-s4 = ', Humidity: %(humidity)s, Visibility: %(visibility)s'
-s5 = ', Sunrise: %(sunrise)s, Sunset: %(sunset)s'
-WEATHER_REPLY = s1 + s2 + s3 + s4 + s5
-
 # ---------------------------------------------------------------------------
 
 class WeatherMan(Plugin):
@@ -130,7 +123,7 @@ class WeatherMan(Plugin):
 					if len(windbits) == 3:
 						chunk = 'Wind: %s %s kph (%s mph)' % (windbits[0], ToKilometers(windbits[1]), windbits[1])
 					else:
-						chunk = windbits[0]
+						chunk = 'Wind: %s' % (windbits[0])
 					chunks.append(chunk)
 					
 					chunk = 'Humidity: %s' % (lines[-7])
