@@ -64,10 +64,6 @@ class Quotes(Plugin):
 			# Send the message!
 			message = '\r\n'.join(lines)
 			
-			print '>>'
-			print message
-			print '<<'
-			
 			try:
 				server = smtplib.SMTP(self.__server)
 				server.sendmail(self.__from, self.__to, message)
