@@ -160,11 +160,19 @@ def UnquoteHTML(text, *keep):
 	def unquote_things(m):
 		whole = m.group(0)
 		thing = m.group(1).lower()
-		if thing.startswith('#'):
+		# hexadecimal entity
+		if thing.startswith('#x'):
+			try:
+				return chr(int(thing[2:], 16))
+			except ValueError:
+				return whole
+		# decimal entity
+		elif thing.startswith('#'):
 			try:
 				return chr(int(thing[1:]))
 			except ValueError:
 				return whole
+		# named entity
 		else:
 			return quoted.get(thing, whole)
 	
