@@ -46,6 +46,8 @@ FACT_INFO = "FACT_INFO"
 FACT_STATUS = "FACT_STATUS"
 FACT_LOCK = "FACT_LOCK"
 FACT_UNLOCK = "FACT_UNLOCK"
+FACT_LISTKEYS = "FACT_LISTKEYS"
+FACT_LISTVALUES = "FACT_LISTVALUES"
 
 FACT_UPDATEDB = "FACT_MOD"
 
@@ -62,6 +64,9 @@ UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, lock
 
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
+LISTKEYS_QUERY = 'SELECT name FROM factoids WHERE name LIKE "%%%s%%"'
+LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
+
 GET_RE = re.compile("^(?P<name>.+?)\??$")
 SET_RE = re.compile("^(?P<name>.+?) (is|are) (?!also )(?P<value>.+)$")
 ALSO_RE = re.compile("(?P<name>.+?) (is|are) also (?P<value>.+)$")
@@ -71,9 +76,12 @@ LOCK_RE = re.compile("^lock (?P<name>.+)$")
 UNLOCK_RE = re.compile("^unlock (?P<name>.+)$")
 INFO_RE = re.compile("^factinfo (?P<name>.+)\??$")
 STATUS_RE = re.compile("^status$")
+LISTKEYS_RE = re.compile("^listkeys (?P<name>.+)$")
+LISTVALUES_RE = re.compile("^listvalues (?P<name>.+)$")
 
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
+MAX_SEARCH_RESULTS = 15
 
 #----------------------------------------------------------------------------
 
@@ -140,8 +148,12 @@ class SmartyPants(Plugin):
 		info_msg = PluginTextEvent(FACT_INFO, IRCT_MSG, INFO_RE)
 		status_dir = PluginTextEvent(FACT_STATUS, IRCT_PUBLIC_D, STATUS_RE)
 		status_msg = PluginTextEvent(FACT_STATUS, IRCT_MSG, STATUS_RE)
+		listkey_dir = PluginTextEvent(FACT_LISTKEYS, IRCT_PUBLIC_D, LISTKEYS_RE)
+		listkey_msg = PluginTextEvent(FACT_LISTKEYS, IRCT_MSG, LISTKEYS_RE)
+		listval_dir = PluginTextEvent(FACT_LISTVALUES, IRCT_PUBLIC_D, LISTVALUES_RE)
+		listval_msg = PluginTextEvent(FACT_LISTVALUES, IRCT_MSG, LISTVALUES_RE)
 		
-		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg)
+		self.register(get_dir, get_msg, set_dir, set_msg, also_dir, also_msg, del_dir, del_msg, rep_dir, rep_msg, lock_dir, lock_msg, unlock_dir, unlock_msg, info_dir, info_msg, status_dir, status_msg, listkey_dir, listkey_msg, listval_dir, listval_msg)
 	
 	#------------------------------------------------------------------------
 	
@@ -209,6 +221,18 @@ class SmartyPants(Plugin):
 		elif trigger.name == FACT_STATUS:
 			data = [trigger, (STATUS_QUERY, [])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
+
+		# Someone asked to search by key
+		elif trigger.name == FACT_LISTKEYS:
+			name = trigger.match.group('name')
+			data = [trigger, (LISTKEYS_QUERY % name, [])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
+
+		# Someone asked to search by value
+		elif trigger.name == FACT_LISTVALUES:
+			name = trigger.match.group('name')
+			data = [trigger, (LISTVALUES_QUERY % name, [])]
+			self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	#------------------------------------------------------------------------
 	
@@ -241,6 +265,12 @@ class SmartyPants(Plugin):
 			
 		elif trigger.name == FACT_STATUS:
 			self.__Fact_Status(trigger, results)
+
+		elif trigger.name == FACT_LISTKEYS:
+			self.__Fact_Search(trigger, results, "key")
+
+		elif trigger.name == FACT_LISTVALUES:
+			self.__Fact_Search(trigger, results, "value")
 		
 		elif trigger.name == FACT_UPDATEDB:
 			# The database just made our requested modifications, so we just
@@ -691,6 +721,35 @@ class SmartyPants(Plugin):
 		num = row['total']
 		replytext = "Since %s, there have been \02%d\02 requests, \02%d\02 modifications, \02%d\02 new factoids, and \02%d\02 dunnos. I currently reference \02%d\02 factoids." % (self.__start_time, self.__requests, self.__modifys, self.__sets, self.__dunnos, num)
 		self.sendReply(trigger, replytext)
+
+	
+	#------------------------------------------------------------------------
+	# Someone just asked to search the factoid database
+	#------------------------------------------------------------------------
+	def __Fact_Search(self, trigger, results, what):
+		search = trigger.match.group('name')
+		if results == [()]:
+			# the search failed
+			replytext = "Factoid search of '\02%s\02' by %s returned no results." % (search, what)
+			self.sendReply(trigger, replytext)
+		else:
+			# check how many items we found
+			results = results[0]
+			if len(results) > MAX_SEARCH_RESULTS:
+				replytext = "Factoid search of '\02%s\02' by %s yeilded too many results. Please refine your search." % (search, what)
+				self.sendReply(trigger, replytext)
+			else:
+				# We found some items, but less than our max threshold, so
+				# generate the reply
+				replytext = "Factoid search of '\02%s\02' by %s (\02%d\02 results): " % (search, what, len(results))
+				while results:
+					replytext += "%s" % results[0]['name']
+					results = results[1:]
+					if results:
+							replytext += " \02;;\02 "
+
+				self.sendReply(trigger, replytext)
+		
 
 	#------------------------------------------------------------------------
 	
