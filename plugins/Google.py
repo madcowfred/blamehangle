@@ -35,7 +35,7 @@ class Google(Plugin):
 		trigger = message.data
 		
 		if trigger.name == GOOGLE_GOOGLE:
-			url = GOOGLE_URL % trigger.match.group(1)
+			url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
 			self.urlRequest(trigger, url)
 	
 	def _message_REPLY_URL(self, message):
@@ -50,12 +50,14 @@ class Google(Plugin):
 		findme = trigger.match.group(1)
 		
 		# Woops, no matches
-		if page_text.find('No pages were found containing') >= 0:
+		if page_text.find('- did not match any documents') >= 0:
 			replytext = 'No pages were found containing "%s"' % findme
-			self.sendReply(trigger, relpytext)
+			self.sendReply(trigger, replytext)
 		
 		# Some matches!
 		else:
+			page_text = UnquoteHTML(page_text)
+			
 			chunk = FindChunk(page_text, '<!--m-->', '</a>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to find a result')
