@@ -29,13 +29,14 @@ class WrapConn:
 	it.
 	"""
 	
-	def __init__(self, parent, conn, options):
+	def __init__(self, parent, network, conn, options):
 		self.parent = parent
+		self.network = network
 		self.conn = conn
 		self.options = options
-
+		
 		self.connect_id = 0
-
+		
 		# has ChatterGizmo asked us to close this connection?
 		# (note, this flag is only inspected in ChatterGizmo, it is never
 		#  touched here)
