@@ -273,11 +273,11 @@ class ChatterGizmo(Child):
 		#	return
 		
 		
-		first = event.arguments()[0]
+		first = event.arguments()[0].upper()
 		
 		# Capitalise the arguments if there are any
 		if len(event.arguments()) == 2:
-			rest = event.arguments()[1]
+			rest = [arg.upper() for arg in event.arguments()[1]]
 		else:
 			rest = ''
 		
@@ -285,8 +285,9 @@ class ChatterGizmo(Child):
 		if first == 'VERSION':
 			conn.ctcp_reply(userinfo.nick, "VERSION blamehangle v" + BH_VERSION)
 		
-		elif first == 'PING' and len(rest) > 0:
-			conn.ctcp_reply(userinfo.nick, "PING " + rest)
+		elif first == 'PING':
+			if len(rest) > 0:
+				conn.ctcp_reply(userinfo.nick, "PING " + rest)
 		
 		elif first == 'CLIENTINFO':
 			conn.ctcp_reply(userinfo.nick, 'CLIENTINFO PING VERSION')
