@@ -79,17 +79,26 @@ an airline's code, or get details on a flight number.
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
-<td colspan="2">Calculator</td>
+<td colspan="2">BotStatus</td>
 </tr>
 <tr class="desc">
-<td colspan="2">
-A calculator for simple expressions.
-Operations allowed are addition, subtraction, division, multiplication,
-modulo, and exponentiation.
-
-Won't divide by zero or lame things like that.
-</td>
-</tr></table>
+<td colspan="2">Provides some useful/less stats about the bot.</td>
+</tr><tr>
+<td width="300">botstatus</td>
+<td>Return some useful (maybe) stats about the bot.</td>
+</tr>
+</table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">BugMeNot</td>
+</tr>
+<tr class="desc">
+<td colspan="2">None</td>
+</tr><tr>
+<td width="300">bugmenot &lt;site&gt;</td>
+<td>See if BugMeNot has a login for &lt;site&gt;.</td>
+</tr>
+</table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
 <td colspan="2">Converter</td>
@@ -112,8 +121,24 @@ Won't divide by zero or lame things like that.
 <td>The magic 8 ball will answer your question!</td>
 </tr>
 <tr>
+<td width="300">coin</td>
+<td>Flip a coin!</td>
+</tr>
+<tr>
+<td width="300">cyborg &lt;name&gt;</td>
+<td>See what the cyborg name is for &lt;name&gt;.</td>
+</tr>
+<tr>
+<td width="300">dice &lt;n&gt;d&lt;s&gt;</td>
+<td>Roll &lt;n&gt; dice of &lt;s&gt; sides and return the results.</td>
+</tr>
+<tr>
 <td width="300">easter &lt;year&gt;</td>
-<td>Work out what day Easter Sunday falls on for a given year.</td>
+<td>Work out what day Easter Sunday falls on in &lt;year&gt;.</td>
+</tr>
+<tr>
+<td width="300">horo &lt;sign&gt;</td>
+<td>Look up today's horoscope for &lt;sign&gt;.</td>
 </tr>
 <tr>
 <td width="300">muddle &lt;text&gt;</td>
@@ -128,11 +153,7 @@ Won't divide by zero or lame things like that.
 <td colspan="2">Gets information on video games from various sites.</td>
 </tr><tr>
 <td width="300">klov &lt;title&gt;</td>
-<td>Look up title in the Killer List Of Video Games (KLOVG?!)</td>
-</tr>
-<tr>
-<td width="300">moby &lt;title&gt;</td>
-<td>Look up title at MobyGames (DISABLED).</td>
+<td>Look up &lt;title&gt; in the Killer List Of Video Games (KLOVG?!)</td>
 </tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
@@ -172,12 +193,20 @@ a current torrent status report (requires my modified btlaunchmanycurses).
 <tr class="desc">
 <td colspan="2">Karma. Someone put a useful description here.</td>
 </tr><tr>
-<td width="300">&lt;something&gt;++ OR &lt;something&gt;--</td>
-<td>Increment or decrement karma for &lt;something&gt;</td>
+<td width="300">&lt;key&gt;++ OR &lt;key&gt;--</td>
+<td>Increment or decrement karma for &lt;key&gt;.</td>
 </tr>
 <tr>
-<td width="300">karma &lt;something&gt;</td>
-<td>Look up &lt;something&gt;'s karma level</td>
+<td width="300">bestkarma</td>
+<td>See the keys with the best karma.</td>
+</tr>
+<tr>
+<td width="300">karma &lt;key&gt;</td>
+<td>Look up &lt;key&gt;'s karma level.</td>
+</tr>
+<tr>
+<td width="300">worstkarma</td>
+<td>See the keys with the worst karma.</td>
 </tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
@@ -189,6 +218,23 @@ a current torrent status report (requires my modified btlaunchmanycurses).
 </tr><tr>
 <td width="300">distance &lt;[city, state] or [zip]&gt; to &lt;[city, state] or zip&gt;</td>
 <td>Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only.</td>
+</tr>
+</table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Math</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+Various mathetmatical commands.
+</td>
+</tr><tr>
+<td width="300">&lt;expr&gt;</td>
+<td>Calculate the result of &lt;expr&gt;.</td>
+</tr>
+<tr>
+<td width="300">base &lt;from&gt; [to] &lt;number&gt;</td>
+<td>Convert &lt;number&gt; from base &lt;from&gt; to base [to] (default is 10).</td>
 </tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
@@ -228,6 +274,10 @@ a current torrent status report (requires my modified btlaunchmanycurses).
 <td width="300">cctld &lt;code&gt; OR &lt;country&gt;</td>
 <td>Look up the country for &lt;code&gt;, or search for the ccTLD for &lt;country&gt;.</td>
 </tr>
+<tr>
+<td width="300">whois &lt;domain&gt;</td>
+<td>Look up &lt;domain&gt; in the WHOIS database.</td>
+</tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
@@ -259,9 +309,19 @@ want to use.
 <td colspan="2">None</td>
 </tr><tr>
 <td width="300">addquote &lt;quote&gt;</td>
-<td>sends a quote to the configured e-mail address</td>
+<td>sends a quote to the configured e-mail address. Use || to seperate lines.</td>
 </tr>
 </table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">Seen</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+Your standard generic seen plugin. Tracks people. Sends them flowers. Possibly
+follows them to work.
+</td>
+</tr></table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
 <td colspan="2">SiteBot</td>
@@ -290,6 +350,18 @@ database trickery.
 <td>Search through the definition of &lt;factoid name&gt;, replacing any instances of the string &lt;search&gt; with &lt;replace&gt;. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'.</td>
 </tr>
 <tr>
+<td width="300">&lt;factoid name&gt; is &lt;whatever&gt; OR &lt;factoid name&gt; is also &lt;whatever&gt;</td>
+<td>Teach the bot about a topic."</td>
+</tr>
+<tr>
+<td width="300">&lt;factoid name&gt; is &lt;whatever&gt; OR &lt;factoid name&gt; is also &lt;whatever&gt;</td>
+<td>Teach the bot about a topic."</td>
+</tr>
+<tr>
+<td width="300">&lt;factoid name&gt;?</td>
+<td>Ask the bot for the definiton of &lt;factoid name&gt;.</td>
+</tr>
+<tr>
 <td width="300">&lt;factoid name&gt;?</td>
 <td>Ask the bot for the definiton of &lt;factoid name&gt;.</td>
 </tr>
@@ -303,11 +375,11 @@ database trickery.
 </tr>
 <tr>
 <td width="300">listkeys &lt;search text&gt;</td>
-<td>Search through all the factoid names, and return a list of any that contain &lt;search text&gt;</td>
+<td>Search through all the factoid names, and return a list of any that contain &lt;search text&gt;.</td>
 </tr>
 <tr>
 <td width="300">listvalues &lt;search text&gt;</td>
-<td>Search through all the factoid definitions, and return the names of any that contain &lt;search text&gt;</td>
+<td>Search through all the factoid definitions, and return the names of any that contain &lt;search text&gt;.</td>
 </tr>
 <tr>
 <td width="300">lock &lt;factoid name&gt;</td>
@@ -339,12 +411,10 @@ database trickery.
 <td colspan="2">SportsFan</td>
 </tr>
 <tr class="desc">
-<td colspan="2">Yahoo Sports game result lookup.</td>
-</tr><tr>
-<td width="300">score &lt;league&gt; &lt;team&gt;</td>
-<td>Search for a score for &lt;team&gt; playing in &lt;league&gt; today. &lt;league&gt; can be one of NFL, MLB, NBA, NHL. &lt;team&gt; is identified by location, not nickname.</td>
-</tr>
-</table>
+<td colspan="2">
+FIXME: parsing is broken, either fix or find decent pages to use!
+</td>
+</tr></table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
 <td colspan="2">TextStuff</td>
@@ -360,6 +430,10 @@ database trickery.
 <td>Compute the MD5 checksum of text.</td>
 </tr>
 <tr>
+<td width="300">quoteurl &lt;url&gt;</td>
+<td>Quote URL?</td>
+</tr>
+<tr>
 <td width="300">rot13 &lt;text&gt;</td>
 <td>ROT13 text.</td>
 </tr>
@@ -368,12 +442,8 @@ database trickery.
 <td>Compute the SHA-1 checksum of text.</td>
 </tr>
 <tr>
-<td width="300">urldec &lt;url&gt;</td>
-<td>Do something else.</td>
-</tr>
-<tr>
-<td width="300">urlenc &lt;url&gt;</td>
-<td>Do something.</td>
+<td width="300">unquoteurl &lt;url&gt;</td>
+<td>Unquote URL?</td>
 </tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
@@ -389,13 +459,23 @@ database trickery.
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
+<td colspan="2">TorrentScraper</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+Scrapes pages at a specific interval and keeps track of torrents on them,
+then generates an RSS feed of the latest ones.
+</td>
+</tr></table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
 <td colspan="2">Video</td>
 </tr>
 <tr class="desc">
 <td colspan="2">Look up information on movies/TV shows.</td>
 </tr><tr>
 <td width="300">imdb &lt;search term&gt;</td>
-<td>Search for a movie on IMDb. Use 'tt1234567' for a title.</td>
+<td>Search for a movie on IMDb. Use 'tt1234567' for a specific title.</td>
 </tr>
 <tr>
 <td width="300">tvtome &lt;search term&gt;</td>
@@ -436,19 +516,19 @@ database trickery.
 <tr class="desc">
 <td colspan="2">Various commands for playing with words.</td>
 </tr><tr>
-<td width="300">acro [n] &lt;acronym&gt;</td>
+<td width="300">acronyms [n] &lt;acronym&gt;</td>
 <td>Look up &lt;acronym&gt;, possibly getting definition [n].</td>
 </tr>
 <tr>
 <td width="300">antonyms &lt;word&gt;</td>
-<td>Search for words that have the exact opposite meaning of &lt;word&gt;.</td>
+<td>Search for words that have the opposite meaning to &lt;word&gt;.</td>
 </tr>
 <tr>
 <td width="300">dict &lt;word&gt;</td>
 <td>Look up the dictionary meaning of a word.</td>
 </tr>
 <tr>
-<td width="300">rhyme &lt;word&gt;</td>
+<td width="300">rhymes &lt;word&gt;</td>
 <td>Search for words that rhyme with &lt;word&gt;.</td>
 </tr>
 <tr>
@@ -457,7 +537,7 @@ database trickery.
 </tr>
 <tr>
 <td width="300">synonyms &lt;word&gt;</td>
-<td>Search for words that have the same meaning as &lt;word&gt;.</td>
+<td>Search for words that have the same meaning of &lt;word&gt;.</td>
 </tr>
 <tr>
 <td width="300">urban [n] &lt;term&gt;</td>
