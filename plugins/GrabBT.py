@@ -26,6 +26,9 @@ GRAB_RE = re.compile(r'^grab (http://\S+)$')
 GRABBT_TORRENTS = 'GRABBT_TORRENTS'
 TORRENTS_RE = re.compile(r'^torrents$')
 
+GRABBT_TORRENTSPEED = 'GRABBT_TORRENTSPEED'
+TORRENTSPEED_RE = re.compile(r'^torrentspeed$')
+
 # ---------------------------------------------------------------------------
 
 class GrabBT(Plugin):
@@ -75,6 +78,7 @@ class GrabBT(Plugin):
 		
 		self.setTextEvent(GRABBT_GRAB, GRAB_RE, IRCT_PUBLIC_D)
 		self.setTextEvent(GRABBT_TORRENTS, TORRENTS_RE, IRCT_PUBLIC_D)
+		self.setTextEvent(GRABBT_TORRENTSPEED, TORRENTSPEED_RE, IRCT_PUBLIC_D)
 		
 		self.registerEvents()
 	
@@ -217,6 +221,34 @@ class GrabBT(Plugin):
 				
 				line = '%s (%s MB) :: \x02[\x02%s\x02]\x02 \x02[\x02Down: %s MB (%s KB/s)\x02]\x02 \x02[\x02Up: %s MB (%s KB/s)\x02]\x02' % (filename, filesize, status, downtotal, downrate, uptotal, uprate)
 				self.sendReply(trigger, line)
+		
+		else:
+			self.sendReply(trigger, "No torrents active.")
+	
+	# -----------------------------------------------------------------------
+	# Someone wants to see some total torrent speed.
+	def _trigger_GRABBT_TORRENTSPEED(self, trigger):
+		network = trigger.conn.options['name'].lower()
+		
+		if network not in self.__commands or trigger.target not in self.__commands[network]:
+			tolog = "%s (%s@%s) on %s/%s trying to see torrent speed." % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host, network, trigger.target)
+			self.putlog(LOG_WARNING, tolog)
+			return
+		
+		# Get the list of torrents
+		lines = open(self._status_file, 'r').readlines()
+		
+		if lines:
+			down = up = 0.0
+			
+			for line in lines:
+				filename, status, filesize, downtotal, downrate, uptotal, uprate = line.strip().split('|')
+				
+				down += (float(downrate) / 1024)
+				up += (float(uprate) / 1024)
+			
+			line = 'Total torrent bandwidth: %.1fKB/s down, %.1fKB/s up' % (down, up)
+			self.sendReply(trigger, line)
 		
 		else:
 			self.sendReply(trigger, "No torrents active.")
