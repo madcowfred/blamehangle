@@ -27,6 +27,14 @@ DISTANCE = {
 	'mm': ('millimeters', 0.001),
 }
 
+# Mapping of weights to, err, grams
+WEIGHT = {
+	'g': ('grams', 1),
+	'kg': ('kilograms', 1000),
+	'lb': ('pounds', 453.5923),
+	'oz': ('ounces', 28.3495),
+}
+
 # ---------------------------------------------------------------------------
 
 class Converter(Plugin):
@@ -65,28 +73,39 @@ class Converter(Plugin):
 			replytext = '%s °F == %s °C' % (data['amt'], value)
 		
 		else:
-			if DISTANCE.has_key(data['from']):
-				_from = DISTANCE[data['from']]
-			else:
-				found = [key for key,value in DISTANCE.items() if value[0] == data['from']]
-				if found:
-					_from = DISTANCE[found[0]]
+			for MAP in (DISTANCE, WEIGHT):
+				_from = None
+				_to = None
+				
+				if MAP.has_key(data['from']):
+					_from = MAP[data['from']]
 				else:
-					_from = None
-			
-			if DISTANCE.has_key(data['to']):
-				_to = DISTANCE[data['to']]
-			else:
-				found = [key for key,value in DISTANCE.items() if value[0] == data['to']]
-				if found:
-					_to = DISTANCE[found[0]]
+					for key, value in MAP.items():
+						if value[0] == data['from']:
+							_from = MAP[found[0]]
+							break
+						# Handle non-plurals too
+						elif value[0].endswith('s') and value[0][:-1] == data['from']:
+							_from = MAP[found[0]]
+							break
+				
+				if MAP.has_key(data['to']):
+					_to = MAP[data['to']]
 				else:
-					_to = None
+					for key, value in MAP.items():
+						if value[0] == data['from']:
+							_to = MAP[found[0]]
+							break
+						# Handle non-plurals too
+						elif value[0].endswith('s') and value[0][:-1] == data['from']:
+							_to = MAP[found[0]]
+							break
+				
+				if _from is not None and _to is not None:
+					break
 			
-			if _from is None:
-				replytext = '%(from)s is not a valid measurement' % data
-			elif _to is None:
-				replytext = '%(to)s is not a valid measurement' % data
+			if _from is None or _to is None:
+				replytext = '%(from)s <-> %(to)s is not a valid conversion' % data
 			else:
 				value = '%.2f' % (data['amt'] * _from[1] / _to[1])
 				replytext = '%s %s == %s %s' % (data['amt'], _from[0], value, _to[0])
