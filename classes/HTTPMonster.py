@@ -133,6 +133,8 @@ class async_http(buffered_dispatcher):
 			self.post_data = urllib.urlencode(message.data[3])
 		else:
 			self.post_data = None
+		# Funky extra headers
+		self.extra_headers = message.data[4] or None
 		
 		# Log what we're doing
 		tolog = 'Fetching URL: %s' % (self.url)
@@ -197,6 +199,12 @@ class async_http(buffered_dispatcher):
 		self.send(text)
 		text = 'Accept-Encoding: gzip\r\n'
 		self.send(text)
+		# Send any extra headers we have to
+		if self.extra_headers:
+			for k, v in self.extra_headers.items():
+				text = '%s: %s\r\n' % (k, v)
+				self.send(text)
+		
 		#text = "Connection: close\r\n"
 		#self.send(text)
 		self.send('\r\n')
