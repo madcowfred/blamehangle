@@ -34,6 +34,7 @@ import types
 import copy
 
 from classes.Plugin import *
+from classes.Common import *
 from classes.Constants import *
 from classes.Users import *
 
@@ -461,12 +462,20 @@ class SmartyPants(Plugin):
 			# reply
 			self.__requests += 1
 
-			# replace "$nick" with the nick of the guy that requested this
-			# factoid
 			# XXX This is devinfo legacy, I'm not really sure I want to do this
 			# but the factoid database will have a bunch of factoids that
 			# expect this behaviour
+			# replace "$nick" with the nick of the guy that requested this
+			# factoid
 			row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
+			# replace "$channel" with the target if this was public
+			if trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
+				row['value'] = row['value'].replace('$channel', trigger.target)
+			# replace "$date" with a shiny date
+			# TODO: return random dates to bug people?
+			datebit = time.strftime('%a %d %b %Y %H:%M:%S')
+			shinydate = '%s %s GMT' % (datebit, GetTZ())
+			row['value'] = row['value'].replace('$date', shinydate)
 			
 			# <reply> and <action> check
 			m = REPLY_ACTION_RE.match(row['value'])
