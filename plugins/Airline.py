@@ -15,6 +15,8 @@ FLIGHT_SEARCH = "FLIGHT_SEARCH"
 
 AIRLINE_RE = re.compile("^ *airline +(?P<airline>.+)$")
 
+MAX_AIRLINE_MATCHES = 5
+
 # what a bastard this was to get right. god damn i hate regexps.
 f1 = "^ *flight +"
 f2 = "(?P<code>[^ ]+)"
