@@ -298,6 +298,9 @@ class Postman:
 				
 				self.__Log(LOG_ALWAYS, '*******************************************************')
 				
+				# Better safe than sorry
+				del trace
+				
 				# We crashed during shutdown? Not Good.
 				if self.__Stopping == 1:
 					self.__Log(LOG_ALWAYS, "Exception during shutdown, I'm outta here.")
