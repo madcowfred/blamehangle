@@ -136,6 +136,11 @@ class asyncIRC(buffered_dispatcher):
 		self.close()
 		
 		# Trigger a disconnect event
+		try:
+			errormsg = [errormsg.args[-1]]
+		except AttributeError:
+			pass
+		
 		self.__trigger_event(None, None, 'disconnect', None, errormsg)
 	
 	# The connection got closed somehow
@@ -256,8 +261,32 @@ class asyncIRC(buffered_dispatcher):
 		self.__nickname = nickname
 		self.__userinfo = (username or nickname, socket.gethostname(), host, ircname)
 		
-		# Create our socket
-		self.create_socket(family, socket.SOCK_STREAM)
+		# Possibly bind our socket to our vhost
+		if vhost:
+			print 'vhost: %r' % vhost
+			try:
+				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
+				family, socktype, proto, canonname, sa = res
+				
+				self.create_socket(family, socktype)
+				self.bind(sa)
+			
+			except socket.gaierror, msg:
+				self.really_close(msg)
+			
+			except socket.error, msg:
+				self.really_close(msg)
+			
+			except Exception, msg:
+				self.really_close(msg)
+		
+		# Normal non-vhost connection!
+		else:
+			self.create_socket(family, socket.SOCK_STREAM)
+		
+		# Bail if our socket wasn't created
+		if self.socket is None:
+			return
 		
 		# Try to connect. This will blow up if it can't resolve the host.
 		try:

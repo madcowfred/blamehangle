@@ -58,13 +58,13 @@ class WrapConn:
 		# Parse the server list
 		self.servers = []
 		for server in options['servers'].split():
-			parts = server.split(':')
+			parts = server.split(',')
 			if len(parts) == 1:
 				self.servers.append( (parts[0], 6667) )
 			elif len(parts) == 2:
 				self.servers.append( (parts[0], int(parts[1])) )
 			else:
-				print 'invalid server thing'
+				print 'invalid server entry'
 		
 		# Parse the rest of our options
 		self.channels = self.options['channels'].split()
@@ -95,14 +95,20 @@ class WrapConn:
 		host, port = self.server
 		
 		
-		tolog = 'Connecting to %s:%d...' % (host, port)
+		tolog = 'Connecting to %s port %d...' % (host, port)
 		self.connlog(LOG_ALWAYS, tolog)
 		
+		# IPv6 host, set the socket family
+		if ':' in host:
+			family = socket.AF_INET6
+		else:
+			family = socket.AF_INET
 		
 		self.conn.connect_to_server(host, port, nick,
 									username=self.username,
 									ircname=self.realname,
-									vhost=self.vhost
+									vhost=self.vhost,
+									family=family,
 									)
 		
 		self.last_connect = time.time()

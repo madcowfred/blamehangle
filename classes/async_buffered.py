@@ -22,13 +22,24 @@ class buffered_dispatcher(asyncore.dispatcher):
 	def del_channel(self, map=None):
 		if map is None:
 			map = asyncore.socket_map
-		if map.has_key(self._fileno):
-			del map[self._fileno]
+		
+		# Remove ourselves from the async map
+		try:
+			if map.has_key(self._fileno):
+				del map[self._fileno]
+		except AttributeError:
+			return
+		
 		# Remove ourselves from the poll object
 		try:
 			asyncore.poller.unregister(self._fileno)
 		except KeyError:
 			pass
+	
+	def close(self):
+		self.del_channel()
+		if self.socket is not None:
+			self.socket.close()
 	
 	# We only want to be writable if we're connecting, or something is in our
 	# buffer.
