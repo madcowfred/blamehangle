@@ -574,7 +574,6 @@ class News(Plugin):
 		# No matches
 		elif result == ():
 			replytext = "No headlines in the last %d days found matching '\02%s\02'" % (self.__old_days, search_text)
-			self.sendReply(trigger, replytext)
 		
 		# Some matches
 		else:
