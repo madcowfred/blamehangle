@@ -173,7 +173,7 @@ class IRC:
 		self.connections.append(c)
 		return c
 
-	def process_data(self, sockets):
+	def process_data(self, can_read, can_write):
 		"""Called when there is more data to read on connection sockets.
 
 		Arguments:
@@ -182,10 +182,12 @@ class IRC:
 
 		See documentation for IRC.__init__.
 		"""
-		for s in sockets:
-			for c in self.connections:
-				if s == c._get_socket():
-					c.process_data()
+		for c in self.connections:
+			sock = c._get_socket()
+			if sock in can_read:
+				c.can_read()
+			if sock in can_write:
+				c.can_write()
 
 	def process_timeout(self):
 		"""Called when a timeout notification is due.
@@ -216,8 +218,8 @@ class IRC:
 		sockets = filter(lambda x: x != None, sockets)
 		
 		if sockets:
-			(i, o, e) = select.select(sockets, [], [], timeout)
-			self.process_data(i)
+			(i, o, e) = select.select(sockets, sockets, [], timeout)
+			self.process_data(i, o)
 		
 		elif timeout:
 			time.sleep(timeout)
@@ -359,17 +361,23 @@ class ServerConnectionError(IRCError):
 # use \n as message separator!  :P
 _linesep_regexp = re.compile("\r?\n")
 
+# Status stuff
+STATUS_DISCONNECTED = 'Disconnected'
+STATUS_CONNECTING = 'Connecting'
+STATUS_CONNECTED = 'Connected'
+
 class ServerConnection(Connection):
 	"""This class represents an IRC server connection.
 
 	ServerConnection objects are instantiated by calling the server
 	method on an IRC object.
 	"""
-
+	
 	def __init__(self, irclibobj):
 		Connection.__init__(self, irclibobj)
-		self.connected = 0  # Not connected yet.
-
+		
+		self.status = STATUS_DISCONNECTED
+	
 	def connect(self, server, port, nickname, password=None, username=None,
 				ircname=None, vhost=None):
 		"""Connect/reconnect to a server.
@@ -392,9 +400,9 @@ class ServerConnection(Connection):
 
 		Returns the ServerConnection object.
 		"""
-		if self.connected:
+		if self.status != STATUS_DISCONNECTED:
 			self.quit("Changing server")
-
+		
 		self.sock = None
 		self.previous_buffer = ""
 		self.handlers = {}
@@ -408,7 +416,7 @@ class ServerConnection(Connection):
 		self.password = password
 		self.localhost = socket.gethostname()
 		
-		if vhost:
+		if vhost is not None:
 			try:
 				res = socket.getaddrinfo(vhost, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)[0]
 				af, socktype, proto, canonname, sa = res
@@ -420,20 +428,30 @@ class ServerConnection(Connection):
 		else:
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		
+		# Set ourselves to non-blocking
+		self.sock.setblocking(0)
+		
 		try:
 			self.sock.connect((self.server, self.port))
-		except socket.error, x:
-			raise ServerConnectionError, x
-		self.connected = 1
+		except socket.error, msg:
+			if msg[0] == errno.EINPROGRESS:
+				self.status = STATUS_CONNECTING
+				pass
+			else:
+				raise ServerConnectionError, msg[0]
+		
+		return self
+	
+	def connected(self):
+		self.status = STATUS_CONNECTED
 		if self.irclibobj.fn_to_add_socket:
 			self.irclibobj.fn_to_add_socket(self.sock)
-
+		
 		# Log on...
 		if self.password:
 			self.pass_(self.password)
 		self.nick(self.nickname)
 		self.user(self.username, self.localhost, self.server, self.ircname)
-		return self
 	
 	def close(self):
 		"""Close the connection.
@@ -447,7 +465,7 @@ class ServerConnection(Connection):
 
 	def _get_socket(self):
 		"""[Internal]"""
-		if self.connected:
+		if self.status != STATUS_DISCONNECTED:
 			return self.sock
 		else:
 			return None
@@ -473,7 +491,11 @@ class ServerConnection(Connection):
 
 		return self.real_nickname
 
-	def process_data(self):
+	def can_write(self):
+		if self.status == STATUS_CONNECTING:
+			self.connected()
+	
+	def can_read(self):
 		"""[Internal]"""
 
 		try:
@@ -593,7 +615,7 @@ class ServerConnection(Connection):
 
 		Returns true if connected, otherwise false.
 		"""
-		return self.connected
+		return (self.status == STATUS_CONNECTED)
 
 	def add_global_handler(self, *args):
 		"""Add global handler.
@@ -626,10 +648,10 @@ class ServerConnection(Connection):
 
 			message -- Quit message.
 		"""
-		#if self.connected == 0:
-		#	return
+		if self.status == STATUS_DISCONNECTED:
+			return
+		self.status = STATUS_DISCONNECTED
 		
-		self.connected = 0
 		try:
 			self.sock.close()
 		except socket.error, x:

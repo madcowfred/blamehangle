@@ -5,13 +5,13 @@ import types
 from classes.Constants import *
 from classes.Userlist import Userlist
 
-from classes.irclib import ServerConnectionError
+from classes.irclib import ServerConnectionError, STATUS_DISCONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
 
 # ---------------------------------------------------------------------------
 
-STATUS_DISCONNECTED = 'Disconnected'
-STATUS_CONNECTING = 'Connecting'
-STATUS_CONNECTED = 'Connected'
+#STATUS_DISCONNECTED = 'Disconnected'
+#STATUS_CONNECTING = 'Connecting'
+#STATUS_CONNECTED = 'Connected'
 
 CONNECT_TIMEOUT = 40
 CONNECT_HOLDOFF = 5
@@ -94,10 +94,10 @@ class WrapConn:
 			tolog = 'Connection failed: %s' % x
 			self.connlog(LOG_ALWAYS, tolog)
 			
-			self.status = STATUS_DISCONNECTED
+			self.conn.status = STATUS_DISCONNECTED
 		
-		else:
-			self.status = STATUS_CONNECTING
+		#else:
+		#	self.status = STATUS_CONNECTING
 		
 		self.last_connect = time.time()
 	
@@ -112,7 +112,7 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	# Reset ourselves to the disconnected state
 	def disconnected(self):
-		self.status = STATUS_DISCONNECTED
+		#self.status = STATUS_DISCONNECTED
 		self.stoned = 0
 		self.trynick = 0
 		
@@ -131,7 +131,7 @@ class WrapConn:
 	# Our nick is in use
 	def nicknameinuse(self, nick):
 		# While trying to connect!
-		if self.status == STATUS_CONNECTING:
+		if self.conn.status == STATUS_CONNECTING:
 			if nick == self.conn.real_nickname:
 				if len(self.nicks) > 1:
 					self.trynick += 1
@@ -150,7 +150,7 @@ class WrapConn:
 				self.conn.nick(nick)
 		
 		# Nick is still in use, try again later
-		elif self.status == STATUS_CONNECTED:
+		elif self.conn.status == STATUS_CONNECTED:
 			if nick != self.conn.real_nickname:
 				self.last_nick = time.time()
 	
@@ -173,16 +173,16 @@ class WrapConn:
 	# -----------------------------------------------------------------------
 	
 	def run_sometimes(self, currtime):
-		if self.status == STATUS_DISCONNECTED and (currtime - self.last_connect) >= CONNECT_HOLDOFF:
+		if self.conn.status == STATUS_DISCONNECTED and (currtime - self.last_connect) >= CONNECT_HOLDOFF:
 			self.jump_server()
 		
 		# Connecting stuff
-		elif self.status == STATUS_CONNECTING and (currtime - self.last_connect) >= CONNECT_TIMEOUT:
+		elif self.conn.status == STATUS_CONNECTING and (currtime - self.last_connect) >= CONNECT_TIMEOUT:
 			self.connlog(LOG_ALWAYS, "Connection failed: timed out")
 			self.conn.disconnect()
 		
 		# Connected stuff!
-		elif self.status == STATUS_CONNECTED:
+		elif self.conn.status == STATUS_CONNECTED:
 			# If we still don't have our nick, try again
 			if self.conn.real_nickname != self.nicks[0]:
 				if currtime - self.last_nick >= 30:

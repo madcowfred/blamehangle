@@ -97,7 +97,7 @@ class ChatterGizmo(Child):
 	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
 		for wrap in self.Conns.values():
-			if wrap.status == STATUS_CONNECTED:
+			if wrap.conn.status == STATUS_CONNECTED:
 				wrap.conn.quit(quitmsg)
 		
 		self.stopping = 1
@@ -119,7 +119,7 @@ class ChatterGizmo(Child):
 		# Stop if we're all done
 		if self.stopping:
 			for wrap in self.Conns.values():
-				if wrap.status == STATUS_CONNECTED:
+				if wrap.conn.status == STATUS_CONNECTED:
 					return
 			
 			self.stopnow = 1
@@ -129,7 +129,7 @@ class ChatterGizmo(Child):
 			last, conn, connect_id, chan = rejoin
 			wrap = self.Conns[conn]
 			
-			if wrap.status != STATUS_CONNECTED or wrap.connect_id != connect_id:
+			if wrap.conn.status != STATUS_CONNECTED or wrap.connect_id != connect_id:
 				self.__Rejoins.remove(rejoin)
 				continue
 			
@@ -192,7 +192,7 @@ class ChatterGizmo(Child):
 		wrap = self.Conns[conn]
 		
 		wrap.connect_id += 1
-		wrap.status = STATUS_CONNECTED
+		wrap.conn.status = STATUS_CONNECTED
 		
 		tolog = 'Connected to %s:%d' % wrap.server
 		self.connlog(conn, LOG_ALWAYS, tolog)
