@@ -47,7 +47,7 @@ MAX_NEWS_SEARCH_RESULTS = 5
 NEWS_QUERY = "SELECT title, url, description FROM news WHERE title = %s"
 INSERT_QUERY = "INSERT INTO news (title, url, description, time) VALUES (%s,%s,%s,%s)"
 TIME_QUERY = "DELETE FROM news WHERE time < %s"
-SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE title like "%%%s%%"'
+SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 
 NEWS_SEARCH_RE = re.compile("^news (?P<search_text>.+)$")
 RSS_LIST_RE = re.compile(r'^listfeeds$')
@@ -262,12 +262,32 @@ class News(Plugin):
 		
 		elif event.name == NEWS_SEARCH:
 			search_text = event.match.group('search_text')
-			search_text = search_text.replace("%", "\%")
-			search_text = search_text.replace('"', '\\\"')
-			search_text = search_text.replace("'", "\\\'")
-			query = (SEARCH_QUERY % search_text, )
-			self.dbQuery(event, query)
-			
+			if len(search_text) < 5:
+				self.sendReply(event, 'Search query is too short!')
+			elif len(search_text) > 50:
+				self.sendReply(event, 'Search query is too long!')
+			else:
+				search_text = search_text.replace("%", "\%")
+				search_text = search_text.replace('"', '\\\"')
+				search_text = search_text.replace("'", "\\\'")
+				
+				words = search_text.split()
+				
+				if len(words) > 8:
+					self.sendReply(event, 'Search query contains too many words!')
+				else:
+					crits = []
+					for word in words:
+						crit = 'title like "%%%s%%"' % word
+						crits.append(crit)
+					
+					critstr = ' and '.join(crits)
+					query = (SEARCH_QUERY % critstr, )
+					
+					print query
+					
+					self.dbQuery(event, query)
+		
 		elif event.name == NEWS_RSS:
 			name = event.args[0]
 			feed = self.RSS_Feeds[name]
