@@ -14,8 +14,8 @@ WORD_ANTONYM = "WORD_ANTONYM"
 
 wordbit = "(?P<word>[^ ]+)$"
 WORD_RHYME_RE = re.compile("rhyme +" + wordbit)
-WORD_SYNONYM_RE = re.compile("synonym +" + wordbit)
-WORD_ANTONYM_RE = re.compile("antonym +" + wordbit)
+WORD_SYNONYM_RE = re.compile("synonyms +" + wordbit)
+WORD_ANTONYM_RE = re.compile("antonyms +" + wordbit)
 
 RHYME_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&org1=syl&org2=sl"
 SYNONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l"
@@ -111,6 +111,7 @@ class WordStuff(Plugin):
 					# loop through all the results
 					while not line.startswith("Want more ideas?") \
 					and not line.startswith("Commonly searched words are") \
+					and not line.endswith(".") \
 					and numfound < MAX_WORD_RESULTS:
 						if line and not line.endswith(":"):
 							# this is a word, not a "2 syllables:" line or
