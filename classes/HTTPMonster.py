@@ -46,6 +46,10 @@ class HTTPMonster(Child):
 
 def URLThread(parent, message):
 	url, returnme = message.data
+	
+	tolog = 'Spawning thread to fetch URL: %s' % url
+	parent.putlog(LOG_DEBUG, tolog)
+	
 	try:
 		# get the page
 		the_page = urlopen(url, parent.user_agent)
@@ -76,7 +80,10 @@ def URLThread(parent, message):
 			fixed = '"' + pagetext[start:end - 1].replace("'", "%39") + '"'
 			pagetext = pre + 'href=' + fixed + post
 			m = dodgy_html_check(pagetext)
-
+		
+		tolog = 'Finished fetching URL: %s' % url
+		parent.putlog(LOG_DEBUG, tolog)
+		
 		data = [pagetext, returnme]
 		message = Message('HTTPMonster', message.source, REPLY_URL, data)
 		parent.outQueue.put(message)
