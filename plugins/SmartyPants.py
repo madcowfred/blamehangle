@@ -10,6 +10,7 @@ database trickery.
 
 import random
 import re
+import shlex
 import time
 import types
 
@@ -55,8 +56,8 @@ INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
-LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
-LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value ILIKE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
+LISTKEYS_QUERY = "SELECT name FROM factoids WHERE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
+LISTVALUES_QUERY = "SELECT name FROM factoids WHERE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -347,12 +348,38 @@ class SmartyPants(Plugin):
 		for char in ('%', '*'):
 			findme = findme.replace(char, '\\%s' % char)
 		
+		# Pick the right query
 		if trigger.name == '__Query_List_Keys':
 			query = LISTKEYS_QUERY
+			field = 'name'
 		elif trigger.name == '__Query_List_Values':
 			query = LISTVALUES_QUERY
+			field = 'value'
 		
-		self.dbQuery(trigger, self.__Fact_Search, query, findme)
+		# Build our SQL restraints
+		crits, args = [], []
+		
+		# Parse the text and build our silly query
+		words = shlex.split(findme)
+		for word in words:
+			# Negative
+			if word.startswith('-'):
+				word = word[1:]
+				crit = '%s NOT ILIKE %%s' % (field)
+				crits.append(crit)
+			# Positive
+			else:
+				if word.startswith('+'):
+					word = word[1:]
+				crit = '%s ILIKE %%s' % (field)
+				crits.append(crit)
+			
+			arg = '%%%s%%' % (word)
+			args.append(arg)
+		
+		# Off we go
+		query = query % (' AND '.join(crits))
+		self.dbQuery(trigger, self.__Fact_Search, query, *args)
 	
 	def __Query_List_Keys(self, trigger):
 		self.__Query_Search(trigger)
