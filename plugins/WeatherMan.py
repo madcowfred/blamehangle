@@ -279,7 +279,15 @@ class WeatherMan(Plugin):
 				
 				if chunks[0] == 'Wind':
 					parts = chunks[1].split()
-					data['wind'] = '%s %s' % (parts[2], self.GetWind(trigger, parts[6]))
+					
+					if parts[0] == 'Variable':
+						data['wind'] = '%s %s' % (parts[0], self.GetWind(trigger, parts[2]))
+						if len(parts) > 7 and parts[6] == 'gusting':
+							data['wind'] = '%s (gusting to %s)' % (data['wind'], self.GetWind(trigger, parts[9]))
+					else:
+						data['wind'] = '%s %s' % (parts[2], self.GetWind(trigger, parts[6]))
+						if len(parts) > 11 and parts[10] == 'gusting':
+							data['wind'] = '%s (gusting to %s)' % (data['wind'], self.GetWind(trigger, parts[12]))
 				
 				elif chunks[0] == 'Visibility':
 					data['visibility'] = chunks[1]
