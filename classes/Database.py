@@ -143,7 +143,9 @@ def DataThread(parent, db, myindex):
 		
 		# we have a query
 		else:
-			parent.putlog(LOG_DEBUG, 'Actioning a request')
+			tolog = '%s : Actioning a request' % \
+				parent.threads[myindex][0].getName()
+			parent.putlog(LOG_DEBUG, tolog)
 			results = []
 			toreturn, queries = message.data
 			
