@@ -102,12 +102,12 @@ class WeatherMan(Plugin):
 				# Split into lines that aren't empty
 				lines = [s for s in mangled.splitlines() if s.strip()]
 				
-				
 				# Extract current conditions!
 				data['currently'] = lines[1]
 				data['weather'] = lines[2]
 				data['hi'] = lines[3][3:]
 				data['lo'] = lines[4][3:]
+				
 				
 				#if broken:
 				#	self.sendReply(trigger, "Failed to parse page properly")
