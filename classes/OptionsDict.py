@@ -8,6 +8,6 @@ class OptionsDict(dict):
 	def get_net(self, option, trigger, chan=None):
 		network = trigger.conn.options['name'].lower()
 		if chan is None:
-			return self[option].get(network, None)
+			return self.get(option, {}).get(network, None)
 		else:
-			return self[option].get(network, {}).get(chan.lower(), None)
+			return self.get(option, {}).get(network, {}).get(chan.lower(), None)

@@ -301,6 +301,8 @@ class WeatherMan(Plugin):
 		c_val = ToCelsius(f_val)
 		
 		format = self.Options.get_net('format', trigger, trigger.target)
+		if format is None:
+			format = self.Options['default_format']
 		
 		if format == 'both':
 			return '%sC (%sF)' % (c_val, f_val)
@@ -316,6 +318,8 @@ class WeatherMan(Plugin):
 		kph_val = ToKilometers(mph_val)
 		
 		format = self.Options.get_net('format', trigger, trigger.target)
+		if format is None:
+			format = self.Options['default_format']
 		
 		if format == 'both':
 			return '%s kph (%s mph)' % (kph_val, mph_val)
