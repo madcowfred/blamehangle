@@ -17,8 +17,8 @@ from classes.Constants import *
 import re
 
 SELECT_QUERY = "SELECT value FROM karma WHERE name = %s"
-INSERT_QUERY = "INSERT INTO karma VALUES ('%s',%d)"
-UPDATE_QUERY = "UPDATE karma SET value = value + %d WHERE name = %s"
+INSERT_QUERY = "INSERT INTO karma VALUES (%s,%s)"
+UPDATE_QUERY = "UPDATE karma SET value = value + %s WHERE name = %s"
 
 KARMA_PLUS = "KARMA_PLUS"
 KARMA_MINUS = "KARMA_MINUS"
@@ -27,7 +27,7 @@ KARMA_MOD = "KARMA_MOD"
 
 PLUS_RE = re.compile("^.*(?=\+\+$)")
 MINUS_RE = re.compile("^.*(?=--$)")
-LOOKUP_RE = re.compile("^karma .*(?P<name>?=$|\?$)")
+LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
 class Karma(Plugin):
 	"""
@@ -56,7 +56,7 @@ class Karma(Plugin):
 		[name], event, conn, IRCtype, target, userinfo = message.data
 
 		returnme = [name, event, conn, IRCtype, target, userinfo]
-		data = [returnme, (SELECT_QUERY, [])]
+		data = [returnme, (SELECT_QUERY, [name])]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
 	#------------------------------------------------------------------------
@@ -65,35 +65,38 @@ class Karma(Plugin):
 		result, [name, event, conn, IRCtype, target, userinfo] = message.data
 		
 		if event == KARMA_LOOKUP:
-			if result == []:
+			if result == [()]:
 				# no karma!
 				replytext = "%s has neutral karma." % name
 				reply = [replytext, conn, IRCtype, target, userinfo]
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 			else:
-				name, value = result
-				replytext = "%s has karma of %d" % (name, value)
+				info = result[0][0]
+				if info['value'] == 0:
+					replytext = "%s has neutral karma." % name
+				else:
+					replytext = "%s has karma of %d" % (name, info['value'])
 				reply = [replytext, conn, IRCtype, target, userinfo]
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 		elif event == KARMA_PLUS:
-			returnme = [text, KARMA_MOD, conn, IRCtype, target, userinfo]
-			if result == []:
+			returnme = [name, KARMA_MOD, conn, IRCtype, target, userinfo]
+			if result == [()]:
 				# no karma, so insert as 1
-				data = [returnme, (INSERT_QUERY, [1, name])]
+				data = [returnme, (INSERT_QUERY, [name, 1])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 			else:
 				# increment existing karma
-				name, value = result
+				#name, value = [result]
 				data = [returnme, (UPDATE_QUERY, [1, name])]
 				self.sendMessage('DataMonkey', REQ_QUERY, data)
 				
 		elif event == KARMA_MINUS:
-			returnme = [text, KARMA_MOD, conn, IRCtype, target, userinfo]
-			if result == []:
+			returnme = [name, KARMA_MOD, conn, IRCtype, target, userinfo]
+			if result == [()]:
 				# no karma, so insert as -1
-				data = [returnme, (INSERT_QUERY, [1, name])]
-				self.sendMessage('DataMonkey', DB_QUERY, data)
+				data = [returnme, (INSERT_QUERY, [name, -1])]
+				self.sendMessage('DataMonkey', REQ_QUERY, data)
 			else:
 				# decrement existing karma
 				data = [returnme, (UPDATE_QUERY, [-1, name])]

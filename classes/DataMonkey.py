@@ -1,6 +1,7 @@
 
 from Queue import Queue
 from thread import start_new_thread
+import time
 
 # ---------------------------------------------------------------------------
 
@@ -19,7 +20,7 @@ class DataMonkey(Child):
 	DBs = []
 	Requests = []
 	
-	Last_Status = 0
+	Last_Status = time.time()
 	
 	def setup(self):
 		self.Num_Connections = self.Config.getint('database', 'connections')

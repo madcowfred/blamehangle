@@ -11,5 +11,5 @@
 #----------------------------------------------------------------------------#
 
 from plugins.SP2 import SamplePlugin
-#from plugins.Karma import Karma
+from plugins.Karma import Karma
 
