@@ -276,11 +276,12 @@ class GrabBT(Plugin):
 				replytext = 'ERROR!'
 			else:
 				# block size * total blocks
-				totalgb = info[1] * info[2] / 1024 / 1024 / 1024
+				totalgb = float(info[1]) * info[2] / 1024 / 1024 / 1024
 				# block size * free blocks for non-superman
-				freegb = info[1] * info[4] / 1024 / 1024 / 1024
+				freegb = float(info[1]) * info[4] / 1024 / 1024 / 1024
 				
-				replytext = '%.1f of %.1f (%d%%) GB free' % (freegb, totalgb, (freegb/totalgb*100))
+				per = freegb / totalgb * 100
+				replytext = '%.1fGB of %.1fGB (%d%%) free' % (freegb, totalgb, per)
 		
 		else:
 			cmdline = '/bin/df -k %s' % self._new_dir
@@ -288,10 +289,11 @@ class GrabBT(Plugin):
 			parts = lines[1].split()
 			
 			if len(parts) >= 4:
-				totalgb = long(parts[1]) / 1024 / 1024
-				freegb = long(parts[3]) / 1024 / 1024
+				totalgb = float(parts[1]) / 1024 / 1024
+				freegb = float(parts[3]) / 1024 / 1024
 				
-				replytext = '%.1f of %.1f (%d%%) GB free' % (freegb, totalgb, (freegb/totalgb*100))
+				per = freegb / totalgb * 100
+				replytext = '%.1f of %.1f (%d%%) GB free' % (freegb, totalgb, per)
 			else:
 				replytext = 'ERROR!'
 		
