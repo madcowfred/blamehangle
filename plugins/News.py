@@ -141,7 +141,7 @@ class News(Plugin):
 
 	def run_sometimes(self, currtime):
 		# Periodically check if we need to send some text out to IRC
-		if currtime - self.__Last_Spam_Time >= 30:
+		if currtime - self.__Last_Spam_Time >= self.__spam_delay:
 			self.__Last_Spam_Time = currtime
 			if self.__outgoing:
 				# We pull out a random item from our outgoing list so that
@@ -152,17 +152,18 @@ class News(Plugin):
 				self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 				
 
-				tolog = "%s news items remaining in outgoing queue" % len(self.__outgoing)
-				self.putlog(LOG_DEBUG, tolog)
+				tolog = "%s news item(s) remaining in outgoing queue" % len(self.__outgoing)
+				self.putlog(LOG_ALWAYS, tolog)
 			self.__pickle(self.__outgoing, '.news.out_pickle')
 		
 		# Once an hour, go and check for old news and purge it from the
 		# db
 		if currtime - self.__Last_Clearout_Time >= 3600:
+			tolog = "Purging old news"
+			self.putlog(LOG_ALWAYS, tolog)
 			self.__Last_Clearout_Time = currtime
-			two_days = 172800
-			two_days_ago = currtime - two_days
-			data = [(TIME_CHECK, None), (TIME_QUERY, [two_days_ago])]
+			old_time = currtime - self.__old_threshold
+			data = [(TIME_CHECK, None), (TIME_QUERY, [old_time])]
 			self.sendMessage('DataMonkey', REQ_QUERY, data)
 
 	# -----------------------------------------------------------------------
@@ -234,25 +235,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 
-	# Upon shutdown, we need to save the news items we have seen, otherwise
-	# the bot will spam every news story it sees when it is reloaded
-	#def _message_REQ_SHUTDOWN(self, message):
-	#	Plugin._message_REQ_SHUTDOWN(self, message)
-	#	self.__pickles()
-
-	# -----------------------------------------------------------------------
-	
-	def __pickles(self):
-		self.__pickle(self.__google_world_news, '.news.gwn_pickle')
-		self.__pickle(self.__google_sci_news, '.news.gsci_pickle')
-		self.__pickle(self.__ananova_news, '.news.ana_pickle')
-		self.__pickle(self.__outgoing, '.news.out_pickle')
-
-	# -----------------------------------------------------------------------
-	
-	# Cache all the news we have discovered and the list of news yet to
-	# announce on IRC, so that when the bot is restarted we can remember
-	# all these values
+	# Pickle an object into the given file
 	def __pickle(self, obj, pickle):
 		try:
 			f = open(pickle, "wb")
@@ -268,7 +251,7 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 
-	# Restore our cache of news titles we have found
+	# Unpickle an object from the given file
 	def __unpickle(self, pickle):
 		try:
 			f = open(pickle, "rb")
@@ -277,8 +260,8 @@ class News(Plugin):
 			pass
 		else:
 			# We have a pickle!
-			tolog = "trying to read pickle from %s" % pickle
-			self.putlog(LOG_DEBUG, tolog)
+			tolog = "loading pickle from %s" % pickle
+			self.putlog(LOG_ALWAYS, tolog)
 			obj = cPickle.load(f)
 			f.close()
 			return obj
@@ -304,7 +287,7 @@ class Google(HTMLParser):
 					href = value
 				elif attr == 'title':
 					title = value
-			if title:
+			if href and title:
 				self.news[title] = href
 
 # ---------------------------------------------------------------------------
