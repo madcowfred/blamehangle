@@ -37,8 +37,7 @@ class Postman:
 		self.__Stopping = 0
 		
 		self.__Setup_From_Config()
-		
-		
+
 		# Install our signal handlers here
 		# note, win32 has no SIGHUP signal
 		if hasattr(signal, 'SIGHUP'):
@@ -49,7 +48,7 @@ class Postman:
 		# Open our log file and rotate it if we have to
 		self.__Log_Open()
 		self.__Log_Rotate()
-		
+
 		# Initialise the global message queue
 		self.inQueue = []
 		
@@ -414,5 +413,6 @@ class Postman:
 		
 		# Tell everyone we reloaded
 		self.sendMessage(None, REQ_REHASH, None)
+	
 
 # ---------------------------------------------------------------------------
