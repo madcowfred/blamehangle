@@ -44,7 +44,7 @@ class Message:
 	# how long it's been since we were sent.
 	def __str__(self):
 		if self.ident == REPLY_URL:
-			return '%s --> %s: (%s) <data omitted>' % (self.sourec, self.targetstring, self.ident)
+			return '%s --> %s: (%s) <data omitted>' % (self.source, self.targetstring, self.ident)
 		else:
 			return '%s --> %s: (%s) %s' % (self.source, self.targetstring, self.ident, self.data)
 
