@@ -13,7 +13,7 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-GOOGLE_URL = 'http://www.google.com/search?q=%s&num=5'
+GOOGLE_URL = 'http://www.google.com/search?q=%s'
 
 RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
 CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
@@ -179,7 +179,7 @@ class Google(Plugin):
 					if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam') or \
 						trigger.IRCType == IRCT_MSG:
 						
-						for title, url in results[1:]:
+						for title, url in results[1:5]:
 							replytext = '%s - %s' % (title, url)
 							self.sendReply(trigger, replytext)
 				
