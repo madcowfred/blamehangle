@@ -24,7 +24,7 @@ MAX_TITLE_LENGTH = 200
 
 # ---------------------------------------------------------------------------
 
-NEWS_QUERY = 'SELECT title, url, description FROM news WHERE title IN (%s) OR url IN (%s)'
+NEWS_QUERY = 'SELECT title, url, description, added FROM news WHERE title IN (%s) OR url IN (%s)'
 INSERT_QUERY = 'INSERT INTO news (title, url, description, added) VALUES (%s,%s,%s,%s)'
 TIME_QUERY = 'DELETE FROM news WHERE added < %s'
 SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s ORDER BY added DESC'
@@ -620,10 +620,13 @@ class News(Plugin):
 			
 			# We found exactly one item
 			else:
-				if result[0]['description']:
-					replytext = '%(title)s - %(url)s : %(description)s' % result[0]
-				else:
-					replytext = '%(title)s - %(url)s' % result[0]
+				row = result[0]
+				
+				replytext = '\x02[\x02%s ago\x02]\x02 %s - %s' % (
+					NiceTime(row['added'], row['title'], row['url'])
+				
+				if row['description']:
+					replytext = '%s : %s' % (replytext, row['description'])
 		
 		# Spit out a reply
 		self.sendReply(trigger, replytext)
