@@ -206,7 +206,7 @@ class WeatherMan(Plugin):
 def CandF(f_val):
 	c_val = ToCelsius(f_val)
 	f_val = f_val.strip()
-	return '%s°C (%s°F)' % (c_val, f_val)
+	return '%sC (%sF)' % (c_val, f_val)
 
 def ToCelsius(val):
 	try:
