@@ -1,9 +1,11 @@
 critical:
-	* HTTPMonster (anyone)
-	* SmartyPants (zhar)
+	* HTTPMonster - work on making the page fetching not block the entire
+	                app (anyone)
+	* SmartyPants (anyone)
+	* News - think up a replacement for HTMLParser, since it seems to
+	         suck (anyone)
 
 important:
-	* finish News (anyone)
 	* Port the global ignore list from MCO? (fred)
 	* user/access list for the SmartyPants (zhar?)
 	* finalise the factoid table structure, and convert db.dump (both)
