@@ -498,21 +498,15 @@ class News(Plugin):
 		
 		trigger.articles = articles
 		
-		# If we just have one article, we can go the easy way
-		#
-		if len(trigger.articles) == 1:
-			self.dbQuery(trigger, self.__News_Reply, NEWS_QUERY, trigger.articles[0][0])
+		# Build our query
+		query = NEWS_QUERY
+		args = [trigger.articles[0][0]]
 		
-		# If we have more, construct a monster query
-		else:
-			query = NEWS_QUERY
-			args = [trigger.articles[0][0]]
-			
-			for article in trigger.articles[1:]:
-				query = query + ' OR title = %s'
-				args.append(article[0])
-			
-			self.dbQuery(trigger, self.__News_Reply, query, *args)
+		for article in trigger.articles[1:]:
+			query = query + ' OR title = %s'
+			args.append(article[0])
+		
+		self.dbQuery(trigger, self.__News_Reply, query, *args)
 	
 	# -----------------------------------------------------------------------
 	# We have a reply from the database, maybe insert some stuff now
