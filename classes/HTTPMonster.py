@@ -177,8 +177,7 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# Connection has data to read
 	def handle_read(self):
-		data = self.recv(512)
-		self.data += data
+		self.data += self.recv(2048)
 		
 		if not self.header:
 			chunks = self.data.split('\r\n\r\n', 1)
@@ -194,7 +193,8 @@ class async_http(asyncore.dispatcher_with_send):
 	# Connection has been closed
 	def handle_close(self):
 		# We have some data, might as well process it?
-		if len(pagetext) > 0:
+		if self.header and len(self.data) > 0:
+			pagetext = self.data
 			m = dodgy_html_check(pagetext)
 			while m:
 				pre = pagetext[:m.start()]
