@@ -12,8 +12,6 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import *
 
-from classes import pymetar
-
 # ---------------------------------------------------------------------------
 
 WEATHER_URL = 'http://search.weather.yahoo.com/search/weather2?p=%s'
@@ -37,10 +35,6 @@ METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
 WEATHER_METAR = 'WEATHER_METAR'
 METAR_RE = re.compile('^metar (?P<station>\S+)$')
 METAR_HELP = '\02metar\02 <station id> : Retrieve coded METAR weather information.'
-
-WEATHER_METARD = 'WEATHER_METARD'
-METARD_RE = re.compile('^metard (?P<station>\S+)$')
-METARD_HELP = '\02metard\02 <station id> : Retrieve decoded METAR weather information.'
 
 # ---------------------------------------------------------------------------
 
@@ -87,7 +81,6 @@ class WeatherMan(Plugin):
 		self.setTextEvent(WEATHER_SHORT, SHORT_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# METAR
 		self.setTextEvent(WEATHER_METAR, METAR_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		self.setTextEvent(WEATHER_METARD, METARD_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# TAF
 		self.setTextEvent(WEATHER_TAF, TAF_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		
@@ -97,7 +90,6 @@ class WeatherMan(Plugin):
 		self.setHelp('weather', 'weatherlong', LONG_HELP)
 		self.setHelp('weather', 'forecast', FORECAST_HELP)
 		self.setHelp('weather', 'metar', METAR_HELP)
-		self.setHelp('weather', 'metard', METARD_HELP)
 		self.setHelp('weather', 'taf', TAF_HELP)
 		self.registerHelp()
 	
@@ -111,12 +103,10 @@ class WeatherMan(Plugin):
 	_trigger_WEATHER_FORECAST = _trigger_WEATHER_SHORT
 	
 	# -----------------------------------------------------------------------
-	# Someone wants METAR data, possibly decoded
+	# Someone wants METAR data
 	def _trigger_WEATHER_METAR(self, trigger):
 		url = METAR_URL % trigger.match.group('station').upper()
 		self.urlRequest(trigger, self.__Parse_METAR, url)
-	
-	_trigger_WEATHER_METARD = _trigger_WEATHER_METAR
 	
 	# -----------------------------------------------------------------------
 	# Someone wants TAF data, the nutter
@@ -274,81 +264,25 @@ class WeatherMan(Plugin):
 			replytext = "No such station ID '%s'" % stationid
 			self.sendReply(trigger, replytext)
 		
-		# Use pymetar to parse it
+		# Ok, off we go
 		else:
-			# Create the un-mangled report?
-			report = pymetar.WeatherReport(stationid)
-			report.fullreport = page_text
+			lines = page_text.splitlines()
 			
-			# Parse the report
-			report = pymetar.ReportParser(report).ParseReport()
-
-			# Gather data
-			chunks = []
+			# Get the location
+			i = lines[0].find(' (')
+			if i >= 0:
+				location = lines[0][:i]
+			else:
+				location = 'Unknown location'
 			
-			# A coded report, for masochists
-			if trigger.name == WEATHER_METAR:
-				chunk = report.getRawMetarCode()
-				chunks.append(chunk)
-			
-			# A decoded report
-			elif trigger.name == WEATHER_METARD:
-				# Add updated time
-				chunk = 'Updated: %s' % report.getISOTime()
-				chunks.insert(0, chunk)
-				
-				# Weather
-				if report.getWeather() is not None:
-					chunk = 'Weather: %s' % report.getWeather()
-					chunks.append(chunk)
-				
-				# Sky conditions
-				if report.getSkyConditions() is not None:
-					chunk = 'Sky: %s' % report.getSkyConditions()
-					chunks.append(chunk)
-				
-				# Temperature
-				if report.getTemperatureCelsius() is not None:
-					chunk = 'Temperature: %.1fC' % report.getTemperatureCelsius()
-					chunks.append(chunk)
-				
-				# Wind
-				if report.getWindSpeed() > 0.0:
-					chunk = 'Wind: %s %dkt' % (report.getWindCompass(), report.getWindSpeed())
-					if report.windgusts:
-						chunk += ' (gusting to %dkt)' % report.windgusts
-				else:
-					chunk = 'Wind: calm'
-				chunks.append(chunk)
-				
-				# Wind chill
-				if report.windchill:
-					chunk = 'Windchill: %.1fC' % report.windchill
-					chunks.append(chunk)
-				
-				# Visibility
-				if report.getVisibility() is not None:
-					chunk = 'Visibility: %s' % report.getVisibility()
-					chunks.append(chunk)
-				
-				# Humidity
-				if report.getHumidity() is not None:
-					chunk = 'Humidity: %s%%' % report.getHumidity()
-					chunks.append(chunk)
-				
-				# Air pressure
-				if report.getPressure() is not None:
-					chunk = 'Pressure: %.0f hPa' % report.getPressure()
-					chunks.append(chunk)
-			
+			# Find the encoded data
+			obs = [l for l in page_text.splitlines() if l.startswith('ob: ')]
+			if obs:
+				replytext = '[%s] %s' % (location, obs[0][4:])
+			else:
+				replytext = 'Unable to find observation data.'
 			
 			# Spit it out
-			if chunks:
-				location = '[%s] ' % report.getStationName()
-				replytext = location + ', '.join(chunks)
-			else:
-				replytext = 'Unable to find any weather info.'
-			
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
