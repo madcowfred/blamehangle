@@ -146,13 +146,26 @@ class PluginTextTrigger:
 	
 	def __str__(self):
 		name = self.name
-		nick = self.userinfo.nick
-		IRCType = self.event.IRCType
+		try:
+			nick = self.userinfo.nick
+		except AttributeError:
+			nick = 'None'
+		try:
+			IRCType = self.event.IRCType
+		except AttributeError:
+			IRCType = 'None'
 		target = self.target
 		return "%s, %s: %s, %s" % (name, IRCType, nick, target)
 	
 	def __repr__(self):
 		return "<class PluginTextTrigger:" + self.__str__() + ">"
+
+# ---------------------------------------------------------------------------
+# Needed sometimes for URL stuff, yeck
+class PluginFakeTrigger:
+	def __init__(self, name):
+		self.name = name
+		self.event = PluginTextEvent(name, None, None)
 
 # ---------------------------------------------------------------------------
 
