@@ -365,7 +365,7 @@ class ChatterGizmo(Child):
 	def _handle_pubmsg(self, conn, event):
 		chan = event.target().lower()
 		userinfo = UserInfo(event.source())
-
+		
 		if self.__users.check_user_flags(userinfo, 'ignore'):
 			return
 		
@@ -380,7 +380,7 @@ class ChatterGizmo(Child):
 		
 		# See if it's addressed to anyone
 		addr = 0
-		end = min(10, len(text))
+		end = len(text)
 		for i in range(1, end):
 			if text[i] in (':;,'):
 				if (i + 1) < end and text[i+1] == ' ':
