@@ -245,12 +245,16 @@ class Postman:
 			sys.exit(-1)
 		
 		else:
-			self.__logfile.seek(0, 0)
-			
-			firstline = self.__logfile.readline()
-			if firstline:
-				self.__logdate = firstline[0:10]
-				self.__logfile.seek(0, 2)
+			if self.__logfile.tell() > 0:
+				self.__logfile.seek(0, 0)
+				
+				firstline = self.__logfile.readline()
+				if firstline:
+					self.__logdate = firstline[0:10]
+					self.__logfile.seek(0, 2)
+				
+				else:
+					self.__logdate = time.strftime("%Y/%m/%d")
 			
 			else:
 				self.__logdate = time.strftime("%Y/%m/%d")
