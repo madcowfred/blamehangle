@@ -280,7 +280,15 @@ class AusBOM(Plugin):
 					part = '\02[\02Humidity: %.1f%%\02]\02' % (humidity)
 					parts.append(part)
 					
-					part = '\02[\02Wind: %s %skm/h\02]\02' % (wind_dir, wind_speed)
+					# Wind is a bit messy
+					if wind_dir == '-' and wind_speed == '-':
+						wind_info = 'no data'
+					elif wind_dir == 'CALM':
+						wind_info = 'Calm'
+					else:
+						wind_info = '%s %skm/h' % (wind_dir, wind_speed)
+					
+					part = '\02[\02Wind: %s\02]\02' % (wind_info)
 					parts.append(part)
 				
 				break
