@@ -63,11 +63,11 @@ class Plugin(Child):
 			try:
 				method(trigger)
 			except:
-				replytext = '%s crashed in %s()!' % (self.__class__.__name__, trigger.name)
+				replytext = '%s crashed in %s()!' % (self._name, trigger.name)
 				self.sendReply(trigger, replytext)
 				raise
 		else:
-			raise NameError, 'define %s.%s or override _message_PLUGIN_TRIGGER' % (self.__class__.__name__, trigger.name)
+			raise NameError, 'define %s.%s or override _message_PLUGIN_TRIGGER' % (self._name, trigger.name)
 	
 	# Default DNS reply handler, eek
 	def _message_REPLY_DNS(self, message):
@@ -80,11 +80,11 @@ class Plugin(Child):
 			try:
 				method(trigger, hosts, args)
 			except:
-				replytext = '%s crashed in %s()!' % (self.__class__.__name__, methname)
+				replytext = '%s crashed in %s()!' % (self._name, methname)
 				self.sendReply(trigger, replytext)
 				raise
 		else:
-			raise NameError, 'define %s.%s or override _message_REPLY_DNS' % (self.__class__.__name__, methname)
+			raise NameError, 'define %s.%s or override _message_REPLY_DNS' % (self._name, methname)
 	
 	# Default query reply handler, eek
 	def _message_REPLY_QUERY(self, message):
@@ -97,11 +97,11 @@ class Plugin(Child):
 			try:
 				method(trigger, result)
 			except:
-				replytext = '%s crashed in %s()!' % (self.__class__.__name__, methname)
+				replytext = '%s crashed in %s()!' % (self._name, methname)
 				self.sendReply(trigger, replytext)
 				raise
 		else:
-			raise NameError, 'define %s.%s or override _message_REPLY_QUERY' % (self.__class__.__name__, methname)
+			raise NameError, 'define %s.%s or override _message_REPLY_QUERY' % (self._name, methname)
 	
 	# Default URL reply handler, eek
 	def _message_REPLY_URL(self, message):
@@ -126,11 +126,11 @@ class Plugin(Child):
 			try:
 				method(trigger, resp)
 			except:
-				replytext = '%s crashed in %s()!' % (self.__class__.__name__, methname)
+				replytext = '%s crashed in %s()!' % (self._name, methname)
 				self.sendReply(trigger, replytext)
 				raise
 		else:
-			raise NameError, 'define %s.%s or override _message_REPLY_URL' % (self.__class__.__name__, methname)
+			raise NameError, 'define %s.%s or override _message_REPLY_URL' % (self._name, methname)
 	
 	# -----------------------------------------------------------------------
 	# Extend the default shutdown handler a little, so we can unset help stuff
