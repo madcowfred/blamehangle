@@ -1,14 +1,19 @@
 critical:
 
 important:
-	* convert db.dump once the bot is ready for it, and we have a newer dump
-	  (both + dene)
 
 not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
-	* dict plugin (anyone)
 
 whatever:
 	* Speaking of quotes... random text spammer plugin, for OQ (anyone)
 	* Speaking of random text spammer, random factoid spam? (anyone)
 	* testing! :) (anyone)
+
+
+plugins:
+	* Stock quotes & symbol lookups
+	* dictionary.com lookup
+	* Spam text at intervals (easy way to use PluginTimedEvent?)
+	* SmartyPants: random factoid spam at interval(s)
+	* animenfo.com lookup
