@@ -124,19 +124,11 @@ class Postman:
 		_sleep = time.sleep
 		_time = time.time
 		
-		__always = []
-		__sometimes = []
-		
 		sometimes_counter = 0
 		
 		for child in self.__Children.values():
 			if hasattr(child, 'run_once'):
 				child.run_once()
-			
-			if hasattr(child, 'run_always'):
-				__always.append(child.run_always)
-			if hasattr(child, 'run_sometimes'):
-				__sometimes.append(child.run_sometimes)
 		
 		while 1:
 			try:
@@ -176,28 +168,27 @@ class Postman:
 						# If it's not, send it to each thread listed in targets
 						else:
 							for name in message.targets:
-								try:
+								if name in self.__Children:
 									self.__Children[name].inQueue.put(message)
-								
-								except KeyError:
+								else:
 									tolog = "invalid target for Message ('%s') : %s" % (name, message)
 									self.__Log(LOG_WARNING, tolog)
 				
 				
-				# Check for messages, then run the main loops
-				for child in self.__Children.values():
-					child.handleMessages()
+				# Check for messages, and run any _always loops
+				children = self.__Children.values()
 				
-				for func in __always:
-					func()
+				for child in children:
+					child.handleMessages()
+					
+					if hasattr(child, 'run_always'):
+						child.run_always()
 				
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
 				if sometimes_counter == 4:
 					sometimes_counter = 0
-					
-					currtime = _time()
 					
 					# See if our log file has to rotate
 					self.__Log_Rotate()
@@ -208,15 +199,17 @@ class Postman:
 						self.__Shutdown_Check()
 					
 					# Run anything our children want done occasionally
-					for func in __sometimes:
-						func(currtime)
+					currtime = _time()
+					
+					for child in children:
+						if hasattr(child, 'run_sometimes'):
+							child.run_sometimes(currtime)
 				
 				# Sleep for a while
 				_sleep(0.05)
-		
+			
 			except KeyboardInterrupt:
 				self.__Shutdown('Ctrl-C pressed')
-				pass
 			
 			except:
 				trace = sys.exc_info()
@@ -260,10 +253,9 @@ class Postman:
 		
 		if message.targets:
 			for name in message.targets:
-				try:
+				if name in self.__Children:
 					self.__Children[name].inQueue.put(message)
-				
-				except KeyError:
+				else:
 					tolog = "WARNING: invalid target for Message ('%s')" % name
 					self.__Log(LOG_ALWAYS, tolog)
 		
@@ -400,7 +392,7 @@ class Postman:
 		
 		# re-add Helper to the plugin list, since it will have been clobbered
 		self.__plugin_list.append('Helper')
-
+		
 		# Check if any plugins have been removed from the config.
 		# If so, shut them down
 		for plugin_name in old_plugin_list:
