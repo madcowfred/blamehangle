@@ -5,8 +5,12 @@
 # and logging. Try not to touch this :)
 # ---------------------------------------------------------------------------
 
-import exceptions, sys, time, traceback
+import signal
+import sys
+import time
+import traceback
 from Queue import *
+from exceptions import SystemExit
 
 # ---------------------------------------------------------------------------
 
@@ -34,6 +38,11 @@ class Postman:
 		self.__logfile_filename = self.Config.get('logging', 'log_file')
 		self.__log_debug = self.Config.getboolean('logging', 'debug')
 		self.__log_debug_msg = self.Config.getboolean('logging', 'debug_msg')
+		
+		
+		# Install our signal handlers here
+		signal.signal(signal.SIGHUP, self.SIG_HUP)
+		signal.signal(signal.SIGTERM, self.SIG_TERM)
 		
 		
 		# Open our log file and rotate it if we have to
@@ -69,6 +78,16 @@ class Postman:
 	
 	# -----------------------------------------------------------------------
 	
+	def SIG_HUP(self, signum, frame):
+		self.__Log(LOG_WARNING, 'Received SIGHUP')
+		self.__Reload_Config()
+	
+	def SIG_TERM(self, signum, frame):
+		self.__Log(LOG_WARNING, 'Received SIGTERM')
+		self.__Shutdown('Terminated!')
+	
+	# -----------------------------------------------------------------------
+	
 	def run_forever(self):
 		_sleep = time.sleep
 		_time = time.time
@@ -91,19 +110,9 @@ class Postman:
 						
 						# Reload our config
 						elif message.ident == REQ_LOAD_CONFIG:
-							self.__Log(LOG_ALWAYS, 'Rehashing config...')
+							self.__Reload_Config()
 							
-							self.Config.read(self.ConfigFile)
-							self.__Load_Configs()
-							for child in self.__Children.values():
-								child.Config = self.Config
-							
-							self.sendMessage(None, REQ_REHASH, None)
 							#self.sendMessage('HeadHoncho', REPLY_LOAD_CONFIG, message.data)
-							
-							#mess = Message('Postman', None, REQ_REHASH, [])
-							#for child in self.__Children.values():
-							#	child.inQueue.put(mess)
 						
 						elif message.ident == REQ_SHUTDOWN:
 							self.__Shutdown(message.data[0])
@@ -169,7 +178,7 @@ class Postman:
 				trace = sys.exc_info()
 				
 				# If it's a SystemExit, we're really meant to be stopping now
-				if trace[0] == exceptions.SystemExit:
+				if trace[0] == SystemExit:
 					raise
 				
 				self.__Log(LOG_ALWAYS, '*******************************************************')
@@ -330,5 +339,19 @@ class Postman:
 			for config_file in os.listdir(config_dir):
 				if config_file.endswith(".conf"):
 					self.Config.read(os.path.join(config_dir, config_file))
-					
+	
+	# Reload our config, duh
+	def __Reload_Config(self):
+		self.__Log(LOG_ALWAYS, 'Rehashing config...')
+		
+		# Delete all of our old sections first
+		for section in self.Config.sections():
+			junk = self.Config.remove_section(section)
+		
+		self.Config.read(self.ConfigFile)
+		self.__Load_Configs()
+		
+		# Tell everyone we reloaded
+		self.sendMessage(None, REQ_REHASH, None)
+
 # ---------------------------------------------------------------------------
