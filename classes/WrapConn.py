@@ -60,6 +60,8 @@ class WrapConn:
 		if self.vhost and not hasattr(socket, 'gaierror'):
 			self.parent.connlog("vhost is set, but socket module doesn't have getaddrinfo()!")
 			self.vhost = None
+		
+		self.ignore_strangers = int(self.options.get('ignore_strangers', 0))
 	
 	def connlog(self, level, text):
 		self.parent.connlog(self.conn, level, text)
