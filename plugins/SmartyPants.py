@@ -8,7 +8,6 @@ the scariest plugin included with the bot, due to the mildly complicated
 database trickery.
 """
 
-import copy
 import random
 import re
 import time
@@ -475,23 +474,13 @@ class SmartyPants(Plugin):
 					replytext = '%s is %s' % (row['name'], value)
 					self.sendReply(trigger, replytext)
 			
-			# If it's really a tell, do some badness
+			# If it's really a 'tell', msg the requester and his target
 			elif trigger.name == FACT_TELL:
-				tellnick = trigger.match.group('nick')
+				msgtext = "Told %s that %s is %s" % (tellnick, row['name'], value)
+				self.privmsg(trigger.conn, trigger.userinfo.nick, msgtext)
 				
-				# We have to do a bit of hackery here.. we always send two /msgs in
-				# reply to this event; one to the guy being told, and one to the
-				# guy that triggered the event confirming that we have performed
-				# the telling
-				trigger.event.IRCType = IRCT_MSG
-				replytext = "Told %s that %s is %s" % (tellnick, row['name'], value)
-				self.sendReply(trigger, replytext)
-				
-				dupe = copy.copy(trigger)
-				dupe.userinfo = copy.deepcopy(trigger.userinfo)
-				replytext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, row['name'], value)
-				dupe.userinfo.nick = tellnick
-				self.sendReply(dupe, replytext)
+				msgtext = "%s wants you to know: %s is %s" % (trigger.userinfo.nick, row['name'], value)
+				self.privmsg(trigger.conn, trigger.match.group('nick'), msgtext)
 			
 			
 			# Update the request count and nick
