@@ -8,9 +8,6 @@ important:
 not important but more than whatever:
 	* NickServ auth (fred, since zhar has never even seen a nickserv)
 	* Mobygames/HOTU searches (fred?)
-	* make Children.urlQuery(), much like Children.dbQuery() .. and go through
-	  everything and change all the sendMessage('HTTPMonster, blahblah) things
-	  to use urlQuery() (anyone)
 	* dict plugin (anyone)
 
 whatever:

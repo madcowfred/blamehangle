@@ -56,13 +56,13 @@ class SportsFan(Plugin):
 		league = trigger.match.group('league').lower()
 		url = "http://sports.yahoo.com/" + league + "/"
 
-		self.sendMessage('HTTPMonster', REQ_URL, [url, trigger])
+		self.urlRequest(trigger, url)
 	
 	# -----------------------------------------------------------------------
 
 	# We heard back from Yahoo. yay!
 	def _message_REPLY_URL(self, message):
-		page_text, trigger = message.data
+		trigger, page_text = message.data
 		team = trigger.match.group('team')
 		league = trigger.match.group('league')
 

@@ -83,7 +83,7 @@ class MoneyMangler(Plugin):
 			self.__Currency_Search(trigger)
 	
 	def _message_REPLY_URL(self, message):
-		page_text, (trigger, data) = message.data
+		(trigger, data), page_text = message.data
 		page_text = page_text.replace('&amp;', ' and ')
 		
 		if trigger.name == MONEY_CONVERT:
@@ -126,7 +126,8 @@ class MoneyMangler(Plugin):
 			self.sendReply(trigger, replytext)
 		else:
 			fetchme = EXCHANGE_URL % data
-			self.sendMessage('HTTPMonster', REQ_URL, [fetchme, (trigger, data)])
+			returnme = (trigger, data)
+			self.urlRequest(returnme, fetchme)
 	
 	def __Currency_Search(self, trigger):
 		curr = trigger.match.group('curr').lower()

@@ -66,13 +66,13 @@ class WordStuff(Plugin):
 
 		if trigger.name == WORD_RHYME:
 			url = RHYME_URL % word
-			self.sendMessage('HTTPMonster', REQ_URL, [url, trigger])
+			self.urlRequest(trigger, url)
 		elif trigger.name == WORD_SYNONYM:
 			url = SYNONYM_URL % word
-			self.sendMessage('HTTPMonster', REQ_URL, [url, trigger])
+			self.urlRequest(trigger, url)
 		elif trigger.name == WORD_ANTONYM:
 			url = ANTONYM_URL % word
-			self.sendMessage('HTTPMonster', REQ_URL, [url, trigger])
+			self.urlRequest(trigger, url)
 		else:
 			errtext = "WordStuff got a bad event: %s" % trigger.name
 			raise ValueError, errtext
@@ -83,7 +83,7 @@ class WordStuff(Plugin):
 
 	# We heard back from rhymezone. yay!
 	def _message_REPLY_URL(self, message):
-		page_text, trigger = message.data
+		trigger, page_text = message.data
 		word = trigger.match.group('word').lower()
 
 		# Search through the page for answers

@@ -251,15 +251,15 @@ class News(Plugin):
 		event = message.data
 		
 		if event.name == NEWS_GOOGLE_WORLD:
-			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_WORLD, event])
+			self.urlRequest(event, GOOGLE_WORLD)
 		elif event.name == NEWS_GOOGLE_SCI:
-			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_SCI, event])
+			self.urlRequest(event, GOOGLE_SCI)
 		elif event.name == NEWS_GOOGLE_HEALTH:
-			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_HEALTH, event])
+			self.urlRequest(event, GOOGLE_HEALTH)
 		elif event.name == NEWS_GOOGLE_BIZ:
-			self.sendMessage('HTTPMonster', REQ_URL, [GOOGLE_BIZ, event])
+			self.urlRequest(event, GOOGLE_BIZ)
 		elif event.name == NEWS_ANANOVA:
-			self.sendMessage('HTTPMonster', REQ_URL, [ANANOVA_QUIRK, event])
+			self.urlRequest(event, ANANOVA_QUIRK)
 		
 		elif event.name == NEWS_SEARCH:
 			search_text = event.match.group('search_text')
@@ -272,8 +272,8 @@ class News(Plugin):
 		elif event.name == NEWS_RSS:
 			name = event.args[0]
 			feed = self.RSS_Feeds[name]
-			data = [feed['url'], (event, name)]
-			self.sendMessage('HTTPMonster', REQ_URL, data)
+			returnme = (event, name)
+			self.urlRequest(returnme, feed['url'])
 		
 		elif event.name == RSS_LIST:
 			names = self.RSS_Feeds.keys()
@@ -333,7 +333,7 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 
 	def _message_REPLY_URL(self, message):
-		page_text, event = message.data
+		event, page_text = message.data
 		
 		# RSS feed
 		if type(event) == types.TupleType:

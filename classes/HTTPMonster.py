@@ -108,7 +108,7 @@ def URLThread(parent, myindex):
 
 		# we have something to do
 		else:
-			url, returnme = message.data
+			returnme, url = message.data
 			
 			tolog = 'fetching URL: %s' % url
 			parent.putlog(LOG_DEBUG, tolog)
@@ -160,7 +160,7 @@ def URLThread(parent, myindex):
 				tolog = 'Finished fetching URL: %s' % url
 				parent.putlog(LOG_DEBUG, tolog)
 				
-				data = [pagetext, returnme]
+				data = [returnme, pagetext]
 				message = Message('HTTPMonster', message.source, REPLY_URL, data)
 				parent.outQueue.put(message)
 

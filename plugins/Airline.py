@@ -171,13 +171,13 @@ class Airline(Plugin):
 		
 		# Make the query url to send to travelocity.
 		url = "http://dps1.travelocity.com/dparflifo.ctl?CMonth=%s&CDayOfMonth=%s&CYear=%s&LANG=EN&last_pgd_page=dparrqst.pgd&dep_arpname=&arr_arp_name=&dep_dt_mn_1=%s&dep_dt_dy_1=%s&dep_tm1=12%%3A00pm&aln_name=%s&flt_num=%s&Search+Now.x=89&Search+Now.y=4" % (month, day, year, monthtxt, day, code, flight)
-		self.sendMessage('HTTPMonster', REQ_URL, [url, trigger])
+		self.urlRequest(trigger, url)
 	
 	# -----------------------------------------------------------------------
 	
 	# Travelocity has replied
 	def _message_REPLY_URL(self, message):
-		page_text, trigger = message.data
+		trigger, page_text = message.data
 		
 		# this ugly parsing is ripped right from the pinky java.
 		# .. much like the rest of this plugin, really

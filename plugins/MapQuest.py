@@ -133,13 +133,13 @@ class MapQuest(Plugin):
 
 		url = "http://www.mapquest.com/directions/main.adp?go=1&do=nw&ct=NA&1ah=&1a=&1p=&"+mq_query_string+"&lr=2&x=61&y=11"
 
-		self.sendMessage('HTTPMonster', REQ_URL, [url, trigger])
+		self.urlRequest(trigger, url)
 	
 	# -----------------------------------------------------------------------
 
 	# We heard back from mapquest. yay!
 	def _message_REPLY_URL(self, message):
-		page_text, trigger = message.data
+		trigger, page_text = message.data
 
 		# Search for our info in the page MapQuest gave us
 		s = cStringIO.StringIO(page_text)

@@ -102,6 +102,11 @@ class Child:
 		data = [returnme, queries]
 		self.sendMessage('DataMonkey', REQ_QUERY, data)
 	
+	# Request a URL to be fetched
+	def urlRequest(self, returnme, url):
+		data = [returnme, url]
+		self.sendMessage('HTTPMonster', REQ_URL, data)
+	
 	# Timer support?
 	def addTimer(self, ident, interval, *args):
 		data = [ident, interval, args]
