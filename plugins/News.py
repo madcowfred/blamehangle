@@ -34,11 +34,11 @@ SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 # ---------------------------------------------------------------------------
 
 ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/lp.html?keywords=Quirkies&menu=news.quirkies'
-GOOGLE_BUSINESS_URL = 'http://news.google.com/?ned=us&topic=b'
-GOOGLE_HEALTH_URL = 'http://news.google.com/?ned=us&topic=m'
-GOOGLE_SCIENCE_URL = 'http://news.google.com/?ned=us&topic=t'
-GOOGLE_SPORT_URL = 'http://news.google.com/?ned=us&topic=s'
-GOOGLE_WORLD_URL = 'http://news.google.com/?ned=us&topic=w'
+GOOGLE_BUSINESS_URL = 'http://news.google.com/?ned=%s&topic=b'
+GOOGLE_HEALTH_URL = 'http://news.google.com/?ned=%s&topic=m'
+GOOGLE_SCIENCE_URL = 'http://news.google.com/?ned=%s&topic=t'
+GOOGLE_SPORT_URL = 'http://news.google.com/?ned=%s&topic=s'
+GOOGLE_WORLD_URL = 'http://news.google.com/?ned=%s&topic=w'
 
 # ---------------------------------------------------------------------------
 # Dirty dirty regexps
@@ -316,23 +316,28 @@ class News(Plugin):
 	
 	def __Fetch_Google_Business(self, trigger):
 		trigger.source = 'google_business'
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_BUSINESS_URL)
+		url = GOOGLE_BUSINESS_URL % (self.Options['google_news_country'])
+		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_Health(self, trigger):
 		trigger.source = 'google_health'
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_HEALTH_URL)
+		url = GOOGLE_HEALTH_URL % (self.Options['google_news_country'])
+		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_Science(self, trigger):
 		trigger.source = 'google_science'
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SCIENCE_URL)
+		url = GOOGLE_SCIENCE_URL % (self.Options['google_news_country'])
+		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_Sport(self, trigger):
 		trigger.source = 'google_sport'
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SPORT_URL)
+		url = GOOGLE_SPORT_URL % (self.Options['google_news_country'])
+		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Google_World(self, trigger):
 		trigger.source = 'google_world'
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
+		url = GOOGLE_WORLD_URL % (self.Options['google_news_country'])
+		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	# See if any feeds should be triggering around about now
 	def __RSS_Check(self, trigger):
