@@ -101,7 +101,7 @@ class News(Plugin):
 		currtime = time.time()
 		sections = [s for s in self.Config.sections() if s.startswith('RSS.')]
 		for section in sections:
-			feedopts = self.OptionsDict(section)
+			feedopts = self.OptionsDict(section, autosplit=True)
 			name = section.split('.', 1)[1]
 			
 			feed = {
