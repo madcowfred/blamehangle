@@ -6,7 +6,7 @@
 #
 # Karma uses the following SQL table:
 # CREATE TABLE karma (
-#	name char(192) NOT NULL default '',
+#	name varchar(192) NOT NULL default '',
 #	value bigint(20) default NULL,
 #	PRIMARY KEY (key)
 # ) TYPE=MyISAM;
