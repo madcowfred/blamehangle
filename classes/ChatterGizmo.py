@@ -24,7 +24,7 @@ TIMER_RECONNECT = 'TIMER_RECONNECT'
 TIMER_TIMED_OUT = 'TIMER_TIMED_OUT'
 TIMER_STONED_CHECK = 'TIMER_STONED_CHECK'
 
-INTERVAL_STONED_CHECK = 10
+INTERVAL_STONED_CHECK = 30
 
 # ---------------------------------------------------------------------------
 
@@ -456,7 +456,7 @@ class ChatterGizmo(Child):
 	# -----------------------------------------------------------------------
 	def _handle_ctcp(self, conn, event):
 		# Ignore channel CTCPs
-		if event.target() != self.Conns[conn].real_nickname:
+		if event.target() != conn.real_nickname:
 			return
 		
 		
