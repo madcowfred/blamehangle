@@ -13,6 +13,7 @@ BH_VERSION = '0.0.0-CVS'
 LOG_ALWAYS = 'LOG_ALWAYS'
 LOG_DEBUG = 'LOG_DEBUG'
 LOG_WARNING = 'LOG_WARNING'
+LOG_MSG = 'LOG_MSG'
 
 TOLOG_ADMIN_INVALIDPORT = "ERROR: Telnet admin port is privileged or invalid."
 TOLOG_ADMIN_PORTINUSE = "ERROR: Telnet admin port is in use."

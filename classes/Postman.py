@@ -108,7 +108,7 @@ class Postman:
 					
 					else:
 						# Log the message if debug is enabled
-						self.__Log(LOG_DEBUG, message)
+						self.__Log(LOG_MSG, message)
 						
 						# If it's a global message, send it to everyone
 						if len(message.targets) == 0:
@@ -196,7 +196,7 @@ class Postman:
 		message = Message('Postman', *args)
 		
 		# Log the message if debug is enabled
-		self.__Log(LOG_DEBUG, message)
+		self.__Log(LOG_MSG, message)
 		
 		if message.targets:
 			for name in message.targets:
@@ -304,6 +304,11 @@ class Postman:
 			if self.Config.getint('logging', 'debug'):
 				print timeshort, '[DEBUG]', text
 				
+				tolog = "%s [DEBUG] %s\n" % (timelong, text)
+
+		elif level == LOG_MSG:
+			if self.Config.getint('logging', 'debug_msg'):
+				print timeshort, '[DEBUG]', text
 				tolog = "%s [DEBUG] %s\n" % (timelong, text)
 			
 			else:
