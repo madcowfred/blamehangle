@@ -1,13 +1,13 @@
 #----------------------------------------------------------------------------
 # $Id$
 #----------------------------------------------------------------------------
-# This file contains (or at least will contain!) the factoid resolver.
+# This file contains the factoid resolver.
 
+import copy
 import random
 import re
 import time
 import types
-import copy
 
 from classes.Plugin import *
 from classes.Common import *
