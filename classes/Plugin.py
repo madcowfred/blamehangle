@@ -17,21 +17,21 @@ class Plugin(Child):
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		raise Error, 'need to overwrite TRIGGER message handler in %s' % self.__name
-
+	
 	# -----------------------------------------------------------------------
-
+	
 	def sendReply(self, trigger, replytext):
 		reply = PluginReply(trigger, replytext)
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
 	# -----------------------------------------------------------------------
-
+	
 	def setHelp(self, topic, command, help_text):
 		self.sendMessage('Helper', SET_HELP, [topic, command, help_text])
-
+	
 	def register(self, *events):
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)
-		
+
 # ---------------------------------------------------------------------------
 
 class PluginTextEvent:
@@ -53,7 +53,7 @@ class PluginTextEvent:
 	
 	def __str__(self):
 		return "%s: %s" % (self.IRCType, self.name)
-
+	
 	def __repr__(self):
 		return "<class PluginTextEvent:" + self.__str__() + ">"
 
@@ -69,7 +69,7 @@ class PluginTimedEvent:
 		network you are sending to allows multiple targets per PRIVMSG,
 		you can bundle them together in the same element in the target
 		list.
-
+		
 		eg, targets = { 'EFnet' : ['#chan1,#chan2', '#chan3'] }
 	
 	The following attributes are also available
@@ -125,7 +125,7 @@ class PluginTextTrigger:
 		IRCType = self.event.IRCType
 		target = self.target
 		return "%s, %s: %s, %s" % (name, IRCType, nick, target)
-
+	
 	def __repr__(self):
 		return "<class PluginTextTrigger:" + self.__str__() + ">"
 
@@ -149,6 +149,6 @@ class PluginReply:
 		name = self.trigger.name
 		text = self.replytext
 		return "%s: %s" % (name, text)
-
+	
 	def __repr__(self):
 		return "<class PluginReply: " + self.__str__() + ">"
