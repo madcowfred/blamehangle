@@ -90,16 +90,17 @@ class Google(Plugin):
 				
 				# If we found some results, spit them out
 				if results:
-					# If that user is trustworthy, spam away
-					if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam'):
-						# Add calculator output to the first result
-						if calc:
-							replytext = '%s :: %s - %s' % (calc, results[0][0], results[0][1])
-						else:
-							replytext = '%s - %s' % (results[0][0], results[0][1])
-						self.sendReply(trigger, replytext)
+					# Add calculator output to the first result
+					if calc:
+						replytext = '%s :: %s - %s' % (calc, results[0][0], results[0][1])
+					else:
+						replytext = '%s - %s' % (results[0][0], results[0][1])
+					self.sendReply(trigger, replytext)
+					
+					# If that user is trustworthy, or we're in private, spam the rest
+					if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam') or \
+						trigger.event.IRCType == IRCT_MSG:
 						
-						# Spit out the rest
 						for title, url in results[1:]:
 							replytext = '%s - %s' % (title, url)
 							self.sendReply(trigger, replytext)
