@@ -462,7 +462,7 @@ class News(Plugin):
 		currtime = int(time.time())
 		
 		for item in r.items[:feed['maximum_new']]:
-			item_title = item.get('title', '<No Title>').strip()
+			item_title = item.get('title', '<No Title>').strip() or '<No Title>'
 			
 			if self.__rss_ignore_no_link:
 				if not item.has_key('link'):
