@@ -11,6 +11,7 @@ database trickery.
 import random
 import re
 import time
+import types
 
 from classes.Common import *
 from classes.Constants import *
@@ -427,9 +428,17 @@ class SmartyPants(Plugin):
 			if redirect:
 				m = REDIRECT_RE.match(value)
 				if m:
-					factoid = m.group('factoid')
-					trigger.temp = (row['name'], factoid)
-					self.dbQuery(trigger, self.__Fact_Redirect, GET_QUERY, factoid)
+					factoid = self.__Sane_Name(m.group('factoid'))
+					# Not much use going somewhere for an empty redirect
+					if factoid  == '':
+						replytext = "'%s' redirects to nothing!" % (row['name'])
+						self.sendReply(trigger, replytext)
+					
+					else:
+						seen = [row['name']]
+						trigger.temp = (seen, factoid)
+						self.dbQuery(trigger, self.__Fact_Redirect, GET_QUERY, factoid)
+					
 					return
 			
 			# This factoid wasn't a <null>, so update stats and generate the
@@ -490,6 +499,8 @@ class SmartyPants(Plugin):
 	# We've finished looking up a redirected factoid, inform the user.
 	# -----------------------------------------------------------------------
 	def __Fact_Redirect(self, trigger, result):
+		seen, factoid = trigger.temp
+		
 		# Error!
 		if result is None:
 			self.sendReply(trigger, 'An unknown database error occurred.')
@@ -502,18 +513,38 @@ class SmartyPants(Plugin):
 			
 			self.__dunnos += 1
 			
-			replytext = "'%s' redirects to '%s', which doesn't exist" % trigger.temp
+			replytext = "'%s' redirects to '%s', which doesn't exist" % (seen[0], factoid)
 			self.sendReply(trigger, replytext)
 		
 		# Result.. yay
 		else:
 			row = result[0]
 			
-			# If it's another redirect, give up
+			# If it's another redirect...
 			m = REDIRECT_RE.match(row['value'])
 			if m:
-				replytext = "'%s' redirects too many times!" % trigger.temp[0]
-				self.sendReply(trigger, replytext)
+				factoid = self.__Sane_Name(m.group('factoid'))
+				seen.append(row['name'])
+				
+				if factoid  == '':
+					replytext = "'%s' redirects to nothing!" % (row['name'])
+					self.sendReply(trigger, replytext)
+				
+				# Make sure we're not recursing
+				elif factoid in seen:
+					redir = ' -> '.join(seen)
+					replytext = "'%s' redirects recursively! (%s -> %s)" % (seen[0], redir, factoid)
+					self.sendReply(trigger, replytext)
+				
+				# Don't redirect more than 5 times
+				else:
+					if len(seen) < 5:
+						trigger.temp = (seen, factoid)
+						self.dbQuery(trigger, self.__Fact_Redirect, GET_QUERY, factoid)
+					
+					else:
+						replytext = "'%s' redirects too many times!" % (seen[0])
+						self.sendReply(trigger, replytext)
 			
 			# Otherwise, do the normal GET stuff
 			else:
@@ -979,8 +1010,14 @@ class SmartyPants(Plugin):
 	# -----------------------------------------------------------------------
 	# Return a sanitised factoid name.
 	def __Sane_Name(self, trigger):
+		# If it's just a string, use it instead
+		if type(trigger) in types.StringTypes:
+			newname = trigger
+		else:
+			newname = trigger.match.group('name')
+		
 		# lower case
-		newname = trigger.match.group('name').lower()
+		newname = newname.lower()
 		# translate the name according to our table
 		newname = newname.translate(self.__trans)
 		# remove any bad chars now
