@@ -60,7 +60,7 @@ class Airline(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_IATA,
 			regexp = re.compile(r'^iata\s+(?P<code>\w+)$'),
-			help = ('travel', 'iata', "\02airport\02 <code> : Look up an airport by it's IATA code."),
+			help = ('travel', 'iata', "\02iata\02 <code> : Look up an airport by it's IATA code."),
 		)
 		# This is really quite horrible :(
 		f1 = "^ *flight +"
