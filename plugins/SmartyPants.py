@@ -236,18 +236,18 @@ class SmartyPants(Plugin):
 						return
 				except:
 					return
-
+			
 			# Either it wasn't an IRCT_PUBLIC, or we have a config rule that
 			# says we are allowed to reply to public queries on this server in
 			# this channel, so look it up.
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to set a factoid. If the name is too long, tell them
 		# to go to hell.
 		elif trigger.name == FACT_SET:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			
 			# check to see if it was a public, and abort if we are not replying
 			# to public requests for this server/channel
@@ -275,13 +275,13 @@ class SmartyPants(Plugin):
 		# Somone just told us to replace the definition of a factoid with
 		# a new one
 		elif trigger.name == FACT_NO:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to add to the definition of a factoid
 		elif trigger.name == FACT_ALSO:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			if len(name) > MAX_FACT_NAME_LENGTH:
 				replytext = "factoid name is too long"
 				self.sendReply(trigger, replytext)
@@ -291,31 +291,31 @@ class SmartyPants(Plugin):
 		
 		# Someone wants to delete a factoid
 		elif trigger.name == FACT_DEL:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to do a search/replace on a factoid
 		elif trigger.name == FACT_REPLACE:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to lock a factoid
 		elif trigger.name == FACT_LOCK:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants to unlock a factoid
 		elif trigger.name == FACT_UNLOCK:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 		
 		# Someone wants information on a factoid
 		elif trigger.name == FACT_INFO:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (INFO_QUERY, name)
 			self.dbQuery(trigger, query)
 		
@@ -326,7 +326,7 @@ class SmartyPants(Plugin):
 		
 		# Someone asked to search by key
 		elif trigger.name == FACT_LISTKEYS:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			name = name.replace("%", "\%")
 			name = name.replace('"', '\\\"')
 			name = name.replace("'", "\\\'")
@@ -344,7 +344,7 @@ class SmartyPants(Plugin):
 		
 		# Someone wants us to tell someone else about a factoid
 		elif trigger.name == FACT_TELL:
-			name = trigger.match.group('name')
+			name = trigger.match.group('name').lower()
 			query = (GET_QUERY, name)
 			self.dbQuery(trigger, query)
 	
