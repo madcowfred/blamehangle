@@ -69,8 +69,8 @@ UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, lock
 
 STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
 
-LISTKEYS_QUERY = 'SELECT name FROM factoids WHERE name LIKE "%%%s%%"'
-LISTVALUES_QUERY = 'SELECT name FROM factoids WHERE value LIKE "%%%s%%"'
+LISTKEYS_QUERY = "SELECT name FROM factoids WHERE name LIKE '%%%s%%'"
+LISTVALUES_QUERY = "SELECT name FROM factoids WHERE value LIKE '%%%s%%'"
 
 GET_D_RE = re.compile("^(?P<name>.+?)\??$")
 GET_RE = re.compile("^(?P<name>.+?)\?$")
