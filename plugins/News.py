@@ -53,6 +53,7 @@ GOOGLE_HEALTH = 'http://news.google.com/news/gnhealthleftnav.html'
 GOOGLE_BIZ = 'http://news.google.com/news/gnbusinessleftnav.html'
 ANANOVA_QUIRK = 'http://www.ananova.com/news/index.html?keywords=Quirkies'
 
+
 # ---------------------------------------------------------------------------
 
 class News(Plugin):
@@ -209,6 +210,13 @@ class News(Plugin):
 			
 			event = PluginTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
 			self.register(event)
+
+		self.__setup_help_msgs()
+	
+	def __setup_help_msgs(self):
+		NEWS_HELP = "'\02news\02 <partial headline>' : Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given"
+
+		self.setHelp('news', 'news search', NEWS_HELP)
 	
 	# -----------------------------------------------------------------------
 	

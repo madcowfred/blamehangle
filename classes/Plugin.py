@@ -26,6 +26,9 @@ class Plugin(Child):
 	
 	# -----------------------------------------------------------------------
 
+	def setHelp(self, topic, command, help_text):
+		self.sendMessage('Helper', SET_HELP, [topic, command, help_text])
+
 	def register(self, *events):
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)
 		

@@ -15,6 +15,7 @@ BEE_SPELL = 'BEE_SPELL'
 
 SPELL_RE = re.compile('^spell (?P<word>\S+)$')
 
+
 # ---------------------------------------------------------------------------
 
 class SpellingBee(Plugin):
@@ -47,6 +48,11 @@ class SpellingBee(Plugin):
 			spell_msg = PluginTextEvent(BEE_SPELL, IRCT_MSG, SPELL_RE)
 			
 			self.register(spell_dir, spell_msg)
+			self.__set_help_msgs()
+	
+	def __set_help_msgs(self):
+		SPELL_HELP = "'\02spell\02' <word> : Check spelling for <word>"
+		self.setHelp('words', 'spell', SPELL_HELP)
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data

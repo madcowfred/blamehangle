@@ -11,15 +11,16 @@ import re, cStringIO
 SCORES = "SCORES"
 
 s0 = "^score +"
-s1 = "(?P<league>(NFL|MLB|NBA|NCAAF|NCAAB|NCAAW|NHL)) +"
+s1 = "(?P<league>(NFL|MLB|NBA|NHL)) +"
 s2 = "(?P<team>.+)$"
 
 SCORES_RE = re.compile(s0+s1+s2)
 
+
 class SportsFan(Plugin):
 	"""
 	"score <league> <team>"
-	league can be one of: NFL, MLB, NCAAF, NCAAB, NCAAW, NHL
+	league can be one of: NFL, MLB, NBA, NHL
 	team is identified by location, not nickname
 	"""
 
@@ -30,6 +31,12 @@ class SportsFan(Plugin):
 		scores_msg = PluginTextEvent(SCORES, IRCT_MSG, SCORES_RE)
 
 		self.register(scores_dir, scores_msg)
+		self.__set_help_msgs()
+	
+	def __set_help_msgs(self):
+		SCORES_HELP = "'\02score\02 <league> <team>' : Search for a score for <team> playing in <league> today. <league> can be one of NFL, MLB, NBA, NHL. <team> is identified by location, not nickname."
+
+		self.setHelp('sports', 'score', SCORES_HELP)
 	
 	# -----------------------------------------------------------------------
 

@@ -20,6 +20,7 @@ CURRENCY_RE = re.compile('^currency (?P<curr>\w+)$')
 
 EXCHANGE_URL = 'http://finance.yahoo.com/m5?a=%(amt)s&s=%(from)s&t=%(to)s&c=0'
 
+
 # ---------------------------------------------------------------------------
 
 class MoneyMangler(Plugin):
@@ -59,7 +60,17 @@ class MoneyMangler(Plugin):
 		curr_msg = PluginTextEvent(MONEY_CURRENCY, IRCT_MSG, CURRENCY_RE)
 		
 		self.register(conv_dir, conv_msg, curr_dir, curr_msg)
+		self.__set_help_msgs()
 	
+	def __set_help_msgs(self):
+		MONEY_CONVERT_HELP = "'\02convert\02 <amount> <currency 1> \02to\02 <currency 2>' : Convert currency using current exchange rates. Currencies are specified using their three letter code"
+		MONEY_CURRENCY_HELP = "'\02currency\02 <code OR partial name>' : Look up the currency code and name, given the specified information"
+		
+		self.setHelp('money', 'convert', MONEY_CONVERT_HELP)
+		self.setHelp('money', 'currency', MONEY_CURRENCY_HELP)
+	
+	# -----------------------------------------------------------------------
+
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		

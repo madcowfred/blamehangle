@@ -14,6 +14,7 @@ MAPQUEST = "MAPQUEST"
 
 MAPQUEST_RE = re.compile("^ *mapquest (?P<source>.+?) +to +(?P<dest>.+)$")
 
+
 class MapQuest(Plugin):
 	"""
 	"mapquest <[city, state] or zip> to <[city, state] or zip>"
@@ -41,6 +42,12 @@ class MapQuest(Plugin):
 		mq_msg = PluginTextEvent(MAPQUEST, IRCT_MSG, MAPQUEST_RE)
 
 		self.register(mq_dir, mq_msg)
+		self.__set_help_msgs()
+
+	def __set_help_msgs(self):
+		MAPQUEST_HELP = "'\02mapquest\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip>' : Look up the distance and approximate driving time between two places, using MapQuest. USA and Canada only."
+
+		self.setHelp('travel', 'mapquest', MAPQUEST_HELP)
 	
 	# -----------------------------------------------------------------------
 

@@ -62,6 +62,9 @@ class PluginHandler(Child):
 			if type(obj) == types.ClassType:
 				if issubclass(obj, Plugin):
 					plugin_list.append(name)
+
+		# hack, because we cheat and make Helper a plugin that isn't a plugin
+		plugin_list.append('Helper')
 		return plugin_list
 
 	#------------------------------------------------------------------------

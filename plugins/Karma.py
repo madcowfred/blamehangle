@@ -29,6 +29,7 @@ PLUS_RE = re.compile("(?P<name>^.+)(?=\+\+$)")
 MINUS_RE = re.compile("(?P<name>^.+)(?=--$)")
 LOOKUP_RE = re.compile("^karma (?P<name>.+)")
 
+
 class Karma(Plugin):
 	"""
 	This is a plugin for Blamehangle that implements user-defined karma.
@@ -48,6 +49,13 @@ class Karma(Plugin):
 		lookup_msg = PluginTextEvent(KARMA_LOOKUP, IRCT_MSG, LOOKUP_RE)
 
 		self.register(inc, dec, lookup_pub, lookup_msg)
+		self.__set_help_msgs()
+	
+	def __set_help_msgs(self):
+		KARMA_CHANGE_HELP = "'<something>\02++\02' OR '<something>\02--\02' : Increment or decrement karma for <something>"
+		KARMA_HELP = "'\02karma\02 <something>' : Look up <something>'s karma level"
+		self.setHelp('karma', 'karma lookup', KARMA_HELP)
+		self.setHelp('karma', 'karma modify', KARMA_CHANGE_HELP)
 	
 	#------------------------------------------------------------------------
 

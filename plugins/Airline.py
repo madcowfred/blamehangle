@@ -30,6 +30,7 @@ f9 = f4 % f8
 
 FLIGHT_RE = re.compile(f1+f2+f3+f9)
 
+
 class Airline(Plugin):
 	"""
 	stuff. it's 6:30am.
@@ -69,6 +70,14 @@ class Airline(Plugin):
 		fl_msg = PluginTextEvent(FLIGHT_SEARCH, IRCT_MSG, FLIGHT_RE)
 
 		self.register(air_dir, air_msg, fl_dir, fl_msg)
+		self.__set_help_msgs()
+	
+	def __set_help_msgs(self):
+		AIRLINE_HELP = "'\02airline\02 <code>' OR '\02airline\02 <partial name>' : lookup the name for a carrier given the code, or lookup the code  for a carrier given the name (or start of the name)"
+		FLIGHT_HELP = "'\02flight\02 <code> <flight number> <date>' : Lookup the details of the specified flight. date is in YYYY-MM-DD format, and is optional (defaults to today's date if ommitted)"
+		
+		self.setHelp('travel', 'airline', AIRLINE_HELP)
+		self.setHelp('travel', 'flight', FLIGHT_HELP)
 	
 	# --------------------------------------------------------------------------
 	

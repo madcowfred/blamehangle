@@ -88,6 +88,9 @@ TELL_RE = re.compile("^tell +(?P<nick>.+?) +about +(?P<name>.+)$")
 
 REPLY_ACTION_RE = re.compile("^<(?P<type>reply|action)>\s*(?P<value>.+)$", re.I)
 
+
+
+
 MAX_FACT_NAME_LENGTH = 32
 MAX_FACT_VAL_LENGTH = 455
 MAX_FACT_SEARCH_RESULTS = 15
@@ -185,8 +188,37 @@ class SmartyPants(Plugin):
 			self.register(get_pub)
 		if self.__set_pub:
 			self.register(set_pub)
+
+		self.__set_help_messages()
 	
 	#------------------------------------------------------------------------
+
+	def __set_help_messages(self):
+		FACT_GET_HELP = "'<factoid name>\02?\02' : Ask the bot for the definiton of <factoid name>."
+		FACT_SET_HELP = "'<factoid name> \02is\02 <whatever>' OR '<factoid name> \02is also\02 <whatever> : Teach the bot about a topic."
+		FACT_MOD_HELP = "'<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02' : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."
+		FACT_OVERWRITE_HELP = "'\02no,\02 <factoid name> \02is\02 <whatever>' : Replace the existing definition of <factoid name> with the new value <whatever>."
+		FACT_FORGET_HELP = "'\02forget\02 <factoid name>' : Remove a factoid from the bot."
+		FACT_LOCK_HELP = "'\02lock\02 <factoid name>' : Lock a factoid definition, so most users cannot alter it."
+		FACT_UNLOCK_HELP = "'\02unlock\02 <factoid name>' : Unlock a locked factoid definition, so it can be edited by anyone"
+		FACT_LISTKEYS_HELP = "'\02listkeys\02 <search text>' : Search through all the factoid names, and return a list of any that contain <search text>"
+		FACT_LISTVALUES_HELP = "'\02listvalues\02 <search text>' : Search through all the factoid definitions, and return the names of any that contain <search text>"
+		FACT_STATUS_HELP = "'\02status\02' : Generate some brief stats about the bot."
+		FACT_TELL_HELP = "'\02tell\02 <someone> \02about\02 <factoid name>' : Ask the bot to send the definition of <factoid name> to <someone> in a /msg."
+		FACT_INFO_HELP = "'\02factinfo\02 <factoid name>' : View some statistics about the given factoid."
+
+		self.setHelp('infobot', 'get', FACT_GET_HELP)
+		self.setHelp('infobot', 'set', FACT_SET_HELP)
+		self.setHelp('infobot', '=~', FACT_MOD_HELP)
+		self.setHelp('infobot', 'overwrite', FACT_OVERWRITE_HELP)
+		self.setHelp('infobot', 'forget', FACT_FORGET_HELP)
+		self.setHelp('infobot', 'lock', FACT_LOCK_HELP)
+		self.setHelp('infobot', 'unlock', FACT_UNLOCK_HELP)
+		self.setHelp('infobot', 'tell', FACT_TELL_HELP)
+		self.setHelp('infobot', 'listkeys', FACT_LISTKEYS_HELP)
+		self.setHelp('infobot', 'listvalues', FACT_LISTVALUES_HELP)
+		self.setHelp('infobot', 'factinfo', FACT_INFO_HELP)
+		self.setHelp('infobot', 'status', FACT_STATUS_HELP)
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data

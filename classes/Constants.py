@@ -25,6 +25,7 @@ TOLOG_ADMIN_PORTINUSE = "ERROR: Telnet admin port is in use."
 PLUGIN_REGISTER = 'PLUGIN_REGISTER'
 PLUGIN_TRIGGER = 'PLUGIN_TRIGGER'
 PLUGIN_REPLY = 'PLUGIN_REPLY'
+SET_HELP = 'SET_HELP'
 
 # ---------------------------------------------------------------------------
 # IRCtype constants

@@ -21,6 +21,7 @@ RHYME_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=perfect&or
 SYNONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=syn&org1=let&org2=l"
 ANTONYM_URL = "http://www.rhymezone.com/r/rhyme.cgi?Word=%s&typeofrhyme=ant&org1=let&org2=l"
 
+
 MAX_WORD_RESULTS = 50
 
 
@@ -46,6 +47,16 @@ class WordStuff(Plugin):
 		ant_msg = PluginTextEvent(WORD_ANTONYM, IRCT_MSG, WORD_ANTONYM_RE)
 
 		self.register(rhyme_dir, rhyme_msg, syn_dir, syn_msg, ant_dir, ant_msg)
+		self.__set_help_msgs()
+	
+	def __set_help_msgs(self):
+		WORD_RHYME_HELP = "'\02rhyme\02 <word>' : Search for other words that rhyme with <word>"
+		WORD_SYNONYM_HELP = "'\02synonym\02 <word>' : Search for words that have the same meaning as <word>"
+		WORD_ANTONYM_HELP = "'\02antonym\02 <word>' : Search for words that have the exact opposite meaning of <word>"
+
+		self.setHelp('words', 'rhyme', WORD_RHYME_HELP)
+		self.setHelp('words', 'synonym', WORD_SYNONYM_HELP)
+		self.setHelp('words', 'antonym', WORD_ANTONYM_HELP)
 	
 	# -----------------------------------------------------------------------
 
