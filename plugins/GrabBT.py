@@ -139,7 +139,7 @@ class GrabBT(Plugin):
 			return
 		
 		# Make sure they have the right user mode
-		if self.Options.get('need_mode', 0):
+		if self.Options.get('need_mode', None):
 			hasmode = 0
 			for mode in self.Options['need_mode']:
 				if trigger.wrap.ircul.user_has_mode(chan, trigger.userinfo.nick, mode):
