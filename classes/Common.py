@@ -27,7 +27,7 @@ class Message:
 			self.targetstring = 'ALL'
 		
 		elif t in (types.ListType, types.TupleType):
-			self.targets = targets
+			self.targets = list(targets)
 			if targets:
 				self.targetstring = ', '.join(targets)
 			else:

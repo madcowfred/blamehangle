@@ -124,11 +124,18 @@ class Postman:
 		_sleep = time.sleep
 		_time = time.time
 		
+		__always = []
+		__sometimes = []
+		
 		sometimes_counter = 0
 		
 		for child in self.__Children.values():
 			if hasattr(child, 'run_once'):
 				child.run_once()
+			if hasattr(child, 'run_always'):
+				__always.append(child)
+			if hasattr(child, 'run_sometimes'):
+				__sometimes.append(child)
 		
 		while 1:
 			try:
@@ -136,7 +143,7 @@ class Postman:
 					message = self.inQueue.get(0)
 					
 					# If it's targeted at us, process it
-					if len(message.targets) == 1 and message.targets[0] == 'Postman':
+					if message.targets == ['Postman']:
 						if message.ident == REQ_LOG:
 							self.__Log(*message.data)
 						
@@ -181,13 +188,14 @@ class Postman:
 				# Check for messages, then run the main loops
 				for child in self.__Children.values():
 					child.handleMessages()
-					if hasattr(child, 'run_always'):
-						child.run_always()
+				
+				for child in __always:
+					child.run_always()
 				
 				
 				# Do things that don't need to be done all that often
 				sometimes_counter += 1
-				if sometimes_counter % 10 == 0:
+				if sometimes_counter == 5:
 					sometimes_counter = 0
 					
 					currtime = _time()
@@ -201,12 +209,11 @@ class Postman:
 						self.__Shutdown_Check()
 					
 					# Run anything our children want done occasionally
-					for child in self.__Children.values():
-						if hasattr(child, 'run_sometimes'):
-							child.run_sometimes(currtime)
-
+					for child in __sometimes:
+						child.run_sometimes(currtime)
+				
 				# Sleep for a while
-				_sleep(0.02)
+				_sleep(0.04)
 		
 			except KeyboardInterrupt:
 				self.__Shutdown('Ctrl-C pressed')
