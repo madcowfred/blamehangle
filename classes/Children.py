@@ -112,8 +112,9 @@ class Child:
 			try:
 				method(trigger, hosts, args)
 			except:
-				replytext = '%s crashed in %s()!' % (self._name, methname)
-				self.sendReply(trigger, replytext)
+				if hasattr(self, 'sendReply'):
+					replytext = '%s crashed in %s()!' % (self._name, methname)
+					self.sendReply(trigger, replytext)
 				raise
 		else:
 			raise NameError, 'define %s.%s or override _message_REPLY_DNS' % (self._name, methname)
@@ -129,8 +130,9 @@ class Child:
 			try:
 				method(trigger, result)
 			except:
-				replytext = '%s crashed in %s()!' % (self._name, methname)
-				self.sendReply(trigger, replytext)
+				if hasattr(self, 'sendReply'):
+					replytext = '%s crashed in %s()!' % (self._name, methname)
+					self.sendReply(trigger, replytext)
 				raise
 		else:
 			raise NameError, 'define %s.%s or override _message_REPLY_QUERY' % (self._name, methname)
@@ -141,12 +143,13 @@ class Child:
 		
 		# Failed
 		if resp.data is None:
-			if not hasattr(self, '_QuietURLErrors'):
-				if not hasattr(self, '_VerboseURLErrors'):
-					self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
-				else:
-					replytext = 'HTTP transfer from %s failed, ruh-roh.' % resp.url
-					self.sendReply(trigger, replytext)
+			if hasattr(self, 'sendReply'):
+				if not hasattr(self, '_QuietURLErrors'):
+					if not hasattr(self, '_VerboseURLErrors'):
+						self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
+					else:
+						replytext = 'HTTP transfer from %s failed, ruh-roh.' % resp.url
+						self.sendReply(trigger, replytext)
 			return
 		
 		# OK!
@@ -158,8 +161,9 @@ class Child:
 			try:
 				method(trigger, resp)
 			except:
-				replytext = '%s crashed in %s()!' % (self._name, methname)
-				self.sendReply(trigger, replytext)
+				if hasattr(self, 'sendReply'):
+					replytext = '%s crashed in %s()!' % (self._name, methname)
+					self.sendReply(trigger, replytext)
 				raise
 		else:
 			raise NameError, 'define %s.%s or override _message_REPLY_URL' % (self._name, methname)
