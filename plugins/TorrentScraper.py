@@ -116,7 +116,6 @@ class TorrentScraper(Plugin):
 			return
 		
 		items = trigger.items
-		del trigger.items
 		
 		# We don't need to add any that are already in the database
 		for row in result:
@@ -130,7 +129,6 @@ class TorrentScraper(Plugin):
 		
 		# Start adding the items to our database
 		item = items.pop(0)
-		trigger.items = items
 		self.dbQuery(trigger, self.__DB_Inserted, INSERT_QUERY, *item)
 	
 	# An item has been inserted, try the next one if we have to
@@ -141,7 +139,6 @@ class TorrentScraper(Plugin):
 		
 		# If we have no more articles, go home now
 		if len(trigger.items) == 0:
-			del trigger.items
 			return
 		
 		# Do the next one
