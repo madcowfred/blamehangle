@@ -33,7 +33,7 @@ RHYMEZONE_LIMIT = 40
 # ---------------------------------------------------------------------------
 
 ACRONYM_URL = 'http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=%s&Find=Find'
-URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
+URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s&r=f'
 
 # ---------------------------------------------------------------------------
 
@@ -347,7 +347,7 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(resp.data, '<div style="padding-left: 30px; padding-right: 30px">', '</div>')
+			chunks = FindChunks(resp.data, '<div class="text">', '</td>')
 			if not chunks:
 				self.sendReply(trigger, 'Page parsing failed: divs.')
 				return
@@ -358,30 +358,27 @@ class WordStuff(Plugin):
 			for chunk in chunks:
 				out = []
 				
-				# Find each line
-				ps = FindChunks(chunk, '<p>', '</p>')
-				if not ps:
-					self.sendReply(trigger, 'Page parsing failed: lines.')
+				# We only want the first line
+				print repr(chunk)
+				definition = FindChunk(chunk, '<div class="def">', '</div>')
+				if not definition:
+					self.sendReply(trigger, 'Page parsing failed: def.')
 					return
 				
-				for p in ps:
-					# If it's an empty quote, skip it
-					if p == '<i></i>':
-						continue
+				# Strip annoying junk
+				definition = definition.replace('\r', '').replace('\n', '')
+				definition = StripHTML(definition)[0]
+				out.append(definition)
+				
+				# And maybe an example
+				example = FindChunk(chunk, '<div class="example">', '</div>')
+				if example:
+					# Strip annoying junk
+					example = example.replace('\r', '').replace('\n', '')
+					example = '"%s"' % (example)
+					example = StripHTML(example)[0]
 					
-					# Remove annoying <br>s
-					p = p.replace('\r<br />\n', ' ')
-					
-					# If it's a quote, make it look like one
-					quote = FindChunk(p, '<i>', '</i>')
-					if quote:
-						p = '"%s"' % (quote)
-					
-					# Get rid of evil links
-					p = StripHTML(p)[0]
-					
-					# Stick it in the list
-					out.append(p)
+					out.append(example)
 				
 				# If we got something, add it to the defs list
 				if out:
