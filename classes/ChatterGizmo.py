@@ -29,16 +29,17 @@ class ChatterGizmo(Child):
 	server handling, and so on.
 	"""
 	
-	Conns = {}
-	
 	def setup(self):
 		self.__ircobj = irclib.IRC()
 		# Add handlers for each event in this array to call handle_event
 		#for event in [	"disconnect", "welcome", "namreply", "nicknameinuse", "join",
 		#				"part", "kick", "quit", "nick", "ctcp", "privmsg", "privnotice" ]:
-		for event in [ 'welcome', 'disconnect', 'namreply', 'join', 'part', 'kick', 'quit',
-			'pubmsg', 'privmsg', 'ctcp' ]:
+		for event in [ 'welcome', 'disconnect', 'error', 'namreply', 'join',
+			'part', 'kick', 'quit', 'pubmsg', 'privmsg', 'ctcp' ]:
 			self.__ircobj.add_global_handler(event, getattr(self, "_handle_" + event), -10)
+		
+		self.Conns = {}
+		self.stopping = 0
 	
 	# -----------------------------------------------------------------------
 	
@@ -63,6 +64,13 @@ class ChatterGizmo(Child):
 		except select.error, msg:
 			if msg[0] == errno.EINTR:
 				pass
+		
+		if self.stopping:
+			for wrap in self.Conns.values():
+				if wrap.status == STATUS_CONNECTED:
+					return
+			
+			self.stopnow = 1
 	
 	# -----------------------------------------------------------------------
 	
@@ -123,6 +131,17 @@ class ChatterGizmo(Child):
 		self.Conns[conn].last_connect = time.time()
 		
 		self.connlog(conn, LOG_ALWAYS, 'Disconnected from server')
+	
+	# It was bad.
+	def _handle_error(self, conn, event):
+		errormsg = event.target()
+		
+		m = re.match(r".* \((?P<error>.*?)\)$", errormsg)
+		if m:
+			errormsg = m.group('error')
+		
+		tolog = 'ERROR: %s' % errormsg
+		self.connlog(conn, LOG_ALWAYS, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone just joined a channel (including ourselves)
@@ -300,8 +319,19 @@ class ChatterGizmo(Child):
 	
 	# -----------------------------------------------------------------------
 	
-	# This should include some sort of flood control or error checking or
-	# something. This is the quick hack version so I can see if shit is working
+	def _message_REQ_SHUTDOWN(self, message):
+		tolog = 'ChatterGizmo shutting down'
+		self.putlog(LOG_DEBUG, tolog)
+		
+		quitmsg = 'Shutting down: %s' % message.data
+		for wrap in self.Conns.values():
+			if wrap.status == STATUS_CONNECTED:
+				wrap.conn.quit(quitmsg)
+		
+		self.stopping = 1
+	
+	# -----------------------------------------------------------------------
+	
 	def _message_REQ_PRIVMSG(self, message):
 		conn, target, text = message.data
 		
