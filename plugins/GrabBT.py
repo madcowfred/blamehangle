@@ -36,6 +36,7 @@ class GrabBT(Plugin):
 		self._torrent_dir = self.Config.get('grabbt', 'torrent_dir')
 		self._new_dir = self.Config.get('grabbt', 'new_dir')
 		self._status_file = self.Config.get('grabbt', 'status_file')
+		self._http_base = self.Config.get('grabbt', 'http_base')
 		
 		# If the new dir is valid, get a list of it's files
 		if self._new_dir and os.path.isdir(self._new_dir):
@@ -80,7 +81,11 @@ class GrabBT(Plugin):
 		for file in files:
 			# If it's a new file, spam it
 			if file not in self.__files:
-				replytext = '\x0303New file\x03: %s' % (file)
+				if self._http_base:
+					replytext = '\x0303New file\x03: %s - %s%s' % (file, self._http_base, QuoteURL(file))
+				else:
+					replytext = '\x0303New file\x03: %s' % (file)
+				
 				self.privmsg(self.__channels, None, replytext)
 		
 		self.__files = files
