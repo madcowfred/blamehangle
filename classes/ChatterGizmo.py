@@ -135,12 +135,12 @@ class ChatterGizmo(Child):
 	
 	def run_sometimes(self, currtime):
 		# Process any data from IRC
-		try:
-			self.__ircobj.process_once()
-		
-		except select.error, msg:
-			if msg[0] == errno.EINTR:
-				pass
+		#try:
+		#	self.__ircobj.process_once()
+		#
+		#except select.error, msg:
+		#	if msg[0] == errno.EINTR:
+		#		pass
 		
 		# Stop if we're all done
 		if self.stopping:
