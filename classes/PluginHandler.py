@@ -73,12 +73,17 @@ class PluginHandler(Child):
 		
 		for event in events:
 			eventStore = self.__getRelevantStore(event.IRCType)
-
-			if event.name in eventStore:
+			
+			name = event.name
+			if hasattr(event, 'args'):
+				if len(event.args) > 0:
+					name = '%s:%s' % (event.name, event.args)
+			
+			if name in eventStore:
 				errtext = "%s already has an event for %s" % (event.name, event.IRCType)
 				raise ValueError, errtext
 			else:
-				eventStore[event.name] = (event, message.source)
+				eventStore[name] = (event, message.source)
 	
 	#------------------------------------------------------------------------
 	# Something has happened on IRC, and we are being told about it. Search
