@@ -52,8 +52,8 @@ class ChatterGizmo:
 			for option in self.Config.options(network):
 				options[option] = self.Config.get(network, option)
 			
-			conn = self.__irclib.server()
-			self.Conns[conn.sock] = WrapConn(conn, options)
+			conn = self.__ircobj.server()
+			self.Conns[conn] = WrapConn(conn, options)
 			
 			self.Conns[conn].do_connect()
 	
