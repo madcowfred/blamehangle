@@ -28,10 +28,12 @@ class Userlist:
 			self.parted(chan, nick)
 	
 	def nick(self, oldnick, newnick):
-		for chan in self.__u.keys():
-			if oldnick in self.__u[chan]:
-				self.__u[chan][newnick] = self.__u[chan][oldnick]
-				del self.__u[chan][oldnick]
+		for chan, nicks in self.__u.items():
+			if oldnick in nicks:
+				nicks[newnick] = nicks[oldnick]
+				del nicks[oldnick]
+	
+	# -----------------------------------------------------------------------
 	
 	def add_mode(self, chan, nick, mode):
 		if mode not in self.__u[chan][nick]:
@@ -44,13 +46,21 @@ class Userlist:
 	def has_mode(self, chan, nick, mode):
 		return mode in self.__u[chan][nick]
 	
+	# -----------------------------------------------------------------------
+	
 	def in_chan(self, chan, nick):
 		return nick in self.__u[chan]
 	
 	def in_any_chan(self, nick):
 		for nicks in self.__u.values():
 			if nick in nicks:
-				return 1
-		return 0
+				return True
+		return False
+	
+	def in_same_chan(self, nick1, nick2):
+		for nicks in self.__u.values():
+			if nick1 in nicks and nick2 in nicks:
+				return True
+		return False
 
 # ---------------------------------------------------------------------------
