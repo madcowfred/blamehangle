@@ -55,7 +55,7 @@ class Karma(Plugin):
 		self.__Combines = {}
 		
 		for name in self.Config.options('Karma-Combines'):
-			self.__Combines[name.lower()] = self.Config.get('Karma-Combines', name).lower().split('|')
+			self.__Combines[name.lower()] = self.Config.get('Karma-Combines', name).lower().split(',')
 	
 	def register(self):
 		self.setTextEvent(KARMA_PLUS, PLUS_RE, IRCT_PUBLIC)
