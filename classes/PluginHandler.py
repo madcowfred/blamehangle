@@ -112,13 +112,28 @@ class PluginHandler(Child):
 				desired_text = []
 				for group in groups:
 					desired_text.append(match.group(group))
-				message = [desired_text, event, IRCtype, userinfo]
+				message = [desired_text, event, conn, IRCtype, target, userinfo]
 				self.sendMessage(plugin, PLUGIN_TRIGGER, message)
 				
 				# should a break or something go here?
 				# do we want it to be possible to have more than one plugin
 				# trigger on the same text?
 		
+
+	#------------------------------------------------------------------------		
+	# We just got a reply from a plugin, containing the string it would like us
+	# to send back out to IRC.
+	def _message_PLUGIN_REPLY(self, message):
+		text, conn, IRCtype, target, userinfo = message.data
+
+		if IRCtype == PUBLIC:
+			# We are sending back to public, prepend the relevant nick
+			tosend = "%s: %s" % (userinfo.nick, text)
+			self.privmsg(tosend, conn, target)
+		else:
+			# all other types are responded to with a /msg
+			self.privmsg(text, conn, userinfo.nick)
+	
 	#------------------------------------------------------------------------		
 	def __getRelevantStore(self, type):
 		if type == PUBLIC:
