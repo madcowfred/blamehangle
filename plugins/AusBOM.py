@@ -214,138 +214,96 @@ class AusBOM(Plugin):
 			self.sendReply(trigger, 'Page parsing failed: area.')
 			return
 		
-		# Find the data the easy way, hopefully
-		chunks = FindChunks(page_text, '<!-- DATA, ', ' -->')
-		if chunks:
-			# Location update
-			if location is None:
-				for chunk in chunks:
-					newloc = chunk.split(',')[1].strip()
-					self.__Locations.setdefault(area, []).append(newloc)
-				
-				trigger.count += 1
-				
-				# If we've finished updating, party
-				if trigger.count == len(PRODUCTS):
-					self.putlog(LOG_ALWAYS, 'AusBOM: Finished updating location data.')
-					
-					self.__Locations['_updated_'] = time.time()
-					self.__Pickle('ausbom.data', self.__Locations)
-				
-				# Otherwise, go get the next one
-				else:
-					url = AUSBOM_URL % PRODUCTS[trigger.count][1]
-					self.urlRequest(trigger, url)
-			
-			# Someone wants some weather
-			else:
-				# Split it into bits
-				parts = []
-				
-				for chunk in chunks:
-					# [	date:time, place, temp, dewpoint, humidity, wind dir, wind speed km/h, wind gust km/h, pressure?
-					bits = [a.strip() for a in chunk.split(',')]
-					
-					go = 0
-					
-					# Me!
-					if bits[1].lower() == location.lower():
-						part = '\02[\02Temp: %s°C\02]\02' % (bits[2])
-						parts.append(part)
-						
-						part = '\02[\02Humidity: %.1f%%\02]\02' % (float(bits[4]))
-						parts.append(part)
-						
-						part = '\02[\02Wind: %s %skm/h\02]\02' % (bits[5], bits[6])
-						parts.append(part)
-						
-						#part = '\02[\02Pressure: %s hPa\02]\02' % (bits[7])
-						#parts.append(part)
-						
-						break
-				
-				if parts == []:
-					parts.append('Nothing!')
-				
-				replytext = '%s :: %s' % (bits[1], ' '.join(parts))
-				self.sendReply(trigger, replytext, process=0)
+		# Find the Giant Table
+		chunk = FindChunk(page_text, 'END OF STANDARD BUREAU HEADER', '</table>')
+		if not chunk:
+			self.sendReply(trigger, 'Page parsing failed: data.')
+			return
 		
-		# Guess it's the hard way :(
-		else:
-			# Find the Giant Table
-			chunk = FindChunk(page_text, 'END OF STANDARD BUREAU HEADER', '</table>')
-			if not chunk:
-				self.sendReply(trigger, 'Page parsing failed: data.')
-				return
-			
-			# Find the rows in it
-			chunks = FindChunks(chunk, '<tr>', '</tr>')
-			if not chunks:
-				self.sendReply(trigger, 'Page parsing failed: data.')
-				return
-			
-			# Wander through the chunks parsing them
-			parts = []
-			
-			for tr in chunks:
-				# Skip non-useful ones
-				if tr.find('<td nowrap') < 0:
-					continue
+		# Find the rows in it
+		chunks = FindChunks(chunk, '<tr>', '</tr>')
+		if not chunks:
+			self.sendReply(trigger, 'Page parsing failed: data.')
+			return
+		
+		# Wander through the chunks parsing them
+		parts = []
+		tz = None
+		
+		for tr in chunks:
+			# Skip non-useful ones
+			if tr.find('<td nowrap') < 0:
+				# Might be useful for time/date
+				if tz is None:
+					m = re.search('Date Time<br>\((.+)\)</th>', tr)
+					if m:
+						tz = m.group(1)
 				
-				# Split the row into lines
-				lines = StripHTML(tr)
-				
-				# Work out where we are
-				place = lines[0].replace(' &times;', '')
-				
-				if location is None:
-					self.__Locations.setdefault(area, []).append(place)
-				
-				elif place.lower() == location.lower():
-					try:
-						temp = lines[2]
-						humidity = float(lines[4])
-						wind_dir = lines[5]
-						wind_speed = lines[6]
-					
-					except ValueError:
-						parts.append('no current data found!')
-					
-					else:
-						part = '\02[\02Temp: %s°C\02]\02' % (temp)
-						parts.append(part)
-						
-						part = '\02[\02Humidity: %.1f%%\02]\02' % (humidity)
-						parts.append(part)
-						
-						part = '\02[\02Wind: %s %skm/h\02]\02' % (wind_dir, wind_speed)
-						parts.append(part)
-					
-					break
+				continue
 			
-			# If we're updating, finish that up	
+			# Split the row into lines
+			lines = StripHTML(tr)
+			
+			# Work out where we are
+			place = lines[0].replace(' &times;', '')
+			
+			# If we're just updating location data, do that
 			if location is None:
-				trigger.count += 1
-				
-				# If we've finished updating, party
-				if trigger.count == len(PRODUCTS):
-					self.putlog(LOG_ALWAYS, 'AusBOM: Finished updating location data.')
-					
-					self.__Locations['_updated_'] = time.time()
-					self.__Pickle('ausbom.data', self.__Locations)
-				
-				# Otherwise, go get the next one
-				else:
-					url = AUSBOM_URL % PRODUCTS[trigger.count][1]
-					self.urlRequest(trigger, url)
+				self.__Locations.setdefault(area, []).append(place)
 			
-			# If we're not updating, maybe spit out something
-			else:
-				if parts == []:
-					parts.append('no data found!')
+			# If we're looking for some info, do that
+			elif place.lower() == location.lower():
+				try:
+					updated = lines[1].split()[1]
+					temp = lines[2]
+					humidity = float(lines[4])
+					wind_dir = lines[5]
+					wind_speed = lines[6]
 				
-				replytext = '%s :: %s' % (place, ' '.join(parts))
-				self.sendReply(trigger, replytext, process=0)
+				except (IndexError, ValueError):
+					parts.append('no current data found!')
+				
+				else:
+					if tz:
+						part = '\02[\02Updated: %s %s\02]\02' % (updated, tz)
+					else:
+						part = '\02[\02Updated: %s\02]\02' % (updated)
+					parts.append(part)
+					
+					part = '\02[\02Temp: %s°C\02]\02' % (temp)
+					parts.append(part)
+					
+					part = '\02[\02Humidity: %.1f%%\02]\02' % (humidity)
+					parts.append(part)
+					
+					part = '\02[\02Wind: %s %skm/h\02]\02' % (wind_dir, wind_speed)
+					parts.append(part)
+				
+				break
+		
+		# If we're updating, finish that up	
+		if location is None:
+			trigger.count += 1
+			
+			# If we've finished updating, party
+			if trigger.count == len(PRODUCTS):
+				self.putlog(LOG_ALWAYS, 'AusBOM: Finished updating location data.')
+				
+				self.__Locations['_updated_'] = time.time()
+				self.__Pickle('ausbom.data', self.__Locations)
+			
+			# Otherwise, go get the next one
+			else:
+				url = AUSBOM_URL % PRODUCTS[trigger.count][1]
+				self.urlRequest(trigger, url)
+		
+		# If we're not updating, maybe spit out something
+		else:
+			if parts == []:
+				parts.append('no data found!')
+			
+			replytext = '%s :: %s' % (place, ' '.join(parts))
+			self.sendReply(trigger, replytext, process=0)
 	
 	# -----------------------------------------------------------------------
 	# Pickle an object into the given file
