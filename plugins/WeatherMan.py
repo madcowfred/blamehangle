@@ -22,6 +22,10 @@ WEATHER_LONG = 'WEATHER_LONG'
 LONG_RE = re.compile('^weatherlong\s+(?P<location>.+)$')
 LONG_HELP = '\02weatherlong\02 <location> : Retrieve weather information for location (long format)'
 
+WEATHER_FORECAST = 'WEATHER_FORECAST'
+FORECAST_RE = re.compile('^forecast\s+(?P<location>.+)$')
+FORECAST_HELP = '\02forecast\02 <location> : Retrieve weather forecast for location'
+
 # ---------------------------------------------------------------------------
 
 class WeatherMan(Plugin):
@@ -39,22 +43,25 @@ class WeatherMan(Plugin):
 		short_msg = PluginTextEvent(WEATHER_SHORT, IRCT_MSG, SHORT_RE)
 		long_dir = PluginTextEvent(WEATHER_LONG, IRCT_PUBLIC_D, LONG_RE)
 		long_msg = PluginTextEvent(WEATHER_LONG, IRCT_MSG, LONG_RE)
-		self.register(short_dir, short_msg, long_dir, long_msg)
+		forecast_dir = PluginTextEvent(WEATHER_FORECAST, IRCT_PUBLIC_D, FORECAST_RE)
+		forecast_msg = PluginTextEvent(WEATHER_FORECAST, IRCT_MSG, FORECAST_RE)
+		self.register(short_dir, short_msg, long_dir, long_msg, forecast_dir, forecast_msg)
 		
 		self.setHelp('weather', 'weather', SHORT_HELP)
 		self.setHelp('weather', 'weatherlong', LONG_HELP)
+		self.setHelp('weather', 'forecast', FORECAST_HELP)
 	
 	def _message_PLUGIN_TRIGGER(self, message):
 		trigger = message.data
 		
-		if trigger.name in (WEATHER_SHORT, WEATHER_LONG):
+		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
 			url = WEATHER_URL % quote(trigger.match.group('location'))
 			self.urlRequest(trigger, url)
 	
 	def _message_REPLY_URL(self, message):
 		trigger, page_text = message.data
 		
-		if trigger.name in (WEATHER_SHORT, WEATHER_LONG):
+		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
 			# No results
 			if page_text.find('No match found') >= 0:
 				replytext = "No matches found for '%s'" % trigger.match.group('location')
@@ -140,6 +147,26 @@ class WeatherMan(Plugin):
 					data['sunset'] = chunk
 				
 				
+				# Find the forecast
+				lines = FindChunk(page_text, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
+				if lines != []:
+					# Extract!
+					fcs = []
+					
+					for i in range(1, 5):
+						day = lines[i]
+						
+						first = i + (6 - i) + (i * 4)
+						conditions = lines[first]
+						high = lines[first+2]
+						low = lines[first+3][4:]
+						
+						forecast = '%s: %s, High: %s, Low: %s' % (day, conditions, CandF(high), CandF(low))
+						fcs.append(forecast)
+					
+					data['forecast'] = ' - '.join(fcs)
+				
+				
 				#if broken:
 				#	self.sendReply(trigger, "Failed to parse page properly")
 				
@@ -156,6 +183,9 @@ class WeatherMan(Plugin):
 					for part in self.__Long_Parts:
 						if data.has_key(part):
 							chunks.append(data[part])
+				
+				elif trigger.name == WEATHER_FORECAST:
+					chunks.append(data['forecast'])
 				
 				
 				if chunks == []:
