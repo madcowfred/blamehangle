@@ -25,6 +25,10 @@ GET_RE = re.compile(r'^(?P<name>.+?)\?$')
 GET_D_RE = re.compile(r'^(?P<name>.+?)\??$')
 GET_QUERY = "SELECT name, value, locker_nick FROM factoids WHERE name = %s"
 
+SUB_CHAN_RE = re.compile(r'(?<!\\)\$channel\b')
+SUB_DATE_RE = re.compile(r'(?<!\\)\$date\b')
+SUB_NICK_RE = re.compile(r'(?<!\\)\$nick\b')
+
 FACT_REDIRECT = "FACT_REDIRECT"
 
 FACT_SET = 'FACT_SET'
@@ -433,21 +437,25 @@ class SmartyPants(Plugin):
 			# expect this behaviour
 			# replace "$nick" with the nick of the guy that requested this
 			# factoid
-			value = re.sub(r'(?P<c>[^\\]|^)\$nick', \
-				'\g<c>' + trigger.userinfo.nick, value)
+			escnick = trigger.userinfo.nick.replace('\\', '\\\\')
+			value = SUB_NICK_RE.sub(escnick, value)
+			#value = re.sub(r'(?P<c>[^\\]|^)\$nick', \
+			#	'\g<c>' + trigger.userinfo.nick, value)
 			#row['value'] = row['value'].replace('$nick', trigger.userinfo.nick)
 			
 			# replace "$channel" with the target if this was public
 			if trigger.event.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
-				value = re.sub(r'(?P<c>[^\\]|^)\$channel', \
-					'\g<c>' + trigger.target, value)
+				value = SUB_CHAN_RE.sub(trigger.target, value)
+				#value = re.sub(r'(?P<c>[^\\]|^)\$channel', \
+				#	'\g<c>' + trigger.target, value)
 				#row['value'] = row['value'].replace('$channel', trigger.target)
 			
 			# replace "$date" with a shiny date
 			datebit = time.strftime('%a %d %b %Y %H:%M:%S')
 			shinydate = '%s %s GMT' % (datebit, GetTZ())
-			value = re.sub(r'(?P<c>[^\\]|^)\$date', \
-				'\g<c>' + shinydate, value)
+			value = SUB_DATE_RE.sub(shinydate, value)
+			#value = re.sub(r'(?P<c>[^\\]|^)\$date', \
+			#	'\g<c>' + shinydate, value)
 			#row['value'] = row['value'].replace('$date', shinydate)
 			
 			
