@@ -18,12 +18,6 @@ from Plugins import *
 from classes.ChatterGizmo import ChatterGizmo
 from classes.PluginHandler import PluginHandler
 
-#from OfferBot import Chatterbox
-#from FileMonster import FileMonster
-#from PackMan import PackMan
-#from Queuer import Queuer
-#from Admin import HeadHoncho
-
 # ---------------------------------------------------------------------------
 
 class Postman:
@@ -33,7 +27,7 @@ class Postman:
 		
 		self.__Stopping = 0
 		
-		self.__logfile_filename = self.Config.get('files', 'log_file')
+		self.__logfile_filename = self.Config.get('logging', 'log_file')
 		
 		
 		# Open our log file and rotate it if we have to
@@ -296,7 +290,7 @@ class Postman:
 			tolog = '%s WARNING: %s\n' % (timelong, text)
 		
 		elif level == LOG_DEBUG:
-			if self.Config.getint('other', 'debug'):
+			if self.Config.getint('logging', 'debug'):
 				print timeshort, '[DEBUG]', text
 				
 				tolog = "%s [DEBUG] %s\n" % (timelong, text)
