@@ -376,6 +376,7 @@ class WeatherReport:
         self.fullreport=None
         self.temp=None
         self.windspeed=None
+        self.windgusts=None
         self.winddir=None
         self.vis=None
         self.dewp=None
@@ -444,6 +445,12 @@ class WeatherReport:
         Return the wind speed in knots!
         """
         return self.windspeed
+
+    def getWindGusts(self):
+        """
+        Return the wind gust speed in knots!
+        """
+        return self.windgusts
 
     def getWindDirection(self):
         """
@@ -816,6 +823,10 @@ class ReportParser:
                     self.Report.windspeed=float(speedkt[1:])
                     self.Report.winddir=None
                     self.Report.windcomp=None
+                    if r.find('gusting to') >= 0:
+                        self.Report.windgusts = float(r.split()[-2][1:])
+                    else:
+                        self.Report.windgusts = None
                 else:
                     #print "elab"
                     f,t,comp,deg,r,d,speedm,m,speedkt,r=data.split(" ",9)
@@ -823,6 +834,10 @@ class ReportParser:
                     self.Report.windcomp=comp.strip()
                     #self.Report.windspeed=float(speed)*1.609344
                     self.Report.windspeed=float(speedkt[1:])
+                    if r.find('gusting to') >= 0:
+                        self.Report.windgusts = float(r.split()[-2][1:])
+                    else:
+                        self.Report.windgusts = None
 
             # visibility
 

@@ -322,7 +322,9 @@ class WeatherMan(Plugin):
 				
 				# Wind
 				if report.getWindSpeed() > 0.0:
-					chunk = 'Wind: %dkt %s' % (report.getWindSpeed(), report.getWindCompass())
+					chunk = 'Wind: %s %dkt' % (report.getWindCompass(), report.getWindSpeed())
+					if report.getWindGusts():
+						chunk += ' (gusting to %dkt)' % (report.getWindGusts())
 				else:
 					chunk = 'Wind: calm'
 				chunks.append(chunk)
