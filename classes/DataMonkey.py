@@ -28,12 +28,10 @@ class DataMonkey(Child):
 		
 		self.__queries = 0
 		
-		self.conns = min(1, max(10, self.Config.getint('database', 'connections')))
+		self.rehash()
 	
 	def rehash(self):
-		self.__stop_threads()
-		self.setup()
-		self.run_once()
+		self.conns = min(1, max(10, self.Config.getint('database', 'connections')))
 	
 	def shutdown(self, message):
 		self.__stop_threads()
