@@ -35,11 +35,11 @@ METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
 
 WEATHER_METAR = 'METAR'
 METAR_RE = re.compile('^metar (?P<station>\S+)$')
-METAR_HELP = '\02metar\02 <station id> : Retrieve decoded METAR weather information.'
+METAR_HELP = '\02metar\02 <station id> : Retrieve coded METAR weather information.'
 
-WEATHER_METARC = 'METARC'
-METARC_RE = re.compile('^metarc (?P<station>\S+)$')
-METARC_HELP = '\02metar\02 <station id> : Retrieve coded METAR weather information.'
+WEATHER_METARD = 'METARD'
+METARD_RE = re.compile('^metard (?P<station>\S+)$')
+METARD_HELP = '\02metard\02 <station id> : Retrieve decoded METAR weather information.'
 
 # ---------------------------------------------------------------------------
 
@@ -82,15 +82,15 @@ class WeatherMan(Plugin):
 		
 		metar_dir = PluginTextEvent(WEATHER_METAR, IRCT_PUBLIC_D, METAR_RE)
 		metar_msg = PluginTextEvent(WEATHER_METAR, IRCT_MSG, METAR_RE)
-		metarc_dir = PluginTextEvent(WEATHER_METARC, IRCT_PUBLIC_D, METARC_RE)
-		metarc_msg = PluginTextEvent(WEATHER_METARC, IRCT_MSG, METARC_RE)
-		self.register(metar_dir, metar_msg, metarc_dir, metarc_msg)
+		metard_dir = PluginTextEvent(WEATHER_METARD, IRCT_PUBLIC_D, METARD_RE)
+		metard_msg = PluginTextEvent(WEATHER_METARD, IRCT_MSG, METARD_RE)
+		self.register(metar_dir, metar_msg, metard_dir, metard_msg)
 		
 		self.setHelp('weather', 'weather', SHORT_HELP)
 		self.setHelp('weather', 'weatherlong', LONG_HELP)
 		self.setHelp('weather', 'forecast', FORECAST_HELP)
 		self.setHelp('weather', 'metar', METAR_HELP)
-		self.setHelp('weather', 'metarc', METARC_HELP)
+		self.setHelp('weather', 'metard', METARD_HELP)
 		self.registerHelp()
 	
 	def _message_PLUGIN_TRIGGER(self, message):
@@ -100,7 +100,7 @@ class WeatherMan(Plugin):
 			url = WEATHER_URL % quote(trigger.match.group('location'))
 			self.urlRequest(trigger, url)
 		
-		elif trigger.name in (WEATHER_METAR, WEATHER_METARC):
+		elif trigger.name in (WEATHER_METAR, WEATHER_METARD):
 			url = METAR_URL % trigger.match.group('station').upper()
 			self.urlRequest(trigger, url)
 	
@@ -110,7 +110,7 @@ class WeatherMan(Plugin):
 		if trigger.name in (WEATHER_SHORT, WEATHER_LONG, WEATHER_FORECAST):
 			self.__Parse_Weather(trigger, page_text)
 		
-		elif trigger.name in (WEATHER_METAR, WEATHER_METARC):
+		elif trigger.name in (WEATHER_METAR, WEATHER_METARD):
 			self.__Parse_METAR(trigger, page_text)
 	
 	# -----------------------------------------------------------------------
@@ -274,8 +274,13 @@ class WeatherMan(Plugin):
 			# Gather data
 			chunks = []
 			
-			# A decoded report
+			# A coded report, for masochists
 			if trigger.name == WEATHER_METAR:
+				chunk = report.getRawMetarCode()
+				chunks.append(chunk)
+			
+			# A decoded report
+			elif trigger.name == WEATHER_METARD:
 				# Add updated time
 				chunk = 'Updated: %s' % report.getISOTime()
 				chunks.insert(0, chunk)
@@ -316,11 +321,6 @@ class WeatherMan(Plugin):
 				if report.getPressure() is not None:
 					chunk = 'Pressure: %.0f hPa' % report.getPressure()
 					chunks.append(chunk)
-			
-			# A coded report, for masochists
-			elif trigger.name == WEATHER_METARC:
-				chunk = report.getRawMetarCode()
-				chunks.append(chunk)
 			
 			
 			# Spit it out
