@@ -159,7 +159,11 @@ Won't divide by zero or lame things like that.
 <td colspan="2">GrabBT</td>
 </tr>
 <tr class="desc">
-<td colspan="2">None</td>
+<td colspan="2">
+Fairly simple plugin, downloads BitTorrent files and sticks them in a dir.
+Can also announce when new files show up in a seperate directory, and give
+a current torrent status report (requires my modified btlaunchmanycurses).
+</td>
 </tr></table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
@@ -276,7 +280,11 @@ our own command matching.
 <td colspan="2">SmartyPants</td>
 </tr>
 <tr class="desc">
-<td colspan="2">An implementation of an infobot, similar to... every other infobot.</td>
+<td colspan="2">
+An implementation of an infobot, similar to... every other infobot. This is
+the scariest plugin included with the bot, due to the mildly complicated
+database trickery.
+</td>
 </tr><tr>
 <td width="300">&lt;factoid name&gt; =~ s/&lt;search&gt;/&lt;replace&gt;/</td>
 <td>Search through the definition of &lt;factoid name&gt;, replacing any instances of the string &lt;search&gt; with &lt;replace&gt;. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'.</td>
@@ -409,10 +417,6 @@ our own command matching.
 <td>Retrieve coded METAR weather information.</td>
 </tr>
 <tr>
-<td width="300">metard &lt;station id&gt;</td>
-<td>Retrieve decoded METAR weather information.</td>
-</tr>
-<tr>
 <td width="300">taf &lt;station id&gt;</td>
 <td>Retrieve coded TAF weather forecast.</td>
 </tr>
@@ -432,6 +436,10 @@ our own command matching.
 <tr class="desc">
 <td colspan="2">Various commands for playing with words.</td>
 </tr><tr>
+<td width="300">acro [n] &lt;acronym&gt;</td>
+<td>Look up &lt;acronym&gt;, possibly getting definition [n].</td>
+</tr>
+<tr>
 <td width="300">antonyms &lt;word&gt;</td>
 <td>Search for words that have the exact opposite meaning of &lt;word&gt;.</td>
 </tr>
