@@ -286,6 +286,8 @@ class SiteBot(Plugin):
 		chunks = []
 		
 		for path, display in self.__df_paths:
+			if path.startswith('/'):
+				path = path[1:]
 			disk = os.path.join(self.__glftpd_path, path)
 			
 			if hasattr(os, 'statvfs'):
@@ -296,21 +298,26 @@ class SiteBot(Plugin):
 				else:
 					# block size * total blocks
 					totalmb = info[1] * info[2] / 1024 / 1024
-					# block size * free blocks
-					freemb = info[1] * info[3] / 1024 / 1024
+					# block size * free blocks for non-superman
+					freemb = info[1] * info[4] / 1024 / 1024
 					
 					chunk = '[\x1f%s\x1f: %dMB]' % (display, freemb)
 				
 				chunks.append(chunk)
 			
 			else:
-				lines = os.popen('/bin/df -k %s' % disk).readlines()
+				cmdline = '/bin/df -k %s' % disk
+				lines = os.popen(cmdline, 'r').readlines()
 				parts = lines[1].split()
 				
-				totalmb = long(parts[1]) / 1024
-				freemb = long(parts[3]) / 1024
+				if len(parts) >= 4:
+					totalmb = long(parts[1]) / 1024
+					freemb = long(parts[3]) / 1024
+					
+					chunk = '[\x1f%s\x1f: %dMB]' % (display, freemb)
+				else:
+					chunk = '[\x1f%s\x1f: ERROR]' % display
 				
-				chunk = '[\x1f%s\x1f: %dMB]' % (display, freemb)
 				chunks.append(chunk)
 		
 		# Build the reply string
