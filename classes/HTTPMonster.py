@@ -217,7 +217,6 @@ class async_http(buffered_dispatcher):
 	# Connection has data to read
 	def handle_read(self):
 		self.last_activity = time.time()
-		
 		self.data.append(self.recv(4096))
 	
 	# Connection has been closed
@@ -319,6 +318,10 @@ class async_http(buffered_dispatcher):
 						# No text, log an error
 						else:
 							self.failed('no page text: response = %s' % response)
+					
+					# We got no data!
+					else:
+						self.failed('no data returned: response = %s' % response)
 		
 		# Clean up
 		if not self.closed:
