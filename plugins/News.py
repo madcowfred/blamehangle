@@ -114,7 +114,7 @@ class News(Plugin):
 		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval') * 60
 		self.__gh_interval = self.Config.getint('News', 'google_health_interval') * 60
 		self.__gbiz_interval = self.Config.getint('News', 'google_business_interval') * 60
-		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')* 60
+		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval') * 60
 		
 		# Do RSS feed setup
 		self.__rss_default_interval = self.Config.getint('RSS', 'default_interval') * 60
@@ -399,7 +399,8 @@ class News(Plugin):
 		articles = []
 		queries = []
 		for item in r.items:
-			title = '%s: %s' % (feed_title, item['title'])
+			item_title = '%s: %s' % (feed_title, item.get('title', '<No Title>'))
+			#title = '%s: %s' % (feed_title, item['title'])
 			
 			if self.__rss_ignore_no_link:
 				if not item.has_key('link'):
@@ -412,9 +413,9 @@ class News(Plugin):
 			
 			desc = item.get('description', '')
 			
-			article = (title, (link, desc))
+			article = (item_title, (link, desc))
 			articles.append(article)
-			query = (NEWS_QUERY, title)
+			query = (NEWS_QUERY, item_title)
 			queries.append(query)
 		
 		if queries:
