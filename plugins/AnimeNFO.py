@@ -66,7 +66,7 @@ class AnimeNFO(Plugin):
 				elif result == '1':
 					chunks = []
 					for field, value in fields[1:]:
-						chunk = '[\02%s\02] %s' % (FIELDMAP[field], value)
+						chunk = '[%s] %s' % (FIELDMAP[field], value)
 						chunks.append(chunk)
 					
 					replytext = ' - '.join(chunks)
@@ -131,3 +131,5 @@ class async_animenfo(asyncore.dispatcher_with_send):
 		self.parent.Parse_Result(self.trigger, self.data)
 		
 		self.close()
+
+# ---------------------------------------------------------------------------
