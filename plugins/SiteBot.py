@@ -40,6 +40,13 @@ class SiteBot(Plugin):
 		self.__glftpd_path = self.Config.get('sitebot', 'glftpd_path')
 		self.__site_name = self.Config.get('sitebot', 'site_name')
 		
+		# Get our list of paths for df
+		self.__df_paths = []
+		for option in self.Config.options('sitebot-df'):
+			self.__df_paths.append(self.Config.get('sitebot-df', option).split(None, 1))
+		
+		self.__df_paths.sort()
+		
 		# Set up our horrible targets
 		self.__logme = {}
 		
@@ -272,6 +279,43 @@ class SiteBot(Plugin):
 		return replytext
 	
 	_cmd_usage = _cmd_bw
+	
+	# -----------------------------------------------------------------------
+	# Disk usage
+	def _cmd_df(self, params):
+		chunks = []
+		
+		for path, display in self.__df_paths:
+			disk = os.path.join(self.__glftpd_path, path)
+			
+			if hasattr(os, 'statvfs'):
+				try:
+					info = os.statvfs(disk)
+				except OSError:
+					chunk = '[\x1f%s\x1f: ERROR]' % display
+				else:
+					# block size * total blocks
+					totalmb = info[1] * info[2] / 1024 / 1024
+					# block size * free blocks
+					freemb = info[1] * info[3] / 1024 / 1024
+					
+					chunk = '[\x1f%s\x1f: %dMB]' % (display, freemb)
+				
+				chunks.append(chunk)
+			
+			else:
+				lines = os.popen('/bin/df -k %s' % disk).readlines()
+				parts = lines[1].split()
+				
+				totalmb = long(parts[1]) / 1024
+				freemb = long(parts[3]) / 1024
+				
+				chunk = '[\x1f%s\x1f: %dMB]' % (display, freemb)
+				chunks.append(chunk)
+		
+		# Build the reply string
+		replytext = 'DISK SPACE: %s' % ' '.join(chunks)
+		return replytext
 	
 	# -----------------------------------------------------------------------
 	# Info on a user
