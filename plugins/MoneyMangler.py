@@ -47,7 +47,7 @@ class MoneyMangler(Plugin):
 				tolog = 'loaded %d currencies from %s' % (len(self.Currencies), config_file)
 				self.putlog(LOG_DEBUG, tolog)
 	
-	def _message_REQ_REHASH(self, message):
+	def rehash(self):
 		self.setup()
 	
 	# -----------------------------------------------------------------------
