@@ -10,7 +10,10 @@ plugin developer, and generally make life easier.
 It also contains the various Triggers and Events that Plugins rely on.
 """
 
+import re
 import time
+
+from types import StringTypes
 
 from classes.Children import Child
 from classes.Constants import *
@@ -79,15 +82,18 @@ class Plugin(Child):
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
 	
 	# -----------------------------------------------------------------------
-	# New way of setting text events
+	# Simple way to add text and timed events
 	def addTextEvent(self, method, regexp, IRCTypes=(IRCT_PUBLIC_D, IRCT_MSG), help=None, priority=10):
 		if help is not None:
 			help = (self._HelpSection, help[0], help[1])
 		
+		# Compile the regexp case-insensitive if it's a string
+		if type(regexp) in StringTypes:
+			regexp = re.compile(regexp, re.I)
+		
 		event = PluginTextEvent(method.__name__, IRCTypes, regexp, help, priority)
 		self.__Events.append(event)
 	
-	# New way of setting timed events
 	def addTimedEvent(self, method, interval, targets=None, *args):
 		event = PluginTimedEvent(method.__name__, interval, targets, args)
 		self.__Events.append(event)
