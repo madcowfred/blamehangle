@@ -208,7 +208,13 @@ def CandF(f_val):
 	return '%s°C (%s°F)' % (ToCelsius(f_val), f_val)
 
 def ToCelsius(val):
-	return '%d' % round((int(val) - 32) * 5.0 / 9)
+	try:
+		return '%d' % round((int(val) - 32) * 5.0 / 9)
+	except ValueError:
+		return '0'
 
 def ToKilometers(val):
-	return '%d' % round(int(val) * 1.60934)
+	try:
+		return '%d' % round(int(val) * 1.60934)
+	except ValueError:
+		return '0'
