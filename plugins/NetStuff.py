@@ -27,7 +27,7 @@ class NetStuff(Plugin):
 		filename = os.path.join('data', 'cctlds')
 		try:
 			cctld_file = open(filename, 'r')
-		except OSError:
+		except IOError:
 			self.putlog(LOG_WARNING, "Can't find data/cctlds!")
 			return
 		
