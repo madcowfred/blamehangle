@@ -2,6 +2,35 @@
 # $Id$
 #----------------------------------------------------------------------------
 # This file contains (or at least will contain!) the factoid resolver.
+#
+# XXX: This is not set in stone.
+#      Fred, if you come up with something better, editz0r! :)
+#
+# The factoid resolver uses the following SQL tables:
+# CREATE TABLE factoids (
+# 	name varchar(64) NOT NULL default '',
+#	value text NOT NULL,
+#	author_nick varchar(64) default NULL,
+#	author_host varchar(192) default NULL,
+#	modifier_nick varchar(64) default NULL,
+#	modifier_host varchar(192) default NULL,
+#	requester_nick varchar(64) default NULL,
+#	requester_host varchar(192) default NULL,
+#	request_count int(11) NOT NULL default 0,
+#	created_time int(11) default NULL,
+#	modified_time int(11) default NULL,
+#	requested_time int(11) default NULL,
+#	PRIMARY KEY (key)
+# ) TYPE=MyISAM;
+#
+# CREATE TABLE factoid_locks (
+#	name varchar(64) NOT NULL default '',
+#	lock_nick varchar(64) default NULL,
+#	lock_host varchar(192) default NULL
+#	lock_time int(11) default NULL,
+#	PRIMARY KEY (key)
+# ) TYPE=MyISAM;
+#
 
 import re
 
@@ -25,6 +54,8 @@ class SmartyPants(Plugin):
 	FACT_DEL = "FACT_DEL"
 	FACT_INFO = "FACT_INFO"
 	FACT_STATUS = "FACT_STATUS"
+	FACT_LOCK = "FACT_LOCK"
+	
 	FACT_UPDATEDB = "FACT_UPDATEDB"
 
 	__GET_QUERY = "SELECT stuff FROM factoids WHERE something = %s"
@@ -131,7 +162,7 @@ class SmartyPants(Plugin):
 	#------------------------------------------------------------------------
 
 	# Someone asked to delete a factoid.
-	# This should be expanded to include user permission stuff, so not just
+	# XXX: This should be expanded to include user permission stuff, so not just
 	# anyone can delete factoids. It's nearly 5am and I'm tired, though.
 	def __fact_del(self, text, result, conn, IRCtype, target, userinfo):
 		key = text[0]
