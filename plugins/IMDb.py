@@ -22,6 +22,7 @@ TITLE_HELP = '\02imdb\02 <number> : Show information on a specific title number 
 TITLE_URL = "http://us.imdb.com/title/tt%07d/"
 
 EXACT_RE = re.compile(r'href="/title/tt(\d+)/">')
+APPROX_RE = re.compile(r'href="/title/tt(\d+)/">(.+)')
 
 # ---------------------------------------------------------------------------
 
@@ -96,13 +97,42 @@ class IMDb(Plugin):
 			title = m.group(1)
 			url = TITLE_URL % int(title)
 			self.urlRequest(trigger, url)
+		
+		# Some approximate matches.. use the first 5 results
+		elif page_text.find('<b>Approximate Matches</b>') >= 0:
+			# Get the chunk with the titles inside
+			chunk = FindChunk(page_text, '<b>Approximate Matches</b>', '</table>')
+			if chunk is None:
+				replytext = 'Failed to parse page: no Approximate Matches?'
+				self.sendReply(trigger, replytext)
+				return
 			
-			replytext = 'Found a match: %s' % title
+			# Find the titles
+			titles = FindChunks(chunk, '<a', '</a>')
+			if titles == []:
+				replytext = 'Failed to parse page: no Approximate Matches?'
+				self.sendReply(trigger, replytext)
+				return
+			
+			# Get the info we need
+			parts = []
+			
+			for title in titles[:5]:
+				print title
+				m = APPROX_RE.search(title)
+				if not m:
+					continue
+				
+				part = '%s: %s' % (m.group(2), m.group(1))
+				parts.append(part)
+			
+			# Spit it out
+			replytext = ' - '.join(parts)
 			self.sendReply(trigger, replytext)
 		
 		# FIXME: spit out some alternate matches
 		else:
-			replytext = 'Only found some alternate matches, too lazy to implement that now.'
+			replytext = 'Found no matches at all, you suck.'
 			self.sendReply(trigger, replytext)
 	
 	# ---------------------------------------------------------------------------
@@ -137,42 +167,41 @@ class IMDb(Plugin):
 			
 			# Find the movie's genre(s)
 			chunk = FindChunk(page_text, 'Genre:</b>', '<br>')
-			if chunk is None:
-				self.sendReply(trigger, 'Page parsing failed: genre.')
-				return
-			
-			genres = FindChunks(chunk, '/">', '</a>')
-			if not genres:
-				self.sendReply(trigger, 'Page parsing failed: genre.')
-				return
-			
-			data['genres'] = ', '.join(genres)
+			if chunk:
+				genres = FindChunks(chunk, '/">', '</a>')
+				if not genres:
+					self.sendReply(trigger, 'Page parsing failed: genre.')
+					return
+				
+				data['genres'] = ', '.join(genres)
 			
 			# Find the plot outline
 			chunk = FindChunk(page_text, 'Plot Outline:</b> ', ' <a')
-			if chunk is None:
-				self.sendReply(trigger, 'Page parsing failed: plot outline.')
-				return
-			
-			data['outline'] = chunk
+			if chunk:# is None:
+				#self.sendReply(trigger, 'Page parsing failed: plot outline.')
+				#return
+				data['outline'] = chunk
 			
 			# Find the rating
 			chunk = FindChunk(page_text, 'goldstar.gif', '<a')
-			if chunk is None:
-				self.sendReply(trigger, 'Page parsing failed: rating.')
-				return
-			
-			m = re.search(r'<b>(.+)</b> (\(.+ votes\))', chunk)
-			if not m:
-				self.sendReply(trigger, 'Page parsing failed: rating.')
-				return
-			
-			data['rating'] = '%s %s' % m.groups()
+			if chunk:# is None:
+				#self.sendReply(trigger, 'Page parsing failed: rating.')
+				#return
+				
+				m = re.search(r'<b>(.+)</b> (\(.+ votes\))', chunk)
+				if not m:
+					self.sendReply(trigger, 'Page parsing failed: rating.')
+					return
+				
+				data['rating'] = '%s %s' % m.groups()
 			
 			
 			# Spit out the data
 			parts = []
 			for field in ('Title', 'Year', 'Genres', 'Rating', 'URL', 'Outline'):
+				if data.get(field.lower(), None) is None:
+					continue
+				
 				part = '\02[\02%s\02]\02 %s' % (field, data[field.lower()])
 				parts.append(part)
 			
