@@ -122,16 +122,17 @@ class Karma(Plugin):
 		
 		return newname
 	
+	# Check our various caches to make sure people aren't spamming us.
 	def __Check_Spam(self, host, name):
 		# User host
 		if host in self.HostCache:
-			#print 'still in HostCache'
+			self.HostCache[host] = 1
 			return True
 		self.HostCache[host] = 1
 		
 		# Key name
 		if name in self.NameCache:
-			#print 'still in NameCache'
+			self.NameCache[name] = 1
 			return True
 		self.NameCache[name] = 1
 		
@@ -139,7 +140,6 @@ class Karma(Plugin):
 		now = time.time()
 		self.LastRequests = [t for t in self.LastRequests if now - t < self.Options['total_request_delay']]
 		if len(self.LastRequests) >= self.Options['total_request_count']:
-			#print 'too many recent requests'
 			return True
 		self.LastRequests.append(now)
 		
