@@ -160,7 +160,7 @@ def StripHTML(text):
 	# Remove all HTML tags
 	mangled = re.sub(r'(?s)<.*?>', '', mangled)
 	# Fix escaped bits and pieces
-	mangled = re.sub(r'\&(.+)\;?', unquote_things, mangled)
+	mangled = re.sub(r'\&([^;]+);', unquote_things, mangled)
 	# Split into lines that aren't empty
 	lines = [s.strip() for s in mangled.splitlines() if s.strip()]
 	# Return!
@@ -176,7 +176,7 @@ QUOTED = {
 def unquote_things(m):
 	whole = m.group(0)
 	thing = m.group(1).lower()
-	if thing.startswith('#'):
+	if thing.startswith('&'):
 		try:
 			c = chr(int(thing[1:]))
 		except ValueError:
