@@ -121,6 +121,7 @@ class GrabBT(Plugin):
 					break
 			
 			if hasmode == 0:
+				self.sendReply(trigger, "Access denied.")
 				tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
 				self.putlog(LOG_WARNING, tolog)
 				return
