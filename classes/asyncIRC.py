@@ -262,7 +262,7 @@ class asyncIRC(buffered_dispatcher):
 		# Try to connect. This will blow up if it can't resolve the host.
 		try:
 			self.connect((host, port))
-		except socker.error, msg:
+		except socket.error, msg:
 			self.really_close(msg)
 		except socket.gaierror, msg:
 			self.really_close(msg)
