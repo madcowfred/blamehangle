@@ -71,6 +71,8 @@ class TorrentScraper(Plugin):
 			
 			# Build the new URL
 			newurl = urlparse.urljoin(resp.url, href)
+			if newurl in items:
+				continue
 			
 			# Get some text to describe it
 			bits = chunk.split('>', 1)
@@ -102,8 +104,6 @@ class TorrentScraper(Plugin):
 		
 		query = SELECT_QUERY % querybit
 		
-		print 'args:', len(args)
-		
 		# And execute it
 		self.dbQuery(trigger, self.__DB_Check, query, *args)
 	
@@ -114,8 +114,6 @@ class TorrentScraper(Plugin):
 		if result is None:
 			self.putlog(LOG_WARNING, '__DB_Check: A DB error occurred!')
 			return
-		
-		print 'result:', len(result)
 		
 		items = trigger.items
 		del trigger.items
