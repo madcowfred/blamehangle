@@ -1,13 +1,10 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# This file contains ChatterGizmo, which does most of the grunt work for IRC
-# connections.
-# ---------------------------------------------------------------------------
 
-import errno
+"This file contains the main IRC event handling code."
+
 import re
-import select
 import time
 import types
 
@@ -19,7 +16,6 @@ from classes.Userlist import Userlist
 from classes.WrapConn import *
 
 # ---------------------------------------------------------------------------
-
 # bold | codes off | reverse | underline | 3 forms of colours
 RE_STRIP_CODES = re.compile(r'(\x02|\x0F|\x16|\x1F|\x03\d{1,2},\d{1,2}|\x03\d{1,2}|\x03)')
 
@@ -29,11 +25,6 @@ RE_ADDRESSED = re.compile(r'^(?P<nick>\S+)\s*[:;,>]\s*(?P<text>.+)$')
 # ---------------------------------------------------------------------------
 
 class ChatterGizmo(Child):
-	"""
-	The IRC class. Does various exciting things, like the multiple IRC
-	server handling, and so on.
-	"""
-	
 	def setup(self):
 		self.Conns = {}
 		self.stopping = 0

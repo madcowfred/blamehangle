@@ -2,6 +2,8 @@
 # $Id$
 # ---------------------------------------------------------------------------
 
+"This file does all of the IRC <-> plugin event nastiness, and also help."
+
 import re
 import time
 
@@ -18,10 +20,6 @@ LOG_QUERY += " VALUES (%s, %s, %s, %s, %s, %s, %s)"
 # ---------------------------------------------------------------------------
 
 class PluginHandler(Child):
-	"""
-	This handles all of the IRC <-> plugin event nastiness.
-	"""
-	
 	def setup(self):
 		# If log_commands is on, we need to create our table.
 		self._log_commands = self.Config.getboolean('logging', 'log_commands')

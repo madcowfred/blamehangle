@@ -15,6 +15,7 @@ import smtplib
 import sys
 import time
 import traceback
+
 from exceptions import SystemExit
 
 # ---------------------------------------------------------------------------
@@ -653,3 +654,5 @@ class Postman:
 		# Otherwise, we can do that once it's loaded itself :|
 		if not self.__reloadme:
 			self.sendMessage(None, REQ_REHASH, None)
+
+# ---------------------------------------------------------------------------
