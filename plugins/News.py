@@ -514,8 +514,8 @@ class News(Plugin):
 		# We don't need to add any that are already in the database
 		for row in result:
 			eatme = [a for a in articles if a[0].lower() == row['title'].lower()]
-			if eatme:
-				articles.remove(eatme[0])
+			for eat in eatme:
+				articles.remove(eat)
 		
 		# If we don't have any new articles, go home now
 		if len(articles) == 0:
