@@ -131,9 +131,7 @@ class Postman:
 		
 		while 1:
 			try:
-				#if not self.inQueue.empty():
 				if self.inQueue:
-					#message = self.inQueue.get(0)
 					message = self.inQueue.pop(0)
 					
 					# If it's targeted at us, process it
@@ -144,9 +142,8 @@ class Postman:
 						# Reload our config
 						elif message.ident == REQ_LOAD_CONFIG:
 							self.__Reload_Config()
-							
-							#self.sendMessage('HeadHoncho', REPLY_LOAD_CONFIG, message.data)
 						
+						# Die!
 						elif message.ident == REQ_SHUTDOWN:
 							self.__Shutdown(message.data[0])
 						
