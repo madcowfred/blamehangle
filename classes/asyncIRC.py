@@ -229,7 +229,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 	def connect_to_server(self, host, port, nickname, username, ircname, vhost, family=socket.AF_INET):
 		# Remember our info
 		self.__nickname = nickname
-		self.__userinfo = (username, vhost, 'server', ircname)
+		self.__userinfo = (username, socket.gethostname(), host, ircname)
 		
 		# Create our socket
 		self.create_socket(family, socket.SOCK_STREAM)
