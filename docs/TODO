@@ -20,3 +20,5 @@ plugins:
 	* Karma: combine nicknames
 	* Karma: top/bottom <n> karmas
 	* animenfo.com lookup
+	* 'seen' (last time someone was seen)
+	* Leave notes for people (possibly combined with above)
