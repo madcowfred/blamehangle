@@ -112,7 +112,7 @@ class AusBOM(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse a Current Observations page.
-	def __Parse_Current(self, trigger, page_url, page_text):
+	def __Parse_Current(self, trigger, resp):
 		# Work out what our location should be
 		if trigger.name == AUSBOM_AUSBOM:
 			location = trigger.match.group('location')
@@ -120,7 +120,7 @@ class AusBOM(Plugin):
 			location = None
 		
 		# Find the damn title
-		m = TITLE_RE.search(page_text)
+		m = TITLE_RE.search(resp.data)
 		if not m:
 			self.sendReply(trigger, 'Page parsing failed: area.')
 			return
@@ -140,7 +140,7 @@ class AusBOM(Plugin):
 			return
 		
 		# Find the Giant Table
-		chunk = FindChunk(page_text, 'Last updated:', '</table>')
+		chunk = FindChunk(resp.data, 'Last updated:', '</table>')
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: data.')
 			return

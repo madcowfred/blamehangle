@@ -102,9 +102,9 @@ class MapQuest(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We heard back from mapquest. yay!
-	def __Parse_Distance(self, trigger, page_url, page_text):
+	def __Parse_Distance(self, trigger, resp):
 		# Can't find a route
-		if page_text.find('We are having trouble finding a route') >= 0:
+		if resp.data.find('We are having trouble finding a route') >= 0:
 			self.sendReply(trigger, 'Unable to find a route between those places!')
 			return
 		
@@ -112,19 +112,19 @@ class MapQuest(Plugin):
 		_error = None
 		
 		# Bad ZIP code
-		if page_text.find('Invalid ZIP code') >= 0:
+		if resp.data.find('Invalid ZIP code') >= 0:
 			_error = 'Invalid ZIP code'
 		# Bad state/province
-		elif page_text.find('Invalid state/province') >= 0:
+		elif resp.data.find('Invalid state/province') >= 0:
 			_error = 'Invalid state/province'
 		# Multiple locations
-		elif page_text.find('Multiple cities found') >= 0:
+		elif resp.data.find('Multiple cities found') >= 0:
 			_error = 'Multiple cities found'
 		
 		# If we have an error, spit something out
 		if _error is not None:
-			_start = page_text.find('Enter a starting address')
-			_end = page_text.find('Enter a destination address')
+			_start = resp.data.find('Enter a starting address')
+			_end = resp.data.find('Enter a destination address')
 			
 			if _start < 0 and _end < 0:
 				_check = 'source and destination locations.'
@@ -140,7 +140,7 @@ class MapQuest(Plugin):
 			return
 		
 		# Find the source and destination info
-		chunks = FindChunks(page_text, 'valign=center align=left class=size12>', '</td>')
+		chunks = FindChunks(resp.data, 'valign=center align=left class=size12>', '</td>')
 		if not chunks:
 			self.sendReply(trigger, 'Failed to parse page: source/dest info.')
 			return
@@ -155,7 +155,7 @@ class MapQuest(Plugin):
 		dest_loc = StripHTML(chunks[1])[0]
 		
 		# Find out the total time
-		m = TOTAL_TIME_RE.search(page_text)
+		m = TOTAL_TIME_RE.search(resp.data)
 		if not m:
 			self.sendReply(trigger, 'Failed to parse page: total time.')
 			return
@@ -163,7 +163,7 @@ class MapQuest(Plugin):
 		total_time = m.group(1)
 		
 		# Find out the total distance
-		m = TOTAL_DISTANCE_RE.search(page_text)
+		m = TOTAL_DISTANCE_RE.search(resp.data)
 		if not m:
 			self.sendReply(trigger, 'Failed to parse page: total distance.')
 			return

@@ -131,17 +131,17 @@ class Airline(Plugin):
 			self.sendReply(trigger, replytext)
 	
 	# Site replied
-	def __Parse_IATA(self, trigger, page_url, page_text):
+	def __Parse_IATA(self, trigger, resp):
 		code = trigger.match.group('code').upper()
-		page_text = page_text.replace('&deg;', '°')
+		resp.data = resp.data.replace('&deg;', '°')
 		
 		# 404 error
-		if page_text.find('Requested File was not found') >= 0:
+		if resp.data.find('Requested File was not found') >= 0:
 			replytext = "No such IATA code: '%s'" % code
 			self.sendReply(trigger, replytext)
 		
 		# Find the chunk we need
-		chunk = FindChunk(page_text, '<PRE>', '</PRE>')
+		chunk = FindChunk(resp.data, '<PRE>', '</PRE>')
 		if not chunk:
 			self.putlog(LOG_WARNING, 'IATA page parsing failed: no data')
 			self.sendReply(trigger, 'Failed to parse page.')
@@ -225,15 +225,15 @@ class Airline(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Travelocity has replied
-	def __Parse_Travelocity(self, trigger, page_url, page_text):
+	def __Parse_Travelocity(self, trigger, resp):
 		# No results
-		if page_text.find('No match found') >= 0:
+		if resp.data.find('No match found') >= 0:
 			replytext = 'Unable to find flight information'
 			self.sendReply(trigger, replytext)
 		
 		else:
 			# Find the chunk of data we're interested in
-			chunk = FindChunk(page_text, '<table name=flight_info', '</table')
+			chunk = FindChunk(resp.data, '<table name=flight_info', '</table')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Flight page parsing failed: unable to find data')
 				self.sendReply(trigger, 'Failed to parse page properly')

@@ -45,12 +45,12 @@ class SportsFan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We heard back from Yahoo. yay!
-	def __Parse_Scores(self, trigger, page_url, page_text):
+	def __Parse_Scores(self, trigger, resp):
 		team = trigger.match.group('team').lower()
 		league = trigger.match.group('league').lower()
 		
 		# Find some score blocks
-		chunks = FindChunks(page_text, '<td class="yspscores">', '</tr>')
+		chunks = FindChunks(resp.data, '<td class="yspscores">', '</tr>')
 		if not chunks:
 			self.sendReply(trigger, 'Page parsing failed')
 			return

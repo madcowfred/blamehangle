@@ -51,17 +51,17 @@ class GameStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We got a response from KLOV!
-	def __Parse_KLOV(self, trigger, page_url, page_text):
+	def __Parse_KLOV(self, trigger, resp):
 		title = trigger.match.group('title').lower()
 		
 		# Nothing, booo
-		if page_text.find('Search Results: 0') >= 0:
+		if resp.data.find('Search Results: 0') >= 0:
 			self.sendReply(trigger, 'No matches found.')
 		
 		# Something!
 		else:
 			# Find the table we want
-			chunk = FindChunk(page_text, '<HR>', '</TABLE>')
+			chunk = FindChunk(resp.data, '<HR>', '</TABLE>')
 			if not chunk:
 				self.sendReply(trigger, 'Page parsing failed: table.')
 				return
@@ -131,22 +131,22 @@ class GameStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# We got a response from MobyGames!
-	def __Parse_MobyGames(self, trigger, page_url, page_text):
+	def __Parse_MobyGames(self, trigger, resp):
 		title = trigger.match.group('title').lower()
 		
 		# Nothing, booo
-		if page_text.find('came up empty') >= 0:
+		if resp.data.find('came up empty') >= 0:
 			self.sendReply(trigger, 'No matches found.')
 		
 		# Something!
 		else:
 			# Find the chunk we want
-			chunk = FindChunk(page_text, 'Quick Search', "Not what you're looking for")
+			chunk = FindChunk(resp.data, 'Quick Search', "Not what you're looking for")
 			if not chunk:
 				self.sendReply(trigger, 'Page parsing failed: data.')
 				return
 			
-			ul = FindChunk(page_text, '<ul>', '</ul>')
+			ul = FindChunk(resp.data, '<ul>', '</ul>')
 			parts = FindChunks(ul, '<b>', '<td width=25>')
 			
 			for part in parts:

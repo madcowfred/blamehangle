@@ -56,19 +56,19 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	
-	def __IMDb(self, trigger, page_url, page_text):
+	def __IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
-		if page_text.find('title search</title>') < 0:
-			self.__IMDb_Title(trigger, page_url, page_text)
+		if resp.data.find('title search</title>') < 0:
+			self.__IMDb_Title(trigger, resp.url, resp.data)
 			return
 		
 		movie = trigger.match.group(1)
-		page_text = UnquoteHTML(page_text)
+		resp.data = UnquoteHTML(resp.data)
 		
 		# Woo, some exact matches. Assume the first one is correct.
-		if page_text.find('<b>Exact Matches</b>') >= 0:
+		if resp.data.find('<b>Exact Matches</b>') >= 0:
 			# Get the chunk with the titles inside
-			chunk = FindChunk(page_text, '<b>Exact Matches</b>', '</table>')
+			chunk = FindChunk(resp.data, '<b>Exact Matches</b>', '</table>')
 			if chunk is None:
 				replytext = 'Failed to parse page: no Exact Matches?'
 				self.sendReply(trigger, replytext)
@@ -93,9 +93,9 @@ class Video(Plugin):
 			self.urlRequest(trigger, self.__IMDb_Title, url)
 		
 		# Some approximate matches.. use the first 5 results
-		elif page_text.find('<b>Approximate Matches</b>') >= 0:
+		elif resp.data.find('<b>Approximate Matches</b>') >= 0:
 			# Get the chunk with the titles inside
-			chunk = FindChunk(page_text, '<b>Approximate Matches</b>', '</table>')
+			chunk = FindChunk(resp.data, '<b>Approximate Matches</b>', '</table>')
 			if chunk is None:
 				replytext = 'Failed to parse page: no Approximate Matches?'
 				self.sendReply(trigger, replytext)
@@ -130,11 +130,11 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	
-	def __IMDb_Title(self, trigger, page_url, page_text):
-		page_text = UnquoteHTML(page_text)
+	def __IMDb_Title(self, trigger, resp):
+		resp.data = UnquoteHTML(resp.data)
 		
 		# No match, arg!
-		if page_text.find('Page not found') >= 0:
+		if resp.data.find('Page not found') >= 0:
 			self.sendReply(trigger, 'Title not found!')
 		
 		# We have a winner
@@ -142,7 +142,7 @@ class Video(Plugin):
 			data = {}
 			
 			# Find the movie's title and year
-			m = re.search(r'<title>(.+) \((\d+).*?\)</title>', page_text)
+			m = re.search(r'<title>(.+) \((\d+).*?\)</title>', resp.data)
 			if not m:
 				self.sendReply(trigger, 'Page parsing failed: title.')
 				return
@@ -151,7 +151,7 @@ class Video(Plugin):
 			data['year'] = m.group(2)
 			
 			# Find the movie's number for a URL
-			m = re.search(r'"/title/tt(\d+)/"', page_text)
+			m = re.search(r'"/title/tt(\d+)/"', resp.data)
 			if not m:
 				self.sendReply(trigger, 'Page parsing failed: number.')
 				return
@@ -159,7 +159,7 @@ class Video(Plugin):
 			data['url'] = 'http://us.imdb.com:80/title/tt%s' % m.group(1)
 			
 			# Find the movie's genre(s)
-			chunk = FindChunk(page_text, 'Genre:</b>', '<br>')
+			chunk = FindChunk(resp.data, 'Genre:</b>', '<br>')
 			if chunk:
 				genres = FindChunks(chunk, '/">', '</a>')
 				if not genres:
@@ -169,9 +169,9 @@ class Video(Plugin):
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot outline, or maybe it's a summary today
-			chunk = FindChunk(page_text, 'Plot Outline:</b>', '<br>')
+			chunk = FindChunk(resp.data, 'Plot Outline:</b>', '<br>')
 			if not chunk:
-				chunk = FindChunk(page_text, 'Plot Summary:</b>', '<br>')
+				chunk = FindChunk(resp.data, 'Plot Summary:</b>', '<br>')
 			
 			if chunk:
 				n = chunk.find('<a')
@@ -180,7 +180,7 @@ class Video(Plugin):
 				data['outline'] = chunk.strip()
 			
 			# Find the rating
-			chunk = FindChunk(page_text, 'goldstar.gif', '<a')
+			chunk = FindChunk(resp.data, 'goldstar.gif', '<a')
 			if chunk:
 				m = re.search(r'<b>(.+)</b> (\(.+ votes\))', chunk)
 				if not m:
@@ -204,17 +204,17 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse a TVTome search results page
-	def __TVTome(self, trigger, page_url, page_text):
+	def __TVTome(self, trigger, resp):
 		findme = trigger.match.group(1).lower()
 		
 		# It's not a search result
-		if page_text.find('Show search for:') < 0:
-			self.__TVTome_Show(trigger, page_url, page_text)
+		if resp.data.find('Show search for:') < 0:
+			self.__TVTome_Show(trigger, resp.url, resp.data)
 		
 		# It is a search result!
 		else:
 			# Find the results block
-			chunk = FindChunk(page_text, 'Show search for:', "Didn't find what you")
+			chunk = FindChunk(resp.data, 'Show search for:', "Didn't find what you")
 			if not chunk:
 				self.sendReply(trigger, 'Page parsing failed: results.')
 				return
@@ -256,15 +256,15 @@ class Video(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse a TVTome show info page
-	def __TVTome_Show(self, trigger, page_url, page_text):
+	def __TVTome_Show(self, trigger, resp):
 		# Find the show title
-		show_title = FindChunk(page_text, '<h1>', '</h1>')
+		show_title = FindChunk(resp.data, '<h1>', '</h1>')
 		if not show_title:
 			self.sendReply(trigger, 'Page parsing failed: show title.')
 			return
 		
 		# Find the show info
-		chunk = FindChunk(page_text, '<!-- Show Information body Begins -->', '<!-- Show Information body Ends -->')
+		chunk = FindChunk(resp.data, '<!-- Show Information body Begins -->', '<!-- Show Information body Ends -->')
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: show info.')
 			return
@@ -284,7 +284,7 @@ class Video(Plugin):
 				data.append(tds)
 		
 		# Find the page URL
-		path = FindChunk(page_text, '<input type="hidden" name="returnTo" value="', '">')
+		path = FindChunk(resp.data, '<input type="hidden" name="returnTo" value="', '">')
 		if path:
 			url = 'http://www.tvtome.com' + path
 			data.append(('URL', url))

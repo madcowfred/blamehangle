@@ -195,9 +195,9 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the ASX page and spit out any results
-	def __ASX(self, trigger, page_url, page_text):
+	def __ASX(self, trigger, resp):
 		# Get all table rows
-		trs = FindChunks(page_text, '<tr', '</tr>')
+		trs = FindChunks(resp.data, '<tr', '</tr>')
 		if not trs:
 			self.putlog(LOG_WARNING, 'ASX page parsing failed: no table rows?!')
 			self.sendReply(trigger, 'Failed to parse page.')
@@ -240,12 +240,12 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the exchange page and spit out a result
-	def __Exchange(self, trigger, page_url, page_text):
+	def __Exchange(self, trigger, resp):
 		data = trigger.data
-		page_text = page_text.replace('&amp;', ' and ')
+		resp.data = resp.data.replace('&amp;', ' and ')
 		
 		# Find the data chunks
-		chunks = FindChunks(page_text, '<td class="yfnc_tabledata1">', '</td>')
+		chunks = FindChunks(resp.data, '<td class="yfnc_tabledata1">', '</td>')
 		if not chunks:
 			self.sendReply(trigger, 'Page parsing failed.')
 			return
@@ -260,24 +260,24 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock quote page and spit out a result
-	def __Quote(self, trigger, page_url, page_text):
+	def __Quote(self, trigger, resp):
 		symbol = trigger.match.group('symbol').upper()
 		
 		# Invalid symbol, sorry
-		if page_text.find('is not a valid ticker symbol') >= 0:
+		if resp.data.find('is not a valid ticker symbol') >= 0:
 			replytext = '"%s" is not a valid ticker symbol!' % symbol
 		
 		else:
 			# See if we can get the title
-			m = TITLE_RE.search(page_text)
+			m = TITLE_RE.search(resp.data)
 			if m:
 				showme = '%s (%s)' % (m.group(2), m.group(1))
 			else:
 				showme = symbol
 			
 			# Find the data we need
-			#chunk = FindChunk(page_text, '<td class="yfnc_datamodoutline1"><table width="100%"', '</table>')
-			chunk = FindChunk(page_text, 'class="yfnc_datamodoutline1"', '</table>')
+			#chunk = FindChunk(resp.data, '<td class="yfnc_datamodoutline1"><table width="100%"', '</table>')
+			chunk = FindChunk(resp.data, 'class="yfnc_datamodoutline1"', '</table>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
 				self.sendReply(trigger, 'Failed to parse page.')
@@ -321,17 +321,17 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock symbol page and spit out a result
-	def __Symbol(self, trigger, page_url, page_text):
+	def __Symbol(self, trigger, resp):
 		findme = trigger.match.group('findme').upper()
 		
 		# No matches, sorry
-		if page_text.find('returned no Stocks matches') >= 0:
+		if resp.data.find('returned no Stocks matches') >= 0:
 			replytext = 'No symbols found matching "%s"' % findme
 			self.sendReply(trigger, replytext)
 		
 		else:
 			# Find the chunk of data we need
-			chunk = FindChunk(page_text, 'Add to My Portfolio', 'View Quotes for All Above Symbols')
+			chunk = FindChunk(resp.data, 'Add to My Portfolio', 'View Quotes for All Above Symbols')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
 				self.sendReply(trigger, 'Page parsing failed.')
@@ -372,9 +372,9 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Update the currency list
-	def __Update_Currencies(self, trigger, page_url, page_text):
+	def __Update_Currencies(self, trigger, resp):
 		# Find the giant list
-		chunk = FindChunk(page_text, '<input name="amt"', '</select>')
+		chunk = FindChunk(resp.data, '<input name="amt"', '</select>')
 		if not chunk:
 			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
 			return

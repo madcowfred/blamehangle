@@ -74,13 +74,13 @@ class Anime(Plugin):
 	
 	# ---------------------------------------------------------------------------
 	# Parse an AniDB page
-	def __Parse_AniDB(self, trigger, page_url, page_text):
+	def __Parse_AniDB(self, trigger, resp):
 		findme = trigger.match.group('findme').lower()
 		
 		# If it's search results, parse them and spit them out
-		if page_text.find('Search for:') >= 0:
+		if resp.data.find('Search for:') >= 0:
 			# We need some results, damn you
-			chunks = FindChunks(page_text, '<a href="animedb.pl?show=anime&aid=', '</a>')
+			chunks = FindChunks(resp.data, '<a href="animedb.pl?show=anime&aid=', '</a>')
 			if not chunks:
 				replytext = 'No results found for "%s"' % findme
 				self.sendReply(trigger, replytext)
@@ -118,12 +118,12 @@ class Anime(Plugin):
 			self.sendReply(trigger, replytext)
 		
 		# If it's an anime page, parse it and spit the info out
-		elif page_text.find('Show Anime - ') >= 0:
+		elif resp.data.find('Show Anime - ') >= 0:
 			parts = []
 			
 			# Find the info we want
 			for thing in ('Title', 'Genre', 'Type', 'Episodes', 'Year', 'Producer', 'Rating'):
-				chunk = FindChunk(page_text, '%s:' % thing, '</tr>')
+				chunk = FindChunk(resp.data, '%s:' % thing, '</tr>')
 				if chunk:
 					lines = StripHTML(chunk)
 					if lines:
@@ -145,7 +145,7 @@ class Anime(Plugin):
 				parts.append(part)
 			
 			# Find our aid
-			m = re.search(r'name="aid" value="(\d+)"', page_text)
+			m = re.search(r'name="aid" value="(\d+)"', resp.data)
 			if m:
 				url = AID_URL % m.group(1)
 			else:
@@ -159,11 +159,11 @@ class Anime(Plugin):
 			self.sendReply(trigger, replytext)
 		
 		# Adult content, pfft
-		elif page_text.find('Adult Content Warning') >= 0:
+		elif resp.data.find('Adult Content Warning') >= 0:
 			self.sendReply(trigger, "Seems to be hentai, you need an AniDB user account to see the details :(")
 		
 		# Maintenance?
-		elif page_text.find('maintenance') >= 0:
+		elif resp.data.find('maintenance') >= 0:
 			self.sendReply(trigger, "AniDB seems to be under maintenance. Again.")
 		
 		# Parsing failed

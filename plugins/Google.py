@@ -118,27 +118,27 @@ class Google(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Google(self, trigger, page_url, page_text):
+	def __Google(self, trigger, resp):
 		findme = trigger.match.group(1)
 		
 		# Woops, no matches
-		if page_text.find('- did not match any documents') >= 0:
+		if resp.data.find('- did not match any documents') >= 0:
 			replytext = 'No pages were found containing "%s"' % findme
 			self.sendReply(trigger, replytext)
 		
 		# Some matches!
 		else:
-			page_text = UnquoteHTML(page_text)
+			resp.data = UnquoteHTML(resp.data)
 			
 			# Go go calculator
-			m = CALC_RE.search(page_text)
+			m = CALC_RE.search(resp.data)
 			if m:
 				calc = '%s' % NOFONT_RE.sub('', m.group('result'))
 			else:
 				calc = None
 			
 			# Find the result(s)
-			chunks = FindChunks(page_text, '<!--m-->', '</a>')
+			chunks = FindChunks(resp.data, '<!--m-->', '</a>')
 			if chunks:
 				results = []
 				
@@ -200,14 +200,14 @@ class Google(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Translate(self, trigger, page_url, page_text):
+	def __Translate(self, trigger, resp):
 		# Couldn't translate
-		if page_text.find('Sorry, this text could not be translated') >= 0:
+		if resp.data.find('Sorry, this text could not be translated') >= 0:
 			replytext = 'Sorry, this text could not be translated.'
 		
 		# Did translate!
 		else:
-			chunk = FindChunk(page_text, 'wrap=PHYSICAL>', '</textarea>')
+			chunk = FindChunk(resp.data, 'wrap=PHYSICAL>', '</textarea>')
 			if chunk:
 				replytext = chunk
 			else:
@@ -216,15 +216,15 @@ class Google(Plugin):
 		# Spit out our answer
 		self.sendReply(trigger, replytext)
 	
-	def __Transmangle(self, trigger, page_url, page_text):
+	def __Transmangle(self, trigger, resp):
 		replytext = None
 		
 		# Couldn't translate
-		if page_text.find('Sorry, this text could not be translated') >= 0:
+		if resp.data.find('Sorry, this text could not be translated') >= 0:
 			replytext = 'Sorry, this text could not be translated.'
 		
 		else:
-			chunk = FindChunk(page_text, 'wrap=PHYSICAL>', '</textarea>')
+			chunk = FindChunk(resp.data, 'wrap=PHYSICAL>', '</textarea>')
 			if chunk:
 				# We need to translate it back again now
 				if trigger.done == 0:

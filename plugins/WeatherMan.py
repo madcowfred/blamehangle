@@ -116,15 +116,15 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse a Yahoo Weather page
-	def __Parse_Weather(self, trigger, page_url, page_text):
+	def __Parse_Weather(self, trigger, resp):
 		# No results
-		if page_text.find('No match found') >= 0:
+		if resp.data.find('No match found') >= 0:
 			replytext = "No matches found for '%s'" % trigger.match.group('location')
 			self.sendReply(trigger, replytext)
 		
 		# More than one result... assume the first one is right
-		elif page_text.find('location matches') >= 0:
-			m = re.search(r'<a href="(/forecast/\S+\.html)">', page_text)
+		elif resp.data.find('location matches') >= 0:
+			m = re.search(r'<a href="(/forecast/\S+\.html)">', resp.data)
 			if m:
 				url = 'http://search.weather.yahoo.com' + m.group(1)
 				self.urlRequest(trigger, self.__Parse_Weather, url)
@@ -141,12 +141,12 @@ class WeatherMan(Plugin):
 			data = {}
 			
 			# Eat the degree symbols
-			page_text = page_text.replace('&ordm;', '')
-			page_text = page_text.replace('°', '')
+			resp.data = resp.data.replace('&ordm;', '')
+			resp.data = resp.data.replace('°', '')
 			
 			
 			# Find the chunk that tells us where we are
-			chunk = FindChunk(page_text, '<!--BROWSE: ADD BREADCRUMBS-->', '</b></font>')
+			chunk = FindChunk(resp.data, '<!--BROWSE: ADD BREADCRUMBS-->', '</b></font>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
 				self.sendReply(trigger, 'Failed to parse page properly')
@@ -160,7 +160,7 @@ class WeatherMan(Plugin):
 			
 			
 			# Find the chunk with the weather data we need
-			chunk = FindChunk(page_text, '<!--CURCON-->', '<!--END CURCON-->')
+			chunk = FindChunk(resp.data, '<!--CURCON-->', '<!--END CURCON-->')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
 				self.sendReply(trigger, 'Failed to parse page properly')
@@ -185,7 +185,7 @@ class WeatherMan(Plugin):
 			
 			
 			# Maybe find some more weather data
-			chunk = FindChunk(page_text, '<!--MORE CC-->', '<!--ENDMORE CC-->')
+			chunk = FindChunk(resp.data, '<!--MORE CC-->', '<!--ENDMORE CC-->')
 			if chunk is not None:
 				lines = StripHTML(chunk)
 				
@@ -211,7 +211,7 @@ class WeatherMan(Plugin):
 			
 			
 			# Maybe find the forecast
-			chunk = FindChunk(page_text, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
+			chunk = FindChunk(resp.data, '<!----------------------- FORECAST ------------------------->', '<!--ENDFC-->')
 			if chunk is not None:
 				lines = StripHTML(chunk)
 				
@@ -256,17 +256,17 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse a semi-decoded METAR file
-	def __Parse_METAR(self, trigger, page_url, page_text):
+	def __Parse_METAR(self, trigger, resp):
 		stationid = trigger.match.group('station').upper()
 		
 		# No results
-		if page_text.find('Not Found') >= 0:
+		if resp.data.find('Not Found') >= 0:
 			replytext = "No such station ID '%s'" % stationid
 			self.sendReply(trigger, replytext)
 		
 		# Ok, off we go
 		else:
-			lines = page_text.splitlines()
+			lines = resp.data.splitlines()
 			
 			# Get the location
 			i = lines[0].find(' (')
@@ -276,7 +276,7 @@ class WeatherMan(Plugin):
 				location = 'Unknown location'
 			
 			# Find the encoded data
-			obs = [l for l in page_text.splitlines() if l.startswith('ob: ')]
+			obs = [l for l in resp.data.splitlines() if l.startswith('ob: ')]
 			if obs:
 				replytext = '[%s] %s' % (location, obs[0][4:])
 			else:
@@ -287,18 +287,18 @@ class WeatherMan(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse scary TAF info
-	def __Parse_TAF(self, trigger, page_url, page_text):
+	def __Parse_TAF(self, trigger, resp):
 		stationid = trigger.match.group('station').upper()
 		
 		# No results
-		if page_text.find('Not Found') >= 0:
+		if resp.data.find('Not Found') >= 0:
 			replytext = "No such station ID '%s'" % stationid
 			self.sendReply(trigger, replytext)
 		
 		# Just spit out the data
 		else:
 			chunks = []
-			lines = page_text.splitlines()
+			lines = resp.data.splitlines()
 			
 			for line in lines[1:]:
 				line = line.strip()

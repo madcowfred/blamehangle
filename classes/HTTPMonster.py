@@ -28,6 +28,8 @@ from classes.Common import *
 
 dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
+line_re = re.compile('(?:\r\n|\r|\n)')
+
 HTTP_TIMEOUT = 20
 REDIRECT_LIMIT = 3
 
@@ -85,10 +87,11 @@ class async_http(asyncore.dispatcher_with_send):
 	def __init__(self, parent, message, seen):
 		asyncore.dispatcher_with_send.__init__(self)
 		
-		self.closed = 0
-		self.data = ''
 		self._error = None
-		self.header = ''
+		self.closed = 0
+		
+		self.data = []
+		self.headlines = []
 		
 		self.parent = parent
 		self.message = message
@@ -180,34 +183,34 @@ class async_http(asyncore.dispatcher_with_send):
 	def handle_read(self):
 		self.last_activity = time.time()
 		
-		self.data += self.recv(4096)
-		
-		if not self.header:
-			chunks = self.data.split('\r\n\r\n', 1)
-			if len(chunks) <= 1:
-				# Some retarded web servers seem to send \n\n\n\n, try that instead
-				chunks = self.data.split('\n\n\n\n', 1)
-				if len(chunks) <= 1:
-					return
-			
-			self.header = chunks[0]
-			self.data = chunks[1]
-			
-			#print self.header.splitlines()
+		self.data.append(self.recv(4096))
 	
 	# Connection has been closed
 	def handle_close(self):
+		# Re-combine the data into one big chunk
+		data = ''.join(self.data)
+		
+		# Try to split the data into header/body
+		while 1:
+			line, data = line_re.split(data, 1)
+			
+			if line:
+				self.headlines.append(line)
+			else:
+				self.data = data
+				break
+		
 		# We have some data, might as well process it?
-		if self.header:
-			headlines = self.header.splitlines()
+		if self.headlines:
 			try:
-				response = headlines[0].split()[1]
+				response = self.headlines[0].split()[1]
 			except:
-				pass
+				failmsg = 'Invalid HTTP response: %s' % self.headlines[0]
+				self.failed(failmsg)
 			else:
 				# Various redirect responses
 				if response in ('301', '302', '303', '307'):
-					for line in headlines[1:]:
+					for line in self.headlines[1:]:
 						if line.startswith('Location:'):
 							chunks = line.split(None, 1)
 							if len(chunks) != 2:
@@ -235,7 +238,7 @@ class async_http(asyncore.dispatcher_with_send):
 						
 						# Check for gzip
 						is_gzip = 0
-						for line in headlines[1:]:
+						for line in self.headlines[1:]:
 							if line.startswith('Content-Encoding:'):
 								chunks = line.split()[1:]
 								if 'gzip' in chunks:
@@ -275,7 +278,9 @@ class async_http(asyncore.dispatcher_with_send):
 								tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
 							self.parent.putlog(LOG_DEBUG, tolog)
 							
-							data = [self.trigger, self.method, self.url, page_text]
+							# Build the response and return it
+							resp = HTTPResponse(self.url, response, self.headlines, page_text)
+							data = [self.trigger, self.method, resp]
 							self.parent.sendMessage(self.message.source, REPLY_URL, data)
 						
 						# No text, log an error
@@ -308,7 +313,9 @@ class async_http(asyncore.dispatcher_with_send):
 		tolog = "Error while trying to fetch url: %s - %s" % (self.url, errormsg)
 		self.parent.putlog(LOG_ALWAYS, tolog)
 		
-		data = [self.trigger, self.method, self.url, None]
+		# Build the response and return it
+		resp = HTTPResponse(self.url, None, None, None)
+		data = [self.trigger, self.method, resp]
 		self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
@@ -317,5 +324,14 @@ class async_http(asyncore.dispatcher_with_send):
 			self.parent.active -= 1
 		
 		self.close()
+
+# ---------------------------------------------------------------------------
+# Simple class to wrap the data that we're returning
+class HTTPResponse:
+	def __init__(self, url, response, headers, data):
+		self.url = url
+		self.response = response
+		self.headers = headers
+		self.data = data
 
 # ---------------------------------------------------------------------------

@@ -68,16 +68,16 @@ class Plugin(Child):
 	
 	# Default URL reply handler, eek
 	def _message_REPLY_URL(self, message):
-		trigger, method, page_url, page_text = message.data
+		trigger, method, resp = message.data
 		
 		# Failed
-		if page_text is None:
+		if resp.data is None:
 			self.sendReply(trigger, 'HTTP transfer failed, ruh-roh.')
 			return
 		
 		# Call the method
 		if method:
-			method(trigger, page_url, page_text)
+			method(trigger, resp)
 		else:
 			tolog = '%s got a URL reply, but method is invalid!' % self._name
 			self.putlog(LOG_WARNING, tolog)

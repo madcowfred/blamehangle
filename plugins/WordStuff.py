@@ -168,11 +168,11 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of a RhymeZone page
-	def __RhymeZone(self, trigger, page_url, page_text):
+	def __RhymeZone(self, trigger, resp):
 		word = trigger.match.group('word').lower()
 		
 		# If the word wasn't found at all, we don't need to do anything else
-		if page_text.find('was not found in this dictionary') >= 0:
+		if resp.data.find('was not found in this dictionary') >= 0:
 			replytext = "'%s' was not found in the dictionary." % (word)
 			self.sendReply(trigger, replytext)
 			return
@@ -196,7 +196,7 @@ class WordStuff(Plugin):
 		# Search through the page for answers
 		words = []
 		
-		chunk = FindChunk(page_text, findme, '<center>')
+		chunk = FindChunk(resp.data, findme, '<center>')
 		if chunk:
 			lines = StripHTML(chunk)
 			
@@ -277,18 +277,18 @@ class WordStuff(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Urban dictionary got back to us, yo
-	def __Urban(self, trigger, page_url, page_text):
+	def __Urban(self, trigger, resp):
 		term = trigger.match.group('term').lower()
 		
 		# No match!
-		if page_text.find('No definitions found') >= 0:
+		if resp.data.find('No definitions found') >= 0:
 			replytext = "No definitions found for '%s'" % term
 			self.sendReply(trigger, replytext)
 		
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(page_text, '<blockquote>', '</blockquote>')
+			chunks = FindChunks(resp.data, '<blockquote>', '</blockquote>')
 			if not chunks:
 				self.sendReply(trigger, 'Page parsing failed: blockquotes.')
 				return

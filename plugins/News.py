@@ -355,11 +355,11 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse Ananova News!
-	def __Parse_Ananova(self, trigger, page_url, page_text):
-		page_text = UnquoteHTML(page_text)
+	def __Parse_Ananova(self, trigger, resp):
+		resp.data = UnquoteHTML(resp.data)
 		
 		# Find some articles
-		chunks = FindChunks(page_text, '<a href="./', '</p>')
+		chunks = FindChunks(resp.data, '<a href="./', '</p>')
 		if not chunks:
 			self.putlog(LOG_WARNING, 'Ananova Quirkies parsing failed')
 			return
@@ -396,11 +396,11 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse Google News!
-	def __Parse_Google(self, trigger, page_url, page_text):
-		page_text = UnquoteHTML(page_text)
+	def __Parse_Google(self, trigger, resp):
+		resp.data = UnquoteHTML(resp.data)
 		
 		# Find some tables
-		tables = FindChunks(page_text, '<table', '</table>')
+		tables = FindChunks(resp.data, '<table', '</table>')
 		if not tables:
 			self.putlog(LOG_WARNING, 'Google News parsing failed')
 			return
@@ -437,8 +437,8 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
-	def __Parse_RSS(self, trigger, page_url, page_text):
-		page_text = UnquoteHTML(page_text)
+	def __Parse_RSS(self, trigger, resp):
+		resp.data = UnquoteHTML(resp.data)
 		
 		name = trigger.args[0]
 		feed = self.RSS_Feeds[name]
@@ -446,7 +446,7 @@ class News(Plugin):
 		r = FeedParser()
 		# Catch any weird errors when feeding the text in
 		try:
-			r.feed(page_text)
+			r.feed(resp.data)
 		
 		except SGMLParseError, msg:
 			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
