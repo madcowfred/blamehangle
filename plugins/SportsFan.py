@@ -113,4 +113,9 @@ class SportsFan(Plugin):
 	def __find_scores(self, text):
 		text = text.replace("<", " <")
 		text = self.__parse(text)
-		return text.split()
+		
+		foo = text.split()
+		if len(foo) == 2:
+			return foo
+		else:
+			return (-1, -1)
