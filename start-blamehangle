@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# A simple shell script to start the bot and make sure it keeps running
+# in case of a crash (which we hope never happens!)
+#
+# To start the bot, just run this script specifying your config file on
+# the command line
+#
+# If you wish to shut the bot down, you must create a file called
+#    STOP.<config file name without the .conf>
+#
+# For example, if your config file was called "mybot.conf", you would start
+# the bot with the command:
+#             ./start-blamehangle mybot.conf
+# and to shut the bot down you would create the stop file:
+#             touch STOP.mybot
+# in the bot's directory, and then ^C in the bot's pty or send it a SIGTERM
+# to tell it to shutdown.
+#
+# Note, to restart the bot you will need to delete the STOP.mybot file.
+
+
+if [ $# -neq 2 ] then
+	echo "Usage: $0 <config file>"
+	exit
+fi
+
+CONFIG_FILE=$1
+
+# If this file exists, this script will abort and hangle will not restart
+STOP_FILE=STOP.`basename $CONFIG_FILE .conf`
+
+while [ 1 -eq 1 ]
+do
+	if [ -e $STOP_FILE ] then
+		echo "$STOP_FILE exists, stopping"
+		exit
+	fi
+	
+	echo "Starting blamehangle using config file $CONFIG_FILE"
+	echo "touch $STOP_FILE and quit the bot to prevent reloading"
+	python blamehangle.py -c $CONFIG_FILE
+done
