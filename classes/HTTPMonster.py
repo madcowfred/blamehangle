@@ -222,13 +222,12 @@ class async_http(asyncore.dispatcher_with_send):
 	
 	# An exception occured somewhere
 	def handle_error(self):
-		t, v, tb = sys.exc_info()
-		del tb
+		_type, _value = sys.exc_info()[:2]
 		
-		if t == 'KeyboardInterrupt':
+		if _type == 'KeyboardInterrupt':
 			raise
 		else:
-			tolog = "Error while trying to fetch url: %s - %s" % (self.url, v)
+			tolog = "Error while trying to fetch url: %s - %s" % (self.url, _value)
 			self.parent.putlog(LOG_ALWAYS, tolog)
 		
 		# Clean up
