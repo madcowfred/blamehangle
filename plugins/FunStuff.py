@@ -40,34 +40,34 @@ class FunStuff(Plugin):
 		self.addTextEvent(
 			method = self.__Dice,
 			regexp = re.compile(r'^dice (?P<num>\d{1,3})d(?P<sides>\d{1,3})$'),
-			help = ('funstuff', 'dice', '\02dice\02 <n>\02d\02<s> : Roll <n> dice of <s> sides and return the results.'),
+			help = ('fun', 'dice', '\02dice\02 <n>\02d\02<s> : Roll <n> dice of <s> sides and return the results.'),
 		)
 		# Remember to fix this regexp in the year 10000
 		self.addTextEvent(
 			method = self.__Easter,
-			regexp = re.compile('^easter (?P<year>\d{1,4})$'),
-			help = ('funstuff', 'easter', '\02easter\02 <year> : Work out what day Easter Sunday falls on in <year>.'),
+			regexp = re.compile(r'^easter (?P<year>\d{1,4})$'),
+			help = ('fun', 'easter', '\02easter\02 <year> : Work out what day Easter Sunday falls on in <year>.'),
 		)
 		self.addTextEvent(
 			method = self.__EightBall,
-			regexp = re.compile('^8ball (?P<question>.+)$'),
-			help = ('funstuff', '8ball', '\028ball\02 <question> : The magic 8 ball will answer your question!'),
+			regexp = re.compile(r'^8ball (?P<question>.+)$'),
+			help = ('fun', '8ball', '\028ball\02 <question> : The magic 8 ball will answer your question!'),
 		)
 		self.addTextEvent(
 			method = self.__Muddle,
-			regexp = re.compile('^muddle (?P<text>.+)$'),
-			help = ('funstuff', 'muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
+			regexp = re.compile(r'^muddle (?P<text>.+)$'),
+			help = ('fun', 'muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
 		)
 		
 		self.addTextEvent(
 			method = self.__Fetch_Cyborg,
-			regexp = re.compile('^cyborg (?P<name>\w+)$'),
-			help = ('funstuff', 'cyborg', '\02cyborg\02 <name> : See what the cyborg name is for <name>.'),
+			regexp = re.compile(r'^cyborg (?P<name>\w+)$'),
+			help = ('fun', 'cyborg', '\02cyborg\02 <name> : See what the cyborg name is for <name>.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Horoscope,
-			regexp = re.compile('^horo (?P<sign>\S+)$'),
-			help = ('funstuff', 'horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
+			regexp = re.compile(r'^horo (?P<sign>\S+)$'),
+			help = ('fun', 'horo', "\02horo\02 <sign> : Look up today's horoscope for <sign>."),
 		)
 	
 	# -----------------------------------------------------------------------
