@@ -14,7 +14,7 @@ from classes.Plugin import *
 
 MAPQUEST_DISTANCE = 'MAPQUEST_DISTANCE'
 DISTANCE_HELP = "'\02distance\02 <[city, state] or [zip]> \02to\02 <[city, state] or zip>' : Look up the distance and approximate driving time between two places using MapQuest. USA and Canada only."
-DISTANCE_RE = re.compile(r'^distance (?P<source>.+?)(?:\s+to\s+|\s+)(?P<dest>.+)$')
+DISTANCE_RE = re.compile(r'^distance (?P<source>.+?)\s+to\s+(?P<dest>.+)$')
 
 TOTAL_TIME_RE = re.compile(r'Total Est. Time:.*?</font>\s*(.*?)\s*</td>')
 TOTAL_DISTANCE_RE = re.compile(r'Total Est. Distance:.*?</font>\s*(.*?)\s*</td>')
@@ -113,10 +113,12 @@ class MapQuest(Plugin):
 		# Bad ZIP code
 		if page_text.find('Invalid ZIP code') >= 0:
 			_error = 'Invalid ZIP code'
-		
 		# Bad state/province
-		if page_text.find('Invalid state/province') >= 0:
+		elif page_text.find('Invalid state/province') >= 0:
 			_error = 'Invalid state/province'
+		# Multiple locations
+		elif page_text.find('Multiple cities found') >= 0:
+			_error = 'Multiple cities found'
 		
 		# If we have an error, spit something out
 		if _error is not None:
@@ -124,11 +126,11 @@ class MapQuest(Plugin):
 			_end = page_text.find('Enter a destination address')
 			
 			if _start < 0 and _end < 0:
-				_check = 'source and destination.'
+				_check = 'source and destination locations.'
 			elif _start < 0:
-				_check = 'source.'
+				_check = 'source location.'
 			elif _end < 0:
-				_check = 'destination.'
+				_check = 'destination location.'
 			else:
 				_check = 'hat? Something is fucked up here.'
 			
