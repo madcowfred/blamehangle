@@ -710,8 +710,8 @@ class SmartyPants(Plugin):
 		self.dbQuery(trigger, self.__Query_UPDATE, MOD_QUERY, value, modifier_nick, modifier_host, modified_time, name)
 	
 	# -----------------------------------------------------------------------
-	# Someone asked to delete a factoid.
-	# Check their flags to see if they have permission, then delete or refuse
+	# Someone asked to delete a factoid. Check their flags to see if they are
+	# allowed to, then delete or refuse.
 	def __Fact_Del(self, trigger, result):
 		name = self.__Sane_Name(trigger)
 		
@@ -788,30 +788,6 @@ class SmartyPants(Plugin):
 					else:
 						# everything is okay, make the change
 						self.__Fact_Update(trigger, new_value)
-					
-					# The following code is an alternative to the above
-					# block, starting from new_value = ...
-					# This code allows for arbitrary regexps in the
-					# search/replace string, instead of just words.
-					# I've commented this out and replaced it with the
-					# above code because I'm not sure we should let
-					# people on irc do this sort of thing, since it is
-					# quite easy to get a regexp wrong and destroy an
-					# entire factoid.
-					#
-					#try:
-					#	s = re.compile(search)
-					#except:
-					#	replytext = "'%s is not a valid regexp" % search
-					#	self.sendReply(trigger, replytext)
-					#else:
-					#	new_value = re.sub(s, replace, value)
-					#	if len(new_value) > MAX_FACT_VAL_LENGTH:
-					#		replytext = "that will make the factoid too long"
-					#		self.sendReply(trigger, replytext)
-					#	else:
-					#		# make the changes!
-					#		self.__Fact_Update(trigger, new_value)
 				
 				# we got a junk modstring
 				else:
