@@ -485,10 +485,10 @@ class News(Plugin):
 			
 			description = item.get('description', '')
 			
-			# Get rid of any goddamn &amp; entities
-			article_title = article_title.replace('&amp;', '&')
-			article_link = article_link.replace('&amp;', '&')
-			description = description.replace('&amp;', '&')
+			# Get rid of any annoying quoted HTML and eat any tabs
+			article_title = UnquoteHTML(article_title).replace('\t', ' ')
+			article_link = UnquoteHTML(article_link)
+			description = UnquoteHTML(description).replace('\t', ' ')
 			
 			# Keep the article for later
 			data = [article_title, article_link, description, currtime]
