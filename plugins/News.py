@@ -11,9 +11,7 @@ import re
 import time
 
 from random import Random
-from sgmllib import SGMLParseError
-
-# ---------------------------------------------------------------------------
+#from sgmllib import SGMLParseError
 
 from classes.Common import *
 from classes.Constants import *
@@ -24,9 +22,10 @@ from classes.feedparser import FeedParser
 # ---------------------------------------------------------------------------
 
 NEWS_ANANOVA_QUIRKIES = 'NEWS_ANANOVA_QUIRKIES'
-NEWS_GOOGLE_BIZ = 'NEWS_GOOGLE_BIZ'
+NEWS_GOOGLE_BUSINESS = 'NEWS_GOOGLE_BUSINESS'
 NEWS_GOOGLE_HEALTH = 'NEWS_GOOGLE_HEALTH'
-NEWS_GOOGLE_SCI = 'NEWS_GOOGLE_SCI'
+NEWS_GOOGLE_SCIENCE = 'NEWS_GOOGLE_SCIENCE'
+NEWS_GOOGLE_SPORT = 'NEWS_GOOGLE_SPORT'
 NEWS_GOOGLE_WORLD = 'NEWS_GOOGLE_WORLD'
 NEWS_RSS = 'NEWS_RSS'
 
@@ -61,9 +60,10 @@ SEARCH_QUERY = 'SELECT title, url, description FROM news WHERE %s'
 # ---------------------------------------------------------------------------
 
 ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/lp.html?keywords=Quirkies&menu=news.quirkies'
-GOOGLE_BIZ_URL = 'http://news.google.com/news/en/us/business.html'
+GOOGLE_BUSINESS_URL = 'http://news.google.com/news/en/us/business.html'
 GOOGLE_HEALTH_URL = 'http://news.google.com/news/en/us/health.html'
-GOOGLE_SCI_URL = 'http://news.google.com/news/en/us/technology.html'
+GOOGLE_SCIENCE_URL = 'http://news.google.com/news/en/us/technology.html'
+GOOGLE_SPORT_URL = 'http://news.google.com/news/en/us/sports.html'
 GOOGLE_WORLD_URL = 'http://news.google.com/news/en/us/world.html'
 
 # ---------------------------------------------------------------------------
@@ -82,6 +82,7 @@ class News(Plugin):
 	"""
 	
 	def setup(self):
+		# Load our outgoing queue
 		self.__outgoing = self.loadPickle('.news.outgoing') or []
 		if self.__outgoing:
 			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
@@ -92,71 +93,56 @@ class News(Plugin):
 		
 		self.__rand_gen = Random(currtime)
 		
-		self.__Setup_Config()
+		self.rehash()
 	
 	def rehash(self):
-		self.__Setup_Config()
+		# Load our options into something easier to use
+		self.News_Options = self.SetupOptions('News')
+		self.RSS_Options = self.SetupOptions('RSS')
+		
+		
+		self.__old_days = self.Config.getint('News', 'old_threshold')
+		self.__old_threshold = self.__old_days * 86400
+		
+		# Set up our news targets
+		self.__Setup_News_Targets()
+		
+		# Setup our RSS feeds
+		self.__Setup_RSS_Feeds()
 	
 	# Make extra sure our news queue is saved
 	def shutdown(self, message):
 		self.savePickle('.news.outgoing', self.__outgoing)
 	
-	def __Setup_Config(self):
-		self.__spam_delay = self.Config.getint('News', 'spam_delay')
-		self.__spam_prefix = self.Config.get('News', 'spam_prefix')
-		
-		self.__old_days = self.Config.getint('News', 'old_threshold')
-		self.__old_threshold = self.__old_days * 86400
-		
-		self.__anaq_targets = {}
-		self.__gbiz_targets = {}
-		self.__gh_targets = {}
-		self.__gsci_targets = {}
-		self.__gwn_targets = {}
-		self.__setup_news_targets()
-		
-		if self.Config.getboolean('News', 'verbose'):
-			tolog = 'Using verbose mode for news'
-			self.__verbose = 1
-		else:
-			tolog = 'Using brief mode for news'
-			self.__verbose = 0
-		self.putlog(LOG_DEBUG, tolog)
-		
-		self.__gwn_interval = self.Config.getint('News', 'google_world_interval') * 60
-		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval') * 60
-		self.__gh_interval = self.Config.getint('News', 'google_health_interval') * 60
-		self.__gbiz_interval = self.Config.getint('News', 'google_business_interval') * 60
-		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval') * 60
-		
-		# Do RSS feed setup
-		self.__rss_default_interval = self.Config.getint('RSS', 'default_interval') * 60
-		self.__rss_ignore_no_link = self.Config.getboolean('RSS', 'ignore_no_link')
-		self.__rss_maximum_new = max(1, self.Config.getint('RSS', 'maximum_new'))
-		
-		self.__Setup_RSS_Feeds()
-	
 	# -----------------------------------------------------------------------
+	# Set up the target dictionaries for our Ananova/Google spam
+	def __Setup_News_Targets(self):
+		self.__Targets = {
+			'ananova_quirkies': {},
+			'google_business': {},
+			'google_health': {},
+			'google_science': {},
+			'google_sport': {},
+			'google_world': {},
+			'rss_default': {},
+		}
+		
+		# Try splitting our News options into store/network bits
+		for option, value in self.News_Options.items():
+			bits = option.split('.', 1)
+			if len(bits) == 2 and bits[0] in self.__Targets:
+				self.__Targets[bits[0]][bits[1]] = value.split()
+		
+		# Now see if we have some RSS defaults
+		for option, value in self.RSS_Options.items():
+			if option.startswith('default_targets.'):
+				network = option.split('.', 1)[1]
+				self.__Targets['rss_default'][network] = value.split()
 	
-	def __setup_news_targets(self):
-		for option in self.Config.options('News'):
-			if option.startswith('google_world.'):
-				self.__setup_target(self.__gwn_targets, 'News', option)
-			elif option.startswith('google_sci.'):
-				self.__setup_target(self.__gsci_targets, 'News', option)
-			elif option.startswith('google_health.'):
-				self.__setup_target(self.__gh_targets, 'News', option)
-			elif option.startswith('google_business.'):
-				self.__setup_target(self.__gbiz_targets, 'News', option)
-			elif option.startswith('ananova.'):
-				self.__setup_target(self.__anaq_targets, 'News', option)
-	
-	# -----------------------------------------------------------------------
-	
-	def __setup_target(self, target_store, section, option):
-		network = option.split('.')[1]
-		targets = self.Config.get(section, option).split()
-		target_store[network] = targets
+	#def __setup_target(self, target_store, section, option):
+	#	network = option.split('.')[1]
+	#	targets = self.Config.get(section, option).split()
+	#	target_store[network] = targets
 	
 	# -----------------------------------------------------------------------
 	# Do stuff
@@ -181,12 +167,12 @@ class News(Plugin):
 			if self.Config.has_option(section, 'maximum_new'):
 				feed['maximum_new'] = self.Config.getint(section, 'maximum_new')
 			else:
-				feed['maximum_new'] = self.__rss_maximum_new
+				feed['maximum_new'] = self.RSS_Options['maximum_new']
 			
 			if self.Config.has_option(section, 'interval'):
 				feed['interval'] = self.Config.getint(section, 'interval') * 60
 			else:
-				feed['interval'] = self.__rss_default_interval
+				feed['interval'] = self.RSS_Options['default_interval']
 			feed['checked'] = currtime
 			
 			self.__Setup_RSS_Target(section, feed)
@@ -194,47 +180,54 @@ class News(Plugin):
 			feed['url'] = self.Config.get(section, 'url')
 			
 			self.RSS_Feeds[name] = feed
+		
+		# If we found some feeds, we'll be needing a parser
+		if self.RSS_Feeds:
+			self.__Parser = FeedParser()
 	
 	def __Setup_RSS_Target(self, section, feed):
 		feed['targets'] = {}
-		for option in self.Config.options(section):
-			if option.startswith('targets.'):
-				self.__setup_target(feed['targets'], section, option)
 		
+		# Try to find some targets for this feed
+		for option in self.Config.options(section):
+			bits = option.split('.', 1)
+			if len(bits) == 2 and bits[0].startswith('targets'):
+				feed['targets'][bits[0]][bits[1]] = self.Config.get(section, option).split()
+		
+		# Couldn't find any, use the default
 		if not feed['targets']:
-			for option in self.Config.options('RSS'):
-				if option.startswith('default_targets.'):
-					self.__setup_target(feed['targets'], 'RSS', option)
+			feed['targets'] = self.__Targets['rss_default']
 	
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check
 	def register(self):
 		# Various timed news checks
-		if self.__anaq_interval:
-			self.setTimedEvent(NEWS_ANANOVA_QUIRKIES, self.__anaq_interval, self.__anaq_targets)
-		if self.__gbiz_interval:
-			self.setTimedEvent(NEWS_GOOGLE_BIZ, self.__gbiz_interval, self.__gbiz_targets)
-		if self.__gh_interval:
-			self.setTimedEvent(NEWS_GOOGLE_HEALTH, self.__gh_interval, self.__gh_targets)
-		if self.__gsci_interval:
-			self.setTimedEvent(NEWS_GOOGLE_SCI, self.__gsci_interval, self.__gsci_targets)
-		if self.__gwn_interval:
-			self.setTimedEvent(NEWS_GOOGLE_WORLD, self.__gwn_interval, self.__gwn_targets)
+		if self.News_Options['ananova_quirkies_interval']:
+			self.setTimedEvent(NEWS_ANANOVA_QUIRKIES, self.News_Options['ananova_quirkies_interval'], self.__Targets['ananova_quirkies'])
+		if self.News_Options['google_business_interval']:
+			self.setTimedEvent(NEWS_GOOGLE_BUSINESS, self.News_Options['google_business_interval'], self.__Targets['google_business'])
+		if self.News_Options['google_health_interval']:
+			self.setTimedEvent(NEWS_GOOGLE_HEALTH, self.News_Options['google_health_interval'], self.__Targets['google_health'])
+		if self.News_Options['google_science_interval']:
+			self.setTimedEvent(NEWS_GOOGLE_SCIENCE, self.News_Options['google_science_interval'], self.__Targets['google_science'])
+		if self.News_Options['google_sport_interval']:
+			self.setTimedEvent(NEWS_GOOGLE_SPORT, self.News_Options['google_sport_interval'], self.__Targets['google_sport'])
+		if self.News_Options['google_world_interval']:
+			self.setTimedEvent(NEWS_GOOGLE_WORLD, self.News_Options['google_world_interval'], self.__Targets['google_world'])
 		# News search
 		self.setTextEvent(NEWS_SEARCH, NEWS_SEARCH_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		# RSS feed commands
 		self.setTextEvent(RSS_LIST, RSS_LIST_RE, IRCT_PUBLIC_D, IRCT_MSG)
 		self.setTextEvent(RSS_SHOW, RSS_SHOW_RE, IRCT_PUBLIC_D, IRCT_MSG)
-		# RSS feeds should be tried every 10 seconds
+		# RSS feeds should be checked for readiness every 30 seconds
 		if self.RSS_Feeds:
-			self.setTimedEvent(NEWS_RSS, 10, None)
-			
-			tolog = "Registered %d RSS feeds" % len(self.RSS_Feeds)
+			self.setTimedEvent(NEWS_RSS, 30, None)
+			tolog = 'Registered %d RSS feeds' % len(self.RSS_Feeds)
 			self.putlog(LOG_ALWAYS, tolog)
 		# Timed event for cleaning up the database once an hour
 		self.setTimedEvent(NEWS_CLEANUP, 3600, {})
 		# Timed event for spitting out news
-		self.setTimedEvent(NEWS_SPAM, self.__spam_delay, {})
+		self.setTimedEvent(NEWS_SPAM, self.News_Options['spam_delay'], {})
 		
 		# Register all these events
 		self.registerEvents()
@@ -325,14 +318,17 @@ class News(Plugin):
 	def _trigger_NEWS_ANANOVA_QUIRKIES(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Ananova, ANANOVA_QUIRKIES_URL)
 	
-	def _trigger_NEWS_GOOGLE_BIZ(self, trigger):
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_BIZ_URL)
+	def _trigger_NEWS_GOOGLE_BUSINESS(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_BUSINESS_URL)
 	
 	def _trigger_NEWS_GOOGLE_HEALTH(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_HEALTH_URL)
 	
-	def _trigger_NEWS_GOOGLE_SCI(self, trigger):
-		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SCI_URL)
+	def _trigger_NEWS_GOOGLE_SCIENCE(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SCIENCE_URL)
+	
+	def _trigger_NEWS_GOOGLE_SPORT(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_SPORT_URL)
 	
 	def _trigger_NEWS_GOOGLE_WORLD(self, trigger):
 		self.urlRequest(trigger, self.__Parse_Google, GOOGLE_WORLD_URL)
@@ -442,7 +438,9 @@ class News(Plugin):
 		
 		# Try to parse it
 		try:
-			r = FeedParser()
+			#r = FeedParser()
+			r = self.__Parser
+			r.reset()
 			r.feed(resp.data)
 		
 		except Exception, msg:
@@ -466,7 +464,7 @@ class News(Plugin):
 			
 			# If we're ignoring items with no links, log and move on
 			if not item.has_key('link'):
-				if self.__rss_ignore_no_link:
+				if self.RSS_Options['ignore_no_link']:
 					tolog = "RSS item '%s' has no link!" % item_title
 					self.putlog(LOG_DEBUG, tolog)
 					continue
@@ -507,14 +505,14 @@ class News(Plugin):
 		trigger.articles = articles
 		
 		# Build our query
-		query = NEWS_QUERY
+		querybits = [NEWS_QUERY]
 		args = [trigger.articles[0][0]]
 		
 		for article in trigger.articles[1:]:
-			query = query + ' OR title = %s'
+			querybits.append('OR title = %s')
 			args.append(article[0])
 		
-		self.dbQuery(trigger, self.__News_Reply, query, *args)
+		self.dbQuery(trigger, self.__News_Reply, ' '.join(querybits), *args)
 	
 	# -----------------------------------------------------------------------
 	# We have a reply from the database, maybe insert some stuff now
@@ -548,11 +546,11 @@ class News(Plugin):
 				replytext = '%s - %s' % (title, url)
 			
 			# Attach the spam prefix if we have to
-			if self.__spam_prefix:
-				replytext = '%s %s' % (self.__spam_prefix, replytext)
+			if self.News_Options['spam_prefix']:
+				replytext = '%s %s' % (self.News_Options['spam_prefix'], replytext)
 			
 			# Attach the description if we're in verbose mode
-			if self.__verbose and description:
+			if self.News_Options['verbose'] and description:
 				replytext = '%s : %s' % (replytext, description)
 			
 			# stick it in the outgoing queue
@@ -560,23 +558,27 @@ class News(Plugin):
 			self.__outgoing.append(reply)
 		
 		# Start the DB fun
-		article = articles.pop(0)
-		trigger.insertme = articles
-		self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
+		#article = articles.pop(0)
+		#trigger.insertme = articles
+		#self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
+		
+		# Insert the rows now
+		for article in articles:
+			self.dbQuery(trigger, None, INSERT_QUERY, *article)
 	
 	# A news item has been inserted, try the next one if we have to
-	def __News_Inserted(self, trigger, result):
-		# Error, just log it, we want to keep inserting news items
-		if result is None:
-			self.putlog(LOG_WARNING, '__News_Inserted: A DB error occurred!')
-		
-		# If we have no more articles, go home now
-		if len(trigger.insertme) == 0:
-			return
-		
-		# Do the next one
-		article = trigger.insertme.pop(0)
-		self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
+	#def __News_Inserted(self, trigger, result):
+	#	# Error, just log it, we want to keep inserting news items
+	#	if result is None:
+	#		self.putlog(LOG_WARNING, '__News_Inserted: A DB error occurred!')
+	#	
+	#	# If we have no more articles, go home now
+	#	if len(trigger.insertme) == 0:
+	#		return
+	#	
+	#	# Do the next one
+	#	article = trigger.insertme.pop(0)
+	#	self.dbQuery(trigger, self.__News_Inserted, INSERT_QUERY, *article)
 	
 	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title
