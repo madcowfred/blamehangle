@@ -202,7 +202,7 @@ class ChatterGizmo(Child):
 		addr = 0
 		end = min(10, len(text))
 		for i in range(1, end):
-			if text[i] in (':;,-'):
+			if text[i] in (':;,'):
 				if (i + 1) < end and text[i+1] == ' ':
 					addr = i+2
 				else:
