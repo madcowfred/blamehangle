@@ -178,11 +178,31 @@ class TorrentScraper(Plugin):
 		items = trigger.items
 		del trigger.items
 		
+		items2 = items[:]
+		
 		# We don't need to add any that are already in the database
-		for row in result:
-			lurl = row['url'].lower()
-			ldesc = row['description'].lower()
-			items = [a for a in items if a[1].lower() != lurl and a[2].lower() != ldesc]
+		#t1 = time.time()
+		
+		# This is the old way, and it's really quite slow.
+		#for row in result:
+		#	lurl = row['url'].lower()
+		#	ldesc = row['description'].lower()
+		#	items = [a for a in items if a[1].lower() != lurl and a[2].lower() != ldesc]
+		
+		#t2 = time.time()
+		
+		# This is the new way, which is anywhere from 2 to 15 times faster,
+		# depending on the number of rows we're looking at.
+		ldescs = dict([(row['description'].lower(), None) for row in result])
+		lurls = dict([(row['url'].lower(), None) for row in result])
+		
+		newitems = []
+		for item in items2:
+			if item[1].lower() not in lurls and item[2].lower() not in ldescs:
+				newitems.append(item)
+		
+		#print newitems == items,
+		#print 't1: %.4fs, t2: %.4fs' % (t2 - t1, time.time() - t2)
 		
 		# Start adding any items to our database
 		for item in items:
