@@ -3,20 +3,27 @@
 # ---------------------------------------------------------------------------
 # This file contains the code that deals with all the plugins
 
+import time
+
 from classes.Children import Child
 from classes.Constants import *
 from classes.Plugin import *
 
 # ---------------------------------------------------------------------------
 
+LOG_QUERY  = "INSERT INTO commandlog (ctime, irctype, network, channel, user_nick, user_host, command)"
+LOG_QUERY += " VALUES (%s, %s, %s, %s, %s, %s, %s)"
+
+# ---------------------------------------------------------------------------
+
 class PluginHandler(Child):
 	"""
 	This is the class that handles all the program <-> plugin communication.
-	
-	add detail here when there is detail to add.
 	"""
 	
 	def setup(self):
+		self._log_commands = self.Config.getboolean('logging', 'log_commands')
+		
 		self.Plugins = self.Config.get('plugin', 'plugins').split()
 		self.Plugins.append('Helper')
 		
@@ -106,6 +113,26 @@ class PluginHandler(Child):
 			priorities.sort()
 			for plugin, trigger in triggered[priorities[-1]]:
 				self.sendMessage(plugin, PLUGIN_TRIGGER, trigger)
+			
+			# Log the command if we have to
+			if self._log_commands:
+				if IRCtype == IRCT_PUBLIC: irct = 'public'
+				elif IRCtype == IRCT_PUBLIC_D: irct= 'direct'
+				elif IRCtype == IRCT_MSG: irct = 'privmsg'
+				
+				user_host = '%s@%s' % (userinfo.ident, userinfo.host)
+				
+				data = (time.time(), irct, conn.options['name'], target, userinfo.nick, user_host, text)
+				self.dbQuery(None, None, LOG_QUERY, *data)
+	
+	# -----------------------------------------------------------------------
+	# We just got a reply from the database.
+	def _message_REPLY_QUERY(self, message):
+		trigger, method, result = message.data
+		
+		# Error!
+		if result is None:
+			self.putlog(LOG_WARNING, "Database error occurred while inserting command log entry.")
 	
 	# -----------------------------------------------------------------------
 	# We just got a reply from a plugin.
