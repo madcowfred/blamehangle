@@ -55,7 +55,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 			method(command, prefix, target, arguments)
 	
 	# Your basic 'send a line of text to the server' method
-	def __sendline(self, line, *args):
+	def sendline(self, line, *args):
 		if args:
 			line = line % args
 		self.send(line + '\r\n')
@@ -115,7 +115,7 @@ class asyncIRC(asyncore.dispatcher_with_send):
 			
 			# We always have to answer a PING
 			elif command == 'ping':
-				self.sendline('PONG %s', arguments[0]
+				self.sendline('PONG %s', arguments[0])
 			
 			
 			# NOTICE/PRIVMSG are special
