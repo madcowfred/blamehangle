@@ -30,6 +30,7 @@ PLUGIN_REPLY = 'PLUGIN_REPLY'
 # ---------------------------------------------------------------------------
 
 PUBLIC = 'IRCT_PUBLIC'
+PUBLIC_D = 'IRCT_PUBLIC_D' # public lines directed to the bot, "Blamhangle: blah"
 MSG = 'IRCT_MSG'
 NOTICE = 'IRCT_NOTICE'
 CTCP = 'IRCT_CTCP'
