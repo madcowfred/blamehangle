@@ -155,14 +155,12 @@ class WrapConn:
 					print 'baa'
 					newnick = nick[:6]
 					
-					# 0-9 = 48-57, A-Z = 65-90, a-z = 97-122
+					# 0-9 = 48-57, a-z = 97-122
 					for i in range(9 - len(newnick)):
-						n = random.randint(0, 2)
+						n = random.randint(0, 1)
 						if n == 0:
 							newnick += chr(random.randint(48, 57))
 						elif n == 1:
-							newnick += chr(random.randint(65, 90))
-						elif n == 2:
 							newnick += chr(random.randint(97, 122))
 				
 				# Just try sticking a dash on the end (probably)
