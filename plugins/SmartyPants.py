@@ -145,7 +145,7 @@ class SmartyPants(Plugin):
 			priority = 0,
 			help = ('infobot', 'get',  '<factoid name>\02?\02 : Ask the bot for the definiton of <factoid name>.'),
 		)
-		if self.Options['public_request']:
+		if self.Options.get('public_request', None):
 			self.addTextEvent(
 				method = self.__Query_Get,
 				regexp = re.compile(r'^(?P<name>.+?)\?$'),
@@ -160,7 +160,7 @@ class SmartyPants(Plugin):
 			priority = 1,
 			help = ('infobot', 'set',  '<factoid name> \02is\02 <whatever> OR <factoid name> \02is also\02 <whatever> : Teach the bot about a topic.'),
 		)
-		if self.Options['public_assignment']:
+		if self.Options.get('public_assignment', None):
 			self.addTextEvent(
 				method = self.__Query_Set,
 				regexp = re.compile(r'^(?!no, +)(?P<name>.+?) +(?<!\\)(is|are) +(?!also +)(?P<value>.+)$'),
