@@ -88,7 +88,7 @@ class News(Plugin):
 		self.__gh_targets = {}
 		self.__gbiz_targets = {}
 		self.__anaq_targets = {}
-		self.__setup_targets()
+		self.__setup_news_targets()
 		
 		if self.Config.getboolean('News', 'verbose'):
 			tolog = "Using verbose mode for news"
@@ -101,11 +101,11 @@ class News(Plugin):
 		self.putlog(LOG_DEBUG, tolog)
 		
 		
-		self.__gwn_interval = self.Config.getint('News', 'google_world_interval')
-		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval')
-		self.__gh_interval = self.Config.getint('News', 'google_health_interval')
-		self.__gbiz_interval = self.Config.getint('News', 'google_business_interval')
-		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')
+		self.__gwn_interval = self.Config.getint('News', 'google_world_interval') * 60
+		self.__gsci_interval = self.Config.getint('News', 'google_sci_interval') * 60
+		self.__gh_interval = self.Config.getint('News', 'google_health_interval') * 60
+		self.__gbiz_interval = self.Config.getint('News', 'google_business_interval') * 60
+		self.__anaq_interval = self.Config.getint('News', 'ananovaq_interval')* 60
 		
 		# Do RSS feed setup
 		self.__rss_interval = self.Config.getint('RSS', 'interval') * 60
@@ -114,22 +114,37 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __setup_targets(self):
+	def __setup_news_targets(self):
 		for option in self.Config.options('News'):
 			if option.startswith('google_world.'):
-				self.__setup_target(self.__gwn_targets, option)
+				self.__setup_target(self.__gwn_targets, 'News', option)
 			elif option.startswith('google_sci.'):
-				self.__setup_target(self.__gsci_targets, option)
+				self.__setup_target(self.__gsci_targets, 'News', option)
 			elif option.startswith('google_health.'):
-				self.__setup_target(self.__gh_targets, option)
+				self.__setup_target(self.__gh_targets, 'News', option)
 			elif option.startswith('google_business.'):
-				self.__setup_target(self.__gbiz_targets, option)
+				self.__setup_target(self.__gbiz_targets, 'News', option)
 			elif option.startswith('ananova.'):
-				self.__setup_target(self.__anaq_targets, option)
+				self.__setup_target(self.__anaq_targets, 'News', option)
 	
-	def __setup_target(self, target_store, option):
+	# -----------------------------------------------------------------------
+
+	def __setup_rss_target(self, section, feed):
+		feed['targets'] = {}
+		for option in self.Config.options(section):
+			if option.startswith('targets.'):
+				self.__setup_target(feed['targets'], section, option)
+
+		if not feed['targets']:
+			for option in self.Config.options('RSS'):
+				if option.startswith('default_targets.'):
+					self.__setup_target(feed['targets'], 'RSS', option)
+
+	# -----------------------------------------------------------------------
+	
+	def __setup_target(self, target_store, section, option):
 		network = option.split('.')[1]
-		targets = self.Config.get('News', option).split()
+		targets = self.Config.get(section, option).split()
 		target_store[network] = targets
 	
 	# -----------------------------------------------------------------------
@@ -152,6 +167,8 @@ class News(Plugin):
 				feed['interval'] = self.Config.getint(section, 'interval') * 60
 			else:
 				feed['interval'] = self.__rss_interval
+
+			self.__setup_rss_target(section, feed)
 			
 			feed['url'] = self.Config.get(section, 'url')
 			
@@ -184,7 +201,7 @@ class News(Plugin):
 			tolog = 'Registering RSS feed %s: %s' % (name, feed['url'])
 			self.putlog(LOG_DEBUG, tolog)
 			
-			event = PluginTimedEvent(NEWS_RSS, feed['interval'], {'GoonNET':['#grax']}, name)
+			event = PluginTimedEvent(NEWS_RSS, feed['interval'], feed['targets'], name)
 			self.register(event)
 	
 	# -----------------------------------------------------------------------

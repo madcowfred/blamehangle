@@ -10,7 +10,7 @@
 # Put your plugins here
 #----------------------------------------------------------------------------#
 
-#from plugins.SP2 import SamplePlugin
 #from plugins.SamplePlugin import SamplePlugin
 from plugins.Karma import Karma
 from plugins.News import News
+from plugins.SmartyPants import SmartyPants
