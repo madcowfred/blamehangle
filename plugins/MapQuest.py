@@ -167,7 +167,7 @@ class MapQuest(Plugin):
 		distance = total_distance.replace(' miles', '\02 miles')
 		replytext = '\02%s\02 is about \02%s from \02%s\02' % (
 			source_loc, distance, dest_loc)
-		replytext += 'with an approximate driving time of \02%s\02 - %s' % (
+		replytext += ' with an approximate driving time of \02%s\02 - %s' % (
 			total_time, resp.url)
 		self.sendReply(trigger, replytext)
 
