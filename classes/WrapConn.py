@@ -1,3 +1,4 @@
+import socket
 import time
 import types
 
@@ -51,6 +52,9 @@ class WrapConn:
 		
 		self.realname = self.options.get('realname', 'blamehangle!')
 		self.vhost = self.options.get('vhost', None)
+		if self.vhost and not hasattr(socket, 'gaierror'):
+			self.parent.connlog("vhost is set, but socket module doesn't have getaddrinfo()!")
+			self.vhost = None
 	
 	def connect(self):
 		nick = self.nicks[self.trynick]
