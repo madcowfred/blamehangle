@@ -124,6 +124,7 @@ class ChatterGizmo(Child):
 					return
 			
 			self.stopnow = 1
+			return
 		
 		# See if we have to try rejoining any channels
 		for rejoin in self.__Rejoins:
