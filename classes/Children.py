@@ -76,7 +76,7 @@ class Child:
 		self.putlog(LOG_DEBUG, tolog)
 		
 		if hasattr(self, 'shutdown'):
-			self.shutdown()
+			self.shutdown(message)
 		else:
 			self.stopnow = 1
 	

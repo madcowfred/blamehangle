@@ -41,7 +41,7 @@ class ChatterGizmo(Child):
 		self.Conns = {}
 		self.stopping = 0
 	
-	def shutdown(self):
+	def shutdown(self, message):
 		quitmsg = 'Shutting down: %s' % message.data
 		for wrap in self.Conns.values():
 			if wrap.status == STATUS_CONNECTED:
