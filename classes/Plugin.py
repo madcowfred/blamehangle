@@ -56,10 +56,17 @@ class Plugin(Child):
 		self.sendMessage('PluginHandler', PLUGIN_REGISTER, events)
 	
 	# -----------------------------------------------------------------------
-	# Event stuff
+	# Shorthand way of setting text events
 	def setTextEvent(self, name, regexp, *IRCTypes):
 		for IRCType in IRCTypes:
 			event = PluginTextEvent(name, IRCType, regexp)
+			ident = '__%s__%s__' % (name, IRCType)
+			self.__Events[ident] = event
+	
+	# Shorthand way of setting text events with a different priority
+	def setTextEventPriority(self, priority, name, regexp, *IRCTypes):
+		for IRCType in IRCTypes:
+			event = PluginTextEvent(name, IRCType, regexp, priority)
 			ident = '__%s__%s__' % (name, IRCType)
 			self.__Events[ident] = event
 	
