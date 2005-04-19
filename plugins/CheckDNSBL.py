@@ -143,6 +143,7 @@ class CheckDNSBL(Plugin):
 				cache[name] = True
 				self.HostCache[host] = cache
 				
+				info['name'] = name
 				self.__Punish(info)
 				return
 		
@@ -176,11 +177,11 @@ class CheckDNSBL(Plugin):
 			
 			elif action == 'wall':
 				target = '@%s' % (info['chan'])
-				text = 'WARNING: %s is listed in one of the DNSBLs that I check!' % (info['ui'])
+				text = 'DNSBL: %s is listed in %s!' % (info['ui'], info['name'])
 				self.notice(wrap, target, text)
 			
 			elif action == 'kick':
-				text = 'Your host is listed in one of the DNSBLs that I check.'
+				text = 'Your host is listed in a DNSBL that I check, bye!'
 				command = 'KICK %s %s :%s' % (info['chan'], info['ui'].nick, text)
 				wrap.sendline(command)
 
