@@ -147,7 +147,7 @@ class ChatterGizmo(Child):
 				self.__Rejoins.remove(rejoin)
 				continue
 			
-			elif (currtime - last) >= 20:
+			if (currtime - last) >= 20:
 				self.__Rejoins.remove(rejoin)
 				self.Conns[connid].join_channel(chan)
 		
@@ -232,6 +232,11 @@ class ChatterGizmo(Child):
 			badtime = time.time() - 18
 			for chan in wrap.channels:
 				data = [badtime, wrap.conn.connid, wrap.connect_id, chan]
+				
+				# FIXME: temporary debugging
+				tolog = "__Rejoins: %s" % (data)
+				self.putlog(LOG_DEBUG, tolog)
+				
 				self.__Rejoins.append(data)
 		
 		# Normal joining
