@@ -193,10 +193,7 @@ class ChatterGizmo(Child):
 			data = [wrap, event]
 		else:
 			args = method(connid, self.Conns[connid].conn, event)
-			if args is None:
-				data = [wrap, event.command, event]
-			else:
-				data = [wrap, event.command, args]
+			data = [wrap, event, args]
 		
 		# Trigger any other events
 		for name, events in self.__Handlers.items():
@@ -346,12 +343,19 @@ class ChatterGizmo(Child):
 		wrap = self.Conns[connid]
 		nick = event.userinfo.nick
 		
+		# It wasn't us
 		if nick != conn.getnick():
+			# We build the list of channels first, since it won't exist any
+			# more after user_quit is called.
+			args = (self.ircul.user_channels(event.userinfo), event.userinfo)
+			
 			wrap.ircul.user_quit(event.userinfo)
 			
 			# If it was our primary nickname, try and regain it
-			if nick == self.Conns[connid].nicks[0]:
+			if nick == wrap.nicks[0]:
 				conn.nick(nick)
+			
+			return args
 	
 	# -----------------------------------------------------------------------
 	# Someone just changed the mode on a channel we're in
