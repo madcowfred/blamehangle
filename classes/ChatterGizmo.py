@@ -352,7 +352,7 @@ class ChatterGizmo(Child):
 		if nick != conn.getnick():
 			# We build the list of channels first, since it won't exist any
 			# more after user_quit is called.
-			args = (self.ircul.user_channels(event.userinfo), event.userinfo)
+			args = (event.userinfo, wrap.ircul.user_channels(event.userinfo))
 			
 			wrap.ircul.user_quit(event.userinfo)
 			
@@ -360,6 +360,7 @@ class ChatterGizmo(Child):
 			if nick == wrap.nicks[0]:
 				conn.nick(nick)
 			
+			print args
 			return args
 	
 	# -----------------------------------------------------------------------
