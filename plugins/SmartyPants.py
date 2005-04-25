@@ -79,10 +79,13 @@ UNLOCK_QUERY = "UPDATE factoids SET locker_nick = NULL, locker_host = NULL, lock
 
 INFO_QUERY = "SELECT * FROM factoids WHERE name = %s"
 
-STATUS_QUERY = "SELECT count(*) AS total FROM factoids"
+STATUS_QUERY = "SELECT COUNT(*) AS total FROM factoids"
 
 LISTKEYS_QUERY = "SELECT name FROM factoids WHERE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
 LISTVALUES_QUERY = "SELECT name FROM factoids WHERE %s ORDER BY request_count DESC, name LIMIT " + str(SEARCH_LIMIT)
+
+RANDOM_COUNT_QUERY = 'SELECT COUNT(*) AS total FROM factoids'
+RANDOM_SELECT_QUERY = 'SELECT name, value FROM factoids LIMIT 1 OFFSET %s'
 
 # misc db queries
 MOD_QUERY = "UPDATE factoids SET value = %s, modifier_nick = %s, modifier_host = %s, modified_time = %s WHERE name = %s"
@@ -258,6 +261,11 @@ class SmartyPants(Plugin):
 			regexp = r'^listvalues +(?P<name>.+)$',
 			help = ('listvalues', "\02listvalues\02 <search text> : Search through all the factoid definitions, and return the names of any that contain <search text>."),
 		)
+		self.addTextEvent(
+			method = self.__Query_Random,
+			regexp = r'^randfact$',
+			help = ('randfact', "\02randfact\02 : Return a random factoid from my database."),
+		)
 	
 	# -----------------------------------------------------------------------
 	# We're doing the ignore check here, just because it's stupid to have
@@ -392,6 +400,15 @@ class SmartyPants(Plugin):
 		self.__Query_Search(trigger)
 	def __Query_List_Values(self, trigger):
 		self.__Query_Search(trigger)
+	
+	# -----------------------------------------------------------------------
+	# Someone wants a random factoid
+	def __Query_Random(self, trigger):
+		self.dbQuery(trigger, self.__Query_Random_Select, RANDOM_COUNT_QUERY)
+	
+	def __Query_Random_Select(self, trigger, result):
+		offset = random.randint(0, result[0]['total'])
+		self.dbQuery(trigger, self.__Fact_Random, RANDOM_SELECT_QUERY, offset)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to tell someone else about a factoid
@@ -996,6 +1013,28 @@ class SmartyPants(Plugin):
 			names = [row['name'] for row in result[:search_results]]
 			replytext = '%s: %s' % (replytext, ' \02;\02 '.join(names))
 			
+			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Someone just asked for a random factoid
+	def __Fact_Random(self, trigger, result):
+		# Error!
+		if result is None:
+			self.sendReply(trigger, 'An unknown database error occurred.')
+		
+		# No result
+		elif result == ():
+			replytext = random.choice(DUNNO)
+			self.sendReply(trigger, replytext)
+		
+		# Found it!
+		else:
+			row = result[0]
+			
+			# Generate the reply
+			self.__requests += 1
+			
+			replytext = '"%(name)s" is "%(value)s"' % row
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
