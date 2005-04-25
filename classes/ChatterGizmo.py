@@ -360,7 +360,6 @@ class ChatterGizmo(Child):
 			if nick == wrap.nicks[0]:
 				conn.nick(nick)
 			
-			print args
 			return args
 	
 	# -----------------------------------------------------------------------
