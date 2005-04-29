@@ -42,7 +42,11 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 BUGMENOT_URL = 'http://www.bugmenot.com/view.php?url=%s'
+FEDEX_URL = "http://www.fedex.com/cgi-bin/tracking?action=track&language=english&ascend_header=1&cntry_code=us&initial=x&mps=y&tracknumbers=%s"
+#FEDEX_URL = "http://fridge/~freddie/tracking.html?%s"
 PGP_URL = "http://pgp.mit.edu:11371/pks/lookup?op=index&search=%s"
+
+SPACE_RE = re.compile('\s+')
 
 # ---------------------------------------------------------------------------
 
@@ -54,6 +58,11 @@ class Misc(Plugin):
 			method = self.__Fetch_BugMeNot,
 			regexp = r'^bugmenot (\S+)$',
 			help = ('bugmenot', '\x02bugmenot\x02 <site> : See if BugMeNot has a login for <site>.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_FedEx,
+			regexp = r'^fedex (\d+)$',
+			help = ('fedex', '\x02fedex\x02 <tracking number> : Get some info about a FedEx package.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_PGP_Key,
@@ -104,6 +113,66 @@ class Misc(Plugin):
 		# Err?
 		else:
 			self.sendReply(trigger, "Failed to parse page!")
+	
+	# -----------------------------------------------------------------------
+	# Fetch the package info
+	def __Fetch_FedEx(self, trigger):
+		url = FEDEX_URL % (trigger.match.group(1))
+		self.urlRequest(trigger, self.__Parse_FedEx, url)
+	
+	# Parse the page
+	def __Parse_FedEx(self, trigger, resp):
+		# Errorrrrr
+		if 'Please check the following numbers and resubmit.' in resp.data:
+			self.sendReply(trigger, 'Invalid tracking number!')
+			return
+		
+		# Find the shipment info
+		chunk = FindChunk(resp.data, '<!-- shipment info -->', '<!-- shipment tracking stats -->')
+		if not chunk:
+			self.sendReply(trigger, 'Page parsing failed: shipment info.')
+			return
+		
+		trs = FindChunks(chunk, '<tr valign="top" bgcolor="#E6E6E6">', '</tr>')
+		if not trs or len(trs) != 8:
+			self.sendReply(trigger, 'Page parsing failed: shipment info trs.')
+			return
+		
+		parts = []
+		for i in (7, 6, 2, 3):
+			tds = FindChunks(trs[i], '<td>', '</td>')
+			if not tds:
+				continue
+			
+			thing = FindChunk(tds[0], '<b>', '</b>')
+			value = SPACE_RE.sub(' ', tds[-1])
+			
+			if thing and value:
+				part = '%s: %s' % (thing, value)
+				parts.append(part)
+		
+		if not parts:
+			self.sendReply(trigger, 'Page parsing failed: no parts?')
+			return
+		
+		# Find the scan activity
+		chunk = FindChunk(resp.data, '<!-- BEGIN Scan Activity -->', '<!-- END Scan Activity -->')
+		if chunk:
+			trs = FindChunks(resp.data, '<tr bgcolor="#E6E6E6">', '</tr>')
+			if trs:
+				tds = FindChunks(trs[0], '<td', '</td>')
+				if len(tds) == 16:
+					shipdate = StripHTML(tds[1])[0]
+					shiptime = StripHTML(tds[2])[0]
+					shipthing = StripHTML(tds[6])[0]
+					shiploc = StripHTML(tds[10])[0]
+					
+					part = 'Last update: %s %s - %s %s' % (shipdate, shiptime, shipthing, shiploc)
+					parts.append(part)
+		
+		# Spit it out
+		replytext = ' '.join(['\x02[\x02%s\x02]\x02' % part for part in parts])
+		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Fetch the search results.
