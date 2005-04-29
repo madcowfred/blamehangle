@@ -134,12 +134,23 @@ class Misc(Plugin):
 			return
 		
 		trs = FindChunks(chunk, '<tr valign="top" bgcolor="#E6E6E6">', '</tr>')
-		if not trs or len(trs) != 8:
+		if not trs:
 			self.sendReply(trigger, 'Page parsing failed: shipment info trs.')
 			return
 		
+		# Not delivered yet?
+		if len(trs) == 8:
+			checkme = (7, 6, 2, 3)
+		# Delivered already?
+		elif len(trs) == 10:
+			checkme = (9, 8, 7, 2, 3, 4)
+		# No idea
+		else:
+			self.sendReply(trigger, 'Page parsing failed: shipment info tr count.')
+			return
+		
 		parts = []
-		for i in (7, 6, 2, 3):
+		for i in checkme:
 			tds = FindChunks(trs[i], '<td>', '</td>')
 			if not tds:
 				continue
@@ -169,6 +180,11 @@ class Misc(Plugin):
 					
 					part = 'Last update: %s %s - %s %s' % (shipdate, shiptime, shipthing, shiploc)
 					parts.append(part)
+					
+					comment = StripHTML(tds[14])
+					if comment:
+						part = 'Comment: %s' % (comment[0])
+						parts.append(part)
 		
 		# Spit it out
 		replytext = ' '.join(['\x02[\x02%s\x02]\x02' % part for part in parts])
