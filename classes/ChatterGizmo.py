@@ -376,25 +376,15 @@ class ChatterGizmo(Child):
 		for sign, mode, arg in modes:
 			# User modes
 			if mode in wrap.conn.features['user_modes']:
-				# FIXME: remove this when we track the damn bug down
-				try:
-					if sign == '+':
-						wrap.ircul.user_add_mode(chan, arg, mode)
-					elif sign == '-':
-						wrap.ircul.user_del_mode(chan, arg, mode)
+				if arg is None:
+					tolog = 'Unmatched mode "%s%s" in mode string!' % (sign, mode)
+					self.putlog(LOG_WARNING, tolog)
+					continue
 				
-				except AssertionError:
-					tolog = '<channel: %s> <modes: %r> <parsed: %r>' % (
-						chan, event.arguments, modes
-					)
-					self.putlog(LOG_WARNING, tolog)
-					
-					users = [foo.nick for foo in wrap.ircul._c[chan].users.keys()]
-					users.sort()
-					tolog = '<chanusers: %s>' % (', '.join(users))
-					self.putlog(LOG_WARNING, tolog)
-					
-					raise
+				if sign == '+':
+					wrap.ircul.user_add_mode(chan, arg, mode)
+				elif sign == '-':
+					wrap.ircul.user_del_mode(chan, arg, mode)
 			
 			# Guess it's a channel mode
 			else:
