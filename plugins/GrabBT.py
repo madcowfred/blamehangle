@@ -193,7 +193,8 @@ class GrabBT(Plugin):
 			return
 		
 		# Look for a Content-Disposition header
-		m = re.search('filename="(.*?)"', resp.headers.get('content-disposition', ''))
+		cd = resp.headers.get('content-disposition', '')
+		m = re.search('filename="(.*?)"', cd) or re.search('filename=(\S+)', cd)
 		if m:
 			torrentfile = m.group(1)
 		else:
