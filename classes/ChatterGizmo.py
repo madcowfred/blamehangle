@@ -232,11 +232,6 @@ class ChatterGizmo(Child):
 			badtime = time.time() - 18
 			for chan in wrap.channels:
 				data = [badtime, wrap.conn.connid, wrap.connect_id, chan]
-				
-				# FIXME: temporary debugging
-				tolog = "__Rejoins: %s" % (data)
-				self.putlog(LOG_DEBUG, tolog)
-				
 				self.__Rejoins.append(data)
 		
 		# Normal joining
@@ -543,6 +538,11 @@ class ChatterGizmo(Child):
 		
 		# Try to join again soon
 		data = [time.time(), connid, self.Conns[connid].connect_id, chan]
+		
+		# FIXME: temporary debugging
+		tolog = "__Rejoins: %r - %r" % (data, event.arguments)
+		self.putlog(LOG_DEBUG, tolog)
+		
 		self.__Rejoins.append(data)
 	
 	_handle_unavailresource = _joinerror
