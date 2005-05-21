@@ -259,7 +259,7 @@ class TorrentScraper(Plugin):
 		# If we have some, start fetching them
 		if torrents:
 			trigger.torrents = torrents
-			self.__Fetch_Next_Torrent()
+			self.__Fetch_Next_Torrent(trigger)
 	
 	# -----------------------------------------------------------------------
 	# Fetch the next torrent
@@ -279,7 +279,7 @@ class TorrentScraper(Plugin):
 		except ValueError:
 			tolog = '"%s" is not a valid torrent!' % (resp.url)
 			self.putlog(LOG_DEBUG, tolog)
-			self.__Fetch_Next_Torrent()
+			self.__Fetch_Next_Torrent(trigger)
 		else:
 			filename = metainfo['name']
 			# If there's more than one file, sum up the sizes
