@@ -172,7 +172,6 @@ class TorrentScraper(Plugin):
 				
  				# Build the new URL
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
-				print repr(newurl)
 				# Dirty filthy ampersands
 				newurl = newurl.replace('&amp;', '&')
  				if newurl in torrents:
