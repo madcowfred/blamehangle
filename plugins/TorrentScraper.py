@@ -48,7 +48,7 @@ from classes.SimpleRSSParser import SimpleRSSParser
 SELECT_URL_QUERY = "SELECT url FROM torrents WHERE url IN (%s)"
 SELECT_FILENAME_QUERY = "SELECT filename FROM torrents WHERE filename = %s"
 INSERT_QUERY = "INSERT INTO torrents (scrape_time, url, filename, filesize) VALUES (%s, %s, %s, %s)"
-RECENT_QUERY = "SELECT scrape_time, url, filename, filesize FROm torrents ORDER BY scrape_time DESC LIMIT 20"
+RECENT_QUERY = "SELECT scrape_time, url, filename, filesize FROM torrents WHERE filename != '' ORDER BY scrape_time DESC LIMIT 20"
 
 # ---------------------------------------------------------------------------
 
@@ -171,7 +171,8 @@ class TorrentScraper(Plugin):
 					continue
 				
  				# Build the new URL
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
+				print repr(newurl)
 				# Dirty filthy ampersands
 				newurl = newurl.replace('&amp;', '&')
  				if newurl in torrents:
