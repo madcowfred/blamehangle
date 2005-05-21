@@ -1,6 +1,6 @@
 CREATE TABLE torrents (
-	added integer NOT NULL,
-	url character varying(255) NOT NULL,
-	description character varying(255) NOT NULL,
-	PRIMARY KEY (url)
+	scrape_time integer NOT NULL,
+	url character varying(255) NOT NULL PRIMARY KEY,
+	filename character varying(255),
+	filesize integer
 );

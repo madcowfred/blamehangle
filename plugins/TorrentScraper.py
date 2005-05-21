@@ -8,13 +8,13 @@
 # modification, are permitted provided that the following conditions are met:
 #
 #   * Redistributions of source code must retain the above copyright notice,
-#     this list of conditions, and the following disclaimer.
+#	 this list of conditions, and the following disclaimer.
 #   * Redistributions in binary form must reproduce the above copyright notice,
-#     this list of conditions, and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
+#	 this list of conditions, and the following disclaimer in the
+#	 documentation and/or other materials provided with the distribution.
 #   * Neither the name of the author of this software nor the name of
-#     contributors to this software may be used to endorse or promote products
-#     derived from this software without specific prior written consent.
+#	 contributors to this software may be used to endorse or promote products
+#	 derived from this software without specific prior written consent.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -42,12 +42,14 @@ from classes.Constants import *
 from classes.Plugin import Plugin
 
 from classes.SimpleRSSGenerator import SimpleRSSGenerator
+from classes.SimpleRSSParser import SimpleRSSParser
 
 # ---------------------------------------------------------------------------
 
-SELECT_QUERY = "SELECT url, description FROM torrents WHERE url IN (%s) OR description IN (%s)"
-RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
-INSERT_QUERY = "INSERT INTO torrents (added, url, description) VALUES (%s,%s,%s)"
+SELECT_URL_QUERY = "SELECT url FROM torrents WHERE url IN (%s)"
+SELECT_FILENAME_QUERY = "SELECT filename FROM torrents WHERE filename = %s"
+INSERT_QUERY = "INSERT INTO torrents (scrape_time, url, filename, filesize) VALUES (%s, %s, %s, %s)"
+#RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
 
 # ---------------------------------------------------------------------------
 
@@ -56,7 +58,7 @@ class TorrentScraper(Plugin):
 	_UsesDatabase = 'TorrentScraper'
 	
 	def setup(self):
-		self.URLs = {}
+		self._Pages = {}
 		
 		self.rehash()
 	
@@ -64,21 +66,35 @@ class TorrentScraper(Plugin):
 		# Easy way to get general options
 		self.Options = self.OptionsDict('TorrentScraper')
 		
-		# Get the list of URLs from our config
-		newurls = self.OptionsList('TorrentScraper-URLs')
+		# Add any new pages
+		currtime = time.time()
+		sections = [s for s in self.Config.sections() if s.startswith('TorrentScraper.')]
+		for section in sections:
+			pageopts = self.OptionsDict(section)
+			name = section.split('.', 1)[1]
+			
+			page = {
+				'url': pageopts['url'],
+				'style': pageopts.get('style', self.Options['default_style']),
+				'interval': pageopts.get('interval', self.Options['default_interval']),
+				'checked': 0, #currtime,
+				'last-modified': None,
+			}
+			
+			# If the page is new, just add it to the list
+			if name not in self._Pages:
+				self._Pages[name] = page
+			# It's already there, just update the bits we need to update
+			else:
+				for k in page.keys():
+					if k not in ('checked', 'last-modified'):
+						self._Pages[name][k] = page[k]
 		
-		# Add any new ones to the list
-		for url in newurls:
-			if url not in self.URLs:
-				self.URLs[url] = {
-					'checked': 0,
-					'last-modified': None,
-				}
-		
-		# Remove any old ones
-		for url in self.URLs.keys():
-			if url not in newurls:
-				del self.URLs[url]
+		# And remove any that are no longer around
+		for name in self._Pages.keys():
+			section = 'TorrentScraper.%s' % name
+			if section not in sections:
+				del self._Pages[name]
 	
 	def register(self):
 		self.addTimedEvent(
@@ -89,19 +105,23 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Get some URLs that haven't been checked recently
 	def __Scrape_Check(self, trigger):
-		now = time.time()
-		
-		ready = [(v['checked'], v, k) for k, v in self.URLs.items() if now - v['checked'] > self.Options['scrape_interval']]
+		currtime = time.time()
+		ready = []
+		for name, page in self._Pages.items():
+			if (currtime - page['checked']) >= page['interval']:
+				ready.append((page['interval'], name, page))
 		ready.sort()
-		for checked, info, url in ready[:1]:
-			info['checked'] = now
+		
+		for checked, name, page in ready[:1]:
+			trigger.source = name
+			page['checked'] = currtime
 			
 			# Maybe send an If-Modified-Since header
-			if info['last-modified'] is not None:
-				headers = {'If-Modified-Since': info['last-modified']}
-				self.urlRequest(trigger, self.__Parse_Page, url, headers=headers)
+			if page['last-modified'] is not None:
+				headers = {'If-Modified-Since': page['last-modified']}
+				self.urlRequest(trigger, self.__Parse_Page, page['url'], headers=headers)
 			else:
-				self.urlRequest(trigger, self.__Parse_Page, url)
+				self.urlRequest(trigger, self.__Parse_Page, page['url'])
 	
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
@@ -111,18 +131,58 @@ class TorrentScraper(Plugin):
 			return
 		
 		# Remember the Last-Modified header if it was sent
-		try:
-			self.URLs[resp.url]['last-modified'] = resp.headers.get('last-modified', None)
-		except KeyError:
-			pass
-		
-		items = {}
+		#try:
+		self._Pages[trigger.source]['last-modified'] = resp.headers.get('last-modified', None)
+		#except KeyError:
+		#	pass
 		
 		# We don't want stupid HTML entities
 		resp.data = UnquoteHTML(resp.data)
 		
-		# If it's a BNBT page, we have to do some yucky searching
-		if resp.data.find('BNBT') >= 0:
+		# See what sort of parsing we get to do
+		torrents = {}
+		page = self._Pages[trigger.source]
+		
+		# Normal HTML links
+		if page['style'] == 'links':
+			# Find all of our URLs
+			chunks = FindChunks(resp.data, '<a ', '</a>') + FindChunks(resp.data, '<A ', '</A>')
+			if not chunks:
+				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				return
+ 			
+			# See if any are talking about torrents
+			for chunk in chunks:
+				# Find the URL
+				href = FindChunk(chunk, 'href="', '"') or \
+					FindChunk(chunk, "href='", "'") or \
+					FindChunk(chunk, 'HREF="', '"')
+				
+				if not href or '.torrent' not in href:
+					continue
+				
+ 				# Build the new URL
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				# Dirty filthy ampersands
+				newurl = newurl.replace('&amp;', '&')
+ 				if newurl in torrents:
+ 					continue
+ 				
+ 				# Get some text to describe it
+				bits = chunk.split('>', 1)
+				if len(bits) != 2:
+					continue
+ 				
+				lines = StripHTML(bits[1])
+ 				if len(lines) != 1:
+ 					continue
+				
+				# Keep it for a bit
+				# lines[0]
+				torrents[newurl] = True
+		
+		# BNBT page, grr
+		elif page['style'] == 'bnbt':
 			# Find the URL bits we want
 			chunks = FindChunks(resp.data, '<td class="name">', '</tr>')
 			if not chunks:
@@ -141,98 +201,112 @@ class TorrentScraper(Plugin):
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
 				# Dirty filthy ampersands
 				#newurl = newurl.replace('&amp;', '&')
-				if newurl in items:
+				if newurl in torrents:
 					continue
 				
 				# Keep it for a bit
-				items[newurl] = (newurl, description)
+				# = description
+				torrents[newurl] = True
 		
-		# Otherwise, go the easy way
- 		else:
-			# Find all of our URLs
-			chunks = FindChunks(resp.data, '<a ', '</a>') + FindChunks(resp.data, '<A ', '</A>')
-			if not chunks:
-				open('/home/freddie/wtf.html', 'w').write(resp.data)
-				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+		# RSS feed
+		elif page['style'] == 'rss':
+			try:
+				rss = SimpleRSSParser(resp.data)
+			except Exception, msg:
+				tolog = "Error parsing RSS feed '%s': %s" % (trigger.source, msg)
+				self.putlog(LOG_WARNING, tolog)
 				return
- 			
-			# See if any are talking about torrents
-			for chunk in chunks:
-				# Find the URL
-				href = FindChunk(chunk, 'href="', '"') or \
-					FindChunk(chunk, "href='", "'") or \
-					FindChunk(chunk, 'HREF="', '"')
+			
+			# Grab the torrents
+			for item in rss['items']:
+				if 'enclosure' in item:
+					url = item['enclosure']['url']
+				else:
+					url = item['link']
 				
-				if not href or href.find('.torrent') < 0:
-					continue
-				
- 				# Build the new URL
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
-				# Dirty filthy ampersands
-				newurl = newurl.replace('&amp;', '&')
- 				if newurl in items:
- 					continue
- 				
- 				# Get some text to describe it
-				bits = chunk.split('>', 1)
-				if len(bits) != 2:
-					continue
- 				
-				lines = StripHTML(bits[1])
- 				if len(lines) != 1:
- 					continue
-				
-				# Keep it for a bit
-				items[newurl] = (newurl, lines[0])
+				torrents[url] = True
+		
 		
 		# If we found nothing, bug out
-		if items == {}:
-			tolog = "Found no torrents at %s!" % resp.url
+		if torrents == {}:
+			tolog = 'Found no torrents at %s!' % (resp.url)
 			self.putlog(LOG_WARNING, tolog)
 			return
 		
-		# Switch back to a list
-		items = items.values()
-		trigger.items = items
-		
 		# Build our query
-		args = [item[0] for item in items] + [item[1] for item in items]
-		querybit = ', '.join(['%s'] * len(items))
-		query = SELECT_QUERY % (querybit, querybit)
+		args = torrents.keys()
+		querybit = ', '.join(['%s'] * len(args))
+		query = SELECT_URL_QUERY % (querybit)
 		
 		# And execute it
-		self.dbQuery(trigger, self.__DB_Check, query, *args)
+		trigger.torrents = args
+		self.dbQuery(trigger, self.__DB_Check_URL, query, *args)
 	
 	# -----------------------------------------------------------------------
-	# Handle the check reply
-	def __DB_Check(self, trigger, result):
+	# Handle the DB reply for URL lookup
+	def __DB_Check_URL(self, trigger, result):
 		# Error!
 		if result is None:
 			return
 		
-		items = trigger.items
-		del trigger.items
+		torrents = trigger.torrents
+		del trigger.torrents
 		
-		# This way is anywhere from 2 to 20 times faster than the old way.
-		t1 = time.time()
-		ldescs = dict([(row['description'].lower(), None) for row in result])
-		lurls = dict([(row['url'].lower(), None) for row in result])
+		# See which ones are new
+		urls = {}.fromkeys([row['url'] for row in result], True)
+		torrents = [t for t in torrents if t not in urls]
 		
-		t2 = time.time()
-		ldescs2 = {}.fromkeys([row['description'] for row in result])
-		lurls2 = {}.fromkeys([row['url'] for row in result])
+		# If we have some, start fetching them
+		if torrents:
+			trigger.torrents = torrents[1:]
+			self.urlRequest(trigger, self.__Parse_Torrent, torrents[0])
+	
+	# -----------------------------------------------------------------------
+	# Parse torrent metadata or something
+	def __Parse_Torrent(self, trigger, resp):
+		# Grab the filename from the torrent metadata
+		try:
+			metainfo = bdecode(resp.data)['info']
+		except ValueError:
+			tolog = '"%s" is not a valid torrent!' % (resp.url)
+			self.putlog(LOG_DEBUG, tolog)
+		else:
+			filename = metainfo['name']
+			# If there's more than one file, sum up the sizes
+			if 'files' in metainfo:
+				filesize = sum([f['length'] for f in metainfo['files']])
+			else:
+				filesize = metainfo['length']
+			
+			# See if it's already in the DB
+			trigger.temp = (resp, filename, filesize)
+			self.dbQuery(trigger, self.__DB_Check_Filename, SELECT_FILENAME_QUERY, filename)
 		
-		found = 0
+		# If there are more to go, hop to it
+		if trigger.torrents:
+			torrents = trigger.torrents
+			trigger.torrents = torrents[1:]
+			self.urlRequest(trigger, self.__Parse_Torrent, torrents[0])
+		else:
+			del trigger.torrents
+	
+	# Handle the DB reply for filename lookup
+	def __DB_Check_Filename(self, trigger, result):
+		resp, filename, filesize = trigger.temp
+		del trigger.temp
+		
+		if result is None:
+			return
+		
+		# If the filename is already there, insert with a blank filename so we
+		# don't keep trying it over and over.
 		now = int(time.time())
-		for item in items:
-			# If we haven't seen this before, insert it
-			if (item[0].lower() not in lurls) and (item[1].lower() not in ldescs):
-				found = 1
-				self.dbQuery(trigger, None, INSERT_QUERY, now, item[0], item[1])
+		if result:
+			args = [now, resp.url, '', 0]
+		else:
+			args = [now, resp.url, filename, filesize]
 		
-		# If we found some new ones, generate the RSS feed now
-		if found:
-			self.dbQuery(trigger, self.__Generate_RSS, RECENT_QUERY)
+		self.dbQuery(trigger, None, INSERT_QUERY, *args)
 	
 	# -----------------------------------------------------------------------
 	# Generate a simple RSS feed with our findings
@@ -260,5 +334,68 @@ class TorrentScraper(Plugin):
 		
 		# And generate it
 		SimpleRSSGenerator(self.Options['rss_path'], feedinfo, items, self.putlog)
+
+# ---------------------------------------------------------------------------
+# Copied from BitTorrent/bencode.py!
+def decode_int(x, f):
+	f += 1
+	newf = x.index('e', f)
+	n = int(x[f:newf])
+	if x[f] == '-':
+		if x[f + 1] == '0':
+			raise ValueError
+	elif x[f] == '0' and newf != f+1:
+		raise ValueError
+	return (n, newf+1)
+
+def decode_string(x, f):
+	colon = x.index(':', f)
+	n = int(x[f:colon])
+	if x[f] == '0' and colon != f+1:
+		raise ValueError
+	colon += 1
+	return (x[colon:colon+n], colon+n)
+
+def decode_list(x, f):
+	r, f = [], f+1
+	while x[f] != 'e':
+		v, f = decode_func[x[f]](x, f)
+		r.append(v)
+	return (r, f + 1)
+
+def decode_dict(x, f):
+	r, f = {}, f+1
+	lastkey = None
+	while x[f] != 'e':
+		k, f = decode_string(x, f)
+		if lastkey >= k:
+			raise ValueError
+		lastkey = k
+		r[k], f = decode_func[x[f]](x, f)
+	return (r, f + 1)
+
+decode_func = {}
+decode_func['l'] = decode_list
+decode_func['d'] = decode_dict
+decode_func['i'] = decode_int
+decode_func['0'] = decode_string
+decode_func['1'] = decode_string
+decode_func['2'] = decode_string
+decode_func['3'] = decode_string
+decode_func['4'] = decode_string
+decode_func['5'] = decode_string
+decode_func['6'] = decode_string
+decode_func['7'] = decode_string
+decode_func['8'] = decode_string
+decode_func['9'] = decode_string
+
+def bdecode(x):
+	try:
+		r, l = decode_func[x[0]](x, 0)
+	except (IndexError, KeyError, ValueError):
+		raise ValueError, 'not a valid bencoded string'
+	if l != len(x):
+		raise ValueError, 'invalid bencoded value (data after valid prefix)'
+	return r
 
 # ---------------------------------------------------------------------------
