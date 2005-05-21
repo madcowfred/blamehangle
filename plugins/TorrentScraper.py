@@ -263,7 +263,7 @@ class TorrentScraper(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Fetch the next torrent
-	def self.__Fetch_Next_Torrent(self, trigger):
+	def __Fetch_Next_Torrent(self, trigger):
 		if trigger.torrents:
 			torrents = trigger.torrents
 			trigger.torrents = torrents[1:]
