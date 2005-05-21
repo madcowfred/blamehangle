@@ -258,10 +258,19 @@ class TorrentScraper(Plugin):
 		
 		# If we have some, start fetching them
 		if torrents:
-			trigger.torrents = torrents[1:]
-			self.urlRequest(trigger, self.__Parse_Torrent, torrents[0])
+			trigger.torrents = torrents
+			self.__Fetch_Next_Torrent()
 	
 	# -----------------------------------------------------------------------
+	# Fetch the next torrent
+	def self.__Fetch_Next_Torrent(self, trigger):
+		if trigger.torrents:
+			torrents = trigger.torrents
+			trigger.torrents = torrents[1:]
+			self.urlRequest(trigger, self.__Parse_Torrent, torrents[0])
+		else:
+			del trigger.torrents
+	
 	# Parse torrent metadata or something
 	def __Parse_Torrent(self, trigger, resp):
 		# Grab the filename from the torrent metadata
@@ -270,6 +279,7 @@ class TorrentScraper(Plugin):
 		except ValueError:
 			tolog = '"%s" is not a valid torrent!' % (resp.url)
 			self.putlog(LOG_DEBUG, tolog)
+			self.__Fetch_Next_Torrent()
 		else:
 			filename = metainfo['name']
 			# If there's more than one file, sum up the sizes
@@ -281,14 +291,6 @@ class TorrentScraper(Plugin):
 			# See if it's already in the DB
 			trigger.temp = (resp, filename, filesize)
 			self.dbQuery(trigger, self.__DB_Check_Filename, SELECT_FILENAME_QUERY, filename)
-		
-		# If there are more to go, hop to it
-		if trigger.torrents:
-			torrents = trigger.torrents
-			trigger.torrents = torrents[1:]
-			self.urlRequest(trigger, self.__Parse_Torrent, torrents[0])
-		else:
-			del trigger.torrents
 	
 	# Handle the DB reply for filename lookup
 	def __DB_Check_Filename(self, trigger, result):
@@ -306,7 +308,10 @@ class TorrentScraper(Plugin):
 		else:
 			args = [now, resp.url, filename, filesize]
 		
-		self.dbQuery(trigger, None, INSERT_QUERY, *args)
+		self.dbQuery(trigger, __DB_Insert, INSERT_QUERY, *args)
+	
+	def __DB_Insert(self, trigger, result):
+		self.__Fetch_Next_Torrent()
 	
 	# -----------------------------------------------------------------------
 	# Generate a simple RSS feed with our findings
