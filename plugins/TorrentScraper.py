@@ -57,6 +57,7 @@ class TorrentScraper(Plugin):
 	_UsesDatabase = 'TorrentScraper'
 	
 	def setup(self):
+		self._FetchMe = []
 		self._Pages = {}
 		
 		self.rehash()
@@ -108,6 +109,7 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Get some URLs that haven't been checked recently
 	def __Scrape_Check(self, trigger):
+		# Work out which page was checked least recently
 		currtime = time.time()
 		ready = []
 		for name, page in self._Pages.items():
@@ -115,6 +117,7 @@ class TorrentScraper(Plugin):
 				ready.append((page['interval'], name, page))
 		ready.sort()
 		
+		# Fetch it
 		for checked, name, page in ready[:1]:
 			trigger.source = name
 			page['checked'] = currtime
@@ -125,6 +128,9 @@ class TorrentScraper(Plugin):
 				self.urlRequest(trigger, self.__Parse_Page, page['url'], headers=headers)
 			else:
 				self.urlRequest(trigger, self.__Parse_Page, page['url'])
+		
+		# Maybe check a torrent too
+		self.__Fetch_Next_Torrent(trigger)
 	
 	# -----------------------------------------------------------------------
 	# Do some page parsing!
@@ -255,23 +261,18 @@ class TorrentScraper(Plugin):
 		
 		# See which ones are new
 		urls = {}.fromkeys([row['url'] for row in result], True)
-		torrents = [t for t in torrents if t not in urls]
+		torrents = [t for t in torrents if t not in urls and t not in self._FetchMe]
 		
-		# If we have some, start fetching them
+		# If we have some, add them to the fetch list
 		if torrents:
-			trigger.torrents = torrents
-			self.__Fetch_Next_Torrent(trigger)
+			self._FetchMe.extend(torrents)
 	
 	# -----------------------------------------------------------------------
 	# Fetch the next torrent
 	def __Fetch_Next_Torrent(self, trigger):
-		if trigger.torrents:
-			torrents = trigger.torrents
-			url = QuoteURL(torrents[0])
-			trigger.torrents = torrents[1:]
+		if self._FetchMe:
+			url = QuoteURL(self._FetchMe.pop(0))
 			self.urlRequest(trigger, self.__Parse_Torrent, url)
-		else:
-			del trigger.torrents
 	
 	# Parse torrent metadata or something
 	def __Parse_Torrent(self, trigger, resp):
@@ -281,7 +282,6 @@ class TorrentScraper(Plugin):
 		except ValueError:
 			tolog = '"%s" is not a valid torrent!' % (resp.url)
 			self.putlog(LOG_DEBUG, tolog)
-			self.__Fetch_Next_Torrent(trigger)
 		else:
 			filename = metainfo['name']
 			# If there's more than one file, sum up the sizes
@@ -310,10 +310,7 @@ class TorrentScraper(Plugin):
 		else:
 			args = [now, resp.url, filename, filesize]
 		
-		self.dbQuery(trigger, self.__DB_Insert, INSERT_QUERY, *args)
-	
-	def __DB_Insert(self, trigger, result):
-		self.__Fetch_Next_Torrent(trigger)
+		self.dbQuery(trigger, None, INSERT_QUERY, *args)
 	
 	# -----------------------------------------------------------------------
 	# Generate a simple RSS feed with our findings
