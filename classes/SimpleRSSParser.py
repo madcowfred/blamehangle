@@ -75,7 +75,11 @@ def SimpleRSSParser(page_text):
 		
 		enclosure = FindChunk(itemchunk, '<enclosure ', ' />')
 		if enclosure is not None:
-			data['enclosure'] = dict(PARAM_RE.findall(enclosure))
+			item['enclosure'] = dict(PARAM_RE.findall(enclosure))
+		
+		for thing in 'link', 'desc':
+			if item[thing] is not None:
+				item[thing] = item[thing].strip()
 		
 		data['items'].append(item)
 	
