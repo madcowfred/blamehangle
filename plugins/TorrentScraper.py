@@ -305,7 +305,7 @@ class TorrentScraper(Plugin):
 		# If the filename is already there, insert with a blank filename so we
 		# don't keep trying it over and over.
 		now = int(time.time())
-		url = UnquoteURL(resp.url)
+		url = UnquoteURL(resp.url).replace('%20', ' ')
 		if result:
 			args = [now, url, '', 0]
 		else:
