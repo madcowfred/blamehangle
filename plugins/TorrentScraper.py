@@ -49,7 +49,7 @@ from classes.SimpleRSSParser import SimpleRSSParser
 SELECT_URL_QUERY = "SELECT url FROM torrents WHERE url IN (%s)"
 SELECT_FILENAME_QUERY = "SELECT filename FROM torrents WHERE filename = %s"
 INSERT_QUERY = "INSERT INTO torrents (scrape_time, url, filename, filesize) VALUES (%s, %s, %s, %s)"
-#RECENT_QUERY = "SELECT added, url, description FROM torrents ORDER BY added DESC LIMIT 20"
+RECENT_QUERY = "SELECT scrape_time, url, filename, filesize FROm torrents ORDER BY scrape_time DESC LIMIT 20"
 
 # ---------------------------------------------------------------------------
 
@@ -100,6 +100,10 @@ class TorrentScraper(Plugin):
 		self.addTimedEvent(
 			method = self.__Scrape_Check,
 			interval = self.Options['request_interval'],
+		)
+		self.addTimedEvent(
+			method = self.__Generate_RSS,
+			interval = self.Options['rss_interval'],
 		)
 	
 	# -----------------------------------------------------------------------
@@ -308,16 +312,19 @@ class TorrentScraper(Plugin):
 		else:
 			args = [now, resp.url, filename, filesize]
 		
-		self.dbQuery(trigger, __DB_Insert, INSERT_QUERY, *args)
+		self.dbQuery(trigger, self.__DB_Insert, INSERT_QUERY, *args)
 	
 	def __DB_Insert(self, trigger, result):
-		self.__Fetch_Next_Torrent()
+		self.__Fetch_Next_Torrent(trigger)
 	
 	# -----------------------------------------------------------------------
 	# Generate a simple RSS feed with our findings
-	def __Generate_RSS(self, trigger, result):
+	def __Generate_RSS(self, trigger):
+		self.dbQuery(trigger, self.__DB_Recent, RECENT_QUERY)
+	
+	def __DB_Recent(self, trigger, result):
 		if result is None:
-			self.putlog(LOG_WARNING, '__Generate_RSS: A DB error occurred!')
+			self.putlog(LOG_WARNING, '__DB_Recent: A DB error occurred!')
 			return
 		
 		# Make up some feed info
@@ -325,16 +332,16 @@ class TorrentScraper(Plugin):
 			'title': self.Options.get('rss_title', 'TorrentScraper'),
 			'link': self.Options.get('rss_title', 'http://www.example.com'),
 			'description': self.Options.get('rss_title', 'An automatically generated RSS feed from scraped torrent pages'),
-			'ttl': 300,
+			'ttl': self.Options['rss_interval'],
 		}
 		
 		# Make up our items
 		items = []
 		for row in result:
 			items.append({
-				'title': row['description'],
+				'title': '%s (%.1fMB)' % (row['filename'], row['filesize'] / 1024.0 / 1024.0),
 				'link': row['url'],
-				'pubdate': time.gmtime(row['added']),
+				'pubdate': time.gmtime(row['scrape_time']),
 			})
 		
 		# And generate it
