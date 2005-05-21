@@ -34,7 +34,6 @@ then generates an RSS feed of the latest ones.
 """
 
 import time
-import urllib
 import urlparse
 
 from classes.Common import *
@@ -203,8 +202,6 @@ class TorrentScraper(Plugin):
 				
 				# Build the new URL
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
-				# Dirty filthy ampersands
-				#newurl = newurl.replace('&amp;', '&')
 				if newurl in torrents:
 					continue
 				
@@ -270,8 +267,9 @@ class TorrentScraper(Plugin):
 	def __Fetch_Next_Torrent(self, trigger):
 		if trigger.torrents:
 			torrents = trigger.torrents
+			url = QuoteURL(torrents[0])
 			trigger.torrents = torrents[1:]
-			self.urlRequest(trigger, self.__Parse_Torrent, torrents[0])
+			self.urlRequest(trigger, self.__Parse_Torrent, url)
 		else:
 			del trigger.torrents
 	
