@@ -28,9 +28,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"Implements a very simple RSS parser. Does not validate the feed much at all."
+'Implements a very simple RSS parser. Does not validate the feed.'
+
+import re
 
 from classes.Common import FindChunk, FindChunks, UnquoteHTML
+
+# ---------------------------------------------------------------------------
+
+PARAM_RE = re.compile(r'(\S+)="(.*?)"')
 
 # ---------------------------------------------------------------------------
 
@@ -66,6 +72,10 @@ def SimpleRSSParser(page_text):
 			FindChunk(itemchunk, '<guid>', '</guid>') or None
 		
 		item['desc'] = FindChunk(itemchunk, '<description>', '</description>') or None
+		
+		enclosure = FindChunk(itemchunk, '<enclosure ', ' />')
+		if enclosure is not None:
+			data['enclosure'] = dict(PARAM_RE.findall(enclosure))
 		
 		data['items'].append(item)
 	
