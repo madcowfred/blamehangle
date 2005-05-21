@@ -305,10 +305,11 @@ class TorrentScraper(Plugin):
 		# If the filename is already there, insert with a blank filename so we
 		# don't keep trying it over and over.
 		now = int(time.time())
+		url = UnquoteURL(resp.url)
 		if result:
-			args = [now, resp.url, '', 0]
+			args = [now, url, '', 0]
 		else:
-			args = [now, resp.url, filename, filesize]
+			args = [now, url, filename, filesize]
 		
 		self.dbQuery(trigger, None, INSERT_QUERY, *args)
 	
