@@ -207,7 +207,7 @@ class TorrentScraper(Plugin):
 					continue
 				
 				# Build the new URL
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, href))
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
 				if newurl in torrents:
 					continue
 				
@@ -227,9 +227,9 @@ class TorrentScraper(Plugin):
 			# Grab the torrents
 			for item in rss['items']:
 				if 'enclosure' in item:
-					url = item['enclosure']['url']
+					url = UnquoteURL(item['enclosure']['url']).replace('%20', ' ')
 				else:
-					url = item['link']
+					url = UnquoteURL(item['link']).replace('%20', ' ')
 				
 				torrents[url] = True
 		
