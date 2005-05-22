@@ -95,7 +95,7 @@ class HTTPMonster(Child):
 		self._requests += 1
 		
 		# We need to quote spaces
-		url = re.sub(r'\s+', '%20', message.data[2])
+		url = re.sub(r' ', '%20', message.data[2])
 		
 		# Parse the URL into chunky bits
 		chunks = urlparse.urlparse(url)
@@ -321,7 +321,7 @@ class async_http(buffered_dispatcher):
 								self.failed('Redirection limit reached!')
 							else:
 								self.message.data[2] = newurl
-								async_http(self.parent, self.hosts, self.message, self.chunks, self.seen)
+								self.parent._message_REQ_URL(self.message)
 					
 					else:
 						self.failed('Redirect without Location header!')
