@@ -59,6 +59,7 @@ class TorrentScraper(Plugin):
 	def setup(self):
 		self._FetchMe = []
 		self._Pages = {}
+		self._RSS_Generated = 0
 		
 		self.rehash()
 	
@@ -322,6 +323,11 @@ class TorrentScraper(Plugin):
 		if result is None:
 			self.putlog(LOG_WARNING, '__DB_Recent: A DB error occurred!')
 			return
+		
+		# If there's nothing new, don't generate it
+		if result[0]['scrape_time'] < self._RSS_Generated:
+			return
+		self._RSS_Generated = result[0]['scrape_time']
 		
 		# Make up some feed info
 		feedinfo = {
