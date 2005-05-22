@@ -327,7 +327,7 @@ class TorrentScraper(Plugin):
 		# If there's nothing new, don't generate it
 		if result[0]['scrape_time'] < self._RSS_Generated:
 			return
-		self._RSS_Generated = result[0]['scrape_time']
+		self._RSS_Generated = time.time()
 		
 		# Make up some feed info
 		feedinfo = {
