@@ -68,32 +68,55 @@ class Child:
 				tolog = "%s defines _UsesDatabase, but '%s' doesn't exist!" % (self._name, schema)
 				self.putlog(LOG_WARNING, tolog)
 				return
+			
 			# Load up the schema, look for the first table name
 			try:
-				f = open(schema, 'r')
-				for line in f:
-					if line.lower().startswith('create table '):
-						query = 'SELECT * FROM %s LIMIT 1' % line.split()[2]
-						self.dbQuery(schema, self._DB_Check, query)
-						f.close()
+				data = open(schema, 'r').read().replace('\n', '').replace('\r', '')
+				queries = data.split(';')
+				
+				while 1:
+					query = queries[0]
+					if query.lower().startswith('create table '):
+						testquery = 'SELECT * FROM %s LIMIT 1' % (query.split(None, 4)[2])
+						self.dbQuery(queries, self._DB_Check, testquery)
 						return
-				f.close()
+					else:
+						try:
+							queries.remove(0)
+						except ValueError:
+							break
+			
 			except Exception, msg:
 				tolog = "Error while trying to check DB for %s: %s" % (self._name, msg)
 				self.putlog(LOG_WARNING, tolog)
+			
 			else:
 				tolog = "%s defines _UsesDatabase, but '%s' contains no CREATE TABLE statements!" % (self._name, schema)
 				self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
 	# If the database table doesn't exist, we get to create it now
-	def _DB_Check(self, schema, result):
+	def _DB_Check(self, queries, result):
+		query = queries.pop(0)
+		
 		if result is None:
 			tolog = "Creating database table for %s!" % (self._name)
 			self.putlog(LOG_WARNING, tolog)
 			
-			query = open(schema, 'r').read().replace('\n', '').replace('\r', '')
-			self.dbQuery(schema, self._DB_Create, query)
+			self.dbQuery(query, self._DB_Create, query)
+		
+		if queries:
+			while 1:
+				query = queries[0]
+				if query.lower().startswith('create table '):
+					testquery = 'SELECT * FROM %s LIMIT 1' % (query.split(None, 4)[2])
+					self.dbQuery(queries, self._DB_Check, testquery)
+					return
+				else:
+					try:
+						queries.remove(0)
+					except ValueError:
+						break
 	
 	# If the create failed, cry a bit
 	def _DB_Create(self, schema, result):

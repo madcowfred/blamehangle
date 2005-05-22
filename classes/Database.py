@@ -149,10 +149,14 @@ class MySQL(DatabaseWrapper):
 	# -----------------------------------------------------------------------
 	# Over-ride this if you need to mangle SQL statements differently.
 	def _manglesql(self, sql):
-		# MySQL uses RAND() instead of RANDOM(), grr
 		if sql.startswith('SELECT'):
+			# No case-insensitive LIKE at all
 			sql = sql.replace(' ILIKE ', ' LIKE ')
+			# MySQL uses RAND() instead of RANDOM(), grr
 			sql = sql.replace('RANDOM()', 'RAND()')
+		
+		elif sql.startswith('CREATE TABLE'):
+			sql = sql.replace(' SERIAL', 'auto_increment')
 		
 		return sql
 
@@ -192,5 +196,12 @@ class SQLite(DatabaseWrapper):
 		module = __import__('sqlite', globals(), locals(), [])
 		
 		self.db = module.connect(self.Config.get('database', 'database'))
+
+	# -----------------------------------------------------------------------
+	def _manglesql(self, sql):
+		if sql.startswith('CREATE TABLE'):
+			sql = sql.replace(' SERIAL', ' AUTOINCREMENT')
+		
+		return sql
 
 # ---------------------------------------------------------------------------
