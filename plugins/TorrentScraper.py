@@ -273,6 +273,7 @@ class TorrentScraper(Plugin):
 	def __Fetch_Next_Torrent(self, trigger):
 		if self._FetchMe:
 			url = QuoteURL(self._FetchMe.pop(0))
+			trigger.origurl = url
 			self.urlRequest(trigger, self.__Parse_Torrent, url)
 	
 	# Parse torrent metadata or something
@@ -306,7 +307,7 @@ class TorrentScraper(Plugin):
 		# If the filename is already there, insert with a blank filename so we
 		# don't keep trying it over and over.
 		now = int(time.time())
-		url = UnquoteURL(resp.url).replace('%20', ' ')
+		url = UnquoteURL(trigger.origurl).replace('%20', ' ')
 		if result:
 			args = [now, url, '', 0]
 		else:
