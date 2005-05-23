@@ -333,8 +333,8 @@ class TorrentScraper(Plugin):
 		# Make up some feed info
 		feedinfo = {
 			'title': self.Options.get('rss_title', 'TorrentScraper'),
-			'link': self.Options.get('rss_title', 'http://www.example.com'),
-			'description': self.Options.get('rss_title', 'An automatically generated RSS feed from scraped torrent pages'),
+			'link': self.Options.get('rss_link', 'http://www.example.com'),
+			'description': self.Options.get('rss_description', 'An automatically generated RSS feed from scraped torrent pages'),
 			'ttl': self.Options['rss_interval'],
 		}
 		
