@@ -29,8 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Gathers news from Ananova Quirkies, Google News or any RSS feeds you might
-want to use.
+Gathers news from Google News or any RSS feeds you might want to use.
 """
 
 import random
@@ -59,7 +58,6 @@ SEARCH_QUERY = 'SELECT title, url, description, added FROM news WHERE %s ORDER B
 
 # ---------------------------------------------------------------------------
 
-ANANOVA_QUIRKIES_URL = 'http://www.ananova.com/news/lp.html?keywords=Quirkies&menu=news.quirkies'
 GOOGLE_BUSINESS_URL = 'http://news.google.com/?ned=%s&topic=b'
 GOOGLE_HEALTH_URL = 'http://news.google.com/?ned=%s&topic=m'
 GOOGLE_SCIENCE_URL = 'http://news.google.com/?ned=%s&topic=t'
@@ -77,8 +75,8 @@ class News(Plugin):
 	"""
 	A news gatherer plugin.
 	
-	This will search for updated news stories on Google News and Ananova
-	Quirkies (!), and reply with the title of and link to any that it finds.
+	This will search for updated news stories on Google News and RSS feeds and
+	reply with the title of and link to any that it finds.
 	"""
 	
 	_HelpSection = 'news'
@@ -118,7 +116,7 @@ class News(Plugin):
 		
 		# Set up our targets dict
 		self._Targets = {}
-		for target in ('ananova_quirkies', 'google_business', 'google_health', 'google_science', 'google_sport', 'google_world'):
+		for target in ('google_business', 'google_health', 'google_science', 'google_sport', 'google_world'):
 			self._Targets[target] = self.News_Options.pop(target, {})
 		self._Targets['rss_default'] = self.RSS_Options.pop('default_targets', {})
 		
@@ -163,12 +161,6 @@ class News(Plugin):
 	# Register all our news pages that we want to check
 	def register(self):
 		# Various timed news checks
-		if self.News_Options.get('ananova_quirkies_interval', 0):
-			self.addTimedEvent(
-				method = self.__Fetch_Ananova_Quirkies,
-				interval = self.News_Options['ananova_quirkies_interval'],
-				targets = self._Targets['ananova_quirkies'],
-			)
 		if self.News_Options.get('google_business_interval', 0):
 			self.addTimedEvent(
 				method = self.__Fetch_Google_Business,
@@ -314,10 +306,6 @@ class News(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Fetch_Ananova_Quirkies(self, trigger):
-		trigger.source = 'ananova_quirkies'
-		self.urlRequest(trigger, self.__Parse_Ananova, ANANOVA_QUIRKIES_URL)
-	
 	def __Fetch_Google_Business(self, trigger):
 		trigger.source = 'google_business'
 		url = GOOGLE_BUSINESS_URL % (self.News_Options['google_news_country'])
@@ -360,42 +348,6 @@ class News(Plugin):
 				self.urlRequest(trigger, self.__Parse_RSS, feed['url'], headers=headers)
 			else:
 				self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
-	
-	# -----------------------------------------------------------------------
-	# Parse Ananova News!
-	def __Parse_Ananova(self, trigger, resp):
-		resp.data = UnquoteHTML(resp.data)
-		
-		# Find some articles
-		chunks = FindChunks(resp.data, '<a href="./', '</p>')
-		if not chunks:
-			self.putlog(LOG_WARNING, 'Ananova Quirkies parsing failed')
-			return
-		
-		# See if any of them will match
-		articles = []
-		
-		for chunk in chunks:
-			# Look for the story URL
-			n = chunk.find('?menu=')
-			if n < 0:
-				continue
-			url = '%s/%s' % ('http://www.ananova.com/news', chunk[:n])
-			
-			# Look for the story title
-			title = FindChunk(chunk, 'title="', '">')
-			if not title:
-				continue
-			
-			# Look for the story description
-			description = FindChunk(chunk, '<small>', '</small>') or ''
-			
-			# And keep it for later
-			data = [title, url, description]
-			articles.append(data)
-		
-		# Go for it!
-		self.__News_New(trigger, articles)
 	
 	# -----------------------------------------------------------------------
 	# Parse Google News!
