@@ -128,7 +128,7 @@ class NetStuff(Plugin):
 		self.addTextEvent(
 			method = self.__Resolve_DNS,
 			regexp = r'^dns (?P<host>.+)$',
-			help = ('dns', '\02dns02 <hostname> : Try to resolve hostname to IP(s).'),
+			help = ('dns', '\02dns\02 <hostname> : Try to resolve hostname to IP(s).'),
 		)
 		self.addTextEvent(
 			method = self.__Port,
