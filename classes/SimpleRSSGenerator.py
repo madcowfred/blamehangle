@@ -79,6 +79,10 @@ def SimpleRSSGenerator(filename, feedinfo, items, putlog=None):
 			line = '<link>%s</link>' % (ENTITY_RE.sub('&amp;', item['link']))
 			lines.append(line)
 		
+		if item.get('description', None) is not None:
+			line = '<description>%s</description>' % (ENTITY_RE.sub('&amp;', item['description']))
+			lines.append(line)
+		
 		if item.get('pubdate', None) is not None:
 			line = '<pubDate>%s</pubDate>' % (ISODate(item['pubdate']))
 			lines.append(line)
