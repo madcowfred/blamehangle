@@ -78,7 +78,7 @@ class TorrentScraper(Plugin):
 				'url': pageopts['url'],
 				'style': pageopts.get('style', self.Options['default_style']),
 				'interval': pageopts.get('interval', self.Options['default_interval']),
-				'checked': 0, #currtime,
+				'checked': currtime,
 				'last-modified': None,
 			}
 			
