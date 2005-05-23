@@ -54,7 +54,14 @@ tr.desc {
 	
 	for plugin in plugins:
 		# Nothing to see here
-		if plugin in ('__init__', 'AntiLeech', 'GetBotOps', 'NFOrce', 'SamplePlugin', 'Seen'):
+		if plugin == '__init__':
+			print 'Skipped __init__'
+			continue
+		
+		# See if it's actually in SVN
+		svnname = 'plugins/.svn/text-base/%s.py.svn-base' % (plugin)
+		if not os.path.isfile(svnname):
+			print 'Skipped %s: not in SVN repository' % (plugin)
 			continue
 		
 		module = __import__('plugins.' + plugin, globals(), locals(), [plugin])
