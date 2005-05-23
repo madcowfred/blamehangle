@@ -90,6 +90,13 @@ an airline's code, or get details on a flight number.
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
+<td colspan="2">CheckDNSBL</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Basic plugin to check joining hosts against DNS Block Lists.</td>
+</tr></table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
 <td colspan="2">Converter</td>
 </tr>
 <tr class="desc">
@@ -145,6 +152,13 @@ an airline's code, or get details on a flight number.
 <td>Look up &lt;title&gt; in the Killer List Of Video Games (KLOVG?!)</td>
 </tr>
 </table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">GetBotOps</td>
+</tr>
+<tr class="desc">
+<td colspan="2">Asks configured eggdrop bots for ops.</td>
+</tr></table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
 <tr class="name">
 <td colspan="2">Google</td>
@@ -239,6 +253,10 @@ Miscellaneous stuff that doesn't really deserve it's own plugin.
 <td>See if BugMeNot has a login for &lt;site&gt;.</td>
 </tr>
 <tr>
+<td width="300">fedex &lt;tracking number&gt;</td>
+<td>Get some info about a FedEx package.</td>
+</tr>
+<tr>
 <td width="300">pgpkey &lt;findme&gt;</td>
 <td>Search pgp.mit.edu for a key/keys matching &lt;findme&gt;, returning the first match.</td>
 </tr>
@@ -268,6 +286,10 @@ Miscellaneous stuff that doesn't really deserve it's own plugin.
 <tr>
 <td width="300">symbol &lt;findme&gt;</td>
 <td>Look up a ticker symbol.</td>
+</tr>
+<tr>
+<td width="300">usdebt</td>
+<td>Look up the current US National Debt.</td>
 </tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
@@ -299,16 +321,15 @@ Miscellaneous stuff that doesn't really deserve it's own plugin.
 </tr>
 <tr class="desc">
 <td colspan="2">
-Gathers news from Ananova Quirkies, Google News or any RSS feeds you might
-want to use.
+Gathers news from Google News or any RSS feeds you might want to use.
 </td>
 </tr><tr>
-<td width="300">listfeeds</td>
-<td>List the RSS feeds currently configured.</td>
+<td width="300">findnews &lt;search terms&gt;</td>
+<td>Search through recent news headlines for any stories matching the search terms given. If exactly one story is found, the URL for it will be given.</td>
 </tr>
 <tr>
-<td width="300">news &lt;partial headline&gt;</td>
-<td>Search through recent news headlines for any stories matching the partial headline given. If exactly one story is found, the URL for it will be given.</td>
+<td width="300">listfeeds</td>
+<td>List the RSS feeds currently configured.</td>
 </tr>
 <tr>
 <td width="300">showfeed &lt;feed name&gt;</td>
@@ -324,6 +345,24 @@ want to use.
 </tr><tr>
 <td width="300">addquote &lt;quote&gt;</td>
 <td>sends a quote to the configured e-mail address. Use || to seperate lines.</td>
+</tr>
+</table>
+<table align="center" cellspacing="1" cellpadding="2" width="750">
+<tr class="name">
+<td colspan="2">SamplePlugin</td>
+</tr>
+<tr class="desc">
+<td colspan="2">
+This file demonstrates the structure and basic useful bits of plugins. This
+docstring will be used in the automatically generated docs/Plugins.html file.
+</td>
+</tr><tr>
+<td width="300">method1</td>
+<td>Our first example method!</td>
+</tr>
+<tr>
+<td width="300">method2</td>
+<td>Our second example method!</td>
 </tr>
 </table>
 <table align="center" cellspacing="1" cellpadding="2" width="750">
@@ -384,6 +423,10 @@ database trickery.
 <tr>
 <td width="300">no, &lt;factoid name&gt; is &lt;whatever&gt;</td>
 <td>Replace the existing definition of &lt;factoid name&gt; with the new value &lt;whatever&gt;.</td>
+</tr>
+<tr>
+<td width="300">randfact</td>
+<td>Return a random factoid from my database.</td>
 </tr>
 <tr>
 <td width="300">rawfactoid &lt;factoid name&gt;</td>
