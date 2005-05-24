@@ -126,6 +126,9 @@ class Misc(Plugin):
 		if 'Please check the following numbers and resubmit.' in resp.data:
 			self.sendReply(trigger, 'Invalid tracking number!')
 			return
+		if 'No scan record for the following shipments has been received' in resp.data:
+			self.sendReply(trigger, 'Shipment has not been scanned yet!'
+			return
 		
 		# Find the shipment info
 		chunk = FindChunk(resp.data, '<!-- shipment info -->', '<!-- shipment tracking stats -->')
