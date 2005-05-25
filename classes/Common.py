@@ -176,7 +176,7 @@ def UnquoteHTML(text, *keep):
 # ---------------------------------------------------------------------------
 # urllib stuff
 def QuoteURL(url):
-	return urllib.quote(url, ':/')
+	return urllib.quote(url, ':/?=')
 
 def UnquoteURL(url):
 	return urllib.unquote(url).replace(' ', '%20')
