@@ -127,7 +127,7 @@ class Misc(Plugin):
 			self.sendReply(trigger, 'Invalid tracking number!')
 			return
 		if 'No scan record for the following shipments has been received' in resp.data:
-			self.sendReply(trigger, 'Shipment has not been scanned yet!'
+			self.sendReply(trigger, 'Shipment has not been scanned yet!')
 			return
 		
 		# Find the shipment info
