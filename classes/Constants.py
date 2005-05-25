@@ -30,7 +30,7 @@
 
 "Constant values for various things."
 
-BH_VERSION = '0.1.0-CVS'
+BH_VERSION = '0.1.0'
 
 # ---------------------------------------------------------------------------
 # Log constants
