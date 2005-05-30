@@ -188,32 +188,24 @@ class TorrentScraper(Plugin):
  					continue
 				
 				# Keep it for a bit
-				# lines[0]
 				torrents[newurl] = True
 		
 		# BNBT page, grr
 		elif page['style'] == 'bnbt':
 			# Find the URL bits we want
-			chunks = FindChunks(resp.data, '<td class="name">', '</tr>')
+			chunks = FindChunks(resp.data, '<a class="download" href="', '"')
 			if not chunks:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
 			
 			# Yuck
 			for chunk in chunks:
-				# Get the bits we need
-				description = FindChunk(chunk, '>', '<')
-				href = FindChunk(chunk, 'class="download" href="', '"')
-				if not description or not href:
-					continue
-				
 				# Build the new URL
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, chunk)).replace('%20', ' ')
 				if newurl in torrents:
 					continue
 				
 				# Keep it for a bit
-				# = description
 				torrents[newurl] = True
 		
 		# RSS feed
