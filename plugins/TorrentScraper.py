@@ -195,7 +195,7 @@ class TorrentScraper(Plugin):
 		# Stupid "torrent trader lite"
 		elif page['style'] == 'ttl':
 			# Find all of our URLs
-			urls = FindChunks(resp.data, '<a href="download.php?"', '"')
+			urls = FindChunks(resp.data, '<a href="download.php?', '"')
 			if not urls:
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
