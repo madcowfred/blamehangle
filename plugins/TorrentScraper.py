@@ -203,7 +203,7 @@ class TorrentScraper(Plugin):
  			# Fix 'em
  			for url in urls:
  				newurl = 'download.php?%s' % (url)
-				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, newurl)).replace('%20', ' ')
 				newurl = newurl.replace('&amp;', '&')
 				
 				torrents[newurl] = True
