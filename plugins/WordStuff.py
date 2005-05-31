@@ -203,7 +203,7 @@ class WordStuff(Plugin):
 				return
 			
 			# Find the rows
-			trs = FindChunks(chunk, '<tr bgcolor', '</tr>')
+			trs = FindChunks(chunk, '<tr', '</tr>')
 			if not trs:
 				self.sendReply(trigger, 'Page parsing failed: table rows.')
 				return
@@ -211,7 +211,7 @@ class WordStuff(Plugin):
 			# Parse the definitions
 			defs = []
 			
-			for tr in trs:
+			for tr in trs[1:]:
 				bits = StripHTML(tr)
 				if len(bits) == 2:
 					defs.append(bits[1])
