@@ -163,19 +163,16 @@ class TorrentScraper(Plugin):
  			
 			# See if any are talking about torrents
 			for chunk in chunks:
-				# Find the 
-				
 				# Find the URL
 				href = FindChunk(chunk, 'href="', '"') or \
 					FindChunk(chunk, "href='", "'") or \
 					FindChunk(chunk, 'HREF="', '"')
 				
-				if not href or '.torrent' not in href:
+				if href is None or '.torrent' not in href:
 					continue
 				
  				# Build the new URL
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
-				# Dirty filthy ampersands
 				newurl = newurl.replace('&amp;', '&')
  				
 				# Keep it for a bit
@@ -189,14 +186,10 @@ class TorrentScraper(Plugin):
 				self.putlog(LOG_WARNING, "Page parsing failed: links.")
 				return
 			
-			# Yuck
+			# Build our new URLs
 			for chunk in chunks:
-				# Build the new URL
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, chunk)).replace('%20', ' ')
-				if newurl in torrents:
-					continue
 				
-				# Keep it for a bit
 				torrents[newurl] = True
 		
 		# Stupid "torrent trader lite"
@@ -211,6 +204,7 @@ class TorrentScraper(Plugin):
  			for url in urls:
  				newurl = 'download.php?%s' % (url)
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
+				newurl = newurl.replace('&amp;', '&')
 				
 				torrents[newurl] = True
 		
@@ -226,11 +220,11 @@ class TorrentScraper(Plugin):
 			# Grab the torrents
 			for item in rss['items']:
 				if 'enclosure' in item:
-					url = UnquoteURL(item['enclosure']['url']).replace('%20', ' ')
+					newurl = UnquoteURL(item['enclosure']['url']).replace('%20', ' ')
 				else:
-					url = UnquoteURL(item['link']).replace('%20', ' ')
+					newurl = UnquoteURL(item['link']).replace('%20', ' ')
 				
-				torrents[url] = True
+				torrents[newurl] = True
 		
 		
 		# If we found nothing, bug out
