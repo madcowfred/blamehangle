@@ -163,6 +163,8 @@ class TorrentScraper(Plugin):
  			
 			# See if any are talking about torrents
 			for chunk in chunks:
+				# Find the 
+				
 				# Find the URL
 				href = FindChunk(chunk, 'href="', '"') or \
 					FindChunk(chunk, "href='", "'") or \
@@ -175,18 +177,7 @@ class TorrentScraper(Plugin):
 				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
 				# Dirty filthy ampersands
 				newurl = newurl.replace('&amp;', '&')
- 				if newurl in torrents:
- 					continue
  				
- 				# Get some text to describe it
-				bits = chunk.split('>', 1)
-				if len(bits) != 2:
-					continue
- 				
-				lines = StripHTML(bits[1])
- 				if len(lines) != 1:
- 					continue
-				
 				# Keep it for a bit
 				torrents[newurl] = True
 		
@@ -206,6 +197,21 @@ class TorrentScraper(Plugin):
 					continue
 				
 				# Keep it for a bit
+				torrents[newurl] = True
+		
+		# Stupid "torrent trader lite"
+		elif page['style'] == 'ttl':
+			# Find all of our URLs
+			urls = FindChunks(resp.data, '<a href="download.php?"', '"')
+			if not urls:
+				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				return
+ 			
+ 			# Fix 'em
+ 			for url in urls:
+ 				newurl = 'download.php?%s' % (url)
+				newurl = UnquoteURL(urlparse.urljoin(resp.url, href)).replace('%20', ' ')
+				
 				torrents[newurl] = True
 		
 		# RSS feed
