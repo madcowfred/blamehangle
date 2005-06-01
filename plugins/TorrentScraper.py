@@ -271,7 +271,7 @@ class TorrentScraper(Plugin):
 			url = QuoteURL(self._FetchMe.pop(0))
 			# Don't try it if it's still marked broken
 			if url in self._Broken:
-				tolog = '"%s" is marked as broken, skipping!'
+				tolog = '"%s" is marked as broken, skipping!' % (url)
 				self.putlog(LOG_DEBUG, tolog)
 				continue
 			
