@@ -277,6 +277,8 @@ class TorrentScraper(Plugin):
 			
 			trigger.origurl = url
 			self.urlRequest(trigger, self.__Parse_Torrent, url)
+			
+			break
 	
 	# Parse torrent metadata or something
 	def __Parse_Torrent(self, trigger, resp):
