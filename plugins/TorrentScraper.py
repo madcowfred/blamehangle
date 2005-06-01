@@ -39,6 +39,7 @@ import urlparse
 from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
+from classes.SimpleCacheDict import SimpleCacheDict
 
 from classes.SimpleRSSGenerator import SimpleRSSGenerator
 from classes.SimpleRSSParser import SimpleRSSParser
@@ -57,6 +58,7 @@ class TorrentScraper(Plugin):
 	_UsesDatabase = 'TorrentScraper'
 	
 	def setup(self):
+		self._Broken = SimpleCacheDict(1)
 		self._FetchMe = []
 		self._Pages = {}
 		self._RSS_Generated = 0
@@ -66,6 +68,10 @@ class TorrentScraper(Plugin):
 	def rehash(self):
 		# Easy way to get general options
 		self.Options = self.OptionsDict('TorrentScraper')
+		
+		# Update our cache length and expire
+		self._Broken.cachesecs = self.Options['backoff_delay']
+		self._Broken.expire()
 		
 		# Add any new pages
 		currtime = time.time()
@@ -102,10 +108,11 @@ class TorrentScraper(Plugin):
 			method = self.__Scrape_Check,
 			interval = self.Options['request_interval'],
 		)
-		self.addTimedEvent(
-			method = self.__Generate_RSS,
-			interval = self.Options['rss_interval'],
-		)
+		if self.Options['rss_interval'] > 0:
+			self.addTimedEvent(
+				method = self.__Generate_RSS,
+				interval = self.Options['rss_interval'],
+			)
 	
 	# -----------------------------------------------------------------------
 	# Get some URLs that haven't been checked recently
@@ -141,10 +148,7 @@ class TorrentScraper(Plugin):
 			return
 		
 		# Remember the Last-Modified header if it was sent
-		#try:
 		self._Pages[trigger.source]['last-modified'] = resp.headers.get('last-modified', None)
-		#except KeyError:
-		#	pass
 		
 		# We don't want stupid HTML entities
 		resp.data = UnquoteHTML(resp.data)
@@ -263,8 +267,14 @@ class TorrentScraper(Plugin):
 	# -----------------------------------------------------------------------
 	# Fetch the next torrent
 	def __Fetch_Next_Torrent(self, trigger):
-		if self._FetchMe:
+		while self._FetchMe:
 			url = QuoteURL(self._FetchMe.pop(0))
+			# Don't try it if it's still marked broken
+			if url in self._Broken:
+				tolog = '"%s" is marked as broken, skipping!'
+				self.putlog(LOG_DEBUG, tolog)
+				continue
+			
 			trigger.origurl = url
 			self.urlRequest(trigger, self.__Parse_Torrent, url)
 	
@@ -276,6 +286,8 @@ class TorrentScraper(Plugin):
 		except ValueError:
 			tolog = '"%s" is not a valid torrent!' % (resp.url)
 			self.putlog(LOG_DEBUG, tolog)
+			# Mark it as borken
+			self._Broken[trigger.origurl] = True
 		else:
 			filename = metainfo['name']
 			# If there's more than one file, sum up the sizes
