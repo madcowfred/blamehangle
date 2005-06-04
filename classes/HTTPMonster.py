@@ -83,7 +83,15 @@ class HTTPMonster(Child):
 		# See if we should start a new HTTP transfer
 		if self.urls and self.active < self.max_conns:
 			host, message, chunks = self.urls.pop(0)
-			async_http(self, host, message, chunks, {})
+			
+			# Nasty hack to allow redirects to work properly
+			if hasattr(message, '_seen'):
+				seen = message._seen
+				del message._seen
+			else:
+				seen = {}
+			
+			async_http(self, host, message, chunks, seen)
 		
 		# See if anything has timed out
 		for a in [a for a in asyncore.socket_map.values() if isinstance(a, async_http)]:
@@ -106,7 +114,7 @@ class HTTPMonster(Child):
 	
 	# We got a DNS reply, deal with it. This is quite yucky.
 	def __DNS_Reply(self, trigger, hosts, args):
-		origmsg, chunks = args
+		message, chunks = args
 		
 		# Do our IPv6 check here
 		if hosts:
@@ -121,7 +129,7 @@ class HTTPMonster(Child):
 		
 		# We got no hosts, DNS failure!
 		if hosts is None or hosts == []:
-			trigger, method, url = origmsg.data[:3]
+			trigger, method, url = message.data[:3]
 			
 			# Log an error
 			if hosts is None:
@@ -133,15 +141,12 @@ class HTTPMonster(Child):
 			# Build the response and return it
 			resp = HTTPResponse(url, None, None, None)
 			data = [trigger, method, resp]
-			self.sendMessage(origmsg.source, REPLY_URL, data)
+			self.sendMessage(message.source, REPLY_URL, data)
 			
 			return
 		
-		# If we have a free connection, start it now. If not, queue it.
-		if self.active < self.max_conns:
-			async_http(self, hosts, origmsg, chunks, {})
-		else:
-			self.urls.append((hosts, origmsg, chunks))
+		# Queue it up for snarfing later
+		self.urls.append((hosts, message, chunks))
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some stats
@@ -321,6 +326,7 @@ class async_http(buffered_dispatcher):
 								self.failed('Redirection limit reached!')
 							else:
 								self.message.data[2] = newurl
+								self.message._seen = self.seen
 								self.parent._message_REQ_URL(self.message)
 					
 					else:
