@@ -91,17 +91,16 @@ class ChatterGizmo(Child):
 		new_nets = [s for s in self.Config.sections() if s.startswith('network.')]
 		
 		for connid, network in old_nets:
-			conn = self.Conns[connid].conn
-			
-			# Update any maybe changed ones
-			if network in new_nets:
-				options = self.OptionsDict(network)
-				self.Conns[connid].parse_options(options)
+			wrap = self.Conns[connid]
 			
 			# Quit and remove any 'gone' networks
+			if network not in new_nets:
+				wrap.requested_quit = 1
+				wrap.conn.quit('So long, and thanks for all the fish.')
+			# Update the others
 			else:
-				self.Conns[connid].requested_quit = 1
-				self.Conns[connid].conn.quit('So long, and thanks for all the fish.')
+				options = self.OptionsDict(network)
+				wrap.parse_options(options)
 		
 		# Connect to any newly added networks
 		for section in new_nets:
