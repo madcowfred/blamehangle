@@ -132,11 +132,15 @@ class WrapConn:
 		
 		# Update our channels if we're connected
 		if self.conn.status == STATUS_CONNECTED:
+			# Ditch the removed ones
 			for chan in old_chans:
 				if chan not in self.channels:
 					self.conn.part(chan)
 			
-			self.join_channels()
+			# Join the new ones
+			for chan in self.channels:
+				if chan not in old_chans:
+					self.join_channel(chan)
 		
 		# Boring stuff
 		self.nicks = options['nicks'].split()
