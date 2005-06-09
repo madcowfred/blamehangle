@@ -1,7 +1,6 @@
 critical:
 
 important:
-	* SamplePlugin needs updating! (fred, sort of started)
 	* Find a nice way to make genhelp document plugin flags.
 
 
@@ -16,8 +15,5 @@ whatever:
 
 
 plugins:
-	* Spam text at intervals (easy way to use PluginTimedEvent?)
-	* MapQuest: return URL with other data (?)
-	* SmartyPants: random factoid spam at interval(s)
 	* 'seen'? Is possible now, woob.
 	* News: admin command to flush news queue.
