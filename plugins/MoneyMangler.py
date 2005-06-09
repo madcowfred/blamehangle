@@ -145,6 +145,40 @@ class MoneyMangler(Plugin):
 		)
 	
 	# -----------------------------------------------------------------------
+	# Someone wants to find a currency
+	def __Currency(self, trigger):
+		curr = trigger.match.group('curr').lower()
+		
+		# Possible currency code?
+		if len(curr) == 3:
+			ucurr = curr.upper()
+			if ucurr in self.__Currencies:
+				replytext = '%s (%s)' % (self.__Currencies[ucurr], ucurr)
+				self.sendReply(trigger, replytext)
+				return
+		
+		# Search the whole bloody lot
+		found = []
+		for code, name in self.__Currencies.items():
+			if name.lower().find(curr) >= 0:
+				found.append(code)
+		
+		replytext = "Currency search for '%s'" % curr
+		
+		if found:
+			if len(found) == 1:
+				replytext += ': %s' % found[0]
+			else:
+				found.sort()
+				replytext += ' (\x02%d\x02 matches)' % len(found)
+				finds = ', '.join(found)
+				replytext += ": %s" % finds
+		else:
+			replytext += ': No matches found.'
+		
+		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
 	# Someone wants to lookup a stock or stocks on the ASX
 	def __Fetch_ASX(self, trigger):
 		symbols = trigger.match.group('symbol').upper().split()
@@ -153,7 +187,7 @@ class MoneyMangler(Plugin):
 			return
 		
 		url = ASX_URL % ('+'.join(symbols))
-		self.urlRequest(trigger, self.__ASX, url)
+		self.urlRequest(trigger, self.__Parse_ASX, url)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to do a money conversion
@@ -174,7 +208,7 @@ class MoneyMangler(Plugin):
 		else:
 			url = EXCHANGE_URL % data
 			trigger.data = data
-			self.urlRequest(trigger, self.__Exchange, url)
+			self.urlRequest(trigger, self.__Parse_Exchange, url)
 		
 		if replytext is not None:
 			self.sendReply(trigger, replytext)
@@ -183,15 +217,15 @@ class MoneyMangler(Plugin):
 	# Someone wants to look up a stock price
 	def __Fetch_Quote(self, trigger):
 		symbol = trigger.match.group('symbol').upper()
-		url = QUOTE_URL % symbol
-		self.urlRequest(trigger, self.__Quote, url)
+		url = QUOTE_URL % (symbol)
+		self.urlRequest(trigger, self.__Parse_Quote, url)
 		
 	# -----------------------------------------------------------------------
 	# Someone wants to look up a ticker symbol
 	def __Fetch_Symbol(self, trigger):
 		findme = trigger.match.group('findme').upper()
-		url = SYMBOL_URL % findme
-		self.urlRequest(trigger, self.__Symbol, url)
+		url = SYMBOL_URL % (findme)
+		self.urlRequest(trigger, self.__Parse_Symbol, url)
 	
 	# Someone wants to see how far in the hole the US is
 	def __Fetch_USDebt(self, trigger):
@@ -199,7 +233,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the ASX page and spit out any results
-	def __ASX(self, trigger, resp):
+	def __Parse_ASX(self, trigger, resp):
 		# Get all table rows
 		trs = FindChunks(resp.data, '<tr', '</tr>')
 		if not trs:
@@ -242,43 +276,10 @@ class MoneyMangler(Plugin):
 		
 		self.sendReply(trigger, replytext)
 	
-	# -----------------------------------------------------------------------
-	# Someone wants to find a currency
-	def __Currency(self, trigger):
-		curr = trigger.match.group('curr').lower()
-		
-		# Possible currency code?
-		if len(curr) == 3:
-			ucurr = curr.upper()
-			if ucurr in self.__Currencies:
-				replytext = '%s (%s)' % (self.__Currencies[ucurr], ucurr)
-				self.sendReply(trigger, replytext)
-				return
-		
-		# Search the whole bloody lot
-		found = []
-		for code, name in self.__Currencies.items():
-			if name.lower().find(curr) >= 0:
-				found.append(code)
-		
-		replytext = "Currency search for '%s'" % curr
-		
-		if found:
-			if len(found) == 1:
-				replytext += ': %s' % found[0]
-			else:
-				found.sort()
-				replytext += ' (\x02%d\x02 matches)' % len(found)
-				finds = ', '.join(found)
-				replytext += ": %s" % finds
-		else:
-			replytext += ': No matches found.'
-		
-		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
 	# Parse the exchange page and spit out a result
-	def __Exchange(self, trigger, resp):
+	def __Parse_Exchange(self, trigger, resp):
 		data = trigger.data
 		resp.data = resp.data.replace('&amp;', ' and ')
 		
@@ -298,7 +299,7 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock quote page and spit out a result
-	def __Quote(self, trigger, resp):
+	def __Parse_Quote(self, trigger, resp):
 		symbol = trigger.match.group('symbol').upper()
 		
 		# Invalid symbol, sorry
@@ -360,12 +361,12 @@ class MoneyMangler(Plugin):
 	
 	# -----------------------------------------------------------------------
 	# Parse the stock symbol page and spit out a result
-	def __Symbol(self, trigger, resp):
+	def __Parse_Symbol(self, trigger, resp):
 		findme = trigger.match.group('findme').upper()
 		
 		# No matches, sorry
 		if resp.data.find('returned no Stocks matches') >= 0:
-			replytext = 'No symbols found matching "%s"' % findme
+			replytext = 'No symbols found matching "%s"' % (findme)
 			self.sendReply(trigger, replytext)
 		
 		else:
