@@ -1,4 +1,21 @@
 ----------------------------
+0.1.1             2005-??-??
+----------------------------
+* classes.ChatterGizmo: fix some issues with rehash not updating the channel
+    list properly.
+* classes.Common: QuoteURL() no longer quotes '=' and '?'.
+* classes.HTTPMonster: fix redirection limit not working, fix redirected POST
+    requests not using GET on the redirected URL, fix double urlparse for each
+    URL which was unquoting spaces somehow.
+* plugins.Misc: fix a missing bracket.
+* plugins.MoneyMangler: fix ASX page parsing, rename all of the page parsing
+    methods to __Parse_Foo.
+* plugins.TorrentScraper: add a new page type, simplify 'bnbt' page parsing,
+    don't retry broken torrents (404, etc) for a while, don't start the RSS
+    feed generation timer if rss_interval is 0, fix some more quoted entity
+    nastiness.
+
+----------------------------
 0.1.0             2005-05-25
 ----------------------------
 * Initial release.
