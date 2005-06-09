@@ -147,8 +147,12 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants to lookup a stock or stocks on the ASX
 	def __Fetch_ASX(self, trigger):
-		symbol = trigger.match.group('symbol').upper()
-		url = ASX_URL % symbol
+		symbols = trigger.match.group('symbol').upper().split()
+		if not symbols:
+			self.sendReply(trigger, 'No symbols supplied!')
+			return
+		
+		url = ASX_URL % ('+'.join(symbols))
 		self.urlRequest(trigger, self.__ASX, url)
 	
 	# -----------------------------------------------------------------------
@@ -199,6 +203,7 @@ class MoneyMangler(Plugin):
 		# Get all table rows
 		trs = FindChunks(resp.data, '<tr', '</tr>')
 		if not trs:
+			print repr(resp.data)
 			self.putlog(LOG_WARNING, 'ASX page parsing failed: no table rows?!')
 			self.sendReply(trigger, 'Failed to parse page.')
 			return
@@ -207,7 +212,7 @@ class MoneyMangler(Plugin):
 		infos = []
 		
 		for tr in trs:
-			if tr.find('<strong>') < 0:
+			if "<th scope='row' class='row'>" not in tr:
 				continue
 			
 			# Find all table cells in this row
@@ -218,14 +223,13 @@ class MoneyMangler(Plugin):
 				return
 			
 			# Get our data
-			symbol = StripHTML(tds[0])[0]
+			symbol = StripHTML(FindChunk(tr, '<th', '</th>'))[0]
 			if symbol.endswith(' *'):
 				symbol = symbol[:-2]
-			last = StripHTML(tds[1])[0]
-			change = StripHTML(tds[2])[0]
+			last = StripHTML(tds[0])[0]
+			change = StripHTML(tds[1])[0]
 			if not change.startswith('-'):
 				change = '+' + change
-			#volume = StripHTML(tds[8])[0]
 			
 			info = '\02[\02%s: %s %s\02]\02' % (symbol, last, change)
 			infos.append(info)
