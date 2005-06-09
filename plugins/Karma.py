@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-'Karma. Someone put a useful description here.'
+'Implement user-defined "karma" values for pretty much anything.'
 
 import time
 
@@ -146,7 +146,10 @@ class Karma(Plugin):
 		# strip leading and trailing spaces
 		newname = newname.strip()
 		
-		return newname
+		if len(newname) < 192:
+			return newname
+		else:
+			return False
 	
 	# Check our various caches to make sure people aren't spamming us.
 	def __Check_Spam(self, host, name):
