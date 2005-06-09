@@ -192,7 +192,7 @@ class async_http(buffered_dispatcher):
 		parent.putlog(LOG_DEBUG, tolog)
 		
 		# Parse the URL, saving the bits we need
-		scheme, host, path, params, query, fragment = urlparse.urlparse(message.data[2])
+		scheme, host, path, params, query, fragment = self.chunks
 		
 		# Work out our port from the host field
 		try:
