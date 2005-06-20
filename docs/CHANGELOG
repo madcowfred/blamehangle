@@ -7,6 +7,8 @@
 * classes.HTTPMonster: fix redirection limit not working, fix redirected POST
     requests not using GET on the redirected URL, fix double urlparse for each
     URL which was unquoting spaces somehow.
+* plugins.Google: fix result parsing so we don't end up with a silly trailing
+    quote.
 * plugins.Karma: give an error straight away for absurdly long key names.
 * plugins.Misc: fix a missing bracket.
 * plugins.MoneyMangler: fix ASX page parsing, rename all of the page parsing
@@ -15,6 +17,8 @@
     parsing, don't retry broken torrents (404, etc) for a while, don't start
     the RSS feed generation timer if rss_interval is 0, fix some more quoted
     entity nastiness.
+* plugins.Video: disable 'tvtome' command, since Cnet bought them out and it
+    now sucks.
 * plugins.WordStuff: fix acronym page parsing.
 
 ----------------------------
