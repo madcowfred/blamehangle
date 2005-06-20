@@ -58,11 +58,11 @@ class Video(Plugin):
 			regexp = r'^imdb (?P<findme>.+)$',
 			help = ('imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
 		)
-		self.addTextEvent(
-			method = self.__Fetch_TVTome,
-			regexp = r'^tvtome (.+)$',
-			help = ('tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
-		)
+		#self.addTextEvent(
+		#	method = self.__Fetch_TVTome,
+		#	regexp = r'^tvtome (.+)$',
+		#	help = ('tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
+		#)
 	
 	# ---------------------------------------------------------------------------
 	
