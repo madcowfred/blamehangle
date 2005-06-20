@@ -41,7 +41,7 @@ from classes.Plugin import Plugin
 
 GOOGLE_URL = 'http://www.google.com/search?q=%s'
 
-RESULT_RE = re.compile('^<a href=[\'\"]?(?P<url>[^>]+)[\'\"]?>(?P<title>.+)$')
+RESULT_RE = re.compile('^<a href="(?P<url>[^>]+)"[^>]*>(?P<title>.+)$')
 CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
 
 NOBOLD_RE = re.compile('</?b>')
@@ -155,10 +155,10 @@ class Google(Plugin):
 		
 		# Some matches!
 		else:
-			resp.data = UnquoteHTML(resp.data)
+			data = UnquoteHTML(resp.data)
 			
 			# Go go calculator
-			m = CALC_RE.search(resp.data)
+			m = CALC_RE.search(data)
 			if m:
 				calc = '%s' % NOFONT_RE.sub('', m.group('result'))
 				calc = calc.replace('&times;', '*')
@@ -168,7 +168,7 @@ class Google(Plugin):
 				calc = None
 			
 			# Find the result(s)
-			chunks = FindChunks(resp.data, '<!--m-->', '</a>')
+			chunks = FindChunks(data, '<!--m-->', '</a>')
 			if chunks:
 				results = []
 				
