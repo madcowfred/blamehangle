@@ -535,12 +535,14 @@ class ChatterGizmo(Child):
 	def _joinerror(self, connid, conn, event):
 		chan = event.arguments[0].lower()
 		
+		# See if it's really a channel
+		if chan[0] not in ('#', '&'):
+			tolog = "Weird join error: '%r'" % (event.arguments)
+			self.putlog(LOG_WARNING, tolog)
+			return
+		
 		# Try to join again soon
 		data = [time.time(), connid, self.Conns[connid].connect_id, chan]
-		
-		# FIXME: temporary debugging
-		tolog = "__Rejoins: %r - %r" % (data, event.arguments)
-		self.putlog(LOG_DEBUG, tolog)
 		
 		self.__Rejoins.append(data)
 	
