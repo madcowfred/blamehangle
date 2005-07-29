@@ -42,8 +42,7 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 BUGMENOT_URL = 'http://www.bugmenot.com/view.php?url=%s'
-FEDEX_URL = "http://www.fedex.com/cgi-bin/tracking?action=track&language=english&ascend_header=1&cntry_code=us&initial=x&mps=y&tracknumbers=%s"
-#FEDEX_URL = "http://fridge/~freddie/tracking.html?%s"
+FEDEX_URL = "http://www.fedex.com/Tracking?cntry_code=us&action=track&language=english&ascend_header=1&tracknumbers=%s&initial=x&mps=y&"
 PGP_URL = "http://pgp.mit.edu:11371/pks/lookup?op=index&search=%s"
 
 SPACE_RE = re.compile('\s+')
@@ -131,48 +130,45 @@ class Misc(Plugin):
 			return
 		
 		# Find the shipment info
-		chunk = FindChunk(resp.data, '<!-- shipment info -->', '<!-- shipment tracking stats -->')
+		chunk = FindChunk(resp.data, '<!-- shipment info -->', '<!-- BEGIN Scan Activity -->')
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: shipment info.')
+			print repr(resp.data)
 			return
 		
-		trs = FindChunks(chunk, '<tr valign="top" bgcolor="#E6E6E6">', '</tr>')
+		trs = FindChunks(chunk, '<TR vAlign="top" bgColor="#e6e6e6">', '</TR>')
 		if not trs:
 			self.sendReply(trigger, 'Page parsing failed: shipment info trs.')
 			return
 		
-		# Not delivered yet?
-		if len(trs) == 8:
-			checkme = (7, 6, 2, 3)
-		# Delivered already?
-		elif len(trs) == 10:
-			checkme = (9, 8, 7, 2, 3, 4)
-		# No idea
-		else:
-			self.sendReply(trigger, 'Page parsing failed: shipment info tr count.')
-			return
-		
-		parts = []
-		for i in checkme:
-			tds = FindChunks(trs[i], '<td>', '</td>')
+		# Gather the various data
+		data = {}
+		for tr in trs:
+			tds = FindChunks(tr, '<TD>', '</TD>')
 			if not tds:
 				continue
 			
-			thing = FindChunk(tds[0], '<b>', '</b>')
-			value = SPACE_RE.sub(' ', tds[-1])
+			k = SPACE_RE.sub(' ', FindChunk(tds[0], '<B>', '</B>')).strip()
+			v = SPACE_RE.sub(' ', tds[2]).strip()
 			
-			if thing and value:
-				part = '%s: %s' % (thing, value)
+			if k and v:
+				data[k] = v
+		
+		# Make up our output
+		parts = []
+		for thing in ('Status', 'Service type', 'Destination', 'Ship date', 'Delivery date'):
+			if thing in data:
+				part = '%s: %s' % (thing, data[thing])
 				parts.append(part)
 		
 		if not parts:
 			self.sendReply(trigger, 'Page parsing failed: no parts?')
 			return
 		
-		# Find the scan activity
+		# Find the scan activity and get the last update
 		chunk = FindChunk(resp.data, '<!-- BEGIN Scan Activity -->', '<!-- END Scan Activity -->')
 		if chunk:
-			trs = FindChunks(resp.data, '<tr bgcolor="#E6E6E6">', '</tr>')
+			trs = FindChunks(resp.data, '<tr bgColor=#e6e6e6 >', '</tr>')
 			if trs:
 				tds = FindChunks(trs[0], '<td', '</td>')
 				if len(tds) == 16:
