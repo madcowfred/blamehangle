@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # $Id$
 #----------------------------------------------------------------------------
-# Copyright (c) 2004, MadCowDisease
+# Copyright (c) 2004-2005, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
