@@ -49,6 +49,8 @@ CONNECT_TIMEOUT = 30
 CONNECT_HOLDOFF = 5
 # How long in seconds between sending lines to the server
 OUTPUT_INTERVAL = 1
+# How long in seconds between channel join attempts
+JOINS_INTERVAL = 15
 # How long in seconds between 'stoned' checks
 STONED_INTERVAL = 40
 # How stoned must we be to jump server
@@ -117,6 +119,7 @@ class WrapConn:
 				tolog = "Invalid server definition: '%s'" % (server)
 				self.connlog(LOG_WARNING, tolog)
 		
+		# Put the server list in a random order
 		random.shuffle(self.servers)
 		
 		# Parse the channels
@@ -138,9 +141,9 @@ class WrapConn:
 					self.conn.part(chan)
 			
 			# Join the new ones
-			for chan in self.channels:
-				if chan not in old_chans:
-					self.join_channel(chan)
+			#for chan in self.channels:
+			#	if chan not in old_chans:
+			#		self.join_channel(chan)
 		
 		# Boring stuff
 		self.nicks = options['nicks'].split()
@@ -176,6 +179,7 @@ class WrapConn:
 		self.trynick = 0
 		
 		self.last_connect = 0
+		self.last_joins = 0
 		self.last_nick = 0
 		self.last_output = 0
 		self.last_stoned = 0
@@ -312,11 +316,16 @@ class WrapConn:
 	
 	# -----------------------------------------------------------------------
 	# Join the channels in our channel list
-	def join_channels(self):
+	def join_channels(self, *joinme):
+		if not joinme:
+			joinme = self.channels.keys()
+		
 		chans = []
 		keys = []
 		
-		for chan, key in self.channels.items():
+		for chan in joinme:
+			key = self.channels[chan]
+			
 			if key is None:
 				chans.append(chan)
 			else:
@@ -330,9 +339,6 @@ class WrapConn:
 			keystring = None
 		
 		self.conn.join(chanstring, keystring)
-	
-	def join_channel(self, chan):
-		self.conn.join(chan, self.channels[chan])
 	
 	# -----------------------------------------------------------------------
 	# Stuff outgoing data into our queue
@@ -421,20 +427,31 @@ class WrapConn:
 					elif data[0] == PRIORITY_PRIVMSG:
 						self.conn.privmsg(data[1], data[2])
 			
-			# Set our stoned time to now if we've just connected
-			if self.last_stoned == 0:
-				self.last_stoned = currtime
-			
-			# Stoned check
-			elif (currtime - self.last_stoned) >= STONED_INTERVAL:
-				self.last_stoned = currtime
-				self.stoned += 1
+			if self.conn.welcomed == 1:
+				# Set our join and stoned time to now if we've just connected
+				if self.last_joins == 0 and self.last_stoned == 0:
+					self.last_joins = self.last_stoned = currtime
+					return
 				
-				if self.stoned > STONED_COUNT:
-					self.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
-					self.conn.disconnect()
-				else:
-					self.privmsg(self.conn.getnick(), "Stoned yet?")
+				# Joins check
+				if (currtime - self.last_joins) >= JOINS_INTERVAL:
+					self.last_joins = currtime
+					
+					chans = self.ircul._c.keys()
+					joinme = [c for c in self.channels.keys() if c not in chans]
+					print 'joinme:', joinme
+					self.join_channels(*joinme)
+				
+				# Stoned check
+				if (currtime - self.last_stoned) >= STONED_INTERVAL:
+					self.last_stoned = currtime
+					self.stoned += 1
+					
+					if self.stoned > STONED_COUNT:
+						self.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
+						self.conn.disconnect()
+					else:
+						self.privmsg(self.conn.getnick(), "Stoned yet?")
 	
 	# -----------------------------------------------------------------------
 	# Are we connected?

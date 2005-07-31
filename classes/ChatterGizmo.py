@@ -66,7 +66,6 @@ class ChatterGizmo(Child):
 		self.stopping = 0
 		
 		self.__Handlers = {}
-		self.__Rejoins = []
 		
 		self.rehash()
 	
@@ -136,19 +135,6 @@ class ChatterGizmo(Child):
 			
 			self.stopnow = 1
 			return
-		
-		# See if we have to try rejoining any channels
-		for rejoin in self.__Rejoins:
-			last, connid, connect_id, chan = rejoin
-			wrap = self.Conns[connid]
-			
-			if wrap.conn.status != STATUS_CONNECTED or wrap.connect_id != connect_id:
-				self.__Rejoins.remove(rejoin)
-				continue
-			
-			if (currtime - last) >= 20:
-				self.__Rejoins.remove(rejoin)
-				self.Conns[connid].join_channel(chan)
 		
 		# Do other stuff here
 		for conn, wrap in self.Conns.items():
@@ -225,18 +211,12 @@ class ChatterGizmo(Child):
 			
 			text = 'IDENTIFY %s' % (wrap.nickserv_pass)
 			self.privmsg(connid, wrap.nickserv_nick, text)
-			
-			# Delay our joins by 2 seconds so that we're (probably) identified
-			# FIXME: make this not use magic numbers
-			badtime = time.time() - 18
-			for chan in wrap.channels:
-				data = [badtime, wrap.conn.connid, wrap.connect_id, chan]
-				self.__Rejoins.append(data)
 		
 		# Normal joining
 		else:
 			wrap.join_channels()
 	
+	# Some servers are stupid and have no MOTD!
 	_handle_nomotd = _handle_endofmotd
 	
 	# -----------------------------------------------------------------------
@@ -421,7 +401,7 @@ class ChatterGizmo(Child):
 		if chan in self.Conns[connid].channels:
 			tolog = '%s invited me to %s, joining...' % (event.userinfo, chan)
 			self.connlog(connid, LOG_ALWAYS, tolog)
-			self.Conns[connid].join_channel(chan)
+			self.Conns[connid].join_channels(chan)
 		else:
 			tolog = '%s invited me to %s, which is NOT in my channel list!' % (event.userinfo, chan)
 			self.connlog(connid, LOG_WARNING, tolog)
@@ -439,7 +419,7 @@ class ChatterGizmo(Child):
 			self.connlog(connid, LOG_ALWAYS, tolog)
 			
 			wrap.ircul.user_parted(chan)
-			wrap.join_channel(chan)
+			wrap.join_channels(chan)
 		
 		else:
 			wrap.ircul.user_parted(chan, nick=kicked)
@@ -533,18 +513,7 @@ class ChatterGizmo(Child):
 	# Various errors, all of which are saying that we can't join a channel.
 	# -----------------------------------------------------------------------
 	def _joinerror(self, connid, conn, event):
-		chan = event.arguments[0].lower()
-		
-		# See if it's really a channel
-		if chan[0] not in ('#', '&'):
-			tolog = "Weird join error: '%r'" % (event.arguments)
-			self.putlog(LOG_WARNING, tolog)
-			return
-		
-		# Try to join again soon
-		data = [time.time(), connid, self.Conns[connid].connect_id, chan]
-		
-		self.__Rejoins.append(data)
+		pass
 	
 	_handle_unavailresource = _joinerror
 	_handle_channelisfull = _joinerror
