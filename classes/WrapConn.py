@@ -437,9 +437,9 @@ class WrapConn:
 				if (currtime - self.last_joins) >= JOINS_INTERVAL:
 					self.last_joins = currtime
 					
+					# We want to join any channels that we're not currently on
 					chans = self.ircul._c.keys()
 					joinme = [c for c in self.channels.keys() if c not in chans]
-					print 'joinme:', joinme
 					self.join_channels(*joinme)
 				
 				# Stoned check
