@@ -59,7 +59,7 @@ RHYMEZONE_LIMIT = 40
 # ---------------------------------------------------------------------------
 
 ACRONYM_URL = 'http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=%s&Find=Find'
-URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s&r=f'
+URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 # ---------------------------------------------------------------------------
 
@@ -373,9 +373,9 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(resp.data, '<div class="text">', '</td>')
+			chunks = FindChunks(resp.data, '<div class="entry">', '<div class="author">')
 			if not chunks:
-				self.sendReply(trigger, 'Page parsing failed: divs.')
+				self.sendReply(trigger, 'Page parsing failed: entries.')
 				return
 			
 			# Parse the definitions
@@ -385,29 +385,29 @@ class WordStuff(Plugin):
 				out = []
 				
 				# We only want the first line
-				definition = FindChunk(chunk, '<div class="def">', '</div>')
+				definition = FindChunk(chunk, '<div class="definition">', '</div>')
 				if not definition:
-					self.sendReply(trigger, 'Page parsing failed: def.')
+					self.sendReply(trigger, 'Page parsing failed: definition.')
 					return
 				
 				# Strip annoying junk
 				definition = definition.replace('\r', '').replace('\n', '')
 				definition = StripHTML(definition)[0]
+				
 				out.append(definition)
 				
 				# And maybe an example
 				example = FindChunk(chunk, '<div class="example">', '</div>')
 				if example:
 					# Strip annoying junk
-					example = example.replace('\r', '').replace('\n', '')
-					example = '"%s"' % (example)
+					example = example.replace('\r', ' ').replace('\n', ' ')
 					example = StripHTML(example)[0]
 					
 					out.append(example)
 				
 				# If we got something, add it to the defs list
 				if out:
-					definition = ' '.join(out)
+					definition = ' -> '.join(out)
 					defs.append(definition)
 			
 			# If we got some definitions, add them to the cache and spit
