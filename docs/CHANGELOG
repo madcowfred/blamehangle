@@ -13,8 +13,8 @@
 * plugins.Google: fix result parsing so we don't end up with a silly trailing
     quote.
 * plugins.Karma: give an error straight away for absurdly long key names.
-* plugins.Misc: fix a missing bracket.
-* plugins.Misc: fix various issues with the 'fedex' command page parsing.
+* plugins.Misc: fix a missing bracket, fix various issues with the 'fedex'
+    command page parsing.
 * plugins.MoneyMangler: fix ASX page parsing, rename all of the page parsing
     methods to __Parse_Foo.
 * plugins.TorrentScraper: add a new 'ttl' page type, simplify 'bnbt' page
@@ -23,7 +23,8 @@
     entity nastiness.
 * plugins.Video: disable 'tvtome' command, since Cnet bought them out and it
     now sucks.
-* plugins.WordStuff: fix acronym page parsing.
+* plugins.WordStuff: fix acronym page parsing, fix urban dictionary page
+    parsing.
 
 ----------------------------
 0.1.0             2005-05-25
