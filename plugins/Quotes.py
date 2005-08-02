@@ -55,11 +55,27 @@ class Quotes(Plugin):
 	# ---------------------------------------------------------------------------
 	
 	def register(self):
-		self.addTextEvent(
-			method = self.__AddQuote,
-			regexp = r'^addquote (?P<quote>.+)$',
-			help = ('addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
-		)
+		# Do we allow public addquote commands?
+		if self.Options.get('allow_public_addquote', 1):
+			self.addTextEvent(
+				method = self.__AddQuote,
+				regexp = r'^addquote (?P<quote>.+)$',
+				help = ('addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
+			)
+		else:
+			self.addTextEvent(
+				method = self.__AddQuote,
+				regexp = r'^addquote (?P<quote>.+)$',
+				help = ('addquote', '\02addquote\02 <quote> : sends a quote to the configured e-mail address. Use || to seperate lines.'),
+				IRCTypes = (IRCT_MSG,),
+			)
+			self.addTextEvent(
+				method = self.__AddQuoteNoPublic,
+				regexp = r'^addquote (?P<quote>.+)$',
+				IRCTypes = (IRCT_PUBLIC_D,),
+			)
+		
+		# Do we want to spam quotes at an interval?
 		if self.Options.get('spam_interval', 0) > 0:
 			self.addTimedEvent(
 				method = self.__Query_Spam,
@@ -116,6 +132,10 @@ class Quotes(Plugin):
 				self.putlog(LOG_ALWAYS, tolog)
 			
 			self.sendReply(trigger, replytext)
+	
+	# No public addquote!
+	def __AddQuoteNoPublic(self, trigger):
+		self.sendReply(trigger, "Don't use addquote in public!")
 	
 	# -----------------------------------------------------------------------
 	# Time to get a new quote to spam
