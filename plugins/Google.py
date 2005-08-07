@@ -41,7 +41,7 @@ from classes.Plugin import Plugin
 
 GOOGLE_URL = 'http://www.google.com/search?q=%s'
 
-RESULT_RE = re.compile('^<a href="(?P<url>[^>]+)"[^>]*>(?P<title>.+)$')
+RESULT_RE = re.compile('^<a href="(?P<url>[^>]*?)"[^>]*>(?P<title>.+)$')
 CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
 
 NOBOLD_RE = re.compile('</?b>')
