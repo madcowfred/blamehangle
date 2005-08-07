@@ -1,5 +1,5 @@
 ----------------------------
-0.1.1             2005-??-??
+0.1.1             2005-08-07
 ----------------------------
 * classes.ChatterGizmo: fix some issues with rehash not updating the channel
     list properly, remove nasty global rejoins list hack.
@@ -10,12 +10,11 @@
 * classes.WrapConn: make each wrap keep track of it's own channel rejoins,
     fix adding a channel key then rehashing not joining the channel correctly,
     only do join/stoned check if we finished connecting to the server.
-* plugins.Google: fix result parsing so we don't end up with a silly trailing
-    quote.
+* plugins.Google: fix result parsing.
 * plugins.Karma: give an error straight away for absurdly long key names.
 * plugins.Misc: fix a missing bracket, fix various issues with the 'fedex'
     command page parsing.
-* plugins.MoneyMangler: fix ASX page parsing, rename all of the page parsing
+* plugins.MoneyMangler: fix 'asx' page parsing, rename all of the page parsing
     methods to __Parse_Foo.
 * plugins.Quotes: add a new 'allow_public_addquote' option, guess what it
     does!
@@ -25,8 +24,7 @@
     entity nastiness.
 * plugins.Video: disable 'tvtome' command, since Cnet bought them out and it
     now sucks.
-* plugins.WordStuff: fix acronym page parsing, fix urban dictionary page
-    parsing.
+* plugins.WordStuff: fix 'acronym' page parsing, fix 'urban' page parsing.
 
 ----------------------------
 0.1.0             2005-05-25
