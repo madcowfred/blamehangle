@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Gathers news from Google News or any RSS feeds you might want to use.
+Gathers news from any RSS feeds you might want to use.
 """
 
 import random
@@ -58,25 +58,12 @@ SEARCH_QUERY = 'SELECT title, url, description, added FROM news WHERE %s ORDER B
 
 # ---------------------------------------------------------------------------
 
-GOOGLE_BUSINESS_URL = 'http://news.google.com/?ned=%s&topic=b'
-GOOGLE_HEALTH_URL = 'http://news.google.com/?ned=%s&topic=m'
-GOOGLE_SCIENCE_URL = 'http://news.google.com/?ned=%s&topic=t'
-GOOGLE_SPORT_URL = 'http://news.google.com/?ned=%s&topic=s'
-GOOGLE_WORLD_URL = 'http://news.google.com/?ned=%s&topic=w'
-
-# ---------------------------------------------------------------------------
-# Dirty dirty regexps
-GOOGLE_STORY_TITLE_RE = re.compile(r'<td valign=top><a href="(http://.*?)" id=.*?><b>(.*?)</b>')
-GOOGLE_STORY_TEXT_RE = re.compile(r'<font size=-1>(?!<)(.*?)</font>')
-
-# ---------------------------------------------------------------------------
-
 class News(Plugin):
 	"""
 	A news gatherer plugin.
 	
-	This will search for updated news stories on Google News and RSS feeds and
-	reply with the title of and link to any that it finds.
+	This will search for updated news stories RSS feeds and	reply with the title of and
+	link to any that it finds.
 	"""
 	
 	_HelpSection = 'news'
@@ -116,8 +103,6 @@ class News(Plugin):
 		
 		# Set up our targets dict
 		self._Targets = {}
-		for target in ('google_business', 'google_health', 'google_science', 'google_sport', 'google_world'):
-			self._Targets[target] = self.News_Options.pop(target, {})
 		self._Targets['rss_default'] = self.RSS_Options.pop('default_targets', {})
 		
 		# Update our RSS feed list
@@ -160,37 +145,6 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	# Register all our news pages that we want to check
 	def register(self):
-		# Various timed news checks
-		if self.News_Options.get('google_business_interval', 0):
-			self.addTimedEvent(
-				method = self.__Fetch_Google_Business,
-				interval = self.News_Options['google_business_interval'],
-				targets = self._Targets['google_business'],
-			)
-		if self.News_Options.get('google_health_interval', 0):
-			self.addTimedEvent(
-				method = self.__Fetch_Google_Health,
-				interval = self.News_Options['google_health_interval'],
-				targets = self._Targets['google_health'],
-			)
-		if self.News_Options.get('google_science_interval', 0):
-			self.addTimedEvent(
-				method = self.__Fetch_Google_Science,
-				interval = self.News_Options['google_science_interval'],
-				targets = self._Targets['google_science'],
-			)
-		if self.News_Options.get('google_sport_interval', 0):
-			self.addTimedEvent(
-				method = self.__Fetch_Google_Sport,
-				interval = self.News_Options['google_sport_interval'],
-				targets = self._Targets['google_sport'],
-			)
-		if self.News_Options.get('google_world_interval', 0):
-			self.addTimedEvent(
-				method = self.__Fetch_Google_World,
-				interval = self.News_Options['google_world_interval'],
-				targets = self._Targets['google_world'],
-			)
 		# News search
 		self.addTextEvent(
 			method = self.__Query_Search,
@@ -305,32 +259,6 @@ class News(Plugin):
 		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
-	
-	def __Fetch_Google_Business(self, trigger):
-		trigger.source = 'google_business'
-		url = GOOGLE_BUSINESS_URL % (self.News_Options['google_news_country'])
-		self.urlRequest(trigger, self.__Parse_Google, url)
-	
-	def __Fetch_Google_Health(self, trigger):
-		trigger.source = 'google_health'
-		url = GOOGLE_HEALTH_URL % (self.News_Options['google_news_country'])
-		self.urlRequest(trigger, self.__Parse_Google, url)
-	
-	def __Fetch_Google_Science(self, trigger):
-		trigger.source = 'google_science'
-		url = GOOGLE_SCIENCE_URL % (self.News_Options['google_news_country'])
-		self.urlRequest(trigger, self.__Parse_Google, url)
-	
-	def __Fetch_Google_Sport(self, trigger):
-		trigger.source = 'google_sport'
-		url = GOOGLE_SPORT_URL % (self.News_Options['google_news_country'])
-		self.urlRequest(trigger, self.__Parse_Google, url)
-	
-	def __Fetch_Google_World(self, trigger):
-		trigger.source = 'google_world'
-		url = GOOGLE_WORLD_URL % (self.News_Options['google_news_country'])
-		self.urlRequest(trigger, self.__Parse_Google, url)
-	
 	# See if any feeds should be triggering around about now
 	def __RSS_Check(self, trigger):
 		currtime = time.time()
@@ -348,48 +276,6 @@ class News(Plugin):
 				self.urlRequest(trigger, self.__Parse_RSS, feed['url'], headers=headers)
 			else:
 				self.urlRequest(trigger, self.__Parse_RSS, feed['url'])
-	
-	# -----------------------------------------------------------------------
-	# Parse Google News!
-	def __Parse_Google(self, trigger, resp):
-		resp.data = UnquoteHTML(resp.data)
-		
-		# Find some tables
-		tables = FindChunks(resp.data, '<table border=0 width=75% valign=top', '</table>')
-		if not tables:
-			self.putlog(LOG_WARNING, 'Google News parsing failed: no artice tables.')
-			return
-		
-		# See if any of them have articles
-		articles = []
-		
-		for table in tables:
-			# Look for the URL and story title
-			m = GOOGLE_STORY_TITLE_RE.search(table)
-			if not m:
-				continue
-			
-			url, title = m.groups()
-			
-			# Remove any annoying bold tags
-			title = title.replace(' <b>...', '...')
-			
-			# Look for the story text
-			m = GOOGLE_STORY_TEXT_RE.search(table)
-			if m:
-				description = m.group(1).strip()
-			else:
-				description = ''
-			
-			data = [title, url, description]
-			articles.append(data)
-		
-		# If we got no articles, cry here
-		if not articles:
-			self.putlog(LOG_WARNING, "Google News parsing failed: no articles.")
-		# Go for it!
-		else:
-			self.__News_New(trigger, articles)
 	
 	# -----------------------------------------------------------------------
 	# Parse an RSS feed!
