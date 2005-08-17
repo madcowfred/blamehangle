@@ -1,4 +1,12 @@
 ----------------------------
+0.?.?
+----------------------------
+* classes.Resolver: if DNS/use_ipv6 is off, use gethostbyname_ex() to 
+    resolve hosts (workaround for retarded nameservers)
+* plugins.News: remove the Google News parser, they finally have their own
+    RSS feeds, hurrah!
+
+----------------------------
 0.1.1             2005-08-07
 ----------------------------
 * classes.ChatterGizmo: fix some issues with rehash not updating the channel
