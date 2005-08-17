@@ -61,6 +61,8 @@ class Resolver(Child):
 		self.rehash()
 	
 	def rehash(self):
+		self._use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
+		
 		self.Options = self.OptionsDict('DNS')
 		# Update the cache expiry time and trigger an expire
 		self.DNSCache.cachesecs = self.Options['cache_time'] * 60
@@ -138,7 +140,7 @@ def ResolverThread(parent, myindex):
 		try:
 			message = parent.Requests.get_nowait()
 		except Empty:
-			_sleep(0.25)
+			_sleep(0.1)
 			continue
 		
 		# well, off we go then
@@ -147,22 +149,38 @@ def ResolverThread(parent, myindex):
 		#tolog = 'Looking up %s...' % host
 		#parent.putlog(LOG_DEBUG, tolog)
 		
-		try:
-			results = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-		except socket.gaierror:
-			data = [trigger, method, None, args]
-		else:
-			# parse the results a bit here
-			hosts = []
-			for af, socktype, proto, canonname, sa in results:
-				if af == socket.AF_INET:
-					hosts.append((4, sa[0]))
-				elif af == socket.AF_INET6:
-					hosts.append((6, sa[0]))
-			
-			parent.DNSCache[host] = hosts
-			data = [trigger, method, hosts, args]
+		hosts = []
+		# If we want to use IPv6 at all, have to use getaddrinfo().
+		if parent._use_ipv6:
+			try:
+				results = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+			except socket.gaierror:
+				data = [trigger, method, None, args]
+			else:
+				# parse the results a bit here
+				hosts = []
+				for af, socktype, proto, canonname, sa in results:
+					if af == socket.AF_INET:
+						hosts.append((4, sa[0]))
+					elif af == socket.AF_INET6:
+						hosts.append((6, sa[0]))
+				
+				parent.DNSCache[host] = hosts
+				data = [trigger, method, hosts, args]
 		
+		# Otherwise we can use gethostbyname_ex, which doesn't interact badly
+		# with retarded name servers.
+		else:
+			try:
+				results = socket.gethostbyname_ex(host)
+			except socket.gaierror:
+				data = [trigger, method, None, args]
+			else:
+				hosts = [(4, h) for h in results[2]]
+				parent.DNSCache[host] = hosts
+				data = [trigger, method, hosts, args]
+		
+		# And return the message
 		parent.sendMessage(message.source, REPLY_DNS, data)
 
 # ---------------------------------------------------------------------------
