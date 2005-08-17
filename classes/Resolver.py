@@ -33,6 +33,11 @@ Implements threaded DNS lookups. getaddrinfo() lets the rest of the Python
 interpreter run in 2.3+, yay.
 """
 
+import asyncore
+import os
+import select
+import sys
+
 import re
 import socket
 import time
@@ -55,8 +60,11 @@ class Resolver(Child):
 		self.DNSCache = self.loadPickle('.resolver_cache')
 		if self.DNSCache is None:
 			self.DNSCache = SimpleCacheDict(1)
-		self.Requests = Queue(0)
 		self.Threads = []
+		
+		self.Active_Requests = 0
+		self.__Requests = []
+		#self.__Requests = Queue(0)
 		
 		self.rehash()
 	
@@ -67,14 +75,20 @@ class Resolver(Child):
 		self.DNSCache.expire()
 	
 	def shutdown(self, message):
-		self.__Stop_Threads()
+		#self.__Stop_Threads()
 		
 		self.DNSCache.expire()
 		self.savePickle('.resolver_cache', self.DNSCache)
 	
 	# We start our threads here to allow useful early shutdown
-	def run_once(self):
-		self.__Start_Threads()
+	#def run_once(self):
+	#	self.__Start_Threads()
+	
+	def run_sometimes(self, currtime):
+		if self.__Requests and self.Active_Requests < self.Options.get('active_resolvers', 2):
+			message = self.__Requests.pop(0)
+			print self.Active_Requests, message.data[2]
+			NastyResolver(self, message)
 	
 	# -----------------------------------------------------------------------
 	# Start our threads!
@@ -114,15 +128,16 @@ class Resolver(Child):
 			self.sendMessage(message.source, REPLY_DNS, data)
 		# If not, go resolve it
 		else:
-			# Well, make sure it's not an IP first
+			# Don't go resolving IPv4 addresses
 			if IPV4_RE.match(host):
 				data = [trigger, method, [(4, host)], args]
 				self.sendMessage(message.source, REPLY_DNS, data)
+			# Or IPv6 addresses
 			elif ':' in host:
 				data = [trigger, method, [(6, host)], args]
 				self.sendMessage(message.source, REPLY_DNS, data)
 			else:
-				self.Requests.put(message)
+				self.__Requests.append(message)
 
 # ---------------------------------------------------------------------------
 
@@ -144,9 +159,6 @@ def ResolverThread(parent, myindex):
 		# well, off we go then
 		trigger, method, host, args = message.data
 		
-		#tolog = 'Looking up %s...' % host
-		#parent.putlog(LOG_DEBUG, tolog)
-		
 		try:
 			results = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
 		except socket.gaierror:
@@ -164,5 +176,68 @@ def ResolverThread(parent, myindex):
 			data = [trigger, method, hosts, args]
 		
 		parent.sendMessage(message.source, REPLY_DNS, data)
+
+# ---------------------------------------------------------------------------
+
+class NastyResolver:
+	def __init__(self, parent, message):
+		self.parent = parent
+		self.message = message
+		
+		self.data = ''
+		self.lines = []
+		
+		self.parent.Active_Requests += 1
+		
+		# Execute the command
+		cmdline = '%s %s %s' % (sys.executable, 'utils/resolver.py', message.data[2])
+		self._in = os.popen(cmdline, 'r')
+		self._fileno = self._in.fileno()
+		
+		# Add ourselves to the poller
+		asyncore.socket_map[self._fileno] = self
+		asyncore.poller.register(self._fileno, select.POLLIN)
+	
+	def handle_error(self):
+		raise
+	
+	def handle_read_event(self):
+		self.data += self._in.read()
+		
+		lines = self.data.split('\0')
+		self.lines.extend(lines[:-1])
+		
+		if lines[-1] == '__FAIL__':
+			self.done()
+		elif lines[-1] == '__END__':
+			hosts = []
+			for line in self.lines:
+				t, h = line.split(None, 1)
+				hosts.append((int(t), h))
+			self.done(hosts)
+		else:
+			self.data = lines[-1]
+	
+	def done(self, hosts=None):
+		trigger, method, host, args = self.message.data
+		
+		if hosts is not None:
+			self.parent.DNSCache[host] = hosts
+		
+		data = [trigger, method, hosts, args]
+		self.parent.sendMessage(self.message.source, REPLY_DNS, data)
+		
+		# Remove ourselves from the poller
+		if self._fileno in asyncore.socket_map:
+			del asyncore.socket_map[self._fileno]
+		
+		try:
+			asyncore.poller.unregister(self._fileno)
+		except KeyError:
+			pass
+		
+		self._in.close()
+		
+		self.parent.Active_Requests -= 1
 
 # ---------------------------------------------------------------------------
