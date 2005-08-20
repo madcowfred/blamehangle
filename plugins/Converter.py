@@ -89,14 +89,30 @@ class Converter(Plugin):
 		
 		if data['from'] == data['to']:
 			replytext = "Don't be an idiot"
-		# Nasty temperature specific hacks
-		elif data['from'] == 'c' and data['to'] == 'f':
-			value = '%.1f' % ((data['amt'] * 9.0 / 5) + 32)
-			replytext = '%s \xb0C == %s \xb0F' % (data['amt'], value)
-		# Nasty temperature specific hacks
-		elif data['from'] == 'f' and data['to'] == 'c':
-			value = '%.1f' % ((data['amt'] - 32) * 5.0 / 9)
-			replytext = '%s \xb0F == %s \xb0C' % (data['amt'], value)
+		
+		# Nasty temperature specific hack :(
+		elif data['from'] in self.__Conversions['TEMPERATURE'] and data['to'] in self.__Conversions['TEMPERATURE']:
+			fromtext = self.__Conversions['TEMPERATURE'][data['from']][1]
+			totext = self.__Conversions['TEMPERATURE'][data['to']][1]
+			
+			value = data['amt']
+			
+			if totext == 'degrees fahrenheit':
+				if fromtext == 'degrees kelvin':
+					value -= 273.15
+				value = (value * 9.0 / 5) + 32
+			elif fromtext == 'degrees fahrenheit':
+				value = (value - 32) * 5.0 / 9
+				if totext == 'degrees kelvin':
+					value += 273.15
+			else:
+				if fromtext == 'degrees celsius':
+					value = value - 273.15
+				else:
+					value = value + 273.15
+			
+			replytext = '%s %s == %s %s' % (data['amt'], fromtext, value, totext)
+		
 		# The rest
 		else:
 			for MAP in self.__Conversions.values():
