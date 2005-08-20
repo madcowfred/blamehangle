@@ -84,6 +84,9 @@ class NetStuff(Plugin):
 	_HelpSection = 'net'
 	
 	def setup(self):
+		self.rehash()
+	
+	def rehash(self):
 		# Load our collection of ccTLDs
 		self.__ccTLDs = {}
 		
