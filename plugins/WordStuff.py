@@ -366,7 +366,7 @@ class WordStuff(Plugin):
 		term = trigger.match.group('term').lower()
 		
 		# No match!
-		if resp.data.find('is undefined. Try these') >= 0:
+		if resp.data.find('</b> is undefined.</h1>') >= 0:
 			replytext = "No definitions found for '%s'" % term
 			self.sendReply(trigger, replytext)
 		
