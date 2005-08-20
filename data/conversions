@@ -1,0 +1,30 @@
+# (ratio to standard unit) (display name) [other names]
+
+-DISTANCE-
+0.001 millimeters millimeter mm
+0.01 centimeters centimeter cm
+1 meters meter m
+1000 kilometers kilometer km
+0.0254 inches inch in
+0.3048 feet ft
+0.9144 yards yard yd
+1609.34 miles mile mi
+
+-VOLUME-
+0.001 millilitres millilitre ml
+1 litres litre  l
+0.4731 pints pint pt
+0.9463 quarts quart qt
+3.7854 gallons gallon gal
+
+-WEIGHT-
+0.000001 milligrams milligram mg
+0.00001 centigrams centigram cg
+0.0001 decigrams decigram dg
+0.001 grams gram g
+1 kilograms kilogram kg
+1000 tonnes tonne
+0.0283495231 ounces ounce oz
+0.45359237 pounds pound lb
+6.35029318 stone
+907.18474 tons ton
