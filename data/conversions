@@ -3,6 +3,7 @@
 -DISTANCE-
 0.001 millimeters millimeter mm
 0.01 centimeters centimeter cm
+0.1 decimeters decimeter dm
 1 meters meter m
 1000 kilometers kilometer km
 0.0254 inches inch in
@@ -11,8 +12,10 @@
 1609.34 miles mile mi
 
 -VOLUME-
-0.001 millilitres millilitre ml
-1 litres litre  l
+0.001 millilitres millilitre milliliters milliliter ml
+0.01 centilitres centilitre centiliters centiliter
+0.1 decilitres decilitre deciliter deciliters
+1 litres litre liters liter l
 0.4731 pints pint pt
 0.9463 quarts quart qt
 3.7854 gallons gallon gal
