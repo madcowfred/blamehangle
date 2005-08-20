@@ -1,40 +1,43 @@
 ----------------------------
 0.?.?
 ----------------------------
-* classes.Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
+* classes/Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
     off (workaround for retarded nameservers)
-* plugins.Converter: move the conversion tables to data/conversions
-* plugins.NetStuff: reload our CCTLD and port lists during rehash
-* plugins.News: remove the Google News parser, they finally have RSS feeds,
+* data/conversions: added a whole bunch of units
+* plugins/Converter: move the conversion tables to data/conversions
+* plugins/NetStuff: reload our CCTLD and port lists during rehash
+* plugins/News: remove the Google News parser, they finally have RSS feeds,
     hurrah!
+* plugins/Video: fix minor 'imdb' parsing issue that was breaking searches
+* plugins/WordStuff: fix 'urban' throwing an error for invalid entries
 
 ----------------------------
 0.1.1             2005-08-07
 ----------------------------
-* classes.ChatterGizmo: fix some issues with rehash not updating the channel
+* classes/ChatterGizmo: fix some issues with rehash not updating the channel
     list properly, remove nasty global rejoins list hack.
-* classes.Common: QuoteURL() no longer quotes '=' and '?'.
-* classes.HTTPMonster: fix redirection limit not working, fix redirected POST
+* classes/Common: QuoteURL() no longer quotes '=' and '?'.
+* classes/HTTPMonster: fix redirection limit not working, fix redirected POST
     requests not using GET on the redirected URL, fix double urlparse for each
     URL which was unquoting spaces somehow.
-* classes.WrapConn: make each wrap keep track of it's own channel rejoins,
+* classes/WrapConn: make each wrap keep track of it's own channel rejoins,
     fix adding a channel key then rehashing not joining the channel correctly,
     only do join/stoned check if we finished connecting to the server.
-* plugins.Google: fix result parsing.
-* plugins.Karma: give an error straight away for absurdly long key names.
-* plugins.Misc: fix a missing bracket, fix various issues with the 'fedex'
+* plugins/Google: fix result parsing.
+* plugins/Karma: give an error straight away for absurdly long key names.
+* plugins/Misc: fix a missing bracket, fix various issues with the 'fedex'
     command page parsing.
-* plugins.MoneyMangler: fix 'asx' page parsing, rename all of the page parsing
+* plugins/MoneyMangler: fix 'asx' page parsing, rename all of the page parsing
     methods to __Parse_Foo.
-* plugins.Quotes: add a new 'allow_public_addquote' option, guess what it
+* plugins/Quotes: add a new 'allow_public_addquote' option, guess what it
     does!
-* plugins.TorrentScraper: add a new 'ttl' page type, simplify 'bnbt' page
+* plugins/TorrentScraper: add a new 'ttl' page type, simplify 'bnbt' page
     parsing, don't retry broken torrents (404, etc) for a while, don't start
     the RSS feed generation timer if rss_interval is 0, fix some more quoted
     entity nastiness.
-* plugins.Video: disable 'tvtome' command, since Cnet bought them out and it
+* plugins/Video: disable 'tvtome' command, since Cnet bought them out and it
     now sucks.
-* plugins.WordStuff: fix 'acronym' page parsing, fix 'urban' page parsing.
+* plugins/WordStuff: fix 'acronym' page parsing, fix 'urban' page parsing.
 
 ----------------------------
 0.1.0             2005-05-25
