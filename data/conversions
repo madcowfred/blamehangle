@@ -28,16 +28,7 @@
 9454254955488000 light_years light_year ly
 30856780000000000 parsecs parsec
 
--VOLUME-
-0.001 millilitres millilitre milliliters milliliter ml
-0.01 centilitres centilitre centiliters centiliter
-0.1 decilitres decilitre deciliter deciliters
-1 litres litre liters liter l
-0.4731 pints pint pt
-0.9463 quarts quart qt
-3.7854 gallons gallon gal
-
--WEIGHT-
+-MASS-
 0.000001 milligrams milligram mg
 0.00001 centigrams centigram cg
 0.0001 decigrams decigram dg
@@ -48,3 +39,20 @@
 0.45359237 pounds pound lb
 6.35029318 stone
 907.18474 tons ton
+
+-VOLUME-
+0.000001 cubic_millimeters cubic_millimeter mm3 mm^3
+0.001 cubic_centimeters cubic_centimeter cm3 cm^3 cc
+0.001 millilitres millilitre milliliters milliliter ml
+0.01 centilitres centilitre centiliters centiliter
+0.1 decilitres decilitre deciliter deciliters
+1 litres litre liters liter l
+1000 cubic_meters cubic_meter m3 m^3
+1000000000000 cubic_kilometers cubic_kilometer km3 km^3
+0.4731 pints pint pt
+0.9463 quarts quart qt
+3.7854 gallons gallon gal
+0.0163871 cubic_inches cubic_inch in3 in^3
+28.3168467 cubic_feet cubic_foot ft3 ft^3
+764.5548612 cubic_yards cubic_yard yd3 yd^3
+4168181843058454 cubic_miles cubic_mile mi3 mi^3
