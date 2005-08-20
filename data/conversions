@@ -1,5 +1,18 @@
 # (ratio to standard unit) (display name) [other names]
 
+-AREA-
+0.000001 square_millimeters square_millimeter mm2 mm^2
+0.0001 square_centimeters square_centimeter cm2 cm^2
+0.01 square_decimeters square_decimeter dm2 dm^2
+1 square_meters square_meter m2 m^2
+10000 hectares hectare
+1000000 square_kilometers square_kilometer km2 km^2
+0.00064516 square_inches square_inch in2 in^2
+0.09290304 square_feet square_foot ft2 ft^2
+0.83612736 square_yards square_yard yd2 yd^2
+4046.85642 acres acre
+2589988.11 square_miles square_mile mi2 mi^2
+
 -DISTANCE-
 0.001 millimeters millimeter mm
 0.01 centimeters centimeter cm
