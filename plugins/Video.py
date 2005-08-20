@@ -83,7 +83,7 @@ class Video(Plugin):
 	# Parse an IMDb search results page
 	def __Parse_IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
-		if resp.data.find('IMDb title search') < 0:
+		if resp.data.find('Search</h1>') < 0:
 			self.__IMDb_Title(trigger, resp)
 			return
 		
