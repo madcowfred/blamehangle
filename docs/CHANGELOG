@@ -1,10 +1,12 @@
 ----------------------------
 0.?.?
 ----------------------------
-* classes.Resolver: if DNS/use_ipv6 is off, use gethostbyname_ex() to 
-    resolve hosts (workaround for retarded nameservers)
-* plugins.News: remove the Google News parser, they finally have their own
-    RSS feeds, hurrah!
+* classes.Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
+    off (workaround for retarded nameservers)
+* plugins.Converter: move the conversion tables to data/conversions
+* plugins.NetStuff: reload our CCTLD and port lists during rehash
+* plugins.News: remove the Google News parser, they finally have RSS feeds,
+    hurrah!
 
 ----------------------------
 0.1.1             2005-08-07

@@ -66,16 +66,16 @@ class Converter(Plugin):
 				else:
 					# (singular form) (plural form) (ratio to standard unit) [other names]
 					parts = line.split()
-					data = (float(parts[0]), parts[1])
+					data = (float(parts[0]), parts[1].replace('_', ' '))
 					for name in parts[1:]:
-						self.__Conversions[section][name] = data
+						self.__Conversions[section][name.replace('_', ' ')] = data
 			
 			conv_file.close()
 	
 	def register(self):
 		self.addTextEvent(
 			method = self.__Convert,
-			regexp = r'^convert (?P<amt>-?[\d\.]+)(?: from | )(?P<from>\S+)(?: to | )(?P<to>\S+)$',
+			regexp = r'^convert (?P<amt>-?[\d\.]+) (?P<from>.*?) to (?P<to>.*?)$',
 			help = ('convert', '\02convert\02 <amount> <type 1> \02to\02 <type 2> : Convert between different measurements?'),
 		)
 	
