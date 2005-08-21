@@ -40,6 +40,12 @@
 6.35029318 stone
 907.18474 tons ton
 
+# these all need special cases
+-TEMPERATURE-
+0 degrees_celsius degree_celsius c
+0 degrees_fahrenheit degree_fahrenheit f
+0 degrees_kelvin degree_kelvin k
+
 -VOLUME-
 0.000001 cubic_millimeters cubic_millimeter mm3 mm^3
 0.001 cubic_centimeters cubic_centimeter cm3 cm^3 cc
