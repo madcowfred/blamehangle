@@ -41,7 +41,7 @@ from classes.Plugin import Plugin
 
 GOOGLE_URL = 'http://www.google.com/search?q=%s'
 
-RESULT_RE = re.compile('^<a href="(?P<url>[^>]*?)"[^>]*>(?P<title>.+)$')
+RESULT_RE = re.compile('<a[^>]*?href="(?P<url>[^>]*?)"[^>]*?>(?P<title>.+)$')
 CALC_RE = re.compile('<font size=\+1><b>(?P<result>.*?)</b>')
 
 NOBOLD_RE = re.compile('</?b>')
@@ -88,7 +88,7 @@ class Google(Plugin):
 	
 	def __Fetch_Google(self, trigger):
 		url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
-		self.urlRequest(trigger, self.__Google, url)
+		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Translate(self, trigger):
 		_from = trigger.match.group('from').lower()
@@ -99,9 +99,9 @@ class Google(Plugin):
 		
 		# Verify our parameters
 		if not LANG_MAP.has_key(_from):
-			replytext = '"%s" is not a valid language!' % _from
+			replytext = '"%s" is not a valid language!' % (_from)
 		elif not LANG_MAP.has_key(_to):
-			replytext = '"%s" is not a valid language!' % _to
+			replytext = '"%s" is not a valid language!' % (_to)
 		elif _to not in LANG_MAP[_from]:
 			replytext = '"%s" to "%s" is not a valid translation!' % (_from, _to)
 		elif len(_text) > 300:
@@ -114,7 +114,7 @@ class Google(Plugin):
 		
 		# Otherwise, build the URL and send it off
 		url = TRANSLATE_URL % (_from, _to, quote(_text))
-		self.urlRequest(trigger, self.__Translate, url)
+		self.urlRequest(trigger, self.__Parse_Translate, url)
 		
 	def __Fetch_Transmangle(self, trigger):
 		_lang = trigger.match.group('lang').lower()
@@ -141,11 +141,11 @@ class Google(Plugin):
 		trigger._text = [_text,]
 		
 		url = TRANSLATE_URL % ('en', _lang, quote(_text))
-		self.urlRequest(trigger, self.__Transmangle, url)
+		self.urlRequest(trigger, self.__Parse_Transmangle, url)
 	
 	# -----------------------------------------------------------------------
 	
-	def __Google(self, trigger, resp):
+	def __Parse_Google(self, trigger, resp):
 		findme = trigger.match.group(1)
 		
 		# Woops, no matches
@@ -174,7 +174,7 @@ class Google(Plugin):
 				
 				for chunk in chunks:
 					# Try to match it against the regexp
-					m = RESULT_RE.match(chunk)
+					m = RESULT_RE.search(chunk)
 					if not m:
 						continue
 					
@@ -230,7 +230,7 @@ class Google(Plugin):
 	
 	# -----------------------------------------------------------------------
 	
-	def __Translate(self, trigger, resp):
+	def __Parse_Translate(self, trigger, resp):
 		# Couldn't translate
 		if resp.data.find('Sorry, this text could not be translated') >= 0:
 			replytext = 'Sorry, this text could not be translated.'
@@ -246,7 +246,7 @@ class Google(Plugin):
 		# Spit out our answer
 		self.sendReply(trigger, replytext)
 	
-	def __Transmangle(self, trigger, resp):
+	def __Parse_Transmangle(self, trigger, resp):
 		replytext = None
 		
 		# Couldn't translate
