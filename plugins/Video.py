@@ -41,7 +41,7 @@ from classes.Plugin import Plugin
 IMDB_SEARCH_URL = 'http://us.imdb.com/find?q=%s;tt=on;mx=10'
 IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
-IMDB_RESULT_RE = re.compile(r'href="/title/tt(\d+)/[^>]+">(.*?)</a> \((\d+)\)')
+IMDB_RESULT_RE = re.compile(r'href="/title/tt(\d+)/[^>]+"[^>]*?>(.*?)</a> \((\d+)[\)\/]')
 
 # ---------------------------------------------------------------------------
 
