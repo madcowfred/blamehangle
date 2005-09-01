@@ -262,7 +262,7 @@ class Google(Plugin):
 					trigger._round += 1
 					
 					url = TRANSLATE_URL % (trigger._lang, 'en', quote(chunk))
-					self.urlRequest(trigger, self.__Transmangle, url)
+					self.urlRequest(trigger, self.__Parse_Transmangle, url)
 				
 				# We're back in English
 				else:
@@ -275,7 +275,7 @@ class Google(Plugin):
 						trigger._text.append(chunk)
 						
 						url = TRANSLATE_URL % ('en', trigger._lang, quote(chunk))
-						self.urlRequest(trigger, self.__Transmangle, url)
+						self.urlRequest(trigger, self.__Parse_Transmangle, url)
 			
 			# It's back in English
 			else:
