@@ -2,12 +2,15 @@
 0.1.2
 ----------------------------
 * sample.conf: change the default useragent to Firefox 1.0.6.
+* classes/ChatterGizmo: fix a few bugs related to regaining our primary
+    nickname.
 * classes/Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
     off (workaround for retarded nameservers).
+* classes/WrapConn: change nick regain timer from 30 to 15 seconds.
 * data/conversions: added a whole bunch of units.
 * plugins/Converter: move the conversion tables to data/conversions.
-* plugins/Google: fix link tracking for their nasty link tracking URLs, minor
-    cleanups.
+* plugins/Google: fix link tracking for their nasty link tracking URLs, fix
+    'transmangle' crashes, minor cleanups.
 * plugins/NetStuff: reload our CCTLD and port lists during rehash.
 * plugins/News: remove the Google News parser, they finally have RSS feeds,
     hurrah!
