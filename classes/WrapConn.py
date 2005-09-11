@@ -49,6 +49,8 @@ CONNECT_TIMEOUT = 30
 CONNECT_HOLDOFF = 5
 # How long in seconds between sending lines to the server
 OUTPUT_INTERVAL = 1
+# How long in seconds between trying to get our primary nickname back
+NICKNAME_HOLDOFF = 15
 # How long in seconds between channel join attempts
 JOINS_INTERVAL = 15
 # How long in seconds between 'stoned' checks
@@ -407,7 +409,7 @@ class WrapConn:
 		elif self.conn.status == STATUS_CONNECTED:
 			# If we still don't have our nick, try again
 			if self.conn.getnick() != self.nicks[0]:
-				if currtime - self.last_nick >= 30:
+				if (currtime - self.last_nick) >= NICKNAME_HOLDOFF:
 					self.last_nick = currtime
 					self.conn.nick(self.nicks[0])
 			
