@@ -331,8 +331,8 @@ class ChatterGizmo(Child):
 			wrap.ircul.user_quit(event.userinfo)
 			
 			# If it was our primary nickname, try and regain it
-			if nick == wrap.nicks[0]:
-				conn.nick(nick)
+			if nick.lower() == wrap.nicks[0].lower():
+				conn.nick(wrap.nicks[0])
 			
 			return args
 	
@@ -436,8 +436,8 @@ class ChatterGizmo(Child):
 		wrap.ircul.user_nick(event.userinfo, after)
 		
 		# If it was our primary nickname, try and regain it
-		if after != conn.getnick() and before == wrap.nicks[0]:
-			conn.nick(before)
+		if after != conn.getnick() and before.lower() == wrap.nicks[0].lower():
+			conn.nick(wrap.nicks[0])
 	
 	# -----------------------------------------------------------------------
 	# Numeric 353 : list of names in channel
