@@ -32,7 +32,6 @@
 
 import os
 import re
-import shlex
 import time
 import types
 import urllib
@@ -245,46 +244,60 @@ def CompileMask(mask):
 # -----------------------------------------------------------------------
 # Parse a search string and return data suitable for an SQL query
 def ParseSearchString(column, findme):
-	lexer = shlex.shlex(findme)
-	crits, args = [], []
-	sign = None
+	inquotes, neg = 0, 0
+	toks, chars = [], []
 	
-	while 1:
-		tok = lexer.get_token()
-		if not tok:
-			break
-		word = None
-		
-		# Remove quoted bits
-		if tok[0] == '"':
-			tok = tok[1:-1]
-		# Check signs?
-		if tok[0] == '+':
-			sign = '+'
-			tok = tok[1:]
-		elif tok[0] == '-':
-			sign = '-'
-			tok = tok[1:]
-		
-		# If we ate the whole token, nothing else to do
-		if not tok:
-			continue
-		
-		# Negative match
-		if sign and sign == '-':
-			sign = None
-			word = tok
+	for c in findme:
+		# Spaces seperate tokens sometimes
+		if c == ' ':
+			if inquotes:
+				chars.append(c)
+				continue
+			
+			tok = ''.join(chars).strip()
+			chars = []
+			if tok:
+				toks.append((neg, tok))
+		elif c == '"':
+			# Quotes started
+			if inquotes == 0:
+				inquotes = 1
+			# Quotes ended, maybe add the token
+			elif inquotes == 1:
+				inquotes = 0
+				
+				tok = ''.join(chars).strip()
+				chars = []
+				if tok:
+					toks.append((neg, tok))
+		# Negative!
+		elif c == '-' and len(chars) == 0:
+			neg = 1
+		# Positive!
+		elif c == '+' and len(chars) == 0:
+			neg = 0
+		# Whatever else!
+		else:
+			chars.append(c)
+	
+	# Maybe some leftover chars
+	tok = ''.join(chars).strip()
+	chars = []
+	if tok:
+		toks.append((neg, tok))
+	
+	# Work out the lists
+	crits, args = [], []
+	for neg, tok in toks:
+		if neg:
 			crit = '%s NOT ILIKE %%s' % (column)
 			crits.append(crit)
 		else:
-			sign = None
-			word = tok
 			crit = '%s ILIKE %%s' % (column)
 			crits.append(crit)
 		
-		if word is not None:
-			arg = '%%%s%%' % (word)
-			args.append(arg)
+		tok = tok.replace('%', '\\%')
+		args.append(tok)
 	
 	return crits, args
 
