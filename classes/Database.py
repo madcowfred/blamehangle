@@ -196,7 +196,7 @@ class SQLite(DatabaseWrapper):
 		module = __import__('sqlite', globals(), locals(), [])
 		
 		self.db = module.connect(self.Config.get('database', 'database'))
-
+	
 	# -----------------------------------------------------------------------
 	def _manglesql(self, sql):
 		if sql.startswith('CREATE TABLE'):
