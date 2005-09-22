@@ -31,6 +31,7 @@
 'Various commands for playing with words.'
 
 import os
+import random
 import re
 import socket
 import time
@@ -59,6 +60,7 @@ RHYMEZONE_LIMIT = 40
 # ---------------------------------------------------------------------------
 
 ACRONYM_URL = 'http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=%s&Find=Find'
+BASH_URL = 'http://www.bash.org/?%s'
 URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 # ---------------------------------------------------------------------------
@@ -94,6 +96,12 @@ class WordStuff(Plugin):
 			method = self.__Fetch_Acronyms,
 			regexp = r'^acronyms?(?P<n>\s+\d+\s+|\s+)(?P<acronym>\S+)$',
 			help = ('acronyms', '\02acronyms\02 [n] <acronym> : Look up <acronym>, possibly getting definition [n].'),
+		)
+		# bash.org
+		self.addTextEvent(
+			method = self.__Fetch_Bash,
+			regexp = r'^bash(?P<n>\s+\d+|)$',
+			help = ('bash', '\02bash\02 [n] : Look up a quote on bash.org. If [n] is not supplied, picks a random quote.'),
 		)
 		# RhymeZone
 		self.addTextEvent(
@@ -140,34 +148,41 @@ class WordStuff(Plugin):
 			if acronym in self.AcronymCache:
 				self.__Acronym_Reply(trigger)
 			else:
-				url = ACRONYM_URL % QuoteURL(acronym)
+				url = ACRONYM_URL % (QuoteURL(acronym))
 				self.urlRequest(trigger, self.__Parse_AcronymFinder, url)
 	
 	def __Fetch_Antonyms(self, trigger):
 		word = quote(trigger.match.group('word').lower())
-		url = ANTONYM_URL % word
+		url = ANTONYM_URL % (word)
 		self.urlRequest(trigger, self.__RhymeZone, url)
+	
+	def __Fetch_Bash(self, trigger):
+		n = trigger.match.group('n').strip()
+		if n:
+			url = BASH_URL % (n)
+		else:
+			url = BASH_URL % ('random1')
+		self.urlRequest(trigger, self.__Parse_Bash, url)
 	
 	def __Fetch_Rhymes(self, trigger):
 		word = quote(trigger.match.group('word').lower())
-		url = RHYME_URL % word
+		url = RHYME_URL % (word)
 		self.urlRequest(trigger, self.__RhymeZone, url)
 	
 	def __Fetch_Synonyms(self, trigger):
 		word = quote(trigger.match.group('word').lower())
-		url = SYNONYM_URL % word
+		url = SYNONYM_URL % (word)
 		self.urlRequest(trigger, self.__RhymeZone, url)
 	
 	def __Fetch_Urban(self, trigger):
 		term = trigger.match.group('term').lower()
 		if len(term) > 30:
 			self.sendReply(trigger, "That's too long!")
-		
 		else:
 			if term in self.UrbanCache:
 				self.__Urban_Reply(trigger)
 			else:
-				url = URBAN_URL % QuoteURL(term)
+				url = URBAN_URL % (QuoteURL(term))
 				self.urlRequest(trigger, self.__Parse_Urban, url)
 	
 	# -----------------------------------------------------------------------
@@ -245,6 +260,45 @@ class WordStuff(Plugin):
 				replytext = "%s \2[\02%d/%d\02]\02 :: %s" % (acronym, n, numdefs, defs[n-1])
 		
 		# Spit it out
+		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Parse the output of a bash.org page
+	def __Parse_Bash(self, trigger, resp):
+		n = trigger.match.group('n').strip()
+		
+		infos = FindChunks(resp.data, '<p class="quote">', '</p>')
+		quotes = FindChunks(resp.data, '<p class="qt">', '</p>')
+		
+		if not infos or not quotes or len(infos) != len(quotes):
+			if 'does not exist.' in resp.data:
+				replytext = 'Quote #%s does not exist!' % (n)
+			else:
+				replytext = 'Page parsing failed: info/quotes.'
+			self.sendReply(trigger, replytext)
+			return
+		
+		# Parse the stuff
+		lines = []
+		for i in range(len(infos)):
+			info = infos[i]
+			quotelines = StripHTML(quotes[i])
+			
+			num = FindChunk(info, '<b>', '</b>')
+			quote = ' || '.join(quotelines)
+			
+			if len(quote) < 400:
+				line = '\x02%s\x02. %s' % (num, quote)
+				lines.append(line)
+		
+		if lines:
+			replytext = random.choice(lines)
+		else:
+			if n:
+				replytext = 'Quote #%s is too long!' % (n)
+			else:
+				replytext = 'All quotes were too long!'
+		
 		self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
