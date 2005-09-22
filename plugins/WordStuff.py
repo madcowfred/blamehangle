@@ -284,6 +284,8 @@ class WordStuff(Plugin):
 		if not infos or not quotes or len(infos) != len(quotes):
 			if 'does not exist.' in resp.data:
 				replytext = 'Quote #%s does not exist!' % (n)
+			elif 'No results returned.' in resp.data:
+				replytext = "No search results for '%s'!" % (n)
 			else:
 				replytext = 'Page parsing failed: info/quotes.'
 			self.sendReply(trigger, replytext)
