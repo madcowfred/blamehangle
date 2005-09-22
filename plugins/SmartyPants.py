@@ -224,7 +224,7 @@ class SmartyPants(Plugin):
 		self.addTextEvent(
 			method = self.__Query_Replace,
 			regexp = r'^(?P<name>.+?) +=~ +(?P<modstring>.+)$',
-			help = ('replace', "<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02 : Search through the definition of <factoid name>, replacing any instances of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."),
+			help = ('replace', "<factoid name> \02=~ s/\02<search>\02/\02<replace>\02/\02 : Search through the definition of <factoid name>, replacing the first instance of the string <search> with <replace>. Note, the '/' characters can be substituted with any other character if either of the strings you are searching for or replacing with contain '/'."),
 		)
 		self.addTextEvent(
 			method = self.__Query_Lock,
