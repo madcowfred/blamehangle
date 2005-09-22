@@ -61,6 +61,7 @@ RHYMEZONE_LIMIT = 40
 
 ACRONYM_URL = 'http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=%s&Find=Find'
 BASH_URL = 'http://www.bash.org/?%s'
+BASH_SEARCH_URL = 'http://www.bash.org/?search=%s&sort=0&show=25'
 URBAN_URL = 'http://www.urbandictionary.com/define.php?term=%s'
 
 # ---------------------------------------------------------------------------
@@ -71,6 +72,7 @@ class WordStuff(Plugin):
 	def setup(self):
 		# Cache these results for 12 hours
 		self.AcronymCache = SimpleCacheDict(43200)
+		self.BashCache = SimpleCacheDict(43200)
 		self.UrbanCache = SimpleCacheDict(43200)
 		
 		self.rehash()
@@ -100,8 +102,8 @@ class WordStuff(Plugin):
 		# bash.org
 		self.addTextEvent(
 			method = self.__Fetch_Bash,
-			regexp = r'^bash(?P<n>\s+\d+|)$',
-			help = ('bash', '\02bash\02 [n] : Look up a quote on bash.org. If [n] is not supplied, picks a random quote.'),
+			regexp = r'^bash(?P<n>\s+\S+|)$',
+			help = ('bash', '\02bash\02 [findme] : Look up a random quote on bash.org. If [findme] is supplied, we either look up a specific quote (for numbers) or search for that string.'),
 		)
 		# RhymeZone
 		self.addTextEvent(
@@ -148,7 +150,7 @@ class WordStuff(Plugin):
 			if acronym in self.AcronymCache:
 				self.__Acronym_Reply(trigger)
 			else:
-				url = ACRONYM_URL % (QuoteURL(acronym))
+				url = ACRONYM_URL % (quote(acronym))
 				self.urlRequest(trigger, self.__Parse_AcronymFinder, url)
 	
 	def __Fetch_Antonyms(self, trigger):
@@ -159,7 +161,16 @@ class WordStuff(Plugin):
 	def __Fetch_Bash(self, trigger):
 		n = trigger.match.group('n').strip()
 		if n:
-			url = BASH_URL % (n)
+			if n.isdigit():
+				line = self.BashCache.get(n)
+				if line:
+					self.sendReply(trigger, line)
+					return
+				else:
+					url = BASH_URL % (n)
+			else:
+				n = quote(n)
+				url = BASH_SEARCH_URL % (QuoteURL(n))
 		else:
 			url = BASH_URL % ('random1')
 		self.urlRequest(trigger, self.__Parse_Bash, url)
@@ -284,20 +295,36 @@ class WordStuff(Plugin):
 			info = infos[i]
 			quotelines = StripHTML(quotes[i])
 			
+			# Join up any split lines
+			for j in range(len(quotelines) - 1, 0, -1):
+				if quotelines[j][0] not in '([<':
+					quotelines[j-1] = '%s %s' % (quotelines[j-1], quotelines[j])
+					del quotelines[j]
+			
 			num = FindChunk(info, '<b>', '</b>')
 			quote = ' || '.join(quotelines)
 			
 			if len(quote) < 400:
 				line = '\x02%s\x02. %s' % (num, quote)
 				lines.append(line)
+				
+				self.BashCache[num[1:]] = line
 		
-		if lines:
-			replytext = random.choice(lines)
-		else:
-			if n:
-				replytext = 'Quote #%s is too long!' % (n)
+		# Spit something out
+		if 'search' in resp.url:
+			nums = FindChunks(resp.data, '<b>#', '</b>')
+			if nums:
+				replytext = "Search results for '%s' :: %s" % (n, ', '.join(nums))
 			else:
-				replytext = 'All quotes were too long!'
+				replytext = "No search results for '%s'!" % (n)
+		else:
+			if lines:
+				replytext = random.choice(lines)
+			else:
+				if n:
+					replytext = 'Quote #%s is too long!' % (n)
+				else:
+					replytext = 'All quotes were too long!'
 		
 		self.sendReply(trigger, replytext)
 	
