@@ -401,9 +401,9 @@ class WordStuff(Plugin):
 				if example:
 					# Strip annoying junk
 					example = example.replace('\r', ' ').replace('\n', ' ')
-					example = StripHTML(example)[0]
-					
-					out.append(example)
+					example = StripHTML(example)
+					if example:
+						out.append(example[0])
 				
 				# If we got something, add it to the defs list
 				if out:
