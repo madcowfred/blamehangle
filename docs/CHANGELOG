@@ -11,11 +11,15 @@
 * plugins/Converter: move the conversion tables to data/conversions.
 * plugins/Google: fix link tracking for their nasty link tracking URLs, fix
     'transmangle' crashes, minor cleanups.
+* plugins/Misc: add 'tinyurl' command to provide shorter URLs via tinyurl.com
+    (suggestion/original patch by jinkusu).
 * plugins/NetStuff: reload our CCTLD and port lists during rehash.
 * plugins/News: remove the Google News parser, they finally have RSS feeds,
     hurrah!
+* plugins/SmartyPants: fix incorrect help for search/replace.
 * plugins/Video: fix several minor 'imdb' parsing issues.
-* plugins/WordStuff: fix 'urban' throwing an error for invalid entries.
+* plugins/WordStuff: fix several 'urban' parsing issues, add 'bash' command to
+    look up quotes on bash.org.
 
 ----------------------------
 0.1.1             2005-08-07
