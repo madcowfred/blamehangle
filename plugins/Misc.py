@@ -43,7 +43,8 @@ from classes.Plugin import Plugin
 
 BUGMENOT_URL = 'http://www.bugmenot.com/view.php?url=%s'
 FEDEX_URL = "http://www.fedex.com/Tracking?cntry_code=us&action=track&language=english&ascend_header=1&tracknumbers=%s&initial=x&mps=y&"
-PGP_URL = "http://pgp.mit.edu:11371/pks/lookup?op=index&search=%s"
+PGP_URL = 'http://pgp.mit.edu:11371/pks/lookup?op=index&search=%s'
+TINYURL_URL = 'http://tinyurl.com/create.php'
 
 SPACE_RE = re.compile('\s+')
 
@@ -67,6 +68,11 @@ class Misc(Plugin):
 			method = self.__Fetch_PGP_Key,
 			regexp = r'^pgpkey (\S+)$',
 			help = ('pgpkey', '\x02pgpkey\x02 <findme> : Search pgp.mit.edu for a key/keys matching <findme>, returning the first match.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_TinyURL,
+			regexp = r'^tinyurl (https?://\S+)$',
+			help = ('tinyurl', '\x02tinyurl\x02 <url> : Use tinyurl.com to make a short version of <url>.'),
 		)
 	
 	# -----------------------------------------------------------------------
@@ -247,5 +253,25 @@ class Misc(Plugin):
 		
 		else:
 			self.sendReply(trigger, "No matches found, page might have changed!")
+	
+	# -----------------------------------------------------------------------
+	# Fetch the response from TinyURL
+	def __Fetch_TinyURL(self, trigger):
+		url = trigger.match.group(1).strip()
+		if len(url) < 20:
+			self.sendReply(trigger, 'That URL is short enough already!')
+		else:
+			data = { 'url': url }
+			self.urlRequest(trigger, self.__Parse_TinyURL, TINYURL_URL, data)
+	
+	# Parse it!
+	def __Parse_TinyURL(self, trigger, resp):
+		chunks = FindChunks(resp.data, '<blockquote><b>', '</b>')
+		if len(chunks) != 2:
+			self.sendReply(trigger, 'Page parsing failed: chunks.')
+			return
+		
+		replytext = '%s' % (chunks[1])
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
