@@ -402,7 +402,12 @@ class News(Plugin):
 		now = int(time.time())
 		for article in articles:
 			# If we haven't seen this before, keep it for a bit
-			if (article[0].lower() not in ltitles) and (article[1].lower() not in lurls):
+			ltitle = article[0].lower()
+			lurl = article[1].lower()
+			
+			if (ltitle not in ltitles) and (lurl not in lurls):
+				ltitles[ltitle] = None
+				lurls[lurl] = None
 				newarticles.append(article)
 		
 		# If we don't have any new articles, go home now
