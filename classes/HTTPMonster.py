@@ -313,21 +313,28 @@ class async_http(buffered_dispatcher):
 					k, v = re.split(':+ ', line, 1)
 					headers[k.lower()] = v
 				
+				parsepage = False
+				
 				# Various redirect responses
 				if response in ('301', '302', '303', '307'):
 					if 'location' in headers:
-						newurl = urlparse.urljoin(self.url, headers['location'])
-						
-						if newurl in self.seen:
-							self.failed('Redirection loop encountered!')
+						# Same path, stupid server?
+						if headers['location'] == self.path and len(data) > 0:
+							self.parent.putlog(LOG_WARNING, 'Stupid server redirected to same location!')
+							parsepage = True
 						else:
-							self.seen[self.url] = 1
-							if len(self.seen) > self.parent.redirect_limit:
-								self.failed('Redirection limit reached!')
+							newurl = urlparse.urljoin(self.url, headers['location'])
+							
+							if newurl in self.seen:
+								self.failed('Redirection loop encountered!')
 							else:
-								self.message.data[2] = newurl
-								self.message._seen = self.seen
-								self.parent._message_REQ_URL(self.message)
+								self.seen[self.url] = 1
+								if len(self.seen) > self.parent.redirect_limit:
+									self.failed('Redirection limit reached!')
+								else:
+									self.message.data[2] = newurl
+									self.message._seen = self.seen
+									self.parent._message_REQ_URL(self.message)
 					
 					else:
 						self.failed('Redirect without Location header!')
@@ -345,6 +352,10 @@ class async_http(buffered_dispatcher):
 				
 				# Anything else
 				else:
+					parsepage = True
+				
+				# Parse the page if we have to
+				if parsepage:
 					if len(data) > 0:
 						page_text = None
 						
