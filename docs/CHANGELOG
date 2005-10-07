@@ -5,14 +5,14 @@
 * classes/ChatterGizmo: fix a few bugs related to regaining our primary
     nickname.
 * classes/Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
-    off (workaround for retarded nameservers).
+    off (workaround for broken nameservers).
 * classes/WrapConn: change nick regain timer from 30 to 15 seconds.
 * data/conversions: added a whole bunch of units.
 * plugins/Converter: move the conversion tables to data/conversions.
-* plugins/Google: fix link tracking for their nasty link tracking URLs, fix
-    'transmangle' crashes, minor cleanups.
+* plugins/Google: add support for 'define: foo', fix parsing of their nasty
+    link tracking URLs, fix 'transmangle' crashes, minor cleanups.
 * plugins/Misc: add 'tinyurl' command to provide shorter URLs via tinyurl.com
-    (suggestion/original patch by jinkusu).
+    (suggestion/original patch by 'jinkusu').
 * plugins/NetStuff: reload our CCTLD and port lists during rehash.
 * plugins/News: remove the Google News parser, they finally have RSS feeds,
     hurrah!
