@@ -87,7 +87,7 @@ class Google(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def __Fetch_Google(self, trigger):
-		url = GOOGLE_URL % QuoteURL(trigger.match.group(1))
+		url = GOOGLE_URL % (quote(trigger.match.group(1)))
 		self.urlRequest(trigger, self.__Parse_Google, url)
 	
 	def __Fetch_Translate(self, trigger):
@@ -146,17 +146,42 @@ class Google(Plugin):
 	# -----------------------------------------------------------------------
 	
 	def __Parse_Google(self, trigger, resp):
-		findme = trigger.match.group(1)
+		findme = trigger.match.group(1).strip()
 		
 		# Woops, no matches
 		if resp.data.find('- did not match any documents') >= 0:
 			replytext = 'No pages were found containing "%s"' % findme
 			self.sendReply(trigger, replytext)
+			return
 		
 		# Some matches!
-		else:
-			data = UnquoteHTML(resp.data)
+		data = UnquoteHTML(resp.data)
+		calc = None
+		results = []
+		
+		# Results for "define: foo"
+		if findme.startswith('define:'):
+			defineme = findme[7:].strip()
 			
+			if '<br>No definitions were found for <b>' in data:
+				replytext = 'No definition found for "%s".' % (defineme)
+			else:
+				chunks = FindChunks(data, '<li', '</a>')
+				for chunk in chunks:
+					# One or more non-linked definitions?
+					if '<li>' in chunk:
+						chunk = FindChunk(chunk, '<li', '</font>')
+						if not chunk:
+							continue
+					
+					definition = FindChunk(chunk, '>', '<br>')
+					url = FindChunk(chunk, '&q=', '">')
+					
+					if definition and url:
+						results.append((definition.strip(), url.strip()))
+		
+		# Normal results
+		else:
 			# Go go calculator
 			m = CALC_RE.search(data)
 			if m:
@@ -170,8 +195,6 @@ class Google(Plugin):
 			# Find the result(s)
 			chunks = FindChunks(data, '<!--m-->', '</a>')
 			if chunks:
-				results = []
-				
 				for chunk in chunks:
 					# Try to match it against the regexp
 					m = RESULT_RE.search(chunk)
@@ -194,29 +217,6 @@ class Google(Plugin):
 					
 					# Keep the result
 					results.append([title, url])
-				
-				# If we found some results, spit them out
-				if results:
-					# Add calculator output to the first result
-					if calc:
-						replytext = '%s :: %s - %s' % (calc, results[0][0], results[0][1])
-					else:
-						replytext = '%s - %s' % (results[0][0], results[0][1])
-					self.sendReply(trigger, replytext)
-					
-					# If that user is trustworthy, or we're in private, spam the rest
-					if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam') or \
-						trigger.IRCType == IRCT_MSG:
-						
-						for title, url in results[1:5]:
-							replytext = '%s - %s' % (title, url)
-							self.sendReply(trigger, replytext)
-				
-				# If we found no results at all, cry
-				else:
-					self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
-					self.sendReply(trigger, 'Failed to match result')
-					return
 			
 			# No normal result, was it the calculator?
 			elif calc:
@@ -227,6 +227,30 @@ class Google(Plugin):
 				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to find a result')
 				self.sendReply(trigger, 'Failed to parse page')
 				return
+		
+		
+		# If we found some results, spit them out
+		if results:
+			# Add calculator output to the first result
+			if calc:
+				replytext = '%s :: %s - %s' % (calc, results[0][0], results[0][1])
+			else:
+				replytext = '%s - %s' % (results[0][0], results[0][1])
+			self.sendReply(trigger, replytext)
+			
+			# If that user is trustworthy, or we're in private, spam the rest
+			if self.Userlist.Has_Flag(trigger.userinfo, 'Google', 'spam') or \
+				trigger.IRCType == IRCT_MSG:
+				
+				for title, url in results[1:5]:
+					replytext = '%s - %s' % (title, url)
+					self.sendReply(trigger, replytext)
+		
+		# If we found no results at all, cry
+		else:
+			self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
+			self.sendReply(trigger, 'Failed to match result')
+			return
 	
 	# -----------------------------------------------------------------------
 	
