@@ -297,6 +297,7 @@ def ParseSearchString(column, findme):
 			crits.append(crit)
 		
 		tok = tok.replace('%', '\\%')
+		tok = '%%%s%%' % (tok)
 		args.append(tok)
 	
 	return crits, args
