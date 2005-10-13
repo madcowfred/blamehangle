@@ -310,8 +310,13 @@ class async_http(buffered_dispatcher):
 				# Build a header dictionary
 				headers = {}
 				for line in self.headlines[1:]:
-					k, v = re.split(':+ ', line, 1)
-					headers[k.lower()] = v
+					try:
+						k, v = re.split(':+ ', line, 1)
+					except ValueError:
+						tolog = 'Bad header line: %r' % (line)
+						self.parent.putlog(LOG_WARNING, tolog)
+					else:
+						headers[k.lower()] = v
 				
 				parsepage = False
 				
@@ -427,13 +432,15 @@ class async_http(buffered_dispatcher):
 	
 	# An exception occured somewhere
 	def handle_error(self):
-		_type, _value = sys.exc_info()[:2]
+		_type, _value, _tb = sys.exc_info()
 		
 		if _type == 'KeyboardInterrupt':
 			raise
 		else:
 			self.failed(_value)
-			self.parent.putlog(LOG_EXCEPTION, None)
+			self.parent.putlog(LOG_EXCEPTION, [_type, _value, _tb])
+		
+		del _tb
 	
 	# See if we've timed out
 	def timeout_check(self, currtime):

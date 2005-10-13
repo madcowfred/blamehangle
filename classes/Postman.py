@@ -486,28 +486,29 @@ class Postman:
 		timeshort = time.strftime("[%H:%M:%S]", currtime)
 		timelong = time.strftime("%Y/%m/%d %H:%M:%S", currtime)
 		
-		if level == LOG_WARNING:
-			text = 'WARNING: %s' % text
-		
-		elif level == LOG_DEBUG:
-			if not self.__log_debug:
-				return
-			text = '[DEBUG] %s' % text
-		
-		elif level == LOG_MSG:
-			if not self.__log_debug_msg:
-				return
-			text = '[DEBUG] %s' % text
-		
-		elif level == LOG_QUERY:
-			if not self.__log_debug_query:
-				return
-			text = '[QUERY] %s' % text
-		
 		# Special case for exceptions
 		if level == LOG_EXCEPTION:
-			self.__Log_Exception(dontcrash=1)
+			self.__Log_Exception(dontcrash=1, exc_info=text)
+		
 		else:
+			if level == LOG_WARNING:
+				text = 'WARNING: %s' % text
+			
+			elif level == LOG_DEBUG:
+				if not self.__log_debug:
+					return
+				text = '[DEBUG] %s' % text
+			
+			elif level == LOG_MSG:
+				if not self.__log_debug_msg:
+					return
+				text = '[DEBUG] %s' % text
+			
+			elif level == LOG_QUERY:
+				if not self.__log_debug_query:
+					return
+				text = '[QUERY] %s' % text
+			
 			print timeshort, text
 			
 			tolog = '%s %s\n' % (timelong, text)
@@ -516,8 +517,11 @@ class Postman:
 	
 	# -----------------------------------------------------------------------
 	# Log an exception nicely
-	def __Log_Exception(self, dontcrash=0):
-		_type, _value, _tb = sys.exc_info()
+	def __Log_Exception(self, dontcrash=0, exc_info=None):
+		if exc_info:
+			_type, _value, _tb = exc_info
+		else:
+			_type, _value, _tb = sys.exc_info()
 		
 		# If it's a SystemExit exception, we're really meant to die now
 		if _type == SystemExit:
