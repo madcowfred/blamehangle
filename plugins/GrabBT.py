@@ -203,7 +203,7 @@ class GrabBT(Plugin):
 		else:
 			torrentfile = SafeFilename(metainfo['name'])
 		
-		torrentpath = os.path.join(self.Options['torrent_dir'], torrentfile)
+		torrentpath = '%s.torrent' % (os.path.join(self.Options['torrent_dir'], torrentfile))
 		
 		# Don't overwrite
 		if os.path.exists(torrentpath):
