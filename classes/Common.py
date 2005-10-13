@@ -303,3 +303,10 @@ def ParseSearchString(column, findme):
 	return crits, args
 
 # -----------------------------------------------------------------------
+# Make a "safe" filename that is valid on most systems (Windows at least).
+def SafeFilename(filename):
+	safe_filename = os.path.basename(filename)
+	for char in [' ', "\\", '|', '/', ':', '*', '?', '<', '>']:
+		safe_filename = safe_filename.replace(char, '_')
+	
+	return safe_filename

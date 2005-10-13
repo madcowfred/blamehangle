@@ -43,6 +43,8 @@ from classes.Common import *
 from classes.Constants import *
 from classes.Plugin import Plugin
 
+from classes.bdecode import bdecode
+
 # ---------------------------------------------------------------------------
 
 class GrabBT(Plugin):
@@ -192,28 +194,14 @@ class GrabBT(Plugin):
 			self.sendReply(trigger, 'Torrent does not exist!')
 			return
 		
-		# Look for a Content-Disposition header
-		cd = resp.headers.get('content-disposition', '')
-		m = re.search('filename="(.*?)"', cd) or re.search('filename=(\S+)', cd)
-		if m:
-			torrentfile = m.group(1)
-		else:
-			torrentfile = UnquoteURL(resp.url.split('/')[-1])
-		
-		# Bad news, do evil parsing of the URL
-		if not torrentfile.endswith('.torrent'):
-			parsed = urlparse.urlparse(resp.url)
-			if parsed[4]:
-				parts = [s.split('=') for s in parsed[4].split('&')]
-				for key, val in parts:
-					if val.endswith('.torrent'):
-						torrentfile = val
-						break
-		
-		# Bad news, give up
-		if not torrentfile.endswith('.torrent'):
+		# Try parsing it
+		try:
+			metainfo = bdecode(resp.data)['info']
+		except ValueError:
 			self.sendReply(trigger, "That doesn't seem to point to a torrent!")
 			return
+		else:
+			torrentfile = SafeFilename(metainfo['name'])
 		
 		torrentpath = os.path.join(self.Options['torrent_dir'], torrentfile)
 		
