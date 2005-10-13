@@ -504,11 +504,15 @@ class Postman:
 				return
 			text = '[QUERY] %s' % text
 		
-		print timeshort, text
-		
-		tolog = '%s %s\n' % (timelong, text)
-		self.__logfile.write(tolog)
-		self.__logfile.flush()
+		# Special case for exceptions
+		if level == LOG_EXCEPTION:
+			self.__Log_Exception(dontcrash=1)
+		else:
+			print timeshort, text
+			
+			tolog = '%s %s\n' % (timelong, text)
+			self.__logfile.write(tolog)
+			self.__logfile.flush()
 	
 	# -----------------------------------------------------------------------
 	# Log an exception nicely

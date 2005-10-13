@@ -1,4 +1,4 @@
-# ---------------------------------------------------------------------------
+http://www.static-subs.com/Torrent.php?No=155# ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
 # Copyright (c) 2004-2005, blamehangle team
@@ -433,6 +433,7 @@ class async_http(buffered_dispatcher):
 			raise
 		else:
 			self.failed(_value)
+			self.putlog(LOG_EXCEPTION, None)
 	
 	# See if we've timed out
 	def timeout_check(self, currtime):
