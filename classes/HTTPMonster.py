@@ -433,7 +433,7 @@ class async_http(buffered_dispatcher):
 			raise
 		else:
 			self.failed(_value)
-			self.putlog(LOG_EXCEPTION, None)
+			self.parent.putlog(LOG_EXCEPTION, None)
 	
 	# See if we've timed out
 	def timeout_check(self, currtime):
