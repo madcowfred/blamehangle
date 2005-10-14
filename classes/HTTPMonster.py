@@ -292,7 +292,10 @@ class async_http(buffered_dispatcher):
 		
 		# Try to split the data into header/body
 		while 1:
-			line, data = line_re.split(data, 1)
+			try:
+				line, data = line_re.split(data, 1)
+			except:
+				break
 			
 			if line:
 				self.headlines.append(line)
