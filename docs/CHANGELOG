@@ -2,8 +2,17 @@
 0.1.2
 ----------------------------
 * sample.conf: change the default useragent to Firefox 1.0.6.
+* classes/bdecode.py: new file - contains bdecode() from BitTorrent.
 * classes/ChatterGizmo: fix a few bugs related to regaining our primary
     nickname.
+* classes/Common: replace ParseSearchString with my own implementation that
+    actually works properly.
+* classes/HTTPMonster: fix several errors when servers send invalid header
+    lines, log an exception when an exception occurs instead of a completely
+    useless log message.
+* classes/IRCUserList: add get_nick_case() to get the correct case for a nick,
+    rename user_in_same_chan() to users_in_common_channel().
+* classes/PostMan: log an exception when we receive a LOG_EXCEPTION.
 * classes/Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
     off (workaround for broken nameservers).
 * classes/WrapConn: change nick regain timer from 30 to 15 seconds.
@@ -11,12 +20,15 @@
 * plugins/Converter: move the conversion tables to data/conversions.
 * plugins/Google: add support for 'define: foo', fix parsing of their nasty
     link tracking URLs, fix 'transmangle' crashes, minor cleanups.
+* plugins/GrabBT: replace nasty URL parsing for finding the torrent filename
+    with parsing the torrent.
 * plugins/Misc: add 'tinyurl' command to provide shorter URLs via tinyurl.com
     (suggestion/original patch by 'jinkusu').
 * plugins/NetStuff: reload our CCTLD and port lists during rehash.
 * plugins/News: remove the Google News parser, they finally have RSS feeds,
     hurrah!
-* plugins/SmartyPants: fix incorrect help for search/replace.
+* plugins/SmartyPants: fix incorrect help for search/replace, fix 'tell' command
+    not working if target nickname wasn't all lowercase.
 * plugins/Video: fix several minor 'imdb' parsing issues.
 * plugins/WordStuff: fix several 'urban' parsing issues, add 'bash' command to
     look up quotes on bash.org.

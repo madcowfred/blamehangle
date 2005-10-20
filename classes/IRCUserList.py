@@ -97,6 +97,13 @@ class IRCUserList:
 		assert ui is not None
 		return ui
 	
+	def get_nick_case(self, nick):
+		lownick = nick.lower()
+		for n in self._u.keys():
+			if n.lower() == lownick:
+				return n
+		return None
+	
 	# -----------------------------------------------------------------------
 	
 	def chan_add_mode(self, chan, mode, extra):
@@ -206,17 +213,6 @@ class IRCUserList:
 				return True
 		return False
 	
-	def user_in_same_chan(self, nick1, nick2):
-		ui1 = self._u.get(nick1, None)
-		ui2 = self._u.get(nick2, None)
-		if None in (ui1, ui2):
-			return False
-		
-		for ci in self._c.values():
-			if ui1 in ci.users and ui2 in ci.users:
-				return True
-		return False
-	
 	def user_has_mode(self, chan, nick, mode):
 		ui = self._u.get(nick, None)
 		assert ui is not None
@@ -232,6 +228,20 @@ class IRCUserList:
 				matches.append(ui)
 		
 		return matches
+	
+	def users_in_common_channel(self, nick1, nick2):
+		ui1 = self._u.get(nick1, None)
+		ui2 = self._u.get(nick2, None)
+		print nick1, ui1, nick2, ui2
+		if None in (ui1, ui2):
+			print 'rarrr'
+			return False
+		
+		for ci in self._c.values():
+			print ci.users
+			if ui1 in ci.users and ui2 in ci.users:
+				return True
+		return False
 
 # ---------------------------------------------------------------------------
 

@@ -436,7 +436,8 @@ class SmartyPants(Plugin):
 			
 			else:
 				# Source and target aren't in a common channel
-				if not trigger.wrap.ircul.user_in_same_chan(tellnick, trigger.userinfo.nick):
+				tellnick = trigger.wrap.ircul.get_nick_case(tellnick)
+				if not trigger.wrap.ircul.users_in_common_channel(tellnick, trigger.userinfo.nick):
 					self.sendReply(trigger, "That user isn't in a channel with you!")
 					tolog = "%s tried to tell %s about '%s', but they're not in a common channel!" % (
 						trigger.userinfo, tellnick, name)
