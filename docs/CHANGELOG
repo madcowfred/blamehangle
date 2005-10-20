@@ -28,7 +28,8 @@
 * plugins/News: remove the Google News parser, they finally have RSS feeds,
     hurrah!
 * plugins/SmartyPants: fix incorrect help for search/replace, fix 'tell' command
-    not working if target nickname wasn't all lowercase.
+    not working if target nickname wasn't all lowercase, change '=~' (replace)
+    to be case insensitive.
 * plugins/Video: fix several minor 'imdb' parsing issues.
 * plugins/WordStuff: fix several 'urban' parsing issues, add 'bash' command to
     look up quotes on bash.org.

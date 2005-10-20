@@ -831,8 +831,10 @@ class SmartyPants(Plugin):
 					search = bits[1]
 					replace = bits[2]
 					
-					new_value = value.replace(search, replace, 1)
-					if new_value == value:
+					n = value.lower().find(search.lower())
+					if n >= 0:
+						new_value = value[:n] + replace + value[n+len(search):]
+					else:
 						replytext = "That doesn't contain '%s'" % search
 						self.sendReply(trigger, replytext)
 						return
