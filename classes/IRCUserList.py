@@ -232,13 +232,10 @@ class IRCUserList:
 	def users_in_common_channel(self, nick1, nick2):
 		ui1 = self._u.get(nick1, None)
 		ui2 = self._u.get(nick2, None)
-		print nick1, ui1, nick2, ui2
 		if None in (ui1, ui2):
-			print 'rarrr'
 			return False
 		
 		for ci in self._c.values():
-			print ci.users
 			if ui1 in ci.users and ui2 in ci.users:
 				return True
 		return False
