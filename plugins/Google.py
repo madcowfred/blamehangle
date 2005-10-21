@@ -53,10 +53,12 @@ TRANSLATE_URL = 'http://translate.google.com/translate_t?langpair=%s|%s&text=%s'
 # A mapping of language translations we can do
 LANG_MAP = {
 	'de': ('en', 'fr'),
-	'en': ('de', 'es', 'fr', 'it', 'pt'),
+	'en': ('de', 'es', 'fr', 'it', 'ja', 'ko', 'pt'),
 	'es': ('en',),
 	'fr': ('de', 'en'),
 	'it': ('en',),
+	'ja': ('en',),
+	'ko': ('en',),
 	'pt': ('en',),
 }
 
