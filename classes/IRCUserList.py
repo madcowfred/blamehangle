@@ -198,8 +198,9 @@ class IRCUserList:
 	def user_channels(self, ui):
 		return [chan for chan, data in self._c.items() if ui in data.users]
 	
-	def user_in_chan(self, chan, hostmask):
-		ui = self._u.get(nick, None)
+	def user_in_chan(self, chan, ui=None, nick=None):
+		if nick and ui is None:
+			ui = self._u.get(nick, None)
 		
 		return ui in self._c[chan]
 	
