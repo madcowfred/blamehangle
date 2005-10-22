@@ -202,7 +202,7 @@ class IRCUserList:
 		if nick and ui is None:
 			ui = self._u.get(nick, None)
 		
-		return ui in self._c[chan]
+		return ui in self._c[chan].users
 	
 	def user_in_any_chan(self, nick):
 		ui = self._u.get(nick, None)
