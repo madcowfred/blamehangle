@@ -241,14 +241,20 @@ class GrabBT(Plugin):
 		
 		if lines:
 			for line in lines:
-				filename, status, filesize, downtotal, downrate, uptotal, uprate = line.strip().split('|')
+				try:
+					filename, status, progress, filesize, seeds, peers, downtotal, downrate, uptotal, uprate = line.strip().split('|')
+				except ValueError:
+					continue
 				
-				downtotal = '%.1f' % (float(downtotal))
+				downtotal = '%.1f' % (float(downtotal) / 1024 / 1024)
 				downrate = '%.1f' % (float(downrate) / 1024)
-				uptotal = '%.1f' % (float(uptotal))
+				uptotal = '%.1f' % (float(uptotal) / 1024 / 1024)
 				uprate = '%.1f' % (float(uprate) / 1024)
 				
-				line = '%s (%s MB) :: \x02[\x02%s\x02]\x02 \x02[\x02Down: %s MB (%s KB/s)\x02]\x02 \x02[\x02Up: %s MB (%s KB/s)\x02]\x02' % (filename, filesize, status, downtotal, downrate, uptotal, uprate)
+				line = '%s (%s) :: \x02[\x02%s (%s)\x02]\x02 \x02[\x02%s seeds, %s peers\x02]\x02 ' % (
+					filename, NiceSize(filesize), status, progress, seeds, peers)
+				line += '\x02[\x02Down: %s MB (%s KB/s)\x02]\x02 \x02[\x02Up: %s MB (%s KB/s)\x02]\x02' % (
+					downtotal, downrate, uptotal, uprate)
 				self.sendReply(trigger, line)
 		
 		else:
