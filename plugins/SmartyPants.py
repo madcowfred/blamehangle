@@ -419,7 +419,7 @@ class SmartyPants(Plugin):
 		if not self.Userlist.Has_Flag(trigger.userinfo, 'SmartyPants', 'tell'):
 			if tellnick[0] in '#&+!':
 				# Target is a channel we're not in.
-				if not trigger.wrap.ircul.user_in_any_chan(tellnick):
+				if not trigger.wrap.ircul.bot_in_chan(tellnick):
 					self.sendReply(trigger, "I'm not in that channel!")
 					tolog = "%s tried to tell %s about '%s', but I'm not in that channel!" % (
 						trigger.userinfo, tellnick, name)
