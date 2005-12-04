@@ -240,6 +240,11 @@ class IRCUserList:
 			if ui1 in ci.users and ui2 in ci.users:
 				return True
 		return False
+	
+	# -----------------------------------------------------------------------
+	
+	def bot_in_chan(self, chan):
+		return chan.lower() in self._c
 
 # ---------------------------------------------------------------------------
 
