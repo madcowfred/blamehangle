@@ -11,15 +11,17 @@
     lines, log an exception when an exception occurs instead of a completely
     useless log message.
 * classes/IRCUserList: add get_nick_case() to get the correct case for a nick,
-    rename user_in_same_chan() to users_in_common_channel().
+    rename user_in_same_chan() to users_in_common_channel(), fix user_in_chan(),
+    add bot_in_chan().
 * classes/PostMan: log an exception when we receive a LOG_EXCEPTION.
 * classes/Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
     off (workaround for broken nameservers).
 * classes/WrapConn: change nick regain timer from 30 to 15 seconds.
 * data/conversions: added a whole bunch of units.
 * plugins/Converter: move the conversion tables to data/conversions.
-* plugins/Google: add support for 'define: foo', fix parsing of their nasty
-    link tracking URLs, fix 'transmangle' crashes, minor cleanups.
+* plugins/Google: add support for 'define: foo', add Japanese and Korean to
+    the translate languages, fix parsing of the nasty link tracking URLs,
+    fix 'transmangle' crashes, minor cleanups.
 * plugins/GrabBT: replace nasty URL parsing for finding the torrent filename
     with parsing the torrent.
 * plugins/Misc: add 'tinyurl' command to provide shorter URLs via tinyurl.com
@@ -29,7 +31,7 @@
     hurrah!
 * plugins/SmartyPants: fix incorrect help for search/replace, fix 'tell' command
     not working if target nickname wasn't all lowercase, change '=~' (replace)
-    to be case insensitive.
+    to be case insensitive, fix the "I'm not in that channel" check in 'tell'.
 * plugins/Video: fix several minor 'imdb' parsing issues.
 * plugins/WordStuff: fix several 'urban' parsing issues, add 'bash' command to
     look up quotes on bash.org.
