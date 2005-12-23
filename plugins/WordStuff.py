@@ -223,24 +223,23 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definition block
-			chunk = FindChunk(resp.data, '<table border="0" cellspacing="0" cellpadding="4" width="80%">', '</table>')
+			chunk = FindChunk(resp.data, '<table border="0" cellspacing="0" cellpadding="2" width="732">', '</table>')
 			if not chunk:
-				self.sendReply(trigger, 'Page parsing failed: definition table.')
+				self.sendReply(trigger, 'Page parsing failed: table.')
 				return
 			
-			# Find the rows
-			trs = FindChunks(chunk, '<tr', '</tr>')
-			if not trs:
-				self.sendReply(trigger, 'Page parsing failed: table rows.')
+			# Find the definitions
+			tds = FindChunks(chunk, '<td valign="middle" width="70%"', '</td>')
+			if not tds:
+				self.sendReply(trigger, 'Page parsing failed: tds.')
 				return
 			
 			# Parse the definitions
 			defs = []
-			
-			for tr in trs[1:]:
-				bits = StripHTML(tr)
-				if len(bits) == 2:
-					defs.append(bits[1])
+			for td in tds:
+				bits = StripHTML(td)
+				if len(bits) == 1:
+					defs.append(bits[0])
 			
 			# If we got some definitions, add them to the cache and spit
 			# something out
