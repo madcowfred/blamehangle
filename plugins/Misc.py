@@ -87,37 +87,52 @@ class Misc(Plugin):
 	
 	# Parse the returned page.
 	def __Parse_BugMeNot(self, trigger, resp):
+		# Barrrrred
+		if 'This site has been barred' in resp.data:
+			self.sendReply(trigger, 'Site has been barred from BugMeNot!')
+		
 		# No accounts
-		if resp.data.find('"add.php?notFound=true') >= 0:
-			self.sendReply(trigger, "No accounts found.")
+		elif 'No accounts have been listed' in resp.data:
+			self.sendReply(trigger, 'No accounts found!')
 		
 		# Result!
-		elif resp.data.find('Login details for ') >= 0:
+		elif '<h2>Account Details</h2>' in resp.data:
 			# Find the site name
-			forsite = FindChunk(resp.data, '<cite>', '</cite>')
+			forsite = FindChunk(resp.data, '<h1>', '</h1>')
 			if forsite is None:
-				self.sendReply(trigger, "Page parsing failed: cite.")
+				self.sendReply(trigger, 'Page parsing failed: h1.')
 				return
 			
-			# Find the login info
-			login = FindChunk(resp.data, '<dd>', '</dd>')
-			if login is None:
-				self.sendReply(trigger, "Page parsing failed: dd.")
+			# Find some login info
+			divs = FindChunks(resp.data, '<div class="account"', '</div>')
+			if not divs:
+				self.sendReply(trigger, 'Page parsing failed: divs.')
 				return
 			
-			# See if we got the right bits
-			parts = login.split('<br />')
-			if len(parts) != 2:
-				self.sendReply(trigger, "Page parsing failed: login.")
-				return
+			logins = []
+			for div in divs:
+				tds = FindChunks(div, '<td>', '</td>')
+				if len(tds) >= 2:
+					stats = FindChunk(div, '<td class="stats">', '</td>')
+					per = FindChunk(stats, '>', '%')
+					
+					if tds[2]:
+						text = '\x02[\x02%s/%s (%s%%) - %s\x02]\x02' % (tds[0], tds[1], per, tds[2])
+					else:
+						text = '\x02[\x02%s/%s (%s%%)\x02]\x02' % (tds[0], tds[1], per)
+					
+					logins.append(text)
 			
 			# All done, build the reply and send it
-			replytext = 'Login info for %s \x02::\x02 %s \x02/\x02 %s' % (forsite, parts[0], parts[1])
-			self.sendReply(trigger, replytext)
+			if logins:
+				replytext = 'Login info for %s \x02::\x02 %s' % (forsite, ' '.join(logins))
+				self.sendReply(trigger, replytext)
+			else:
+				self.sendReply(trigger, 'Page parsing failed: logins.')
 		
 		# Err?
 		else:
-			self.sendReply(trigger, "Failed to parse page!")
+			self.sendReply(trigger, 'Page parsing failed: completely.')
 	
 	# -----------------------------------------------------------------------
 	# Fetch the package info
