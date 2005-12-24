@@ -291,8 +291,8 @@ class GrabBT(Plugin):
 				down += float(downrate)
 				up += float(uprate)
 			
-			down = down / 1024 / 1024
-			up = up / 1024 / 1024
+			down = down / 1024
+			up = up / 1024
 			
 			line = 'Total torrent bandwidth: %.1fKB/s down, %.1fKB/s up' % (down, up)
 			self.sendReply(trigger, line)
