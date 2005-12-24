@@ -272,6 +272,7 @@ class GrabBT(Plugin):
 			return
 		
 		# Get the list of torrents
+		# Get the list of torrents
 		try:
 			lines = open(self.Options['status_file'], 'r').readlines()
 		except:
@@ -282,10 +283,16 @@ class GrabBT(Plugin):
 			down = up = 0.0
 			
 			for line in lines:
-				filename, status, filesize, downtotal, downrate, uptotal, uprate = line.strip().split('|')
+				try:
+					filename, status, progress, filesize, seeds, peers, downtotal, downrate, uptotal, uprate = line.strip().split('|')
+				except ValueError:
+					continue
 				
-				down += (float(downrate) / 1024)
-				up += (float(uprate) / 1024)
+				down += float(downrate)
+				up += float(uprate)
+			
+			down = down / 1024 / 1024
+			up = up / 1024 / 1024
 			
 			line = 'Total torrent bandwidth: %.1fKB/s down, %.1fKB/s up' % (down, up)
 			self.sendReply(trigger, line)
