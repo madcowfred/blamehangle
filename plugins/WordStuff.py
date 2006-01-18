@@ -222,14 +222,8 @@ class WordStuff(Plugin):
 		
 		# Some matches!
 		else:
-			# Find the definition block
-			chunk = FindChunk(resp.data, '<table border="0" cellspacing="0" cellpadding="2" width="732">', '</table>')
-			if not chunk:
-				self.sendReply(trigger, 'Page parsing failed: table.')
-				return
-			
 			# Find the definitions
-			tds = FindChunks(chunk, '<td valign="middle" width="70%"', '</td>')
+			tds = FindChunks(resp.data, '<td valign="middle" width="84%"', '</td>')
 			if not tds:
 				self.sendReply(trigger, 'Page parsing failed: tds.')
 				return
