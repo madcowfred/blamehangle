@@ -1,68 +1,109 @@
 ----------------------------
 0.1.2
 ----------------------------
-* sample.conf: change the default useragent to Firefox 1.0.6.
-* classes/bdecode.py: new file - contains bdecode() from BitTorrent.
-* classes/ChatterGizmo: fix a few bugs related to regaining our primary
-    nickname.
-* classes/Common: replace ParseSearchString with my own implementation that
-    actually works properly.
-* classes/HTTPMonster: fix several errors when servers send invalid header
-    lines, log an exception when an exception occurs instead of a completely
-    useless log message.
-* classes/IRCUserList: add get_nick_case() to get the correct case for a nick,
-    rename user_in_same_chan() to users_in_common_channel(), fix user_in_chan(),
-    add bot_in_chan().
-* classes/PostMan: log an exception when we receive a LOG_EXCEPTION.
-* classes/Resolver: use gethostbyname_ex() to resolve hosts if use_ipv6 is
-    off (workaround for broken nameservers).
-* classes/WrapConn: change nick regain timer from 30 to 15 seconds.
-* data/conversions: added a whole bunch of units.
-* plugins/Converter: move the conversion tables to data/conversions.
-* plugins/Google: add support for 'define: foo', add Japanese and Korean to
-    the translate languages, fix parsing of the nasty link tracking URLs,
-    fix 'transmangle' crashes, minor cleanups.
-* plugins/GrabBT: replace nasty URL parsing for finding the torrent filename
-    with parsing the torrent.
-* plugins/Misc: add 'tinyurl' command to provide shorter URLs via tinyurl.com
-    (suggestion/original patch by 'jinkusu').
-* plugins/NetStuff: reload our CCTLD and port lists during rehash.
-* plugins/News: remove the Google News parser, they finally have RSS feeds,
-    hurrah!
-* plugins/SmartyPants: fix incorrect help for search/replace, fix 'tell' command
-    not working if target nickname wasn't all lowercase, change '=~' (replace)
-    to be case insensitive, fix the "I'm not in that channel" check in 'tell'.
-* plugins/Video: fix several minor 'imdb' parsing issues.
-* plugins/WordStuff: fix several 'urban' parsing issues, add 'bash' command to
-    look up quotes on bash.org.
+* sample.conf:
+  - change the default useragent to Firefox 1.0.6
+* classes/bdecode.py:
+  - new file - contains bdecode() from BitTorrent
+* classes/ChatterGizmo:
+  - fix a few bugs related to regaining our primary nickname
+* classes/Common:
+  - replace ParseSearchString with my own implementation that actually works
+    properly.
+* classes/HTTPMonster:
+  - fix several errors when servers send invalid header lines
+  - log an exception when an exception occurs instead of a completely useless
+    log message.
+* classes/IRCUserList:
+  - add bot_in_chan()
+  - add get_nick_case() to get the correct case for a nick
+  - rename user_in_same_chan() to users_in_common_channel()
+  - fix user_in_chan()
+* classes/PostMan:
+  - log an exception when we receive a LOG_EXCEPTION
+* classes/Resolver:
+  - use gethostbyname_ex() to resolve hosts if use_ipv6 is off (workaround for
+    broken nameservers)
+* classes/WrapConn:
+  - change nick regain timer from 30 to 15 seconds
+* data/conversions:
+  - added a whole bunch of units
+* docs/CHANGELOG:
+  - change layout to hopefully be more readable
+* plugins/Converter:
+  - move the conversion tables to data/conversions
+* plugins/FunStuff:
+  - add 'chucknorris' command to fetch a random Chuck Norris 'fact'
+  - add 'vindiesel' command to fetch a random Vin Diesel 'fact'
+* plugins/Google:
+  - add support for 'define: foo'
+  - add Japanese and Korean to the translate languages
+  - fix parsing of the nasty link tracking URLs
+  - fix 'transmangle' crashes
+  - various minor cleanups
+* plugins/GrabBT:
+  - replace nasty URL parsing for finding the torrent filename with parsing the
+    actual torrent
+* plugins/Misc:
+  - add 'tinyurl' command to provide shorter URLs via tinyurl.com (suggestion and
+    original patch by 'jinkusu')
+  - fix 'bugmenot' parsing
+* plugins/NetStuff:
+  - reload our CCTLD and port lists during rehash
+* plugins/News:
+  - remove the Google News parser as they finally have RSS feeds, hurrah!
+* plugins/SmartyPants:
+  - change search/replace to be case insensitive
+  - fix incorrect help for search/replace
+  - fix 'tell' command not working if target nickname wasn't all lowercase
+  - fix the "I'm not in that channel" check in 'tell'
+* plugins/Video:
+  - fix several minor 'imdb' parsing issues
+* plugins/WordStuff:
+  - add 'bash' command to look up quotes on bash.org
+  - fix several 'urban' parsing issues
+  - fix 'acronym' parsing
 
 ----------------------------
 0.1.1             2005-08-07
 ----------------------------
-* classes/ChatterGizmo: fix some issues with rehash not updating the channel
-    list properly, remove nasty global rejoins list hack.
-* classes/Common: QuoteURL() no longer quotes '=' and '?'.
-* classes/HTTPMonster: fix redirection limit not working, fix redirected POST
-    requests not using GET on the redirected URL, fix double urlparse for each
-    URL which was unquoting spaces somehow.
-* classes/WrapConn: make each wrap keep track of it's own channel rejoins,
-    fix adding a channel key then rehashing not joining the channel correctly,
-    only do join/stoned check if we finished connecting to the server.
-* plugins/Google: fix result parsing.
-* plugins/Karma: give an error straight away for absurdly long key names.
-* plugins/Misc: fix a missing bracket, fix various issues with the 'fedex'
-    command page parsing.
-* plugins/MoneyMangler: fix 'asx' page parsing, rename all of the page parsing
-    methods to __Parse_Foo.
-* plugins/Quotes: add a new 'allow_public_addquote' option, guess what it
-    does!
-* plugins/TorrentScraper: add a new 'ttl' page type, simplify 'bnbt' page
-    parsing, don't retry broken torrents (404, etc) for a while, don't start
-    the RSS feed generation timer if rss_interval is 0, fix some more quoted
-    entity nastiness.
-* plugins/Video: disable 'tvtome' command, since Cnet bought them out and it
-    now sucks.
-* plugins/WordStuff: fix 'acronym' page parsing, fix 'urban' page parsing.
+* classes/ChatterGizmo:
+  - fix some issues with rehash not updating the channel list properly
+  - remove nasty global rejoins list hack
+* classes/Common:
+  - QuoteURL() no longer quotes '=' and '?'
+* classes/HTTPMonster:
+  - fix redirection limit not working
+  - fix redirected POST requests not using GET on the redirected URL
+  - fix double urlparse for each URL which was unquoting quoted spaces
+* classes/WrapConn:
+  - make each wrap keep track of its own channel rejoins
+  - fix adding a channel key then rehashing not joining the channel correctly
+  - change join/stoned check to only happen if we finished connecting to the
+    server
+* plugins/Google:
+  - fix result parsing
+* plugins/Karma:
+  - give an error straight away for absurdly long key names
+* plugins/Misc:
+  - fix a missing bracket
+  - fix various issues with the 'fedex' command parsing
+* plugins/MoneyMangler:
+  - fix 'asx' page parsing
+  - rename all of the page parsing methods to __Parse_Foo
+* plugins/Quotes:
+  - add a new 'allow_public_addquote' option, guess what it does!
+* plugins/TorrentScraper:
+  - add a new 'ttl' page type
+  - simplify 'bnbt' page parsing
+  - don't retry broken torrents (404, etc) for a while
+  - don't start the RSS feed generation timer if rss_interval is 0
+  - fix some more quoted entity nastiness
+* plugins/Video:
+  -disable 'tvtome' command since Cnet bought them out and it now sucks.
+* plugins/WordStuff:
+  - fix 'acronym' page parsing
+  - fix 'urban' page parsing
 
 ----------------------------
 0.1.0             2005-05-25
