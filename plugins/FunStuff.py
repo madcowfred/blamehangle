@@ -39,7 +39,9 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-CHUCKNORRIS_URL = 'http://www.4q.cc/chuck/index.php'
+CHUCKNORRIS_URL = 'http://www.4q.cc/chuck/'
+VINDIESEL_URL = 'http://www.4q.cc/vin/'
+
 CYBORG_URL = 'http://www.cyborgname.com/cyborger.cgi?acronym=%s&robotchoice=handyvac'
 
 HORO_SIGNS = ('aquarius', 'aries', 'cancer', 'capricorn', 'gemini', 'leo', 'libra',
@@ -92,7 +94,12 @@ class FunStuff(Plugin):
 		self.addTextEvent(
 			method = self.__Fetch_ChuckNorris,
 			regexp = r'^chucknorris$',
-			help = ('chucknorris', '\x02chuknorris\x02 : Fetch a random Chuck Norris fact.'),
+			help = ('chucknorris', '\x02chucknorris\x02 : Fetch a random Chuck Norris fact.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_VinDiesel,
+			regexp = r'^vindiesel$',
+			help = ('vindiesel', '\x02vindiesel\x02 : Fetch a random Vin Diesel fact.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_Cyborg,
@@ -197,9 +204,13 @@ class FunStuff(Plugin):
 	# -----------------------------------------------------------------------
 	# Get a Chuck Norris fact
 	def __Fetch_ChuckNorris(self, trigger):
-		self.urlRequest(trigger, self.__Parse_ChuckNorris, CHUCKNORRIS_URL)
+		self.urlRequest(trigger, self.__Parse_RandomFact, CHUCKNORRIS_URL)
 	
-	def __Parse_ChuckNorris(self, trigger, resp):
+	# Get a Vin Diesel fact
+	def __Fetch_VinDiesel(self, trigger):
+		self.urlRequest(trigger, self.__Parse_RandomFact, VINDIESEL_URL)
+	
+	def __Parse_RandomFact(self, trigger, resp):
 		chunk = FindChunk(resp.data, '<p class="fact">', '</p>')
 		if chunk:
 			self.sendReply(trigger, UnquoteHTML(chunk))
