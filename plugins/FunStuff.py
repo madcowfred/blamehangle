@@ -39,6 +39,7 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
+CHUCKNORRIS_URL = 'http://www.4q.cc/chuck/index.php'
 CYBORG_URL = 'http://www.cyborgname.com/cyborger.cgi?acronym=%s&robotchoice=handyvac'
 
 HORO_SIGNS = ('aquarius', 'aries', 'cancer', 'capricorn', 'gemini', 'leo', 'libra',
@@ -88,6 +89,11 @@ class FunStuff(Plugin):
 			help = ('muddle', '\02muddle\02 <text> : Muddles your text by rearranging words.'),
 		)
 		
+		self.addTextEvent(
+			method = self.__Fetch_ChuckNorris,
+			regexp = r'^chucknorris$',
+			help = ('chucknorris', '\x02chuknorris\x02 : Fetch a random Chuck Norris fact.'),
+		)
 		self.addTextEvent(
 			method = self.__Fetch_Cyborg,
 			regexp = r'^cyborg (?P<name>\w+)$',
@@ -187,6 +193,18 @@ class FunStuff(Plugin):
 		# Put it back together again
 		replytext = ' '.join(new)
 		self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Get a Chuck Norris fact
+	def __Fetch_ChuckNorris(self, trigger):
+		self.urlRequest(trigger, self.__Parse_ChuckNorris, CHUCKNORRIS_URL)
+	
+	def __Parse_ChuckNorris(self, trigger, resp):
+		chunk = FindChunk(resp.data, '<p class="fact">', '</p>')
+		if chunk:
+			self.sendReply(trigger, UnquoteHTML(chunk))
+		else:
+			self.sendReply(trigger, 'Page parsing failed.')
 	
 	# -----------------------------------------------------------------------
 	# Get a cyborg name
