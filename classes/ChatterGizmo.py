@@ -169,7 +169,7 @@ class ChatterGizmo(Child):
 				userinfo = wrap.ircul.get_userinfo(hostmask)
 			except ValueError:
 				tolog = 'Invalid hostmask! prefix: %r, hostmask: %r, command: %r, target: %r, arguments: %r' % (
-					prefix, hostmask, command, target arguments)
+					prefix, hostmask, command, target, arguments)
 				self.connlog(connid, LOG_WARNING, tolog)
 		else:
 			userinfo = None
