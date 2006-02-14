@@ -449,7 +449,7 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(resp.data, '<div class="entry">', '<div class="author">')
+			chunks = FindChunks(resp.data, '<div class="entry">', '<div class="tags">')
 			if not chunks:
 				self.sendReply(trigger, 'Page parsing failed: entries.')
 				return
