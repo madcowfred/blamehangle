@@ -149,6 +149,9 @@ class Misc(Plugin):
 		if 'No scan record for the following shipments has been received' in resp.data:
 			self.sendReply(trigger, 'Shipment has not been scanned yet!')
 			return
+		if 'No information for the following shipments has been received by our system yet.' in resp.data:
+			self.sendReply(trigger, 'Shipment has no information yet!')
+			return
 		
 		# Find the shipment info
 		chunk = FindChunk(resp.data, '<!-- shipment info -->', '<!-- BEGIN Scan Activity -->')
