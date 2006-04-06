@@ -111,17 +111,23 @@ class GrabBT(Plugin):
 			return
 		
 		# Spam the new files
-		for file in [f for f in files if f not in self.__files]:
-			localfile = os.path.join(self.Options['new_dir'], file)
+		for filename in [f for f in files if f not in self.__files]:
+			# Skip dotfiles
+			if filename.startswith('.'):
+				continue
+			
+			# Skip non-files
+			localfile = os.path.join(self.Options['new_dir'], filename)
 			if not os.path.isfile(localfile):
 				continue
 			
 			filesize = float(os.path.getsize(localfile)) / 1024 / 1024
 			
 			if self.Options['http_base']:
-				replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (file, filesize, self.Options['http_base'], QuoteURL(file))
+				replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (filename, filesize,
+					self.Options['http_base'], QuoteURL(filename))
 			else:
-				replytext = '\x0303New file\x03: %s (%.1fMB)' % (file, filesize)
+				replytext = '\x0303New file\x03: %s (%.1fMB)' % (filename, filesize)
 			
 			self.privmsg(self.Options['newfiles'], None, replytext)
 		
