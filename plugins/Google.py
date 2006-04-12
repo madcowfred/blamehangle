@@ -263,9 +263,9 @@ class Google(Plugin):
 		
 		# Did translate!
 		else:
-			chunk = FindChunk(resp.data, 'wrap=PHYSICAL>', '</textarea>')
+			chunk = FindChunk(resp.data, '<textarea', '</textarea>')
 			if chunk:
-				replytext = chunk
+				replytext = ' '.join(StripHTML(chunk))
 			else:
 				replytext = 'Unable to parse page.'
 		
