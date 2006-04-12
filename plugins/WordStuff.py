@@ -449,7 +449,8 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(resp.data, '<div class="entry">', '<div class="tags">')
+			#chunks = FindChunks(resp.data, '<div class="entry">', '<div class="tags">')
+			chunks = FindChunks(resp.data, '<div class="def_p">', '</div>')
 			if not chunks:
 				self.sendReply(trigger, 'Page parsing failed: entries.')
 				return
@@ -461,7 +462,7 @@ class WordStuff(Plugin):
 				out = []
 				
 				# We only want the first line
-				definition = FindChunk(chunk, '<div class="definition">', '</div>')
+				definition = FindChunk(chunk, '<p>', '</p>')
 				if not definition:
 					self.sendReply(trigger, 'Page parsing failed: definition.')
 					return
@@ -473,7 +474,7 @@ class WordStuff(Plugin):
 				out.append(definition)
 				
 				# And maybe an example
-				example = FindChunk(chunk, '<div class="example">', '</div>')
+				example = FindChunk(chunk, '<p style="font-style: italic">', '</p>')
 				if example:
 					# Strip annoying junk
 					example = example.replace('\r', ' ').replace('\n', ' ')
