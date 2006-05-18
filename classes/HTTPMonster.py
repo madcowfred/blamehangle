@@ -222,13 +222,13 @@ class async_http(buffered_dispatcher):
 		# Create the socket and possibly bind it to an address
 		if self.hosts[0][0] == 4:
 			self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-			if self.bind_ipv4:
-				self.bind((self.bind_ipv4, 0))
+			if self.parent.bind_ipv4:
+				self.bind((self.parent.bind_ipv4, 0))
 		
 		else:
 			self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
-			if self.bind_ipv6:
-				self.bind((self.bind_ipv6, 0))
+			if self.parent.bind_ipv6:
+				self.bind((self.parent.bind_ipv6, 0))
 		
 		# Try to connect. It seems this will blow up if it can't resolve the
 		# host.
