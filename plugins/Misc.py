@@ -285,7 +285,7 @@ class Misc(Plugin):
 	
 	# Parse the returned page.
 	def __Parse_Surreal(self, trigger, resp):
-		chunk = FindChunk(resp.data, 'font-size=', '/SPAN>')
+		chunk = FindChunk(resp.data, 'font-size=', '</SPAN>')
 		if chunk:
 			surreal = StripHTML(chunk)[0]
 			self.sendReply(trigger, surreal)
