@@ -44,6 +44,7 @@ from classes.Plugin import Plugin
 BUGMENOT_URL = 'http://www.bugmenot.com/view.php?url=%s'
 FEDEX_URL = "http://www.fedex.com/Tracking?cntry_code=us&action=track&language=english&ascend_header=1&tracknumbers=%s&initial=x&mps=y&"
 PGP_URL = 'http://pgp.mit.edu:11371/pks/lookup?op=index&search=%s'
+SURREAL_URL = 'http://www.ravenblack.net/cgi-bin/surreal.cgi'
 TINYURL_URL = 'http://tinyurl.com/create.php'
 
 SPACE_RE = re.compile('\s+')
@@ -68,6 +69,11 @@ class Misc(Plugin):
 			method = self.__Fetch_PGP_Key,
 			regexp = r'^pgpkey (\S+)$',
 			help = ('pgpkey', '\x02pgpkey\x02 <findme> : Search pgp.mit.edu for a key/keys matching <findme>, returning the first match.'),
+		)
+		self.addTextEvent(
+			method = self.__Fetch_Surreal,
+			regexp = r'^surreal$',
+			help = ('surreal', '\x02surreal\x02 : Fetch a random surreal sentence.'),
 		)
 		self.addTextEvent(
 			method = self.__Fetch_TinyURL,
@@ -271,6 +277,19 @@ class Misc(Plugin):
 		
 		else:
 			self.sendReply(trigger, "No matches found, page might have changed!")
+	
+	# -----------------------------------------------------------------------
+	# Fetch the surrealness
+	def __Fetch_Surreal(self, trigger):
+		self.urlRequest(trigger, self.__Parse_Surreal, SURREAL_URL)
+	
+	# Parse the returned page.
+	def __Parse_Surreal(self, trigger, resp):
+		chunk = FindChunk(resp.data, '10px">', '</SPAN>')
+		if chunk:
+			self.sendReply(trigger, chunk)
+		else:
+			self.sendReply(trigger, "Page parsing failed.")
 	
 	# -----------------------------------------------------------------------
 	# Fetch the response from TinyURL
