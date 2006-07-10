@@ -211,7 +211,7 @@ class FunStuff(Plugin):
 		self.urlRequest(trigger, self.__Parse_RandomFact, VINDIESEL_URL)
 	
 	def __Parse_RandomFact(self, trigger, resp):
-		chunk = FindChunk(resp.data, '<p class="fact">', '</p>')
+		chunk = FindChunk(resp.data, '<p>', '</p>')
 		if chunk:
 			self.sendReply(trigger, UnquoteHTML(chunk))
 		else:
