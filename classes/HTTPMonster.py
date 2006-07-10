@@ -383,7 +383,7 @@ class async_http(buffered_dispatcher):
 								is_gzip = 1
 							else:
 								tolog = 'Unknown Content-Encoding: %s' % (repr(headers['content-encoding']))
-								self.parent.pulog(LOG_WARNING, tolog)
+								self.parent.putlog(LOG_WARNING, tolog)
 						
 						# If we think it's gzip compressed, try to unsquish it
 						if is_gzip:
