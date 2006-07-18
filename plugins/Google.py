@@ -281,8 +281,9 @@ class Google(Plugin):
 		
 		# Maybe loop again now
 		else:
-			chunk = FindChunk(resp.data, 'wrap=PHYSICAL>', '</textarea>')
+			chunk = FindChunk(resp.data, '<textarea', '</textarea>')
 			if chunk:
+				chunk = ' '.join(StripHTML(chunk))
 				# Needs to be translated again
 				if (trigger._round % 2) == 1:
 					trigger._round += 1
