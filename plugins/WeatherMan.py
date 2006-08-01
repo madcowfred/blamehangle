@@ -156,10 +156,10 @@ class WeatherMan(Plugin):
 			
 			
 			# Find the chunk that tells us where we are
-			chunk = FindChunk(resp.data, '<!--BROWSE: ADD BREADCRUMBS-->', '</b></font>')
+			chunk = FindChunk(resp.data, '<div id="breadcrumbs">', '</div>')
 			if chunk is None:
 				self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
-				self.sendReply(trigger, 'Failed to parse page properly')
+				self.sendReply(trigger, 'Page parsing failed: location data.')
 				return
 			lines = StripHTML(chunk)
 			
@@ -170,81 +170,66 @@ class WeatherMan(Plugin):
 			
 			
 			# Find the chunk with the weather data we need
-			chunk = FindChunk(resp.data, '<!--CURCON-->', '<!--END CURCON-->')
-			if chunk is None:
-				self.putlog(LOG_WARNING, 'Weather page parsing failed: no current data')
-				self.sendReply(trigger, 'Failed to parse page properly')
+			chunk = FindChunk(resp.data, '<div id="forecast-temperature">', '<ul>')
+			if not chunk:
+				self.putlog(LOG_WARNING, 'Weather parsing failed: weather data 1.')
+				self.sendReply(trigger, 'Parsing failed: weather data 1.')
 				return
-			lines = StripHTML(chunk)
 			
-			# Extract current conditions!
-			for line in lines:
-				if line.startswith('Currently:'):
-					continue
-				elif re.match(r'^\d+$', line):
-					chunk = 'Currently: %s' % (self.GetTemp(trigger, line))
-					data['current'] = chunk
-				elif line.startswith('High:'):
-					chunk = 'High: %s' % (self.GetTemp(trigger, line[5:]))
-					data['high'] = chunk
-				elif line.startswith('Low:'):
-					chunk = 'Low: %s' % (self.GetTemp(trigger, line[4:]))
-					data['low'] = chunk
-				else:
-					data['conditions'] = line
+			current = FindChunk(chunk, '<h3>', '</h3>')
+			data['current'] = 'Currently: %s' % (self.GetTemp(trigger, current))
+			
+			pieces = FindChunk(chunk, '<p>', '</p>').split()
+			data['high'] = 'High: %s' % (self.GetTemp(trigger, pieces[1]))
+			data['low'] = 'Low: %s' % (self.GetTemp(trigger, pieces[3]))
 			
 			
 			# Maybe find some more weather data
-			chunk = FindChunk(resp.data, '<!--MORE CC-->', '<!--ENDMORE CC-->')
+			chunk = FindChunk(resp.data, '<div class="forecast-module">', '</dl>')
 			if chunk is not None:
-				lines = StripHTML(chunk)
-				
-				# Extract!
-				chunk = 'Feels Like: %s' % (self.GetTemp(trigger, lines[2]))
-				data['feels'] = chunk
-				
-				windbits = lines[-9].split()
-				if len(windbits) == 3:
-					chunk = 'Wind: %s %s' % (windbits[0], self.GetWind(trigger, windbits[1]))
-				else:
-					chunk = 'Wind: %s' % (windbits[0])
-				data['wind'] = chunk
-				
-				chunk = 'Humidity: %s' % (lines[-7])
-				data['humidity'] = chunk
-				chunk = 'Visibility: %s' % (lines[-3])
-				data['visibility'] = chunk
-				chunk = 'Sunrise: %s' % (lines[-5])
-				data['sunrise'] = chunk
-				chunk = 'Sunset: %s' % (lines[-1])
-				data['sunset'] = chunk
+				chunks = FindChunks(chunk, '<dd>', '</dd>')
+				if chunks:
+					for i in range(len(chunks)):
+						chunks[i] = chunks[i].strip()
+					
+					data['conditions'] = FindChunk(chunk, '<h3>', '</h3>')
+					data['feels'] = 'Feels Like: %s' % (self.GetTemp(trigger, chunks[0]))
+					data['humidity'] = 'Humidity: %s' % (chunks[2])
+					data['visibility'] = 'Visibility: %s' % (chunks[3])
+					data['sunrise'] = 'Sunrise: %s' % (chunks[6])
+					data['sunset'] = 'Sunset: %s' % (chunks[7])
+					
+					wind = chunks[5].split()
+					if len(wind) == 3:
+						data['wind'] = 'Wind: %s %s' % (wind[0], self.GetWind(trigger, wind[1]))
+					else:
+						data['wind'] = 'Wind: %s' % (wind[0])
 			
 			
 			# Maybe find the forecast
-			chunk = FindChunk(resp.data, '<!----------------------- FORECAST ------------------------->', '<!-- END FORECAST -->')
+			chunk = FindChunk(resp.data, '<div class="five-day-forecast"', '</table>')
 			if chunk is not None:
-				lines = StripHTML(chunk)
+				days = FindChunks(chunk, '<th>', '</th>')
+				titles = FindChunk(chunk, '<tr class="titles">', '</tr>')
+				temps = FindChunk(chunk, '<tr class="temps">', '</tr>')
 				
-				# If we have enough lines, extract
-				if len(lines) >= 22:
-					fcs = []
-					
-					for i in range(5):
-						day = lines[i+1]
-						
-						base = 7+(i*3)
-						conditions = lines[base]
-						high = lines[base+1][6:]
-						low = lines[base+2][5:]
-						
-						if not (high.isdigit() and low.isdigit()):
-							continue
-						
-						forecast = '\x02[\x02%s: %s, High: %s, Low: %s\x02]\x02' % (day, conditions, self.GetTemp(trigger, high), self.GetTemp(trigger, low))
-						fcs.append(forecast)
-					
-					if fcs:
-						data['forecast'] = ' '.join(fcs)
+				if titles and temps:
+					titles = FindChunks(titles, '<td>', '</td>')
+					temps = FindChunks(temps, '<td>', '</td>')
+					if len(titles) == len(temps):
+						fcs = []
+						for i in range(len(titles)):
+							day = days[i]
+							conditions = titles[i].strip()
+							high = self.GetTemp(trigger, FindChunk(temps[i], 'High: ', '</strong>'))
+							low = self.GetTemp(trigger, FindChunk(temps[i], 'Low: ', '</span>'))
+							
+							fc = '\x02[\x02%s: %s, High: %s, Low: %s\x02]\x02' % (
+								day, conditions, high, low)
+							fcs.append(fc)
+							
+							if fcs:
+								data['forecast'] = ' '.join(fcs)
 			
 			# Build our reply
 			chunks = []
