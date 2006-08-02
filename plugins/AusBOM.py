@@ -38,10 +38,18 @@ from classes.Constants import *
 from classes.Plugin import Plugin, PluginFakeTrigger
 
 # ---------------------------------------------------------------------------
-# Tuples of 'products'. Should be (product name, page code, priority). If a
-# location is listed on more than one page, the _lowest_ priority one will be
-# used. Useful for the big pages that only update hourly.
+# Tuples of 'products'. Should be (product name, page code).
 PRODUCTS = (
+	('New South Wales', 'IDN65188'),
+	('Northern Territory', 'IDD65149'),
+	('Queensland', 'IDQ60606'),
+	('South Australia', 'IDS65111'),
+	('Tasmania', 'IDT65023'),
+	('Victoria', 'IDV65121'),
+	('Western Australia', 'IDW65120'),
+)
+
+OLD_PRODUCTS = (
 	# NSW
 	('Sydney', 'IDN65066', 0),
 	('NSW', 'IDN65091', 1),
@@ -62,15 +70,6 @@ PRODUCTS = (
 	# WA
 	('Perth', 'IDW60034', 0),
 	('Western Australian', 'IDW60199', 1),
-)
-
-TITLE_RE = re.compile('<title>(.*?)</title>', re.I)
-
-TITLE_REs = (
-	re.compile('^Current (.+) Observations.*$'),
-	re.compile('^Current Observations for (.+) Forecast Districts$'),
-	re.compile('^Hourly Data from (\S+) AWS$'),
-	re.compile('^Hourly AWS Observations - (.+)$'),
 )
 
 MONTH = 60 * 60 * 24 * 30
@@ -141,87 +140,56 @@ class AusBOM(Plugin):
 		elif trigger.name == 'AUSBOM_UPDATE':
 			location = None
 		
-		# Find the damn title
-		m = TITLE_RE.search(resp.data)
-		if not m:
-			self.sendReply(trigger, 'Page parsing failed: area.')
-			return
-		
-		title = m.group(1)
-		
-		# Find the damn area in the title
-		area = None
-		for r in TITLE_REs:
-			m = r.match(title)
-			if m:
-				area = m.group(1)
-				break
-		
+		# Find the area
+		area = FindChunk(resp.data, '<title>Latest Weather Observations for ', '</title>')
 		if area is None:
 			self.sendReply(trigger, 'Page parsing failed: area.')
 			return
 		
-		# Find the Giant Table
-		chunk = FindChunk(resp.data, 'Last updated:', '</table>')
-		if not chunk:
-			self.sendReply(trigger, 'Page parsing failed: data.')
+		# Find the timezone
+		tz = FindChunk(resp.data, 'Station Name</th>', '/acronym>')
+		if tz is None:
+			self.sendReply(trigger, 'Page parsing failed: timezone.')
 			return
+		tz = FindChunk(tz, '(Australia)">', '<')
 		
-		# Remove any 'empty' rows
-		chunk = chunk.replace('<tr></tr>', '')
-		
-		# Find the rows in it
-		chunks = FindChunks(chunk, '<tr>', '</tr>')
-		if not chunks:
-			self.sendReply(trigger, 'Page parsing failed: data.')
+		# Find the table rows
+		trs = FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
+		if not trs:
+			self.sendReply(trigger, 'Page parsing failed: rows.')
 			return
 		
 		# Wander through the chunks parsing them
 		parts = []
-		tz = None
 		
-		for tr in chunks:
-			# Skip non-useful ones
-			if tr.find('<td nowrap') < 0:
-				# Might be useful for time/date
-				if tz is None:
-					m = re.search('Date Time<br>\((.+)\)</th>', tr)
-					if m:
-						tz = m.group(1)
-				
-				continue
-			
-			# Split the row into lines
-			lines = StripHTML(tr)
-			
-			# Work out where we are, removing evil chars
-			place = lines[0]
-			
-			# Strip some crap
-			for crap in (' &times;', ' *'):
+		for tr in trs:
+			# Place name
+			place = FindChunk(tr, 'html">', '</a>')
+			for crap in ('*',):
 				place = place.replace(crap, '')
+			place = place.strip()
+			
+			tds = FindChunks(tr, '<td', '</td>')
 			
 			# If we're just updating location data, do that
 			if location is None:
-				self.__Locations.setdefault(area, []).append(place)
+				self.__Locations.setdefault(area, []).append((place, place.lower()))
 			
 			# If we're looking for some info, do that
 			elif place.lower() == location.lower():
 				try:
-					updated = lines[1].split()[1]
-					temp = lines[2]
-					humidity = float(lines[4])
-					wind_dir = lines[5]
-					wind_speed = lines[6]
+					updated = tds[0][1:].strip()
+					temp = tds[1][1:].strip()
+					humidity = float(tds[3][1:].strip())
+					wind_dir = tds[5][1:].strip()
+					wind_speed = tds[6][1:].strip()
 				
 				except (IndexError, ValueError):
 					parts.append('no current data found!')
+					raise
 				
 				else:
-					if tz:
-						part = '\02[\02%s %s\02]\02' % (updated, tz)
-					else:
-						part = '\02[\02Updated: %s\02]\02' % (updated)
+					part = '\02[\02%s %s\02]\02' % (updated, tz)
 					parts.append(part)
 					
 					part = '\02[\02Temp: %s\xb0C\02]\02' % (temp)
@@ -273,10 +241,9 @@ class AusBOM(Plugin):
 	# -----------------------------------------------------------------------
 	# Find the right 'product' for a location
 	def __Find_Product(self, trigger, location):
-		exacts = []
-		partials = {}
+		partials = []
 		
-		for area, product, priority in PRODUCTS:
+		for area, product in PRODUCTS:
 			if area not in self.__Locations:
 				tolog = 'AusBOM: %s not in area data?!' % area
 				self.putlog(LOG_WARNING, tolog)
@@ -284,37 +251,27 @@ class AusBOM(Plugin):
 			
 			# Exact match, don't need dodgy matching
 			if location in self.__Locations[area]:
-				exact = (priority, product)
-				exacts.append(exact)
-				continue
+				return product
 			
 			# Look for other matches
 			else:
 				lowloc = location.lower()
 				
 				# Wrong case
-				blurf = [l for l in self.__Locations[area] if l.lower() == lowloc]
-				if blurf:
-					exact = (priority, product)
-					exacts.append(exact)
-					continue
+				for l, ll in self.__Locations[area]:
+					if lowloc == ll:
+						return product
 				
 				# Partial matches
-				for l in self.__Locations[area]:
-					if l.lower().find(lowloc) >= 0:
-						partials[l] = 1
-		
-		# If we had any exact matches, return the highest priority one
-		if exacts:
-			exacts.sort()
-			return exacts[0][1]
+				for l, ll in self.__Locations[area]:
+					if lowloc in ll:
+						partials.append(l)
 		
 		# If we had any partials, maybe spit those out
-		elif partials:
+		if partials:
 			# We only want the first 10
-			pks = partials.keys()
-			pks.sort()
-			partials = pks[:10]
+			partials.sort()
+			partials = partials[:10]
 			
 			parts = []
 			
@@ -334,7 +291,5 @@ class AusBOM(Plugin):
 		
 		# Send reply!
 		self.sendReply(trigger, replytext)
-		
-		return None
 
 # ---------------------------------------------------------------------------
