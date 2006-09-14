@@ -237,7 +237,6 @@ class MoneyMangler(Plugin):
 		# Get all table rows
 		trs = FindChunks(resp.data, '<tr', '</tr>')
 		if not trs:
-			print repr(resp.data)
 			self.putlog(LOG_WARNING, 'ASX page parsing failed: no table rows?!')
 			self.sendReply(trigger, 'Failed to parse page.')
 			return

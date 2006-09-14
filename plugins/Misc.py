@@ -163,7 +163,6 @@ class Misc(Plugin):
 		chunk = FindChunk(resp.data, '<!-- shipment info -->', '<!-- BEGIN Scan Activity -->')
 		if not chunk:
 			self.sendReply(trigger, 'Page parsing failed: shipment info.')
-			print repr(resp.data)
 			return
 		
 		trs = FindChunks(chunk, '<TR vAlign="top" bgColor="#e6e6e6">', '</TR>')
