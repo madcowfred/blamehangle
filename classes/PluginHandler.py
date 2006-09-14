@@ -221,7 +221,7 @@ class PluginHandler(Child):
 			nick = reply.trigger.userinfo.nick
 			target = reply.trigger.target
 			
-			if reply.trigger.IRCType in (IRCT_PUBLIC, IRCT_PUBLIC_D):
+			if reply.trigger.IRCType in (IRCT_ACTION, IRCT_PUBLIC, IRCT_PUBLIC_D):
 				if reply.process:
 					tosend = "%s: %s" % (nick, reply.replytext)
 				else:

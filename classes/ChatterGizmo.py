@@ -616,8 +616,14 @@ class ChatterGizmo(Child):
 	# Someone is sending us a CTCP
 	# -----------------------------------------------------------------------
 	def _handle_ctcp(self, connid, conn, event):
-		# Ignore channel CTCPs
+		# Ignore most channel CTCPs
 		if event.target != conn.getnick():
+			# An ACTION, how quaint!
+			if event.arguments[0].upper() == 'ACTION':
+				wrap = self.Conns[connid]
+				data = [wrap, IRCT_ACTION, event.userinfo, event.target, event.arguments[1]]
+				self.sendMessage('PluginHandler', IRC_EVENT, data)
+			
 			return
 		
 		# Skip ignored people
