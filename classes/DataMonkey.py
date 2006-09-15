@@ -131,7 +131,6 @@ class DatabaseThread(Thread):
 			message = self.Requests.get()
 			# None = die
 			if message is None:
-				print 'dying!'
 				return
 			
 			trigger, method, query, args = message.data
