@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2005, blamehangle team
+# Copyright (c) 2004-2006, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ import sys
 import time
 
 from Queue import Empty, Queue
-from threading import Thread
+from threading import Lock, Thread
 
 from classes import Database
 from classes.Children import Child
@@ -49,23 +49,24 @@ from classes.Constants import *
 
 class DataMonkey(Child):
 	def setup(self):
-		self.Requests = Queue(0)
-		self.threads = []
-		self.Last_Status = time.time()
-		
 		self.__queries = 0
+		self.__threads = []
+		self.Requests = Queue(0)
 		
-		self.rehash()
-	
-	def rehash(self):
-		self.conns = min(1, max(10, self.Config.getint('database', 'connections')))
+		self.num_conns = max(1, min(10, self.Config.getint('database', 'connections')))
 	
 	def shutdown(self, message):
-		self.__stop_threads()
+		self.__Stop_Threads()
 	
-	# we start our threads here so that a plugin compile error lets us exit
-	# cleanly
+	# -----------------------------------------------------------------------
+	# Start our threads just after we are created so an error here lets us
+	# shut down cleanly
 	def run_once(self):
+		self.__Start_Threads()
+	
+	# Start our configured amount of threads
+	def __Start_Threads(self):
+		# Decide what database class we're meant to use
 		DBclass = None
 		
 		module = self.Config.get('database', 'module').lower()
@@ -78,38 +79,29 @@ class DataMonkey(Child):
 		else:
 			raise Exception, 'Invalid database module: %s' % module
 		
-		for i in range(self.conns):
-			db = DBclass(self.Config)
-			t = Thread(target=DatabaseThread, args=(self,db,i))
-			t.setDaemon(1)
-			t.setName('Database %d' % i)
-			self.threads.append([t, 0])
+		# Start the thread objects
+		parentlock = Lock()
+		for i in range(self.num_conns):
+			t = DatabaseThread(self, parentlock, self.Requests, DBclass(self.Config))
+			t.setName('db%02d' % i)
 			t.start()
-			
-			tolog = 'Started DB thread: %s' % t.getName()
-			self.putlog(LOG_DEBUG, tolog)
+			self.__threads.append(t)
+		
+		tolog = 'Started %d database thread(s)' % (self.num_conns)
+		self.putlog(LOG_ALWAYS, tolog)
 	
-	def __stop_threads(self):
-		_sleep = time.sleep
+	# Stop our threads
+	def __Stop_Threads(self):
+		# Tell all of our threads to exit
+		for i in range(self.num_conns):
+			self.Requests.put(None)
 		
-		# set the flag telling each thread that we would like it to exit
-		for i in range(len(self.threads)):
-			self.threads[i][1] = 1
+		# Wait until all threads have stopped
+		for t in self.__threads:
+			t.join()
 		
-		# wait until all threads have exited
-		while [t for t,s in self.threads if t.isAlive()]:
-			_sleep(0.1)
-		
-		tolog = "All DB threads halted"
+		tolog = 'All database threads halted'
 		self.putlog(LOG_DEBUG, tolog)
-	
-	# -----------------------------------------------------------------------
-	# A database query, be afraid
-	def _message_REQ_QUERY(self, message):
-		# stuff the request into the request queue, which will be looked at
-		# next time around the _sometimes loop
-		self.Requests.put(message)
-		self.__queries += 1
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some stats
@@ -117,47 +109,58 @@ class DataMonkey(Child):
 		message.data['db_queries'] = self.__queries
 		
 		self.sendMessage('HTTPMonster', GATHER_STATS, message.data)
-
+	
+	# -----------------------------------------------------------------------
+	# A database query, add it to the request queue
+	def _message_REQ_QUERY(self, message):
+		self.Requests.put(message)
+		self.__queries += 1
 
 # ---------------------------------------------------------------------------
 
-def DatabaseThread(parent, db, myindex):
-	_sleep = time.sleep
+class DatabaseThread(Thread):
+	def __init__(self, parent, ParentLock, Requests, db):
+		Thread.__init__(self)
+		self.parent = parent
+		self.ParentLock = ParentLock
+		self.Requests = Requests
+		self.db = db
 	
-	while 1:
-		# check if we have been asked to die
-		if parent.threads[myindex][1]:
-			return
-		
-		# check if there is a pending query for us to action
-		try:
-			message = parent.Requests.get_nowait()
-		except Empty:
-			_sleep(0.25)
-			continue
-		
-		# we have a query
-		trigger, method, query, args = message.data
-		
-		try:
-			result = db.query(parent.putlog, query, *args)
-		
-		except:
-			# Log the error
-			t, v = sys.exc_info()[:2]
+	def run(self):
+		while True:
+			message = self.Requests.get()
+			# None = die
+			if message is None:
+				print 'dying!'
+				return
 			
-			tolog = '%s - %s' % (t, v)
-			parent.putlog(LOG_WARNING, tolog)
+			trigger, method, query, args = message.data
 			
-			result = None
+			newquery = tolog = None
+			try:
+				newquery, result = self.db.query(query, *args)
+			except:
+				# Log the error
+				t, v = sys.exc_info()[:2]
+				tolog = '%s - %s' % (t, v)
+				
+				result = None
+				
+				self.db.disconnect()
 			
-			db.disconnect()
-		
-		# Return our results
-		data = [trigger, method, result]
-		parent.sendMessage(message.source, REPLY_QUERY, data)
-		
-		# Clean up
-		del trigger, method, query, args, result
+			# Return the results and maybe log something
+			self.ParentLock.acquire()
+			
+			if newquery is not None:
+				self.parent.putlog(LOG_QUERY, newquery)
+			if tolog is not None:
+				self.parent.putlog(LOG_WARNING, tolog)
+			data = [trigger, method, result]
+			self.parent.sendMessage(message.source, REPLY_QUERY, data)
+			
+			self.ParentLock.release()
+			
+			# Clean up temporary crap
+			del message, trigger, method, query, args, newquery, tolog, result
 
 # ---------------------------------------------------------------------------
