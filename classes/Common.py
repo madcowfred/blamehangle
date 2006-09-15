@@ -310,3 +310,8 @@ def SafeFilename(filename):
 		safe_filename = safe_filename.replace(char, '_')
 	
 	return safe_filename
+
+# ---------------------------------------------------------------------------
+
+def MinMax(i, j, k):
+	return max(i, min(j, k))
