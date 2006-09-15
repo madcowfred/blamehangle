@@ -60,7 +60,7 @@ class DatabaseWrapper:
 			self.db.close()
 			self.db = None
 	
-	def query(self, putlog, sqlquery, *args):
+	def query(self, sqlquery, *args):
 		self._connect()
 		
 		cursor = self.db.cursor()
@@ -68,9 +68,6 @@ class DatabaseWrapper:
 		newquery = self._manglesql(sqlquery)
 		if args:
 			newquery = self._escape(newquery, args)
-		
-		tolog = '"%s"' % (newquery)
-		putlog(LOG_QUERY, tolog)
 		
 		cursor.execute(newquery)
 		
@@ -81,7 +78,7 @@ class DatabaseWrapper:
 		
 		self.db.commit()
 		
-		return result
+		return '"%s"' % (newquery), result
 	
 	def _escape(self, sqlquery, args):
 		newargs = []
