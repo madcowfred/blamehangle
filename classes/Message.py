@@ -63,7 +63,7 @@ class Message:
 			self.targetstring = targets
 		
 		else:
-			print 'WTF? Invalid targets type: %s' % t
+			raise Exception('invalid target type')
 	
 	# Return a printable string with info about ourself, including
 	# how long it's been since we were sent.
