@@ -29,8 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Implements threaded DNS lookups. getaddrinfo() lets the rest of the Python
-interpreter run in 2.3+, yay.
+Implements threaded DNS lookups and a cache.
 """
 
 import re
@@ -38,9 +37,10 @@ import socket
 import time
 
 from Queue import Empty, Queue
-from threading import Thread
+from threading import Lock, Thread
 
 from classes.Children import Child
+from classes.Common import MinMax
 from classes.Constants import *
 from classes.SimpleCacheDict import SimpleCacheDict
 
@@ -56,13 +56,11 @@ class Resolver(Child):
 		if self.DNSCache is None:
 			self.DNSCache = SimpleCacheDict(1)
 		self.Requests = Queue(0)
-		self.Threads = []
+		self.__threads = []
 		
 		self.rehash()
 	
 	def rehash(self):
-		self._use_ipv6 = self.Config.getboolean('DNS', 'use_ipv6')
-		
 		self.Options = self.OptionsDict('DNS')
 		# Update the cache expiry time and trigger an expire
 		self.DNSCache.cachesecs = self.Options['cache_time'] * 60
@@ -74,36 +72,39 @@ class Resolver(Child):
 		self.DNSCache.expire()
 		self.savePickle('.resolver_cache', self.DNSCache)
 	
-	# We start our threads here to allow useful early shutdown
+	# -----------------------------------------------------------------------
+	# Start our threads just after we are created so an error here lets us
+	# shut down cleanly
 	def run_once(self):
 		self.__Start_Threads()
 	
 	# -----------------------------------------------------------------------
 	# Start our threads!
 	def __Start_Threads(self):
-		for i in range(self.Options['resolver_threads']):
-			t = Thread(target=ResolverThread, args=(self, i))
-			t.setDaemon(1)
-			t.setName('Resolver %d' % i)
-			self.Threads.append([t, 0])
+		parentlock = Lock()
+		for i in range(MinMax(1, 10, self.Options['resolver_threads'])):
+			t = ResolverThread(self, parentlock, self.Requests, self.Options['use_ipv6'])
+			#t = Thread(target=ResolverThread, args=(self, i))
+			#t.setDaemon(1)
+			t.setName('DNS%d' % i)
 			t.start()
-			
-			tolog = 'Started DNS thread: %s' % t.getName()
-			self.putlog(LOG_DEBUG, tolog)
+			self.__threads.append(t)
+		
+		tolog = 'Started %d resolver thread(s)' % (len(self.__threads))
+		self.putlog(LOG_ALWAYS, tolog)
 	
 	# Stop our threads!
 	def __Stop_Threads(self):
-		_sleep = time.sleep
+		# Tell all of our threads to exit
+		for t in self.__threads:
+			self.Requests.put(None)
 		
-		# set the flag telling each thread that we would like it to exit
-		for tinfo in self.Threads:
-			tinfo[1] = 1
+		# Wait until all threads have stopped
+		for t in self.__threads:
+			t.join()
 		
-		# wait until all threads have exited
-		while [t for t,s in self.Threads if t.isAlive()]:
-			_sleep(0.1)
-		
-		self.putlog(LOG_DEBUG, "All DNS threads halted")
+		tolog = 'All resolver threads halted'
+		self.putlog(LOG_ALWAYS, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to resolve something, woo
@@ -116,7 +117,8 @@ class Resolver(Child):
 			self.sendMessage(message.source, REPLY_DNS, data)
 		# If not, go resolve it
 		else:
-			# Well, make sure it's not an IP first
+			# Well, make sure it's not an IP first, as we don't do reverse
+			# lookups (yet)
 			if IPV4_RE.match(host):
 				data = [trigger, method, [(4, host)], args]
 				self.sendMessage(message.source, REPLY_DNS, data)
@@ -128,59 +130,62 @@ class Resolver(Child):
 
 # ---------------------------------------------------------------------------
 
-def ResolverThread(parent, myindex):
-	_sleep = time.sleep
+class ResolverThread(Thread):
+	def __init__(self, parent, ParentLock, Requests, use_ipv6):
+		Thread.__init__(self)
+		self.parent = parent
+		self.ParentLock = ParentLock
+		self.Requests = Requests
+		self.use_ipv6 = use_ipv6
 	
-	while 1:
-		# see if we have to die now
-		if parent.Threads[myindex][1]:
-			return
-		
-		# see if there's something to look up
-		try:
-			message = parent.Requests.get_nowait()
-		except Empty:
-			_sleep(0.1)
-			continue
-		
-		# well, off we go then
-		trigger, method, host, args = message.data
-		
-		#tolog = 'Looking up %s...' % host
-		#parent.putlog(LOG_DEBUG, tolog)
-		
-		hosts = []
-		# If we want to use IPv6 at all, have to use getaddrinfo().
-		if parent._use_ipv6:
-			try:
-				results = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-			except socket.gaierror:
-				data = [trigger, method, None, args]
+	def run(self):
+		while True:
+			message = self.Requests.get()
+			# None = die
+			if message is None:
+				return
+			
+			trigger, method, host, args = message.data
+			
+			hosts = []
+			# If we want to use IPv6 at all, have to use getaddrinfo().
+			if self.use_ipv6:
+				try:
+					results = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+				except socket.gaierror:
+					pass
+				else:
+					# parse the results a bit here
+					for af, socktype, proto, canonname, sa in results:
+						if af == socket.AF_INET:
+							hosts.append((4, sa[0]))
+						elif af == socket.AF_INET6:
+							hosts.append((6, sa[0]))
+			
+			# Otherwise we can use gethostbyname_ex, which doesn't interact badly
+			# with broken name servers.
 			else:
-				# parse the results a bit here
-				hosts = []
-				for af, socktype, proto, canonname, sa in results:
-					if af == socket.AF_INET:
-						hosts.append((4, sa[0]))
-					elif af == socket.AF_INET6:
-						hosts.append((6, sa[0]))
-				
-				parent.DNSCache[host] = hosts
-				data = [trigger, method, hosts, args]
-		
-		# Otherwise we can use gethostbyname_ex, which doesn't interact badly
-		# with retarded name servers.
-		else:
-			try:
-				results = socket.gethostbyname_ex(host)
-			except socket.gaierror:
-				data = [trigger, method, None, args]
-			else:
-				hosts = [(4, h) for h in results[2]]
-				parent.DNSCache[host] = hosts
-				data = [trigger, method, hosts, args]
-		
-		# And return the message
-		parent.sendMessage(message.source, REPLY_DNS, data)
+				try:
+					results = socket.gethostbyname_ex(host)
+				except socket.gaierror:
+					pass
+				else:
+					hosts = [(4, h) for h in results[2]]
+			
+			if hosts == []:
+				hosts = None
+			data = [trigger, method, hosts, args]
+			
+			# Maybe cache the results and return them
+			self.ParentLock.acquire()
+			
+			if hosts != []:
+				self.parent.DNSCache[host] = hosts
+			self.parent.sendMessage(message.source, REPLY_DNS, data)
+			
+			self.ParentLock.release()
+			
+			# Clean up temporary crap
+			#del message, trigger, method, host, args, hosts, 
 
 # ---------------------------------------------------------------------------

@@ -43,6 +43,7 @@ from threading import Lock, Thread
 
 from classes import Database
 from classes.Children import Child
+from classes.Common import MinMax
 from classes.Constants import *
 
 # ---------------------------------------------------------------------------
@@ -53,7 +54,10 @@ class DataMonkey(Child):
 		self.__threads = []
 		self.Requests = Queue(0)
 		
-		self.num_conns = max(1, min(10, self.Config.getint('database', 'connections')))
+		self.rehash()
+	
+	def rehash(self):
+		self.Options = self.OptionsDict('database')
 	
 	def shutdown(self, message):
 		self.__Stop_Threads()
@@ -81,19 +85,19 @@ class DataMonkey(Child):
 		
 		# Start the thread objects
 		parentlock = Lock()
-		for i in range(self.num_conns):
+		for i in range(MinMax(1, 10, self.Options['connections'])):
 			t = DatabaseThread(self, parentlock, self.Requests, DBclass(self.Config))
-			t.setName('db%02d' % i)
+			t.setName('DB%02d' % i)
 			t.start()
 			self.__threads.append(t)
 		
-		tolog = 'Started %d database thread(s)' % (self.num_conns)
+		tolog = 'Started %d database thread(s)' % (len(self.__threads))
 		self.putlog(LOG_ALWAYS, tolog)
 	
 	# Stop our threads
 	def __Stop_Threads(self):
 		# Tell all of our threads to exit
-		for i in range(self.num_conns):
+		for t in self.__threads:
 			self.Requests.put(None)
 		
 		# Wait until all threads have stopped
@@ -101,7 +105,7 @@ class DataMonkey(Child):
 			t.join()
 		
 		tolog = 'All database threads halted'
-		self.putlog(LOG_DEBUG, tolog)
+		self.putlog(LOG_ALWAYS, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some stats
@@ -147,19 +151,20 @@ class DatabaseThread(Thread):
 				
 				self.db.disconnect()
 			
-			# Return the results and maybe log something
+			# Maybe log some things and return the results
 			self.ParentLock.acquire()
 			
 			if newquery is not None:
 				self.parent.putlog(LOG_QUERY, newquery)
 			if tolog is not None:
 				self.parent.putlog(LOG_WARNING, tolog)
+			
 			data = [trigger, method, result]
 			self.parent.sendMessage(message.source, REPLY_QUERY, data)
 			
 			self.ParentLock.release()
 			
 			# Clean up temporary crap
-			del message, trigger, method, query, args, newquery, tolog, result
+			#del message, trigger, method, query, args, newquery, tolog, result
 
 # ---------------------------------------------------------------------------
