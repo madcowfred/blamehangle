@@ -1,14 +1,22 @@
 ----------------------------
 0.1.3             200
 ----------------------------
+* classes/ChatterGizmo:
+  - add IRCT_ACTION event type for channel actions (/me).
 * classes/HTTPMonster:
   - fix a typo.
+* classes/PluginHandler:
+  - handle IRCT_ACTION events.
 * docs/CHANGELOG:
   - fix up the 0.1.2 release date.
+* plugins/AusBOM:
+  - Fix 'ausbom' parsing. This was pretty much a complete rewrite of the plugin.
 * plugins/FunStuff:
   - Fix 'chucknorris' and 'vindiesel' parsing.
 * plugins/Misc:
   - Add 'surreal', retrieves a random surreal sentence.
+* plugins/WeatherMan:
+  - Fix 'weather' and 'forecast' parsing.
 * plugins/WordStuff:
   - Fix 'urban' parsing.
 
