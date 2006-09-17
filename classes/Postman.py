@@ -52,8 +52,6 @@ from classes.Message import Message
 from classes.Plugin import Plugin
 from classes.Users import *
 
-from classes.make_constants import _make_constants
-
 from classes.ChatterGizmo import ChatterGizmo
 from classes.DataMonkey import DataMonkey
 from classes.HTTPMonster import HTTPMonster
@@ -362,9 +360,6 @@ class Postman:
 			
 			except:
 				self.__Log_Exception()
-	
-	# Use the magical constants binder to speed things up
-	run_forever = _make_constants(run_forever)
 	
 	#------------------------------------------------------------------------
 	# Our own mangled version of sendMessage
