@@ -35,6 +35,7 @@ classes for representing the users themselves in the userlist.
 
 import re
 
+from classes.Common import CompileMask
 from classes.Constants import *
 
 # ---------------------------------------------------------------------------
@@ -116,13 +117,8 @@ class HangleUser:
 		self.regexps = []
 		
 		for hostmask in hostmasks:
-			mask = "^%s$" % hostmask
-			mask = mask.replace('.', '\\.')
-			mask = mask.replace('?', '.')
-			mask = mask.replace('*', '.*?')
-			
 			self.hostmasks.append(hostmask)
-			self.regexps.append(re.compile(mask, re.I))
+			self.regexps.append(CompileMask(hostmask))
 	
 	def __str__(self):
 		text = "%s %s %s" % (self.nick, self.hostmasks, self.flags)
