@@ -40,7 +40,7 @@ from classes.Plugin import Plugin, PluginFakeTrigger
 # ---------------------------------------------------------------------------
 
 SELECT_QUERY = 'SELECT * FROM goonhooks'
-INSERT_QUERY = 'INSERT INTO goonhooks (hook, reply) VALUES (%s, %s)'
+INSERT_QUERY = 'INSERT INTO goonhooks (nick, hook, reply) VALUES (%s, %s, %s)'
 DELETE_QUERY = 'DELETE FROM goonhooks WHERE hook = %s'
 
 # Characters we need to escape
@@ -203,7 +203,8 @@ class GoonHooks(Plugin):
 				self.putlog(LOG_WARNING, tolog)
 				self.sendReply(trigger, 'Hook compilation failed.')
 			else:
-				self.dbQuery(trigger, self.__Reply_AddHook, INSERT_QUERY, hook, reply)
+				self.dbQuery(trigger, self.__Reply_AddHook, INSERT_QUERY,
+					trigger.userinfo.nick, hook, reply)
 	
 	def __Reply_AddHook(self, trigger, result):
 		# Error
