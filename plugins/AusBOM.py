@@ -187,7 +187,7 @@ class AusBOM(Plugin):
 				
 				# humidity
 				if humidity != '-':
-					part = '\02[\02Humidity: %.1f%%\02]\02' % (float(tds[3][1:].strip())
+					part = '\02[\02Humidity: %.1f%%\02]\02' % (float(tds[3][1:].strip()))
 					parts.append(part)
 				
 				# Wind is a bit messy
