@@ -176,40 +176,31 @@ class AusBOM(Plugin):
 				self.__Locations.setdefault(area, []).append((place, place.lower()))
 			
 			# If we're looking for some info, do that
-			elif place.lower() == location.lower():
-				try:
-					updated = tds[0][1:].strip()
-					temp = tds[1][1:].strip()
-					humidity = float(tds[3][1:].strip())
-					wind_dir = tds[5][1:].strip()
-					wind_speed = tds[6][1:].strip()
+			elif place.lower() == location.lower() and len(tds) >= 7:
+				# updated
+				part = '\02[\02%s %s\02]\02' % (tds[0][1:].strip(), tz)
+				parts.append(part)
 				
-				except (IndexError, ValueError):
-					parts.append('no current data found!')
-					raise
+				# temperature
+				part = '\02[\02Temp: %s\xb0C\02]\02' % (tds[1][1:].strip())
+				parts.append(part)
 				
-				else:
-					part = '\02[\02%s %s\02]\02' % (updated, tz)
+				# humidity
+				if humidity != '-':
+					part = '\02[\02Humidity: %.1f%%\02]\02' % (float(tds[3][1:].strip())
 					parts.append(part)
-					
-					part = '\02[\02Temp: %s\xb0C\02]\02' % (temp)
-					parts.append(part)
-					
-					part = '\02[\02Humidity: %.1f%%\02]\02' % (humidity)
-					parts.append(part)
-					
-					# Wind is a bit messy
-					if wind_dir == '-' and wind_speed == '-':
-						wind_info = 'no data'
-					elif wind_dir == 'CALM':
+				
+				# Wind is a bit messy
+				wind_dir = tds[5][1:].strip()
+				wind_speed = tds[6][1:].strip()
+				if wind_dir != '-' and wind_speed != '-':
+					if wind_dir == 'CALM':
 						wind_info = 'Calm'
 					else:
 						wind_info = '%s %skm/h' % (wind_dir, wind_speed)
 					
 					part = '\02[\02Wind: %s\02]\02' % (wind_info)
 					parts.append(part)
-				
-				break
 		
 		# If we're updating, finish that up	
 		if location is None:
