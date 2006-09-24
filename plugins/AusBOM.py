@@ -186,7 +186,7 @@ class AusBOM(Plugin):
 				parts.append(part)
 				
 				# humidity
-				humditiy = tds[3][1:].strip()
+				humidity = tds[3][1:].strip()
 				if humidity != '-':
 					part = '\02[\02Humidity: %.1f%%\02]\02' % (float(humidity))
 					parts.append(part)
