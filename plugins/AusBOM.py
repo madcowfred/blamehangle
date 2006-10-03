@@ -186,8 +186,11 @@ class AusBOM(Plugin):
 				parts.append(part)
 				
 				# humidity
-				humidity = tds[3][1:].strip()
-				if humidity != '-':
+				try:
+					humidity = float(tds[3][1:].strip())
+				except ValueError:
+					pass
+				else:
 					part = '\02[\02Humidity: %.1f%%\02]\02' % (float(humidity))
 					parts.append(part)
 				
@@ -202,6 +205,8 @@ class AusBOM(Plugin):
 					
 					part = '\02[\02Wind: %s\02]\02' % (wind_info)
 					parts.append(part)
+				
+				break
 		
 		# If we're updating, finish that up	
 		if location is None:
