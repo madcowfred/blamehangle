@@ -195,7 +195,8 @@ class Anime(Plugin):
 		
 		# Adult content, pfft
 		elif resp.data.find('Adult Content Warning') >= 0:
-			self.sendReply(trigger, "Seems to be hentai, you need an AniDB user account to see the details :(")
+			replytext = "Seems to be hentai, you need an AniDB user account to see the details :( -> %s" % (resp.url)
+			self.sendReply(trigger, replytext)
 		
 		# Maintenance?
 		elif resp.data.find('maintenance') >= 0:
