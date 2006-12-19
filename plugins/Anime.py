@@ -45,8 +45,8 @@ ANIDB_URL = "http://anidb.info/perl-bin/animedb.pl?show=animelist&adb.search=%s"
 AID_URL = 'http://anidb.info/perl-bin/animedb.pl?show=anime&aid=%s'
 
 # Urgh.
-ANIDB_AKA_RE = re.compile(r'^(\d+)"><i>(.*?)</i></a>\s*<small>.*?aid=(\d+)" class="tiny">(.*?)</a>')
-ANIDB_RESULT_RE = re.compile(r'^(\d+)">(.*?)</a>')
+ANIDB_AKA_RE = re.compile(r'^(\d+)"><i>(.*?)</i></a>\s*<small>.*?aid=(\d+)">(.*?)</a>')
+ANIDB_RESULT_RE = re.compile(r'^(\d+)">(?:<i>|)(.*?)(?:<i>|)</a>')
 
 # ---------------------------------------------------------------------------
 
@@ -102,6 +102,7 @@ class Anime(Plugin):
 	# Parse an AniDB page
 	def __Parse_AniDB(self, trigger, resp):
 		findme = trigger.match.group('findme').lower()
+		resp.data = UnquoteHTML(resp.data)
 		
 		# If it's search results, parse them and spit them out
 		if resp.data.find('Search for:') >= 0:
@@ -114,29 +115,26 @@ class Anime(Plugin):
 			
 			# See if any of them are useful
 			exact = None
-			names = {}
+			shows = {}
 			
 			for chunk in chunks:
 				# See if it's a "blah (see: blah)" link
 				m = ANIDB_AKA_RE.search(chunk)
 				if m:
-					names[m.group(4)] = m.group(3)
-					if m.group(2).lower() == findme:
-						exact = (m.group(1), m.group(2))
-					elif m.group(4).lower() == findme:
+					shows[m.group(3)] = m.group(4)
+					if (m.group(2).lower() == findme) or (m.group(4).lower() == findme):
 						exact = (m.group(3), m.group(4))
 					continue
 				
 				m = ANIDB_RESULT_RE.search(chunk)
 				if m:
-					names[m.group(2)] = m.group(1)
+					shows[m.group(1)] = m.group(2)
 					if m.group(2).lower() == findme:
 						exact = m.groups()
-					continue
-			
-			results = ['\x02[\x02%s\x02]\x02' % k for k in names.keys()]
 			
 			# Spit them out
+			results = ['\x02[\x02%s\x02]\x02' % k for k in shows.values()]
+			
 			if len(results) == 0:
 				replytext = 'Found no results, parse error?'
 			if len(results) > 10:
@@ -158,20 +156,17 @@ class Anime(Plugin):
 			parts = []
 			
 			# Find the info we want
-			for thing in ('Title', 'Genre', 'Type', 'Episodes', 'Year', 'Producer', 'Rating'):
-				chunk = FindChunk(resp.data, '%s:' % thing, '</tr>')
+			for thing in ('Title', 'Genre', 'Type', 'Episodes', 'Year', 'Producers', 'URL'):
+				chunk = FindChunk(resp.data, '<th class="field">%s</th>' % thing, '</tr>')
 				if chunk:
 					lines = StripHTML(chunk)
 					if lines:
-						if lines[0] == '-':
-							info = '?'
+						if thing == 'Genre':
+							info = ' '.join(lines[:-1])
+						elif thing == 'Producers':
+							info = ' '.join(lines)
 						else:
-							# Special crap for Genre
-							n = lines[0].find(' - ')
-							if n >= 0:
-								info = lines[0][:n]
-							else:
-								info = lines[0]
+							info = lines[0]
 					else:
 						info = '?'
 				else:
@@ -191,7 +186,7 @@ class Anime(Plugin):
 			else:
 				url = '?'
 			
-			part = '\x02[\x02URL: %s\x02]\x02' % url
+			part = '\x02[\x02AniDB: %s\x02]\x02' % url
 			parts.append(part)
 			
 			# Spit it out
