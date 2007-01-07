@@ -152,7 +152,7 @@ class Anime(Plugin):
 			self.sendReply(trigger, replytext)
 		
 		# If it's an anime page, parse it and spit the info out
-		elif resp.data.find('Show Anime - ') >= 0:
+		elif '<h1>Anime:' in resp.data:
 			parts = []
 			
 			# Find the info we want
@@ -208,7 +208,7 @@ class Anime(Plugin):
 		
 		# Parsing failed
 		else:
-			self.sendReply(trigger, 'Page parsing failed.')
+			self.sendReply(trigger, 'Page parsing failed: unable to identify page.')
 	
 	# ---------------------------------------------------------------------------
 	# Parse the output of an AnimeNFO query
