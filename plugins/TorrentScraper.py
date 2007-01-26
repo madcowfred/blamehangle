@@ -51,6 +51,7 @@ SELECT_URL_QUERY = "SELECT url FROM torrents WHERE url IN (%s)"
 SELECT_FILENAME_QUERY = "SELECT filename FROM torrents WHERE filename = %s"
 INSERT_QUERY = "INSERT INTO torrents (scrape_time, url, filename, filesize) VALUES (%s, %s, %s, %s)"
 RECENT_QUERY = "SELECT scrape_time, url, filename, filesize FROM torrents WHERE filename != '' ORDER BY scrape_time DESC LIMIT 20"
+STATS_QUERY = "SELECT COUNT(*) AS total FROM torrents"
 
 # ---------------------------------------------------------------------------
 
@@ -105,6 +106,10 @@ class TorrentScraper(Plugin):
 				del self._Pages[name]
 	
 	def register(self):
+		self.addTextEvent(
+			method = self.__Fetch_Stats,
+			regexp = r'^scrapestats$',
+		)
 		self.addTimedEvent(
 			method = self.__Scrape_Check,
 			interval = self.Options['request_interval'],
@@ -356,5 +361,17 @@ class TorrentScraper(Plugin):
 		
 		# And generate it
 		SimpleRSSGenerator(self.Options['rss_path'], feedinfo, items, self.putlog)
+
+	# -----------------------------------------------------------------------
+	def __Fetch_Stats(self, trigger):
+		self.dbQuery(trigger, self.__DB_Stats, STATS_QUERY)
+	
+	def __DB_Stats(self, trigger, result):
+		if result is None:
+			self.putlog(LOG_WARNING, '__DB_Stats: A DB error occurred!')
+			return
+		
+		replytext = 'Total torrents scraped: %s' % (result[0]['total'])
+		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
