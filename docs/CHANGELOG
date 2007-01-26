@@ -1,20 +1,45 @@
 ----------------------------
-0.1.3             200
+0.2.0             2007-
 ----------------------------
 * classes/ChatterGizmo:
-  - add IRCT_ACTION event type for channel actions (/me).
+  - Add IRCT_ACTION event type for channel actions (/me).
+* classes/Database:
+  - Remove nasty putlog frippery.
+* classes/DataMonkey:
+  - Rewrote threading code to be a lot less insane.
+  - Fix an old bug that always limited our connection count to 1. Oops.
 * classes/HTTPMonster:
-  - fix a typo.
+  - Fix a typo.
+* classes/Message:
+  - Message.__init__ will now raise an exception for an invalid target type.
 * classes/PluginHandler:
-  - handle IRCT_ACTION events.
+  - Handle IRCT_ACTION events.
+* classes/Resolver:
+  - Rewrote threading code to be a lot less insane.
+* configs/SmartyPants.conf:
+  - Update some comments for clarity.
 * docs/CHANGELOG:
-  - fix up the 0.1.2 release date.
+  - Fix up the 0.1.2 release date.
+* plugins/Anime:
+  - Show the full URL for adult shows in the 'anidb' error message.
+  - Fix 'anidb' parsing.
 * plugins/AusBOM:
   - Fix 'ausbom' parsing. This was pretty much a complete rewrite of the plugin.
 * plugins/FunStuff:
   - Fix 'chucknorris' and 'vindiesel' parsing.
+* plugins/Google:
+  - Add 'ar' and 'ru' translation languages.
+  - Fix 'translate' and 'transmangle' parsing.
+* plugins/GoonHooks:
+  - New! Magic!
 * plugins/Misc:
   - Add 'surreal', retrieves a random surreal sentence.
+  - Remove old debug print statements.
+* plugins/MoneyMangler:
+  - Remove old debug print statements.
+* plugins/TorrentScraper:
+  - Add 'scrapestats' command, shows how many torrents are stored in the
+    database.
 * plugins/WeatherMan:
   - Fix 'weather' and 'forecast' parsing.
 * plugins/WordStuff:
