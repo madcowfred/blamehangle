@@ -48,18 +48,20 @@ NOBOLD_RE = re.compile('</?b>')
 NOFONT_RE = re.compile('</?font[^<>]*?>')
 
 # ---------------------------------------------------------------------------
-TRANSLATE_URL = 'http://translate.google.com/translate_t?langpair=%s|%s&text=%s'
+TRANSLATE_URL = 'http://translate.google.com/translate_t'
 
 # A mapping of language translations we can do
 LANG_MAP = {
+	'ar': ('en',),
 	'de': ('en', 'fr'),
-	'en': ('de', 'es', 'fr', 'it', 'ja', 'ko', 'pt'),
+	'en': ('ar', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'ru'),
 	'es': ('en',),
 	'fr': ('de', 'en'),
 	'it': ('en',),
 	'ja': ('en',),
 	'ko': ('en',),
 	'pt': ('en',),
+	'ru': ('en',),
 }
 
 TRANSMANGLE_LIMIT = 8
@@ -106,8 +108,8 @@ class Google(Plugin):
 			replytext = '"%s" is not a valid language!' % (_to)
 		elif _to not in LANG_MAP[_from]:
 			replytext = '"%s" to "%s" is not a valid translation!' % (_from, _to)
-		elif len(_text) > 300:
-			replytext = 'Text is too long! %d > 300' % (len(_text))
+		#elif len(_text) > 300:
+		#	replytext = 'Text is too long! %d > 300' % (len(_text))
 		
 		# If we have a reply, bail now
 		if replytext is not None:
@@ -115,9 +117,12 @@ class Google(Plugin):
 			return
 		
 		# Otherwise, build the URL and send it off
-		url = TRANSLATE_URL % (_from, _to, quote(_text))
-		self.urlRequest(trigger, self.__Parse_Translate, url)
-		
+		data = {
+			'text': _text,
+			'langpair': '%s|%s' % (_from, _to),
+		}
+		self.urlRequest(trigger, self.__Parse_Translate, TRANSLATE_URL, data=data)
+	
 	def __Fetch_Transmangle(self, trigger):
 		_lang = trigger.match.group('lang').lower()
 		_text = trigger.match.group('text')
@@ -142,8 +147,11 @@ class Google(Plugin):
 		trigger._lang = _lang
 		trigger._text = [_text,]
 		
-		url = TRANSLATE_URL % ('en', _lang, quote(_text))
-		self.urlRequest(trigger, self.__Parse_Transmangle, url)
+		data = {
+			'text': _text,
+			'langpair': 'en|%s' % (_lang),
+		}
+		self.urlRequest(trigger, self.__Parse_Transmangle, TRANSLATE_URL, data=data)
 	
 	# -----------------------------------------------------------------------
 	
@@ -263,7 +271,7 @@ class Google(Plugin):
 		
 		# Did translate!
 		else:
-			chunk = FindChunk(resp.data, '<textarea', '</textarea>')
+			chunk = FindChunk(resp.data, '<div id=result_box', '</div>')
 			if chunk:
 				replytext = ' '.join(StripHTML(chunk))
 			else:
@@ -281,15 +289,18 @@ class Google(Plugin):
 		
 		# Maybe loop again now
 		else:
-			chunk = FindChunk(resp.data, '<textarea', '</textarea>')
+			chunk = FindChunk(resp.data, '<div id=result_box', '</div>')
 			if chunk:
 				chunk = ' '.join(StripHTML(chunk))
 				# Needs to be translated again
 				if (trigger._round % 2) == 1:
 					trigger._round += 1
 					
-					url = TRANSLATE_URL % (trigger._lang, 'en', quote(chunk))
-					self.urlRequest(trigger, self.__Parse_Transmangle, url)
+					data = {
+						'text': chunk,
+						'langpair': '%s|en' % (trigger._lang),
+					}
+					self.urlRequest(trigger, self.__Parse_Transmangle, TRANSLATE_URL, data=data)
 				
 				# We're back in English
 				else:
@@ -301,8 +312,11 @@ class Google(Plugin):
 						trigger._round += 1
 						trigger._text.append(chunk)
 						
-						url = TRANSLATE_URL % ('en', trigger._lang, quote(chunk))
-						self.urlRequest(trigger, self.__Parse_Transmangle, url)
+						data = {
+							'text': chunk,
+							'langpair': 'en|%s' % (trigger._lang),
+						}
+						self.urlRequest(trigger, self.__Parse_Transmangle, TRANSLATE_URL, data=data)
 			
 			# It's back in English
 			else:
