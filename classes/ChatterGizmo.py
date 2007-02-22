@@ -172,6 +172,9 @@ class ChatterGizmo(Child):
 					prefix, hostmask, command, target, arguments)
 				self.connlog(connid, LOG_WARNING, tolog)
 		else:
+			tolog = 'Missing hostmask! prefix: %r, hostmask: %r, command: %r, target: %r, arguments: %r' % (
+				prefix, hostmask, command, target, arguments)
+			self.connlog(connid, LOG_WARNING, tolog)
 			userinfo = None
 		
 		event = IRCEvent(prefix, userinfo, command, target, arguments)
@@ -627,9 +630,8 @@ class ChatterGizmo(Child):
 			return
 		
 		# Skip ignored people
-		if self.Userlist.Has_Flag(event.userinfo, 'Global', 'ignore'):
+		if event.userinfo is not None and self.Userlist.Has_Flag(event.userinfo, 'Global', 'ignore'):
 			return
-		
 		
 		first = event.arguments[0].upper()
 		
