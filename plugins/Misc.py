@@ -304,7 +304,7 @@ class Misc(Plugin):
 	# Parse it!
 	def __Parse_TinyURL(self, trigger, resp):
 		chunks = FindChunks(resp.data, '<blockquote><b>', '</b>')
-		if len(chunks) != 2:
+		if len(chunks) < 2:
 			self.sendReply(trigger, 'Page parsing failed: chunks.')
 			return
 		
