@@ -449,7 +449,6 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			#chunks = FindChunks(resp.data, '<div class="entry">', '<div class="tags">')
 			chunks = FindChunks(resp.data, '<div class="def_p">', '</div>')
 			if not chunks:
 				self.sendReply(trigger, 'Page parsing failed: entries.')
@@ -468,7 +467,7 @@ class WordStuff(Plugin):
 					return
 				
 				# Strip annoying junk
-				definition = definition.replace('\r', '').replace('\n', '')
+				definition = definition.replace('\r', ' ').replace('\n', ' ')
 				definition = StripHTML(definition)[0]
 				
 				out.append(definition)
