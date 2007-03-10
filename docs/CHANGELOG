@@ -1,6 +1,8 @@
 ----------------------------
 0.2.0             2007-
 ----------------------------
+* classes/async_buffered:
+  - Always try poller.unregister(fd) in del_channel.
 * classes/ChatterGizmo:
   - Add IRCT_ACTION event type for channel actions (/me).
 * classes/Database:
@@ -14,6 +16,8 @@
   - Message.__init__ will now raise an exception for an invalid target type.
 * classes/PluginHandler:
   - Handle IRCT_ACTION events.
+* classes/Postman:
+  - Remove invalid FDs from the poll object instead of spamming about it.
 * classes/Resolver:
   - Rewrote threading code to be a lot less insane.
 * configs/SmartyPants.conf:
@@ -21,6 +25,7 @@
 * docs/CHANGELOG:
   - Fix up the 0.1.2 release date.
 * plugins/Anime:
+  - Add some proper error handling to 'animenfo'.
   - Show the full URL for adult shows in the 'anidb' error message.
   - Fix 'anidb' parsing.
 * plugins/AusBOM:
@@ -34,12 +39,15 @@
   - New! Magic!
 * plugins/Misc:
   - Add 'surreal', retrieves a random surreal sentence.
+  - Fix 'tinyurl' parsing.
   - Remove old debug print statements.
 * plugins/MoneyMangler:
   - Remove old debug print statements.
 * plugins/TorrentScraper:
   - Add 'scrapestats' command, shows how many torrents are stored in the
     database.
+* plugins/Video:
+  - Fix 'imdb' parsing.
 * plugins/WeatherMan:
   - Fix 'weather' and 'forecast' parsing.
 * plugins/WordStuff:
