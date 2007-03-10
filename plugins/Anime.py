@@ -276,15 +276,23 @@ class async_animenfo(buffered_dispatcher):
 		try:
 			self.connect((ANIMENFO_HOST, ANIMENFO_PORT))
 		except socket.gaierror, msg:
-			tolog = "Error while trying to visit AnimeNFO: %s - %s" % (self.url, msg)
+			tolog = "Error while trying to visit AnimeNFO: %s" % (msg[1])
 			self.parent.putlog(LOG_WARNING, tolog)
+			self.parent.sendReply(self.trigger, tolog)
 			self.close()
 	
 	def handle_connect(self):
 		pass
 	
 	def handle_read(self):
-		data = self.recv(2048)
+		try:
+			data = self.recv(2048)
+		except socket.error, msg:
+			tolog = "Error while trying to visit AnimeNFO: %s" % (msg[1])
+			self.parent.putlog(LOG_WARNING, tolog)
+			self.parent.sendReply(self.trigger, tolog)
+			self.close()
+			return
 		
 		# Welcome message
 		if self.status == 0:
