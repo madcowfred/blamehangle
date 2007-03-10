@@ -54,7 +54,7 @@ class buffered_dispatcher(asyncore.dispatcher):
 			if map.has_key(self._fileno):
 				del map[self._fileno]
 		except AttributeError:
-			return
+			pass
 		
 		# Remove ourselves from the poll object
 		try:

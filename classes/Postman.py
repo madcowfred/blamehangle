@@ -106,9 +106,11 @@ class Postman:
 		# poll, we're going to have to fake it.
 		try:
 			asyncore.poller = select.poll()
+			self.__Log(LOG_DEBUG, 'Using poll() for sockets')
 		except AttributeError:
 			from classes.FakePoll import FakePoll
 			asyncore.poller = FakePoll()
+			self.__Log(LOG_DEBUG, 'Using FakePoll() for sockets')
 		
 		# Create our children
 		self.__Children = {}
@@ -314,8 +316,9 @@ class Postman:
 				for fd, event in results:
 					obj = asyncore.socket_map.get(fd)
 					if obj is None:
-						tolog = 'Invalid FD for poll()? %d' % fd
+						tolog = 'Invalid FD for poll(): %d - unregistered' % (fd)
 						self.__Log(LOG_WARNING, tolog)
+						asyncore.poller.unregister(fd)
 						continue
 					
 					if event & select.POLLIN:
