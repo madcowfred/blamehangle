@@ -161,7 +161,7 @@ class Video(Plugin):
 			data['url'] = resp.url[:len(IMDB_SEARCH_URL)+4]
 			
 			# Find the movie's genre(s)
-			chunk = FindChunk(resp.data, 'Genre:</b>', '<br>')
+			chunk = FindChunk(resp.data, 'Genre:</h5>', '</div>')
 			if chunk:
 				genres = FindChunks(chunk, '/">', '</a>')
 				if not genres:
@@ -171,9 +171,9 @@ class Video(Plugin):
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot outline, or maybe it's a summary today
-			chunk = FindChunk(resp.data, 'Plot Outline:</b>', '<br>')
+			chunk = FindChunk(resp.data, 'Plot Outline:</h5>', '</div>')
 			if not chunk:
-				chunk = FindChunk(resp.data, 'Plot Summary:</b>', '<br>')
+				chunk = FindChunk(resp.data, 'Plot Summary:</h5>', '</div>')
 			
 			if chunk:
 				n = chunk.find('<a')
@@ -182,14 +182,16 @@ class Video(Plugin):
 				data['outline'] = chunk.strip()
 			
 			# Find the rating
-			chunk = FindChunk(resp.data, 'goldstar.gif', '<a')
+			chunk = FindChunk(resp.data, '<b>User Rating:', '</div>')
 			if chunk:
-				m = re.search(r'<b>(.+)</b> (\(.+ votes\))', chunk)
-				if not m:
-					self.sendReply(trigger, 'Page parsing failed: rating.')
-					return
-				
-				data['rating'] = '%s %s' % m.groups()
+				if 'awaiting 5 votes' not in chunk:
+					rating = FindChunk(chunk, '<b>', '</b>')
+					votes = FindChunk(chunk, '">', '</a>')
+					if not rating or not votes:
+						self.sendReply(trigger, 'Page parsing failed: rating.')
+						return
+					
+					data['rating'] = '%s %s' % (rating, votes)
 			
 			
 			# Spit out the data
