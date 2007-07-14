@@ -40,36 +40,13 @@ from classes.Plugin import Plugin, PluginFakeTrigger
 # ---------------------------------------------------------------------------
 # Tuples of 'products'. Should be (product name, page code).
 PRODUCTS = (
-	('New South Wales', 'IDN65188'),
-	('Northern Territory', 'IDD65149'),
-	('Queensland', 'IDQ60606'),
-	('South Australia', 'IDS65111'),
-	('Tasmania', 'IDT65023'),
-	('Victoria', 'IDV65121'),
-	('Western Australia', 'IDW65120'),
-)
-
-OLD_PRODUCTS = (
-	# NSW
-	('Sydney', 'IDN65066', 0),
-	('NSW', 'IDN65091', 1),
-	# QLD
-	('Brisbane', 'IDQ65113', 0),
-	('North Queensland', 'IDQ60600', 1),
-	('Western Queensland', 'IDQ60601', 1),
-	('Central Queensland', 'IDQ60602', 1),
-	('Southeast Queensland', 'IDQ60603', 1),
-	# SA
-	('Adelaide', 'IDS65012', 0),
-	('South Australian', 'IDS65013', 1),
-	# TAS
-	('Hobart', 'IDT65012', 0),
-	# VIC
-	('Melbourne', 'IDV60034', 0),
-	('Victoria', 'IDV65119', 1),
-	# WA
-	('Perth', 'IDW60034', 0),
-	('Western Australian', 'IDW60199', 1),
+	('New South Wales', 'IDN60800'),
+	('Northern Territory', 'IDD60800'),
+	('Queensland', 'IDQ60800'),
+	('South Australia', 'IDS60800'),
+	('Tasmania', 'IDT60800'),
+	('Victoria', 'IDV60800'),
+	('Western Australia', 'IDW60800'),
 )
 
 MONTH = 60 * 60 * 24 * 30
@@ -141,17 +118,16 @@ class AusBOM(Plugin):
 			location = None
 		
 		# Find the area
-		area = FindChunk(resp.data, '<title>Latest Weather Observations for ', '</title>')
+		area = FindChunk(resp.data, '<title>Latest Weather Observations ', '</title>')
 		if area is None:
 			self.sendReply(trigger, 'Page parsing failed: area.')
 			return
 		
 		# Find the timezone
-		tz = FindChunk(resp.data, 'Station Name</th>', '/acronym>')
+		tz = FindChunk(resp.data, 'Date/Time<br>', '</th>')
 		if tz is None:
 			self.sendReply(trigger, 'Page parsing failed: timezone.')
 			return
-		tz = FindChunk(tz, '(Australia)">', '<')
 		
 		# Find the table rows
 		trs = FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
@@ -187,16 +163,16 @@ class AusBOM(Plugin):
 				
 				# humidity
 				try:
-					humidity = float(tds[3][1:].strip())
+					humidity = float(tds[4][1:].strip())
 				except ValueError:
 					pass
 				else:
-					part = '\02[\02Humidity: %.1f%%\02]\02' % (float(humidity))
+					part = '\02[\02Humidity: %d%%\02]\02' % (humidity)
 					parts.append(part)
 				
 				# Wind is a bit messy
-				wind_dir = tds[5][1:].strip()
-				wind_speed = tds[6][1:].strip()
+				wind_dir = tds[6][1:].strip()
+				wind_speed = tds[7][1:].strip()
 				if wind_dir != '-' and wind_speed != '-':
 					if wind_dir == 'CALM':
 						wind_info = 'Calm'
