@@ -41,7 +41,7 @@ from classes.Plugin import Plugin
 IMDB_SEARCH_URL = 'http://us.imdb.com/find?q=%s;tt=on;mx=10'
 IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
-IMDB_RESULT_RE = re.compile(r'href="/title/tt(\d+)/[^>]+"[^>]*?>(.*?)</a> \((\d+)[\)\/]')
+IMDB_RESULT_RE = re.compile(r'<a href="/title/tt(\d+)/"[^>]*?>(.*?)</a> \((\d+)[\)\/]')
 
 # ---------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ class Video(Plugin):
 	# Parse an IMDb search results page
 	def __Parse_IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
-		if resp.data.find('Search</h1>') < 0:
+		if 'Search</title>' not in resp.data:
 			self.__IMDb_Title(trigger, resp)
 			return
 		
@@ -94,34 +94,29 @@ class Video(Plugin):
 		
 		# Find some chunks to look at
 		chunks = [
-			FindChunk(resp.data, '<b>Popular Titles</b>', '</ol>'),
-			FindChunk(resp.data, '<b>Titles (Exact Matches)</b>', '</ol>'),
-			FindChunk(resp.data, '<b>Titles (Approx Matches)</b>', '</ol>'),
-			FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</ol>'),
+			FindChunk(resp.data, '<b>Popular Titles</b>', '</table>'),
+			FindChunk(resp.data, '<b>Titles (Exact Matches)</b>', '</table>'),
+			FindChunk(resp.data, '<b>Titles (Approx Matches)</b>', '</table>'),
+			FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</table>'),
 		]
 		
 		# Find the titles
-		lis = []
+		results = []
 		for chunk in chunks:
 			if chunk is not None:
-				lis += FindChunks(chunk, '<li>', '</li>')
+				results += IMDB_RESULT_RE.findall(chunk)
 		
 		# We found something!
-		if lis:
-			# Get the info we need
-			for li in lis[:5]:
-				m = IMDB_RESULT_RE.search(li)
-				if not m:
-					continue
-				
-				# We probably found what we were after
-				if m.group(2).lower() == findme:
-					url = IMDB_TITLE_URL % (int(m.group(1)))
+		if results:
+			parts = []
+			for tt, title, year in results:
+				if title.lower() == findme:
+					url = IMDB_TITLE_URL % (int(tt))
 					self.urlRequest(trigger, self.__IMDb_Title, url)
 					return
-				
-				part = '\x02[\x02tt%s: %s (%s)\x02]\x02' % m.groups()
-				parts.append(part)
+				else:
+					part = '\x02[\x02tt%s: %s (%s)\x02]\x02' % (tt, title, year)
+					parts.append(part)
 			
 			# Spit it out
 			if parts == []:
