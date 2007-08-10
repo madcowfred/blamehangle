@@ -156,12 +156,12 @@ class Anime(Plugin):
 			parts = []
 			
 			# Find the info we want
-			for thing in ('Title', 'Genre', 'Type', 'Episodes', 'Year', 'Producers', 'URL'):
+			for thing in ('Main Title', 'Type', 'Year', 'Producers', 'Rating'):
 				chunk = FindChunk(resp.data, '<th class="field">%s</th>' % thing, '</tr>')
 				if chunk:
 					lines = StripHTML(chunk)
 					if lines:
-						if thing == 'Genre':
+						if thing == 'Categories':
 							info = ' '.join(lines[:-1])
 						elif thing == 'Producers':
 							info = ' '.join(lines)
@@ -172,11 +172,13 @@ class Anime(Plugin):
 				else:
 					info = '?'
 				
-				# Eat stupid [graph] on the Rating field
-				if thing == 'Rating' and info.endswith(' [graph]'):
-					info = info[:-8]
-				
 				part = '\x02[\x02%s: %s\x02]\x02' % (thing, info)
+				parts.append(part)
+			
+			# Special case for categories, ugh
+			cats = FindChunks(resp.data, 'with this category">', '</a>')
+			if cats:
+				part = '\x02[\x02Categories: %s\x02]\x02' % (', '.join(cats))
 				parts.append(part)
 			
 			# Find our aid
@@ -186,8 +188,8 @@ class Anime(Plugin):
 			else:
 				url = '?'
 			
-			part = '\x02[\x02AniDB: %s\x02]\x02' % url
-			parts.append(part)
+			parts.append('--')
+			parts.append(url)
 			
 			# Spit it out
 			replytext = ' '.join(parts)
