@@ -41,8 +41,8 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-ANIDB_URL = "http://anidb.info/perl-bin/animedb.pl?show=animelist&adb.search=%s"
-AID_URL = 'http://anidb.info/perl-bin/animedb.pl?show=anime&aid=%s'
+ANIDB_URL = "http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=%s"
+AID_URL = 'http://anidb.net/perl-bin/animedb.pl?show=anime&aid=%s'
 
 # Urgh.
 ANIDB_AKA_RE = re.compile(r'^(\d+)"><i>(.*?)</i></a>\s*<small>.*?aid=(\d+)">(.*?)</a>')
@@ -92,7 +92,8 @@ class Anime(Plugin):
 	# ---------------------------------------------------------------------------
 	
 	def __Fetch_AniDB(self, trigger):
-		url = ANIDB_URL % QuoteURL(trigger.match.group('findme').lower())
+		findme = trigger.match.group('findme').lower()
+		url = ANIDB_URL % (QuoteURL(findme))
 		self.urlRequest(trigger, self.__Parse_AniDB, url)
 	
 	def __Fetch_AnimeNFO(self, trigger):
