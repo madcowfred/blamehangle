@@ -197,17 +197,26 @@ class Anime(Plugin):
 			self.sendReply(trigger, replytext)
 		
 		# Adult content, pfft
-		elif resp.data.find('Adult Content Warning') >= 0:
+		elif 'Adult Content Warning' in resp.data:
 			replytext = "Seems to be hentai, you need an AniDB user account to see the details :( -> %s" % (resp.url)
 			self.sendReply(trigger, replytext)
 		
 		# Maintenance?
-		elif resp.data.find('maintenance') >= 0:
+		elif 'maintenance' in resp.data:
 			self.sendReply(trigger, "AniDB seems to be under maintenance. Again.")
 		
 		# Bad input
-		elif resp.data.find('ILLEGAL INPUT') >= 0:
+		elif 'ILLEGAL INPUT' in resp.data:
 			self.sendReply(trigger, "AniDB says ILLEGAL INPUT. Naughty!")
+		
+		# ERROR!
+		elif '<h3>ERROR:</h3>' in resp.data:
+			chunk = FindChunk(resp.data, '</h3>', '</div>')
+			if chunk:
+				replytext = 'AniDB error: %s' % (' '.join(StripHTML(FindChunk(chunk, '<p>', '</p>'))))
+				self.sendReply(trigger, replytext)
+			else:
+				self.sendReply(trigger, 'An unknown AniDB error occurred.')
 		
 		# Parsing failed
 		else:
