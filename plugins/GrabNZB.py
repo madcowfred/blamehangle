@@ -43,7 +43,9 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 DNZB_URL = 'http://v3.newzbin.com/api/dnzb/'
+
 NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?$')
+CD_FILENAME_RE = re.compile('filename=([^;]+)')
 
 # ---------------------------------------------------------------------------
 
@@ -145,10 +147,9 @@ class GrabNZB(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
-	# Do newzbin stuff
+	# Save a Nezbin NZB
 	def __Save_Newzbin(self, trigger, resp):
 		if resp.response == '200':
-			print repr(resp.headers)
 			# Get the filename
 			newname = resp.headers.get('x-dnzb-name', None)
 			if newname is None:
@@ -181,7 +182,7 @@ class GrabNZB(Plugin):
 				err = 'report does not exist.'
 			# Try again later
 			elif rcode == 450:
-				text = response.getheader('X-DNZB-RText')
+				text = resp.headers.get('x-dnzb-rtext', '')
 				m = re.search('wait (\d+) seconds', text)
 				if m:
 					wait = int(m.group(1)) + 1
@@ -200,6 +201,41 @@ class GrabNZB(Plugin):
 				err = 'unknown error code: %s' % (rcode)
 			
 			replytext = 'Newzbin error: %s' % (err)
+			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Save a normal NZB
+	def __Save_NZB(self, trigger, resp):
+		if resp.response == '200':
+			# Make sure it's an NZB
+			if '<nzb xmlns' not in resp.data[:1000].lower():
+				replytext = "Error: %s doesn't seem to point to an NZB file!"
+				self.sendReply(replytext)
+				return
+			
+			# Try to get a useful filename
+			newname = resp.headers.get('content-disposition', None)
+			if newname:
+				m = CD_FILENAME_RE.search(newname)
+				if m:
+					newname = m.group(1)
+				else:
+					newname = None
+			
+			if newname is None:
+				parts = urlparse.urlparse(resp.url)
+				newname = parts[2].split('/')[-1]
+			
+			if not newname.endswith('.nzb'):
+				newname = '%s.nzb' % (newname)
+			
+			newpath = os.path.join(self.Options['nzb_dir'], newname)
+			
+			# Save data
+			open(newpath, 'wb').write(resp.data)
+			
+			# Send reply
+			replytext = 'NZB saved as %s' % (newname)
 			self.sendReply(trigger, replytext)
 	
 	# -----------------------------------------------------------------------
