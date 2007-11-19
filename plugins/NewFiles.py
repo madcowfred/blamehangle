@@ -58,7 +58,6 @@ class NewFiles(Plugin):
 				'spam': opts.get('spam'),
 			}
 			self.__dirs[name]['dircache'] = dircache.listdir(self.__dirs[name]['watch_dir'])
-
 	
 	def register(self):
 		# If we have some directories to watch, start the timer
@@ -72,10 +71,10 @@ class NewFiles(Plugin):
 	# It's time to see if we have any new files
 	def __Directory_Scan(self, trigger):
 		# Check the dircache
-		for name, data in self.__dirs.items():
+		for data in self.__dirs.values():
 			files = dircache.listdir(data['watch_dir'])
 			if files is data['dircache']:
-				return
+				continue
 			
 			# Spam the new files
 			for filename in files:
