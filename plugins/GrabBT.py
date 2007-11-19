@@ -34,7 +34,6 @@ Can also announce when new files show up in a seperate directory, and give
 a current torrent status report (requires my modified btlaunchmanycurses).
 """
 
-import dircache
 import os
 import re
 import urlparse
@@ -54,13 +53,7 @@ class GrabBT(Plugin):
 	def rehash(self):
 		self.Options = self.OptionsDict('GrabBT', autosplit=True)
 		
-		# If the new dir is valid, get a list of it's files
-		if self.Options['new_dir'] and os.path.isdir(self.Options['new_dir']):
-			self.__files = dircache.listdir(self.Options['new_dir'])
-		else:
-			self.__files = None
-		
-		if not self.Options['commands'] and not self.Options['newfiles']:
+		if not self.Options['commands']:
 			self.putlog(LOG_WARNING, "GrabBT has no channels configured!")
 		
 		# Compile our regexps
@@ -75,18 +68,6 @@ class GrabBT(Plugin):
 				self.__grab_res.append(r)
 	
 	def register(self):
-		# If we have to, start the check timer and enable torrentspace
-		if self.__files is not None and self.Options['newfiles']:
-			self.addTimedEvent(
-				method = self.__Torrent_Check,
-				interval = 5,
-			)
-			self.addTextEvent(
-				method = self.__Torrent_Space,
-				regexp = r'^torrentspace$',
-				IRCTypes = (IRCT_PUBLIC_D,),
-			)
-		
 		self.addTextEvent(
 			method = self.__Torrent_Grab,
 			regexp = r'^grab (http://.+)$',
@@ -102,36 +83,6 @@ class GrabBT(Plugin):
 			regexp = r'^torrentspeed$',
 			IRCTypes = (IRCT_PUBLIC_D,),
 		)
-	
-	# -----------------------------------------------------------------------
-	# It's time to see if we have any new files
-	def __Torrent_Check(self, trigger):
-		files = dircache.listdir(self.Options['new_dir'])
-		if files is self.__files:
-			return
-		
-		# Spam the new files
-		for filename in [f for f in files if f not in self.__files]:
-			# Skip dotfiles
-			if filename.startswith('.'):
-				continue
-			
-			# Skip non-files
-			localfile = os.path.join(self.Options['new_dir'], filename)
-			if not os.path.isfile(localfile):
-				continue
-			
-			filesize = float(os.path.getsize(localfile)) / 1024 / 1024
-			
-			if self.Options['http_base']:
-				replytext = '\x0303New file\x03: %s (%.1fMB) - %s%s' % (filename, filesize,
-					self.Options['http_base'], QuoteURL(filename))
-			else:
-				replytext = '\x0303New file\x03: %s (%.1fMB)' % (filename, filesize)
-			
-			self.privmsg(self.Options['newfiles'], None, replytext)
-		
-		self.__files = files
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to get a torrent
