@@ -65,7 +65,7 @@ class NewFiles(Plugin):
 		if self.__dirs != {}:
 			self.addTimedEvent(
 				method = self.__Directory_Scan,
-				interval = 2,
+				interval = 5,
 			)
 	
 	# -----------------------------------------------------------------------
@@ -76,7 +76,7 @@ class NewFiles(Plugin):
 			files = dircache.listdir(data['watch_dir'])
 			if files is data['dircache']:
 				return
-		
+			
 			# Spam the new files
 			for filename in files:
 				# Cached
