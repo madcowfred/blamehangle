@@ -208,9 +208,9 @@ class GrabNZB(Plugin):
 	def __Save_NZB(self, trigger, resp):
 		if resp.response == '200':
 			# Make sure it's an NZB
-			if '<nzb xmlns' not in resp.data[:1000].lower():
+			if '<nzb xmlns' not in resp.data.lower():
 				replytext = "Error: %s doesn't seem to point to an NZB file!"
-				self.sendReply(replytext)
+				self.sendReply(trigger, replytext)
 				return
 			
 			# Try to get a useful filename
