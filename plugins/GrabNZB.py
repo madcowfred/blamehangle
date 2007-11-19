@@ -207,9 +207,9 @@ class GrabNZB(Plugin):
 	# Save a normal NZB
 	def __Save_NZB(self, trigger, resp):
 		if resp.response == '200':
-			# Make sure it's an NZB
-			if '<nzb xmlns' not in resp.data.lower():
-				replytext = "Error: %s doesn't seem to point to an NZB file!"
+			# Very basic check that it's an NZB
+			if '<nzb' not in resp.data[:1000].lower():
+				replytext = "Error: that doesn't seem to be an NZB file!"
 				self.sendReply(trigger, replytext)
 				return
 			
