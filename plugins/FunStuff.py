@@ -211,9 +211,9 @@ class FunStuff(Plugin):
 		self.urlRequest(trigger, self.__Parse_RandomFact, VINDIESEL_URL)
 	
 	def __Parse_RandomFact(self, trigger, resp):
-		chunk = FindChunk(resp.data, '<p>', '</p>')
+		chunk = FindChunk(resp.data, '<div id="factbox">', '</div>')
 		if chunk:
-			self.sendReply(trigger, UnquoteHTML(chunk))
+			self.sendReply(trigger, UnquoteHTML(chunk).strip())
 		else:
 			self.sendReply(trigger, 'Page parsing failed.')
 	
