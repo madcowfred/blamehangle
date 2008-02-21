@@ -29,14 +29,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Fairly simple plugin, downloads BitTorrent files and sticks them in a dir.
-Can also announce when new files show up in a seperate directory, and give
-a current torrent status report (requires my modified btlaunchmanycurses).
+Downloads BitTorrent files and sticks them in a configured directory.
 """
 
 import os
 import re
-import urlparse
 
 from classes.Common import *
 from classes.Constants import *
@@ -256,48 +253,5 @@ class GrabBT(Plugin):
 		
 		else:
 			self.sendReply(trigger, "No torrents active.")
-	
-	# -----------------------------------------------------------------------
-	# Someone wants to see how much disk space we have free.
-	def __Torrent_Space(self, trigger):
-		network = trigger.wrap.name.lower()
-		chan = trigger.target.lower()
-		
-		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
-			tolog = "%s on %s/%s trying to see torrent space." % (trigger.userinfo, network, chan)
-			self.putlog(LOG_WARNING, tolog)
-			return
-		
-		# See how much disk space we have then
-		if hasattr(os, 'statvfs'):
-			try:
-				info = os.statvfs(self.Options['new_dir'])
-			except OSError:
-				replytext = 'ERROR!'
-			else:
-				# block size * total blocks
-				totalgb = float(info[1]) * info[2] / 1024 / 1024 / 1024
-				# block size * free blocks for non-superman
-				freegb = float(info[1]) * info[4] / 1024 / 1024 / 1024
-				
-				per = freegb / totalgb * 100
-				replytext = '%.1fGB of %.1fGB (%d%%) free' % (freegb, totalgb, per)
-		
-		else:
-			cmdline = '/bin/df -k %s' % self.Options['new_dir']
-			lines = os.popen(cmdline, 'r').readlines()
-			parts = lines[1].split()
-			
-			if len(parts) >= 4:
-				totalgb = float(parts[1]) / 1024 / 1024
-				freegb = float(parts[3]) / 1024 / 1024
-				
-				per = freegb / totalgb * 100
-				replytext = '%.1fGB of %.1fGB (%d%%) free' % (freegb, totalgb, per)
-			else:
-				replytext = 'ERROR!'
-		
-		# Spit it out
-		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
