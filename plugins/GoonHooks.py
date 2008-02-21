@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id: GetBotOps.py 3795 2005-07-31 12:41:24Z freddie $
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2006, blamehangle team
+# Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

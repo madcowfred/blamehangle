@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2005, blamehangle team
+# Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-A glFTPd sitebot plugin. Doesn't make much sense to maintain a pile of code
-for a seperate bot when there's already a nice framework here :)
+***UNMAINTAINED***
 
-Different style to the other plugins, as we use a single command trigger with
-our own command matching.
+A glFTPd sitebot plugin. Different style to the other plugins, as we use a
+single command trigger with our own command matching.
 """
 
 import os

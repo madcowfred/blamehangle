@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2005, blamehangle team
+# Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Gathers news from any RSS feeds you might want to use.
+Gathers news from RSS feeds and spits it out.
 """
 
 import random

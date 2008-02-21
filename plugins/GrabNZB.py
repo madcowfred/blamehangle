@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2007, blamehangle team
+# Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Fairly simple plugin, downloads NZB files and sticks them in a directory.
+Downloads NZB files and sticks them in a configured directory.
 """
 
 import os

@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2005, blamehangle team
+# Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
