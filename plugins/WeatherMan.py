@@ -40,7 +40,7 @@ from classes.Plugin import Plugin
 
 METAR_URL = 'http://weather.noaa.gov/pub/data/observations/metar/decoded/%s.TXT'
 TAF_URL = 'http://weather.noaa.gov/pub/data/forecasts/taf/stations/%s.TXT'
-WEATHER_URL = 'http://search.weather.yahoo.com/search/weather2?p=%s'
+WEATHER_URL = 'http://weather.yahoo.com/search/weather2'
 
 # ---------------------------------------------------------------------------
 
@@ -93,16 +93,16 @@ class WeatherMan(Plugin):
 	# -----------------------------------------------------------------------
 	# Someone wants some weather information
 	def __Fetch_Weather_Forecast(self, trigger):
-		url = WEATHER_URL % QuoteURL(trigger.match.group('location'))
-		self.urlRequest(trigger, self.__Parse_Weather, url)
+		data = { 'ptrigger2': trigger.match.group('location') }
+		self.urlRequest(trigger, self.__Parse_Weather, WEATHER_URL, data)
 	
 	def __Fetch_Weather_Long(self, trigger):
-		url = WEATHER_URL % QuoteURL(trigger.match.group('location'))
-		self.urlRequest(trigger, self.__Parse_Weather, url)
+		data = { 'ptrigger2': trigger.match.group('location') }
+		self.urlRequest(trigger, self.__Parse_Weather, WEATHER_URL, data)
 	
 	def __Fetch_Weather_Short(self, trigger):
-		url = WEATHER_URL % QuoteURL(trigger.match.group('location'))
-		self.urlRequest(trigger, self.__Parse_Weather, url)
+		data = { 'ptrigger2': trigger.match.group('location') }
+		self.urlRequest(trigger, self.__Parse_Weather, WEATHER_URL, data)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants METAR data
@@ -124,27 +124,27 @@ class WeatherMan(Plugin):
 	# Parse a Yahoo Weather page
 	def __Parse_Weather(self, trigger, resp):
 		# No results
-		if resp.data.find('No match found') >= 0:
+		if '<h5>No forecast found' in resp.data:
 			replytext = "No matches found for '%s'" % trigger.match.group('location')
 			self.sendReply(trigger, replytext)
 		
 		# No useful results
-		elif resp.data.find('Browse for a Location') >= 0:
-			replytext = "No useful matches found for '%s'" % trigger.match.group('location')
-			self.sendReply(trigger, replytext)
+		#elif resp.data.find('Browse for a Location') >= 0:
+		#	replytext = "No useful matches found for '%s'" % trigger.match.group('location')
+		#	self.sendReply(trigger, replytext)
 		
 		# More than one result... assume the first one is right
-		elif resp.data.find('location matches') >= 0:
-			m = re.search(r'<a href="(/forecast/\S+\.html)">', resp.data)
-			if m:
-				url = 'http://search.weather.yahoo.com' + m.group(1)
-				self.urlRequest(trigger, self.__Parse_Weather, url)
-			else:
-				tolog = "Weather page parsing failed for '%s'!" % trigger.match.group('location')
-				self.putlog(LOG_WARNING, tolog)
-				
-				replytext = "Page parsing failed for '%s'!" % trigger.match.group('location')
-				self.sendReply(trigger, replytext)
+		#elif resp.data.find('location matches') >= 0:
+		#	m = re.search(r'<a href="(/forecast/\S+\.html)">', resp.data)
+		#	if m:
+		#		url = 'http://search.weather.yahoo.com' + m.group(1)
+		#		self.urlRequest(trigger, self.__Parse_Weather, url)
+		#	else:
+		#		tolog = "Weather page parsing failed for '%s'!" % trigger.match.group('location')
+		#		self.putlog(LOG_WARNING, tolog)
+		#		
+		#		replytext = "Page parsing failed for '%s'!" % trigger.match.group('location')
+		#		self.sendReply(trigger, replytext)
 		
 		# Only one result, hopefully?
 		else:
@@ -174,6 +174,7 @@ class WeatherMan(Plugin):
 			if not chunk:
 				self.putlog(LOG_WARNING, 'Weather parsing failed: weather data 1.')
 				self.sendReply(trigger, 'Parsing failed: weather data 1.')
+				open('weather.html', 'w').write(resp.data)
 				return
 			
 			current = FindChunk(chunk, '<h3>', '</h3>')
@@ -207,7 +208,7 @@ class WeatherMan(Plugin):
 			
 			
 			# Maybe find the forecast
-			chunk = FindChunk(resp.data, '<div class="five-day-forecast"', '</table>')
+			chunk = FindChunk(resp.data, '<div class="five-day-forecast', '</table>')
 			if chunk is not None:
 				days = FindChunks(chunk, '<th>', '</th>')
 				titles = FindChunk(chunk, '<tr class="titles">', '</tr>')
@@ -247,7 +248,7 @@ class WeatherMan(Plugin):
 			elif trigger.name == '__Fetch_Weather_Forecast':
 				# If we got no forecast data, cry here
 				if 'forecast' not in data:
-					self.sendReply(trigger, "Didn't find any forecast information!")
+					self.sendReply(trigger, "Weather parsing failed: no forecast information!")
 					return
 				chunks.append(data['forecast'])
 			
@@ -406,11 +407,11 @@ class WeatherMan(Plugin):
 			format = self.Options['default_format']
 		
 		if format == 'both':
-			return '%.1fC (%.1fF)' % (c_val, f_val)
+			return '%dC (%dF)' % (c_val, f_val)
 		elif format == 'metric':
-			return '%.1fC' % (c_val)
+			return '%dC' % (c_val)
 		elif format == 'imperial':
-			return '%.1fF' % (f_val)
+			return '%dF' % (f_val)
 		else:
 			raise ValueError, '%s is an invalid format' % format
 	
@@ -435,7 +436,7 @@ class WeatherMan(Plugin):
 
 def ToCelsius(val):
 	try:
-		return ((val - 32) * 5.0 / 9)
+		return round((val - 32) * 5.0 / 9)
 	except ValueError:
 		return 0.0
 
