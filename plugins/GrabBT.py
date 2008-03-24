@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # $Id$
 # ---------------------------------------------------------------------------
-# Copyright (c) 2004-2005, blamehangle team
+# Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -188,31 +188,56 @@ class GrabBT(Plugin):
 		
 		# Get the list of torrents
 		try:
-			lines = open(self.Options['status_file'], 'r').readlines()
+			files = os.listdir(self.Options['session_dir'])
 		except:
-			self.sendReply(trigger, "Couldn't open status file, no active torrents?")
+			self.putlog(LOG_WARNING, "Torrent status directory does not exist or is unaccessible.")
+			self.sendReply(trigger, "Status directory no worky!")
 			return
 		
+		# Parse 'em
+		lines = []
+		for filename in files:
+			if not filename.endswith('.torrent'):
+				continue
+			
+			filepath = os.path.join(self.Options['session_dir'], filename)
+			try:
+				metainfo = bdecode(open(filepath, 'rb').read())
+			except ValueError:
+				tolog = '%r is not a valid torrent' % (filename)
+				self.putlog(LOG_WARNING, tolog)
+				continue
+			except Exception, m:
+				tolog = 'Error reading %r - %s' % (filename, m)
+				self.putlog(LOG_WARNING, tolog)
+				continue
+			
+			# Various stats
+			if 'files' in metainfo['info']:
+				total_size = sum(int(f['length']) for f in metainfo['info']['files'])
+			else:
+				total_size = metainfo['info']['length']
+			
+			torrent_name = os.path.basename(metainfo['rtorrent']['tied_to_file'])
+			piece_length = metainfo['info']['piece length']
+			down_total = metainfo['rtorrent']['chunks_done'] * piece_length
+			up_total = metainfo['rtorrent']['total_uploaded']
+			
+			if down_total > 0:
+				complete = (float(down_total) / float(total_size)) * 100
+			else:
+				complete = 0
+			
+			line = '%s (%s) :: %%%.1f complete - \x02[\x02Down: %s, Up: %s\x02]\x02' % (
+				torrent_name, NiceSize(total_size), complete, NiceSize(down_total), NiceSize(up_total))
+			lines.append(line)
+		
+		# Spit something out
 		if lines:
 			for line in lines:
-				try:
-					filename, status, progress, filesize, seeds, peers, downtotal, downrate, uptotal, uprate = line.strip().split('|')
-				except ValueError:
-					continue
-				
-				downtotal = '%.1f' % (float(downtotal) / 1024 / 1024)
-				downrate = '%.1f' % (float(downrate) / 1024)
-				uptotal = '%.1f' % (float(uptotal) / 1024 / 1024)
-				uprate = '%.1f' % (float(uprate) / 1024)
-				
-				line = '%s (%s) :: \x02[\x02%s (%s)\x02]\x02 \x02[\x02%s seeds, %s peers\x02]\x02 ' % (
-					filename, NiceSize(filesize), status, progress, seeds, peers)
-				line += '\x02[\x02Down: %s MB (%s KB/s)\x02]\x02 \x02[\x02Up: %s MB (%s KB/s)\x02]\x02' % (
-					downtotal, downrate, uptotal, uprate)
-				self.sendReply(trigger, line)
-		
+				self.sendReply(trigger, line, process=0)
 		else:
-			self.sendReply(trigger, "No torrents active.")
+			self.sendReply(trigger, "No active torrents.")
 	
 	# -----------------------------------------------------------------------
 	# Someone wants to see some total torrent speed.
