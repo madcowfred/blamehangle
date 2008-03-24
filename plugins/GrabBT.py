@@ -228,7 +228,7 @@ class GrabBT(Plugin):
 			else:
 				complete = 0
 			
-			line = '%s (%s) :: %%%.1f complete - \x02[\x02Down: %s, Up: %s\x02]\x02' % (
+			line = '%s (%s) :: %.1f%% complete - \x02[\x02Down: %s, Up: %s\x02]\x02' % (
 				torrent_name, NiceSize(total_size), complete, NiceSize(down_total), NiceSize(up_total))
 			lines.append(line)
 		
