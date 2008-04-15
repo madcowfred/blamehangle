@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# $Id: TorrentScraper.py 3795 2005-07-31 12:41:24Z freddie $
+# $Id$
 # ---------------------------------------------------------------------------
-# Copied from BitTorrent/bencode.py!
+
 def decode_int(x, f):
 	f += 1
 	newf = x.index('e', f)
@@ -30,12 +30,8 @@ def decode_list(x, f):
 
 def decode_dict(x, f):
 	r, f = {}, f+1
-	lastkey = None
 	while x[f] != 'e':
 		k, f = decode_string(x, f)
-		if lastkey >= k:
-			raise ValueError
-		lastkey = k
 		r[k], f = decode_func[x[f]](x, f)
 	return (r, f + 1)
 
