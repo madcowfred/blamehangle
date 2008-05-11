@@ -50,7 +50,7 @@ from classes.Constants import *
 
 # ---------------------------------------------------------------------------
 
-dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
+#dodgy_html_check = re.compile("href='(?P<href>[^ >]+)").search
 
 line_re = re.compile('(?:\r\n|\r|\n)')
 
@@ -285,7 +285,7 @@ class async_http(buffered_dispatcher):
 		self.last_activity = time.time()
 		
 		try:
-			chunk = self.recv(4096)
+			chunk = self.recv(8192)
 		except socket.error, msg:
 			self.failed(msg)
 		else:
@@ -399,14 +399,16 @@ class async_http(buffered_dispatcher):
 						
 						# And if we still have page text, keep going
 						if page_text is not None:
-							m = dodgy_html_check(page_text)
-							while m:
-								pre = page_text[:m.start()]
-								post = page_text[m.end():]
-								start, end = m.span('href')
-								fixed = '"' + page_text[start:end - 1].replace("'", "%39") + '"'
-								page_text = pre + 'href=' + fixed + post
-								m = dodgy_html_check(page_text)
+							# WARNING: this code is horrible, and is commented
+							# until I work out what the hell it was for.
+							#m = dodgy_html_check(page_text)
+							#while m:
+							#	pre = page_text[:m.start()]
+							#	post = page_text[m.end():]
+							#	start, end = m.span('href')
+							#	fixed = '"' + page_text[start:end - 1].replace("'", "%39") + '"'
+							#	page_text = pre + 'href=' + fixed + post
+							#	m = dodgy_html_check(page_text)
 							
 							# If it was compressed, log a bit extra
 							if is_gzip:
