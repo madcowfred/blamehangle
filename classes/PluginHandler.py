@@ -163,7 +163,7 @@ class PluginHandler(Child):
 		
 		# Collect the events that have triggered
 		for event, plugin in self.__Events[IRCType].values():
-			m = event.regexp.match(text)
+			m = event.regexp.search(text)
 			if m:
 				triggered.setdefault(event.priority, []).append([plugin, event, m])
 		
