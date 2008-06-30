@@ -550,10 +550,13 @@ class ChatterGizmo(Child):
 		m = RE_ADDRESSED.match(text)
 		if m:
 			to = m.group('nick')
-			if to.lower() != conn.getnick().lower():
-				return
+			# It's us!
+			if to.lower() == conn.getnick().lower():
+				data = [wrap, IRCT_PUBLIC_D, event.userinfo, chan, m.group('text')]
+			# It's not us!
+			else:
+				data = [wrap, IRCT_PUBLIC, event.userinfo, chan, text]
 			
-			data = [wrap, IRCT_PUBLIC_D, event.userinfo, chan, m.group('text')]
 			self.sendMessage('PluginHandler', IRC_EVENT, data)
 		
 		# It's not addressed to anyone, so do whatever we do here
