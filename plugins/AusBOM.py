@@ -161,6 +161,11 @@ class AusBOM(Plugin):
 				part = '\02[\02Temp: %s\xb0C\02]\02' % (tds[1][1:].strip())
 				parts.append(part)
 				
+				# apparent temperature
+				if tds[2] != '-':
+					part = '\02[\02Apparent Temp: %s\xb0C\02]\02' % (tds[2][1:].strip())
+					parts.append(part)
+				
 				# humidity
 				try:
 					humidity = float(tds[4][1:].strip())
