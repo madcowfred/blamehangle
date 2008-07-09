@@ -1,19 +1,24 @@
-critical:
+core:
+	* Reorganise directory layout.
+	* Split HTTP client up into multiple functions so it's not so hard to understand.
+	* Clean up the Common.py travesty.
+	* Find a nice way to make genhelp document plugin flags. (?)
+	* Make options loading transparent for plugins, most likely before plugin.rehash
+	  is called.
+	* Work out a better way to handle common Plugin access control tasks: must be in
+	  channel/must have mode/must have bot flag/etc.
+	* Allow Plugin objects to return some sort of BAD_COMMAND message to make the bot
+	  respond with help text.
+	* Proper NickServ support, including the GHOST command (kill our nick), waiting
+	  until we're identified before joining channels. Complicated by the 97000
+	  different types of NickServs around.
 
-important:
-	* Find a nice way to make genhelp document plugin flags.
 
-
-not important but more than whatever:
-	* Proper NickServ support, including the GHOST command (kill people with
-	  our nick), and waiting until we're identified before joining channels.
+plugins:
+	* 'seen' plugin.
+	* News: admin command to flush news queue.
+	* SmartyPants: script to import infobot.org factpacks (someone)
 
 
 whatever:
 	* testing! :) (anyone)
-	* script to import infobot.org factpacks (someone)
-
-
-plugins:
-	* 'seen'? Is possible now, woob.
-	* News: admin command to flush news queue.
