@@ -124,10 +124,11 @@ class AusBOM(Plugin):
 			return
 		
 		# Find the timezone
-		tz = FindChunk(resp.data, 'Date/Time<br>', '</th>')
+		tz = FindChunk(resp.data, 'Date/Time<br', '/th>')
 		if tz is None:
 			self.sendReply(trigger, 'Page parsing failed: timezone.')
 			return
+		tz = FindChunk(tz, '>', '<')
 		
 		# Find the table rows
 		trs = FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
