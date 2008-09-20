@@ -195,7 +195,7 @@ class Video(Plugin):
 						self.sendReply(trigger, 'Page parsing failed: rating.')
 						return
 					
-					data['rating'] = '%s %s' % (rating, votes)
+					data['rating'] = '%s - %s' % (rating, votes)
 			
 			
 			# Spit out the data
