@@ -43,7 +43,7 @@ IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'<a href="/title/tt(\d+)/">(.*?)</a> \((\d+)[\)\/]')
 # Maximum length of Plot: spam
-IMDB_MAX_PLOT = 120
+IMDB_MAX_PLOT = 150
 
 # ---------------------------------------------------------------------------
 
