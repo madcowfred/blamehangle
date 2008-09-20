@@ -42,6 +42,8 @@ IMDB_SEARCH_URL = 'http://us.imdb.com/find?q=%s;tt=on;mx=10'
 IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'<a href="/title/tt(\d+)/">(.*?)</a> \((\d+)[\)\/]')
+# Maximum length of Plot: spam
+IMDB_MAX_PLOT = 120
 
 # ---------------------------------------------------------------------------
 
@@ -165,19 +167,26 @@ class Video(Plugin):
 				
 				data['genres'] = ', '.join(genres)
 			
-			# Find the plot outline, or maybe it's a summary today
-			chunk = FindChunk(resp.data, 'Plot Outline:</h5>', '</div>')
-			if not chunk:
-				chunk = FindChunk(resp.data, 'Plot Summary:</h5>', '</div>')
-			
+			# Find the plot
+			chunk = FindChunk(resp.data, 'Plot:</h5>', '</div>')
 			if chunk:
-				n = chunk.find('<a')
+				chunk = chunk.strip()
+				n = chunk.find(' | ')
 				if n >= 0:
 					chunk = chunk[:n]
-				data['outline'] = chunk.strip()
+				
+				n = chunk.find(' <a')
+				if n >= 0:
+					chunk = chunk[:n]
+				
+				if len(chunk) > IMDB_MAX_PLOT:
+					n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
+					chunk = chunk[:n] + '...'
+				
+				data['plot'] = chunk
 			
 			# Find the rating
-			chunk = FindChunk(resp.data, '<b>User Rating:', '</div>')
+			chunk = FindChunk(resp.data, '<div class="meta">', '</div>')
 			if chunk:
 				if 'awaiting 5 votes' not in chunk:
 					rating = FindChunk(chunk, '<b>', '</b>')
@@ -191,7 +200,7 @@ class Video(Plugin):
 			
 			# Spit out the data
 			parts = []
-			for field in ('Title', 'Year', 'Genres', 'Rating', 'URL', 'Outline'):
+			for field in ('Title', 'Year', 'Genres', 'Rating', 'URL', 'Plot'):
 				if data.get(field.lower(), None) is None:
 					continue
 				
