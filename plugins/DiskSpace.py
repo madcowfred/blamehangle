@@ -47,8 +47,6 @@ class DiskSpace(Plugin):
 	
 	def rehash(self):
 		self.Options = self.OptionsDict('DiskSpace', autosplit=True)
-		
-		print self.Options
 	
 	def register(self):
 		self.addTextEvent(
@@ -103,5 +101,5 @@ class DiskSpace(Plugin):
 					replytext = 'ERROR!'
 		
 		# Spit it out
-		replytext = 'Disk space :: %s' % (' - '.join(spaces))
+		replytext = 'Disk space available :: %s' % (' - '.join(spaces))
 		self.sendReply(trigger, replytext)
