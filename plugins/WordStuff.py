@@ -442,7 +442,7 @@ class WordStuff(Plugin):
 		term = trigger.match.group('term').lower()
 		
 		# No match!
-		if resp.data.find('</b> is undefined.</h1>') >= 0:
+		if "isn't defined <a href" in resp.data:
 			replytext = "No definitions found for '%s'" % term
 			self.sendReply(trigger, replytext)
 		
