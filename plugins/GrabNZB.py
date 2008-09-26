@@ -154,7 +154,7 @@ class GrabNZB(Plugin):
 			newname = resp.headers.get('x-dnzb-name', None)
 			if newname is None:
 				newname = 'msgid_%s' % (trigger._reportid)
-			newname = '%s.nzb' % (newname)
+			newname = SafeFilename(newname + '.nzb')
 			newpath = os.path.join(self.Options['nzb_dir'], newname)
 			
 			# Save data
@@ -228,6 +228,8 @@ class GrabNZB(Plugin):
 			
 			if not newname.endswith('.nzb'):
 				newname = '%s.nzb' % (newname)
+			
+			newname = SafeFilename(newname)
 			
 			newpath = os.path.join(self.Options['nzb_dir'], newname)
 			
