@@ -1,10 +1,14 @@
 ----------------------------
-0.2.0             2007-
+0.2.0             2008-10-09
 ----------------------------
+* [ALL]:
+  - Updated copyright notice.
 * classes/async_buffered:
   - Always try poller.unregister(fd) in del_channel.
 * classes/ChatterGizmo:
   - Add IRCT_ACTION event type for channel actions (/me).
+  - Fix text directed at someone in the channel other than the bot not
+    triggering an IRCT_PUBLIC event.
 * classes/Database:
   - Remove nasty putlog frippery.
 * classes/DataMonkey:
@@ -12,14 +16,21 @@
   - Fix an old bug that always limited our connection count to 1. Oops.
 * classes/HTTPMonster:
   - Fix a typo.
+  - Disable the dodgy_html_check horribleness. I have no idea why that code
+    was ever added in the first place, and it's amazing it didn't start
+    causing issues until now.
 * classes/Message:
   - Message.__init__ will now raise an exception for an invalid target type.
 * classes/PluginHandler:
   - Handle IRCT_ACTION events.
+  - Fix plugin text matching using .match() instead of .search(). Plugins are
+    now able to match on partial text.
 * classes/Postman:
   - Remove invalid FDs from the poll object instead of spamming about it.
 * classes/Resolver:
   - Rewrote threading code to be a lot less insane.
+* configs/NewFiles.conf:
+  - New!
 * configs/SmartyPants.conf:
   - Update some comments for clarity.
 * docs/CHANGELOG:
@@ -30,6 +41,8 @@
   - Fix 'anidb' parsing.
 * plugins/AusBOM:
   - Fix 'ausbom' parsing. This was pretty much a complete rewrite of the plugin.
+* plugins/DiskSpace:
+  - New plugin, checks available disk space.
 * plugins/FunStuff:
   - Fix 'chucknorris' and 'vindiesel' parsing.
 * plugins/Google:
@@ -37,12 +50,21 @@
   - Fix 'translate' and 'transmangle' parsing.
 * plugins/GoonHooks:
   - New! Magic!
+* plugins/GrabBT:
+  - Changed 'torrents' command to read rTorrent session data.
+  - Removed directory watching code, see new plugin 'NewFiles'.
+  - Removed 'torrentspace' command.
+* plugins/GrabNZB:
+  - New plugin, downloads and saves NZB files from Newzbin or elsewhere.
 * plugins/Misc:
   - Add 'surreal', retrieves a random surreal sentence.
   - Fix 'tinyurl' parsing.
   - Remove old debug print statements.
 * plugins/MoneyMangler:
   - Remove old debug print statements.
+* plugins/NewFiles:
+  - New plugin, watches directories for new files and announces them to specific
+    channels.
 * plugins/TorrentScraper:
   - Add 'scrapestats' command, shows how many torrents are stored in the
     database.

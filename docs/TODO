@@ -7,17 +7,19 @@ core:
 	  is called.
 	* Work out a better way to handle common Plugin access control tasks: must be in
 	  channel/must have mode/must have bot flag/etc.
+	* Stealthyish plugins that only 'exist' in specific channels. Probably depends on
+	  the above.
 	* Allow Plugin objects to return some sort of BAD_COMMAND message to make the bot
-	  respond with help text.
+	  pretend the command is invalid.
 	* Proper NickServ support, including the GHOST command (kill our nick), waiting
 	  until we're identified before joining channels. Complicated by the 97000
-	  different types of NickServs around.
+	  varieties of NickServ/AuthServ.
 
 
 plugins:
 	* 'seen' plugin.
 	* News: admin command to flush news queue.
-	* SmartyPants: script to import infobot.org factpacks (someone)
+	* SmartyPants: script to import infobot.org factpacks
 
 
 whatever:
