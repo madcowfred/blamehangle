@@ -153,7 +153,7 @@ class Anime(Plugin):
 			self.sendReply(trigger, replytext)
 		
 		# If it's an anime page, parse it and spit the info out
-		elif '<h1>Anime:' in resp.data:
+		elif '<h1 class="anime">Anime:' in resp.data:
 			parts = []
 			
 			# Find the info we want
