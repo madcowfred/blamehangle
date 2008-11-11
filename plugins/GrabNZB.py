@@ -260,6 +260,8 @@ class GrabNZB(Plugin):
 				m = CD_FILENAME_RE.search(newname)
 				if m:
 					newname = m.group(1)
+					if newname.startswith('"') and newname.endswith('"'):
+						newname = newname[1:-1]
 				else:
 					newname = None
 			
