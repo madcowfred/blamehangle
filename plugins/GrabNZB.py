@@ -43,8 +43,11 @@ from classes.Plugin import Plugin
 # ---------------------------------------------------------------------------
 
 DNZB_URL = 'http://v3.newzbin.com/api/dnzb/'
-
 NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?$')
+
+NEWZLEECH_GET_URL = 'http://www.newzleech.com/?m=gen'
+NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/\?p=(\d+)$')
+
 CD_FILENAME_RE = re.compile('filename=([^;]+)')
 
 # ---------------------------------------------------------------------------
@@ -136,8 +139,15 @@ class GrabNZB(Plugin):
 				trigger._reportid = m.group(1)
 				self.urlRequest(trigger, self.__Save_Newzbin, DNZB_URL, data)
 			
+			# Maybe newzleech
 			else:
-				self.urlRequest(trigger, self.__Save_NZB, url)
+				m = NEWZLEECH_URL_RE.match(url)
+				if m:
+					self.urlRequest(trigger, self.__Parse_Newzleech, url)
+				
+				# Oh well
+				else:
+					self.urlRequest(trigger, self.__Save_NZB, url)
 		
 		# And if we didn't, cry
 		else:
@@ -147,7 +157,7 @@ class GrabNZB(Plugin):
 			self.putlog(LOG_WARNING, tolog)
 	
 	# -----------------------------------------------------------------------
-	# Save a Nezbin NZB
+	# Save a Newzbin NZB
 	def __Save_Newzbin(self, trigger, resp):
 		if resp.response == '200':
 			# Get the filename
@@ -202,6 +212,37 @@ class GrabNZB(Plugin):
 			
 			replytext = 'Newzbin error: %s' % (err)
 			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Parse a Newzleech post page
+	def __Parse_Newzleech(self, trigger, resp):
+		if resp.response == '200':
+			data = [ ('getnzb', 'Get NZB'), ]
+			
+			form = FindChunk(resp.data, '<form name="top"', '</form>')
+			if not form:
+				self.sendReply(trigger, 'Error parsing page: form.')
+				return
+			
+			inputs = FindChunks(form, '<input ', '>')
+			if not inputs:
+				self.sendReply(trigger, 'Error parsing page: inputs.')
+				return
+			
+			# Build our POST data
+			for i in inputs:
+				iname = FindChunk(i, 'name="', '"')
+				itype = FindChunk(i, 'type="', '"')
+				ivalue = FindChunk(i, 'value="', '"')
+				
+				if not iname or not itype or not ivalue:
+					continue
+				
+				if itype in ('hidden', 'checkbox'):
+					data.append((iname, ivalue))
+			
+			# And fetch it
+			self.urlRequest(trigger, self.__Save_NZB, NEWZLEECH_GET_URL, data)
 	
 	# -----------------------------------------------------------------------
 	# Save a normal NZB
