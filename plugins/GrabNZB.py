@@ -46,7 +46,7 @@ DNZB_URL = 'http://v3.newzbin.com/api/dnzb/'
 NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?$')
 
 NEWZLEECH_GET_URL = 'http://www.newzleech.com/?m=gen'
-NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/\?p=(\d+)$')
+NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/(?:posts/|)\?p=(\d+).*$')
 
 CD_FILENAME_RE = re.compile('filename=([^;]+)')
 
@@ -219,7 +219,7 @@ class GrabNZB(Plugin):
 		if resp.response == '200':
 			data = [ ('getnzb', 'Get NZB'), ]
 			
-			form = FindChunk(resp.data, '<form name="top"', '</form>')
+			form = FindChunk(resp.data, '<form name="top"', '</form>') or FindChunk(resp.data, '<form action="" method="POST"', '</form>')
 			if not form:
 				self.sendReply(trigger, 'Error parsing page: form.')
 				return
@@ -242,7 +242,10 @@ class GrabNZB(Plugin):
 					data.append((iname, ivalue))
 			
 			# And fetch it
-			self.urlRequest(trigger, self.__Save_NZB, NEWZLEECH_GET_URL, data)
+			if '/posts/' in resp.url:
+				self.urlRequest(trigger, self.__Save_NZB, resp.url, data)
+			else:
+				self.urlRequest(trigger, self.__Save_NZB, NEWZLEECH_GET_URL, data)
 	
 	# -----------------------------------------------------------------------
 	# Save a normal NZB
