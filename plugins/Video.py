@@ -38,10 +38,10 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-IMDB_SEARCH_URL = 'http://us.imdb.com/find?q=%s;tt=on;mx=10'
+IMDB_SEARCH_URL = 'http://us.imdb.com/find?s=tt&q=%s&x=0&y=0'
 IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
-IMDB_RESULT_RE = re.compile(r'<a href="/title/tt(\d+)/">(.*?)</a> \((\d+)[\)\/]')
+IMDB_RESULT_RE = re.compile(r'/b.gif\?link=/title/tt(\d+)/\';">([^<>]+)</a> \((\d+)[\)\/]')
 # Maximum length of Plot: spam
 IMDB_MAX_PLOT = 150
 
