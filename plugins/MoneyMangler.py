@@ -41,7 +41,8 @@ from classes.Plugin import *
 # ---------------------------------------------------------------------------
 
 ASX_URL = 'http://www.asx.com.au/asx/markets/EquitySearchResults.jsp?method=get&template=F1001&ASXCodes=%s'
-EXCHANGE_URL = 'http://finance.yahoo.com/currency/convert?amt=%(amt)s&from=%(from)s&to=%(to)s&submit=Convert'
+CURRENCY_URL = 'http://www.xe.com/ucc/full/'
+EXCHANGE_URL = 'http://www.xe.com/ucc/convert.cgi'
 QUOTE_URL = 'http://finance.yahoo.com/q?d=v1&s=%s'
 SYMBOL_URL = 'http://finance.yahoo.com/l?t=S&m=&s=%s'
 USDEBT_URL = 'http://www.brillig.com/debt_clock/'
@@ -79,14 +80,8 @@ class MoneyMangler(Plugin):
 		
 		# If we have to update, go do that
 		if update:
-			data = {
-				'amt': '1.00',
-				'from': 'USD',
-				'to': 'CAD',
-			}
-			url = EXCHANGE_URL % data
 			trigger = PluginFakeTrigger('CURRENCY_UPDATE')
-			self.urlRequest(trigger, self.__Update_Currencies, url)
+			self.urlRequest(trigger, self.__Update_Currencies, CURRENCY_URL)
 	
 	# Load our currency data
 	def __Load_Currencies(self, filename):
@@ -194,21 +189,20 @@ class MoneyMangler(Plugin):
 	def __Fetch_Exchange(self, trigger):
 		replytext = None
 		
-		data = {}
-		data['amt'] = '%.2f' % float(trigger.match.group('amt'))
-		data['from'] = trigger.match.group('from').upper()
-		data['to'] = trigger.match.group('to').upper()
+		data = {
+			'Amount': '%.2f' % float(trigger.match.group('amt')),
+			'From': trigger.match.group('from').upper(),
+			'To': trigger.match.group('to').upper(),
+		}
 		
-		if data['from'] not in self.__Currencies:
-			replytext = '%(from)s is not a valid currency code' % data
-		elif data['to'] not in self.__Currencies:
-			replytext = '%(to)s is not a valid currency code' % data
-		elif 'e' in data['amt']:
-			replytext = '%(amt)s is beyond the range of convertable values' % data
+		if data['From'] not in self.__Currencies:
+			replytext = '%(From)s is not a valid currency code' % data
+		elif data['To'] not in self.__Currencies:
+			replytext = '%(To)s is not a valid currency code' % data
+		elif 'e' in data['Amount']:
+			replytext = '%(Amount)s is beyond the range of convertable values' % data
 		else:
-			url = EXCHANGE_URL % data
-			trigger.data = data
-			self.urlRequest(trigger, self.__Parse_Exchange, url)
+			self.urlRequest(trigger, self.__Parse_Exchange, EXCHANGE_URL, data)
 		
 		if replytext is not None:
 			self.sendReply(trigger, replytext)
@@ -279,20 +273,17 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	# Parse the exchange page and spit out a result
 	def __Parse_Exchange(self, trigger, resp):
-		data = trigger.data
-		resp.data = resp.data.replace('&amp;', ' and ')
-		
 		# Find the data chunks
-		chunks = FindChunks(resp.data, '<td class="yfnc_tabledata1">', '</td>')
+		chunks = FindChunks(resp.data, '<h2 class="XE">', '<')
 		if not chunks:
-			self.sendReply(trigger, 'Page parsing failed.')
+			self.sendReply(trigger, 'Page parsing failed: h2.')
 			return
 		
 		# And off we go
-		if len(chunks) == 7:
-			replytext = '%s %s == %s %s' % (chunks[1][3:-4], data['from'], chunks[4][3:-4], data['to'])
+		if len(chunks) == 3:
+			replytext = '%s == %s' % (chunks[0], chunks[2])
 		else:
-			replytext = 'Page parsing failed.'
+			replytext = 'Page parsing failed: chunks.'
 		
 		self.sendReply(trigger, replytext)
 	
@@ -415,7 +406,7 @@ class MoneyMangler(Plugin):
 		filename = os.path.join('data', 'currencies')
 		
 		# Find the giant list
-		chunk = FindChunk(resp.data, '<input name="amt"', '</select>')
+		chunk = FindChunk(resp.data, '<select name="From"', '</select>')
 		if not chunk:
 			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
 			if os.path.isfile(filename):
@@ -423,7 +414,7 @@ class MoneyMangler(Plugin):
 			return
 		
 		# Find the options
-		chunks = FindChunks(chunk, '<option ', '</option>')
+		chunks = FindChunks(chunk, '<option ', '/option>')
 		if not chunks:
 			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
 			if os.path.isfile(filename):
@@ -432,12 +423,10 @@ class MoneyMangler(Plugin):
 		
 		# Parse 'em
 		for chunk in chunks:
-			vn = chunk.find('value=')
-			if vn >= 0:
-				code = chunk[vn+7:vn+10]
-				country = chunk[vn+12:-6]
-				if code and country:
-					self.__Currencies[code] = country
+			code = FindChunk(chunk, 'value="', '"')
+			country = FindChunk(chunk, '>', '<')[:-6]
+			if code and country:
+				self.__Currencies[code] = country
 		
 		# We's done
 		if self.__Currencies:
