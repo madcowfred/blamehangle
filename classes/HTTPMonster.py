@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# $Id$
+# $Id: HTTPMonster.py 4115 2008-05-11 13:21:55Z freddie $
 # ---------------------------------------------------------------------------
 # Copyright (c) 2003-2008, blamehangle team
 # All rights reserved.
@@ -242,6 +242,7 @@ class async_http(buffered_dispatcher):
 			self.parent.active += 1
 			self.last_activity = time.time()
 	
+	# -----------------------------------------------------------------------
 	# Connection succeeded
 	def handle_connect(self):
 		self.last_activity = time.time()
@@ -280,6 +281,7 @@ class async_http(buffered_dispatcher):
 			text = '%s\r\n' % (self.post_data)
 			self.send(text)
 	
+	# -----------------------------------------------------------------------
 	# Connection has data to read
 	def handle_read(self):
 		self.last_activity = time.time()
@@ -292,6 +294,7 @@ class async_http(buffered_dispatcher):
 			self.data.append(chunk)
 			self.received += len(chunk)
 	
+	# -----------------------------------------------------------------------
 	# Connection has been closed
 	def handle_close(self):
 		# Re-combine the data into one big chunk
@@ -399,17 +402,6 @@ class async_http(buffered_dispatcher):
 						
 						# And if we still have page text, keep going
 						if page_text is not None:
-							# WARNING: this code is horrible, and is commented
-							# until I work out what the hell it was for.
-							#m = dodgy_html_check(page_text)
-							#while m:
-							#	pre = page_text[:m.start()]
-							#	post = page_text[m.end():]
-							#	start, end = m.span('href')
-							#	fixed = '"' + page_text[start:end - 1].replace("'", "%39") + '"'
-							#	page_text = pre + 'href=' + fixed + post
-							#	m = dodgy_html_check(page_text)
-							
 							# If it was compressed, log a bit extra
 							if is_gzip:
 								tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(data), len(page_text))
@@ -442,6 +434,7 @@ class async_http(buffered_dispatcher):
 		
 		self.close()
 	
+	# -----------------------------------------------------------------------
 	# An exception occured somewhere
 	def handle_error(self):
 		_type, _value, _tb = sys.exc_info()
@@ -454,11 +447,13 @@ class async_http(buffered_dispatcher):
 		
 		del _tb
 	
+	# -----------------------------------------------------------------------
 	# See if we've timed out
 	def timeout_check(self, currtime):
 		if currtime - self.last_activity > self.parent.connect_timeout:
 			self.failed('Connection timed out')
 	
+	# -----------------------------------------------------------------------
 	# Failed!
 	def failed(self, errormsg):
 		tolog = "Error while trying to fetch URL '%s': %s" % (self.url, errormsg)
