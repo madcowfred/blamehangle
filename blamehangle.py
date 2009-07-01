@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # ---------------------------------------------------------------------------
-# $Id$
-# ---------------------------------------------------------------------------
-# Copyright (c) 2003-2008, blamehangle team
+# Copyright (c) 2003-2009, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

@@ -1,7 +1,5 @@
 #!/bin/sh
-
-#$Id$
-
+# ---------------------------------------------------------------------------
 # A simple shell script to start the bot and make sure it keeps running
 # in case of a crash (which we hope never happens!)
 #

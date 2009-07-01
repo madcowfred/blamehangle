@@ -1,7 +1,4 @@
-# ---------------------------------------------------------------------------
-# $Id: GrabBT.py 4095 2007-11-19 01:31:45Z freddie $
-# ---------------------------------------------------------------------------
-# Copyright (c) 2003-2008, blamehangle team
+# Copyright (c) 2003-2009, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
