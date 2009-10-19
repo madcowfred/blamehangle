@@ -60,7 +60,7 @@ class DiskSpace(Plugin):
 		
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
 			tolog = "%s on %s/%s trying to see disk space." % (trigger.userinfo, network, chan)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# See how much disk space we have then

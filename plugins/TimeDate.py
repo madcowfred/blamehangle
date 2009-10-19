@@ -41,7 +41,7 @@ class TimeDate(Plugin):
 	def register(self):
 		# Sorry, no timezone stuff on Windows
 		if os.name == 'nt':
-			self.putlog(LOG_WARNING, "Unable to get timezone information on Windows systems.")
+			self.logger.warn("Unable to get timezone information on Windows systems.")
 			return
 		
 		self.addTextEvent(

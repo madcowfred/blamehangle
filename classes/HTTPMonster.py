@@ -32,6 +32,7 @@ and they will receive a response message at a later time.
 
 import asyncore
 import gzip
+import logging
 import re
 import socket
 import sys
@@ -135,7 +136,7 @@ class HTTPMonster(Child):
 				tolog = "Error while trying to fetch URL '%s': DNS failure" % (url)
 			else:
 				tolog = "Error while trying to fetch URL '%s': no valid DNS results" % (url)
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 			
 			# Build the response and return it
 			resp = HTTPResponse(url, None, None, None)
@@ -160,6 +161,8 @@ class HTTPMonster(Child):
 class async_http(buffered_dispatcher):
 	def __init__(self, parent, hosts, message, chunks, seen):
 		buffered_dispatcher.__init__(self)
+		
+		self.logger = logging.getLogger('hangle.async_http')
 		
 		self._error = None
 		self.closed = 0
@@ -188,7 +191,7 @@ class async_http(buffered_dispatcher):
 		
 		# Log what we're doing
 		tolog = 'Fetching URL: %s' % (self.url)
-		parent.putlog(LOG_DEBUG, tolog)
+		self.logger.info(tolog)
 		
 		# Parse the URL, saving the bits we need
 		scheme, host, path, params, query, fragment = self.chunks
@@ -324,7 +327,7 @@ class async_http(buffered_dispatcher):
 						k, v = re.split(':+ ', line, 1)
 					except ValueError:
 						tolog = 'Bad header line: %r' % (line)
-						self.parent.putlog(LOG_WARNING, tolog)
+						self.logger.info(tolog)
 					else:
 						headers[k.lower()] = v
 				
@@ -335,7 +338,7 @@ class async_http(buffered_dispatcher):
 					if 'location' in headers:
 						# Same path, stupid server?
 						if headers['location'] == self.path and len(data) > 0:
-							self.parent.putlog(LOG_WARNING, 'Stupid server redirected to same location!')
+							self.logger.warn('Stupid server redirected to same location!')
 							parsepage = True
 						else:
 							newurl = urlparse.urljoin(self.url, headers['location'])
@@ -358,7 +361,7 @@ class async_http(buffered_dispatcher):
 				elif response == '304':
 					# Log something
 					tolog = 'URL not modified: %s' % (self.url)
-					self.parent.putlog(LOG_DEBUG, tolog)
+					self.logger.info(tolog)
 					
 					# Build the response and return it
 					resp = HTTPResponse(self.url, response, headers, '')
@@ -383,7 +386,7 @@ class async_http(buffered_dispatcher):
 								is_gzip = 1
 							else:
 								tolog = 'Unknown Content-Encoding: %s' % (repr(headers['content-encoding']))
-								self.parent.putlog(LOG_WARNING, tolog)
+								self.logger.warn(tolog)
 						
 						# If we think it's gzip compressed, try to unsquish it
 						if is_gzip:
@@ -404,7 +407,7 @@ class async_http(buffered_dispatcher):
 								tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(data), len(page_text))
 							else:
 								tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
-							self.parent.putlog(LOG_DEBUG, tolog)
+							self.logger.info(tolog)
 							
 							# Build the response and return it
 							resp = HTTPResponse(self.url, response, headers, page_text)
@@ -440,7 +443,8 @@ class async_http(buffered_dispatcher):
 			raise
 		else:
 			self.failed(_value)
-			self.parent.putlog(LOG_EXCEPTION, [_type, _value, _tb])
+			self.logger.error('Trapped exception!', (_type, _value, _tb))
+			#self.parent.putlog(LOG_EXCEPTION, [_type, _value, _tb])
 		
 		del _tb
 	
@@ -454,7 +458,7 @@ class async_http(buffered_dispatcher):
 	# Failed!
 	def failed(self, errormsg):
 		tolog = "Error while trying to fetch URL '%s': %s" % (self.url, errormsg)
-		self.parent.putlog(LOG_ALWAYS, tolog)
+		self.logger.error(tolog)
 		
 		# Build the response and return it
 		resp = HTTPResponse(self.url, None, None, None)

@@ -84,9 +84,9 @@ class MapQuest(Plugin):
 		
 		
 		tolog = "Source: %s %s %s %s" % (source_city, source_zip, source_state, source_country)
-		self.putlog(LOG_DEBUG, tolog)
+		self.logger.debug(tolog)
 		tolog = "Dest: %s %s %s %s" % (dest_city, dest_zip, dest_state, dest_country)
-		self.putlog(LOG_DEBUG, tolog)
+		self.logger.debug(tolog)
 		
 		
 		# We have our source and destinations parsed, build the mapquest url

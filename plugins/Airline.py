@@ -57,7 +57,7 @@ class Airline(Plugin):
 		try:
 			code_file = open(filename, 'r')
 		except IOError:
-			self.putlog(LOG_WARNING, "Can't find data/airline_codes!")
+			self.logger.warn("Can't find data/airline_codes!")
 			return
 		
 		for line in code_file:
@@ -172,7 +172,7 @@ class Airline(Plugin):
 		# Find the chunk we need
 		chunk = FindChunk(resp.data, '<PRE>', '</PRE>')
 		if not chunk:
-			self.putlog(LOG_WARNING, 'IATA page parsing failed: no data')
+			self.logger.warn('IATA page parsing failed: no data')
 			self.sendReply(trigger, 'Failed to parse page.')
 			return
 		
@@ -264,7 +264,7 @@ class Airline(Plugin):
 			# Find the chunk of data we're interested in
 			chunk = FindChunk(resp.data, '<table name=flight_info', '</table')
 			if chunk is None:
-				self.putlog(LOG_WARNING, 'Flight page parsing failed: unable to find data')
+				self.logger.warn('Flight page parsing failed: unable to find data')
 				self.sendReply(trigger, 'Failed to parse page properly')
 				return
 			lines = StripHTML(chunk)

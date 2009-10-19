@@ -75,13 +75,10 @@ class HangleUserList:
 			if flags and masks:
 				user = HangleUser(nick, masks, flags)
 				self.__users[nick] = user
-				
-				#self.parent.putlog(LOG_DEBUG, user)
 			
 			# If we didn't, something is wrong
-			else:
-				tolog = "Didn't find hostmasks and flags entries for '%s'!" % (nick)
-				#self.parent.putlog(LOG_WARNING, tolog)
+			#else:
+			#	tolog = "Didn't find hostmasks and flags entries for '%s'!" % (nick)
 	
 	# -----------------------------------------------------------------------
 	# Check if the supplied hostname matches any of the hostmasks supplied

@@ -420,7 +420,7 @@ class SmartyPants(Plugin):
 					self.sendReply(trigger, "I'm not in that channel!")
 					tolog = "%s tried to tell %s about '%s', but I'm not in that channel!" % (
 						trigger.userinfo, tellnick, name)
-					self.putlog(LOG_WARNING, tolog)
+					self.logger.warn(tolog)
 					return
 				
 				# Target is a channel the source isn't in.
@@ -428,7 +428,7 @@ class SmartyPants(Plugin):
 					self.sendReply(trigger, "You're not in that channel!")
 					tolog = "%s tried to tell %s about '%s', but they're not in that channel!" % (
 						trigger.userinfo, tellnick, name)
-					self.putlog(LOG_WARNING, tolog)
+					self.logger.warn(tolog)
 					return
 			
 			else:
@@ -438,7 +438,7 @@ class SmartyPants(Plugin):
 					self.sendReply(trigger, "That user isn't in a channel with you!")
 					tolog = "%s tried to tell %s about '%s', but they're not in a common channel!" % (
 						trigger.userinfo, tellnick, name)
-					self.putlog(LOG_WARNING, tolog)
+					self.logger.warn(tolog)
 					return
 		
 		self.dbQuery(trigger, self.__Fact_Get, GET_QUERY, name)

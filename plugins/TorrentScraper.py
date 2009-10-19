@@ -165,7 +165,7 @@ class TorrentScraper(Plugin):
 			# Find all of our URLs
 			chunks = FindChunks(resp.data, '<a ', '</a>') + FindChunks(resp.data, '<A ', '</A>')
 			if not chunks:
-				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				self.logger.warn("Page parsing failed: links.")
 				return
  			
 			# See if any are talking about torrents
@@ -190,7 +190,7 @@ class TorrentScraper(Plugin):
 			# Find the URL bits we want
 			chunks = FindChunks(resp.data, '<a class="download" href="', '"')
 			if not chunks:
-				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				self.logger.warn("Page parsing failed: links.")
 				return
 			
 			# Build our new URLs
@@ -204,7 +204,7 @@ class TorrentScraper(Plugin):
 			# Find all of our URLs
 			urls = FindChunks(resp.data, '<a href="download.php?', '"')
 			if not urls:
-				self.putlog(LOG_WARNING, "Page parsing failed: links.")
+				self.logger.warn("Page parsing failed: links.")
 				return
  			
  			# Fix 'em
@@ -221,7 +221,7 @@ class TorrentScraper(Plugin):
 				rss = SimpleRSSParser(resp.data)
 			except Exception, msg:
 				tolog = "Error parsing RSS feed '%s': %s" % (trigger.source, msg)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				return
 			
 			# Grab the torrents
@@ -237,7 +237,7 @@ class TorrentScraper(Plugin):
 		# If we found nothing, bug out
 		if torrents == {}:
 			tolog = 'Found no torrents at %s!' % (resp.url)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Build our query
@@ -275,7 +275,7 @@ class TorrentScraper(Plugin):
 			# Don't try it if it's still marked broken
 			if url in self._Broken:
 				tolog = '"%s" is marked as broken, skipping!' % (url)
-				self.putlog(LOG_DEBUG, tolog)
+				self.logger.debug(tolog)
 				continue
 			
 			trigger.origurl = url
@@ -290,7 +290,7 @@ class TorrentScraper(Plugin):
 			metainfo = bdecode(resp.data)['info']
 		except ValueError:
 			tolog = '"%s" is not a valid torrent!' % (resp.url)
-			self.putlog(LOG_DEBUG, tolog)
+			self.logger.debug(tolog)
 			# Mark it as borken
 			self._Broken[trigger.origurl] = True
 		else:
@@ -331,7 +331,7 @@ class TorrentScraper(Plugin):
 	
 	def __DB_Recent(self, trigger, result):
 		if result is None:
-			self.putlog(LOG_WARNING, '__DB_Recent: A DB error occurred!')
+			self.logger.warn('__DB_Recent: A DB error occurred!')
 			return
 		
 		# If there's nothing new, don't generate it
@@ -357,15 +357,15 @@ class TorrentScraper(Plugin):
 			})
 		
 		# And generate it
-		SimpleRSSGenerator(self.Options['rss_path'], feedinfo, items, self.putlog)
-
+		SimpleRSSGenerator(self.Options['rss_path'], feedinfo, items)
+	
 	# -----------------------------------------------------------------------
 	def __Fetch_Stats(self, trigger):
 		self.dbQuery(trigger, self.__DB_Stats, STATS_QUERY)
 	
 	def __DB_Stats(self, trigger, result):
 		if result is None:
-			self.putlog(LOG_WARNING, '__DB_Stats: A DB error occurred!')
+			self.logger.warn('__DB_Stats: A DB error occurred!')
 			return
 		
 		replytext = 'Total torrents scraped: %s' % (result[0]['total'])

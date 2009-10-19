@@ -121,12 +121,12 @@ class Quotes(Plugin):
 			except Exception, msg:
 				replytext = 'Error sending mail: %s' % (msg)
 				tolog = 'Error sending quote mail: %s' % (msg)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			
 			else:
 				replytext = 'Mail sent successfully'
 				tolog = '%s (%s@%s) sent a quote mail' % (trigger.userinfo.nick, trigger.userinfo.ident, trigger.userinfo.host)
-				self.putlog(LOG_ALWAYS, tolog)
+				self.logger.info(tolog)
 			
 			self.sendReply(trigger, replytext)
 	

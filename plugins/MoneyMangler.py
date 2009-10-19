@@ -62,18 +62,18 @@ class MoneyMangler(Plugin):
 			timediff = time.time() - os.stat(filename).st_mtime
 			if timediff > (7 * 24 * 60 * 60):
 				update = 1
-				self.putlog(LOG_ALWAYS, 'Currency data is stale, updating...')
+				self.logger.info('Currency data is stale, updating...')
 			# Guess it's current-ish, try loading it
 			else:
 				self.__Load_Currencies(filename)
 				if len(self.__Currencies) == 0:
 					update = 1
-					self.putlog(LOG_ALWAYS, 'Currency data file is empty, updating...')
+					self.logger.info('Currency data file is empty, updating...')
 		
 		else:
 			# File isn't even here
 			update = 1
-			self.putlog(LOG_ALWAYS, 'Currency data is missing, updating...')
+			self.logger.info('Currency data is missing, updating...')
 		
 		# If we have to update, go do that
 		if update:
@@ -86,7 +86,7 @@ class MoneyMangler(Plugin):
 			curr_file = open(filename, 'r')
 		except IOError:
 			tolog = 'Unable to open %s, currency conversion is broken!' % filename
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 		else:
 			for line in curr_file.readlines():
 				line = line.strip()
@@ -100,7 +100,7 @@ class MoneyMangler(Plugin):
 					continue
 			
 			tolog = 'Loaded %d currencies from %s.' % (len(self.__Currencies), filename)
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 	
 	# -----------------------------------------------------------------------
 	
@@ -228,7 +228,7 @@ class MoneyMangler(Plugin):
 		# Get all table rows
 		trs = FindChunks(resp.data, '<tr', '</tr>')
 		if not trs:
-			self.putlog(LOG_WARNING, 'ASX page parsing failed: no table rows?!')
+			self.logger.warn('ASX page parsing failed: no table rows?!')
 			self.sendReply(trigger, 'Failed to parse page.')
 			return
 		
@@ -242,7 +242,7 @@ class MoneyMangler(Plugin):
 			# Find all table cells in this row
 			tds = FindChunks(tr, '<td', '</td>')
 			if not tds:
-				self.putlog(LOG_WARNING, 'ASX page parsing failed: no table cells?!')
+				self.logger.warn('ASX page parsing failed: no table cells?!')
 				self.sendReply(trigger, 'Failed to parse page.')
 				return
 			
@@ -304,7 +304,7 @@ class MoneyMangler(Plugin):
 			# Find the data we need
 			chunk = FindChunk(resp.data, 'class="yfnc_datamodoutline1"', '</table>')
 			if chunk is None:
-				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
+				self.logger.warn('Stock page parsing failed: no stock data')
 				self.sendReply(trigger, 'Failed to parse page.')
 				return
 			
@@ -315,7 +315,7 @@ class MoneyMangler(Plugin):
 			# Split into table rows
 			chunks = FindChunks(chunk, '<tr>', '</tr>')
 			if not chunks:
-				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock chunks')
+				self.logger.warn('Stock page parsing failed: no stock chunks')
 				self.sendReply(trigger, 'Failed to parse page.')
 				return
 			
@@ -360,7 +360,7 @@ class MoneyMangler(Plugin):
 			# Find the chunk of data we need
 			chunk = FindChunk(resp.data, 'Add to My Portfolio', 'View Quotes for All Above Symbols')
 			if chunk is None:
-				self.putlog(LOG_WARNING, 'Stock page parsing failed: no stock data')
+				self.logger.warn('Stock page parsing failed: no stock data')
 				self.sendReply(trigger, 'Page parsing failed.')
 				return
 			
@@ -405,7 +405,7 @@ class MoneyMangler(Plugin):
 		# Find the giant list
 		chunk = FindChunk(resp.data, '<select name="From"', '</select>')
 		if not chunk:
-			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
+			self.logger.warn('Page parsing failed while updating currencies.')
 			if os.path.isfile(filename):
 				self.__Load_Currencies(filename)
 			return
@@ -413,7 +413,7 @@ class MoneyMangler(Plugin):
 		# Find the options
 		chunks = FindChunks(chunk, '<option ', '/option>')
 		if not chunks:
-			self.putlog(LOG_WARNING, 'Page parsing failed while updating currencies.')
+			self.logger.warn('Page parsing failed while updating currencies.')
 			if os.path.isfile(filename):
 				self.__Load_Currencies(filename)
 			return
@@ -428,13 +428,13 @@ class MoneyMangler(Plugin):
 		# We's done
 		if self.__Currencies:
 			tolog = 'Currency update complete, found %d currencies.' % (len(self.__Currencies))
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 			
 			try:
 				curr_file = open(filename, 'w')
 			except IOError:
 				tolog = 'Unable to open %s for writing!' % filename
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			else:
 				currs = self.__Currencies.items()
 				currs.sort()
@@ -444,7 +444,7 @@ class MoneyMangler(Plugin):
 				curr_file.close()
 		
 		else:
-			self.putlog(LOG_WARNING, 'Currency update failed, found 0 currencies!')
+			self.logger.warn('Currency update failed, found 0 currencies!')
 			if os.path.isfile(filename):
 				self.__Load_Currencies(filename)
 	

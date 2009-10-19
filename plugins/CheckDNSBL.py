@@ -55,7 +55,7 @@ class CheckDNSBL(Plugin):
 		if 'dnsbl' in self.Options:
 			self.sendMessage('ChatterGizmo', REQ_IRC_EVENTS, ['join'])
 		else:
-			self.putlog(LOG_WARNING, 'No DNSBLs configured!')
+			self.logger.warn('No DNSBLs configured!')
 	
 	# -----------------------------------------------------------------------
 	
@@ -162,7 +162,7 @@ class CheckDNSBL(Plugin):
 		ournick = wrap.conn.getnick()
 		
 		tolog = '%s on %s is listed in one of my DNSBL lists!' % (info['ui'], info['chan'])
-		self.connlog(wrap, LOG_WARNING, tolog)
+		self.connlog(self.logger.warn, wrap, tolog)
 		
 		if not wrap.ircul.user_has_mode(info['chan'], ournick, 'o'):
 			return

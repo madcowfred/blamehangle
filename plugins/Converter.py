@@ -46,7 +46,7 @@ class Converter(Plugin):
 		try:
 			conv_file = open(filename, 'r')
 		except IOError:
-			self.putlog(LOG_WARNING, "Can't find data/conversions!")
+			self.logger.warn("Can't find data/conversions!")
 		else:
 			section = None
 			for line in conv_file:

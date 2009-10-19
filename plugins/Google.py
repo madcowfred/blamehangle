@@ -231,7 +231,7 @@ class Google(Plugin):
 			
 			# Beep, failed
 			else:
-				self.putlog(LOG_WARNING, 'Google page parsing failed: unable to find a result')
+				self.logger.warn('Google page parsing failed: unable to find a result')
 				self.sendReply(trigger, 'Failed to parse page')
 				return
 		
@@ -255,7 +255,7 @@ class Google(Plugin):
 		
 		# If we found no results at all, cry
 		else:
-			self.putlog(LOG_WARNING, 'Google page parsing failed: unable to match result')
+			self.logger.warn('Google page parsing failed: unable to match result')
 			self.sendReply(trigger, 'Failed to match result')
 			return
 	

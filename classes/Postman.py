@@ -32,6 +32,8 @@ things. Don't mess with it.
 """
 
 import asyncore
+import logging
+import logging.handlers
 import os
 import select
 import signal
@@ -94,20 +96,19 @@ class Postman:
 		# Load all the configs supplied for plugins
 		self.__Load_Configs()
 		
-		# Open our log file and rotate it if we have to
-		self.__Log_Open()
-		self.__Log_Rotate()
+		# Initialise our logging
+		self.__Log_Init()
 		
 		
 		# Create a poll object for async bits to use. If the user doesn't have
 		# poll, we're going to have to fake it.
 		try:
 			asyncore.poller = select.poll()
-			self.__Log(LOG_DEBUG, 'Using poll() for sockets')
+			self.logger.info('Using poll() for sockets')
 		except AttributeError:
 			from classes.FakePoll import FakePoll
 			asyncore.poller = FakePoll()
-			self.__Log(LOG_DEBUG, 'Using FakePoll() for sockets')
+			self.logger.info('Using FakePoll() for sockets')
 		
 		# Create our children
 		self.__Children = {}
@@ -115,7 +116,7 @@ class Postman:
 		system = [ PluginHandler, Resolver, ChatterGizmo, DataMonkey, HTTPMonster ]
 		for cls in system:
 			tolog = "Starting system object '%s'" % cls.__name__
-			self.__Log(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 			
 			instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
 			self.__Children[cls.__name__] = instance
@@ -139,7 +140,7 @@ class Postman:
 		
 		except ImportError, msg:
 			tolog = "Error while importing plugin '%s': %s" % (name, msg)
-			self.__Log(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			self.__Plugin_Unload(name)
 		
 		except:
@@ -149,7 +150,7 @@ class Postman:
 		else:
 			# Start it up
 			tolog = "Starting plugin object '%s'" % name
-			self.__Log(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 			
 			try:
 				cls = globals()[name]
@@ -175,8 +176,8 @@ class Postman:
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
-		#tolog = "Unloading plugin object '%s'" % name
-		#self.__Log(LOG_DEBUG, tolog)
+		tolog = "Unloading plugin object '%s'" % name
+		self.logger.info(tolog)
 		
 		if self.__Children.has_key(name):
 			# Remove them from the run_* lists
@@ -212,11 +213,11 @@ class Postman:
 	# -----------------------------------------------------------------------
 	
 	def SIG_HUP(self, signum, frame):
-		self.__Log(LOG_WARNING, 'Received SIGHUP')
+		self.logger.crit('Received SIGHUP')
 		self.__Rehash()
 	
 	def SIG_TERM(self, signum, frame):
-		self.__Log(LOG_WARNING, 'Received SIGTERM')
+		self.logger.crit('Received SIGTERM')
 		self.__Shutdown('Terminated!')
 	
 	# -----------------------------------------------------------------------
@@ -236,11 +237,8 @@ class Postman:
 					
 					# If it's targeted at us, process it
 					if message.targets == ['Postman']:
-						if message.ident == REQ_LOG:
-							self.__Log(*message.data)
-						
 						# Reload our config
-						elif message.ident == REQ_REHASH:
+						if message.ident == REQ_REHASH:
 							self.__Rehash()
 						
 						# Die!
@@ -271,12 +269,12 @@ class Postman:
 											self.sendMessage(None, REQ_REHASH, None)
 							
 							except KeyError:
-								tolog = "Postman received a message from '%s', but it's dead!" % (child)
-								self.__Log(LOG_WARNING, tolog)
+								tolog = "Postman received a message from ghost plugin '%s'" % (child)
+								self.logger.warn(tolog)
 					
 					else:
 						# Log the message if debug is enabled
-						self.__Log(LOG_MSG, message)
+						self.logger.debug(message)
 						
 						# If it's a global message, send it to everyone
 						if message.targetstring == 'ALL':
@@ -289,8 +287,8 @@ class Postman:
 								if name in self.__Children:
 									self.__Children[name].inQueue.append(message)
 								else:
-									tolog = "invalid target for Message ('%s') : %s" % (name, message)
-									self.__Log(LOG_WARNING, tolog)
+									tolog = "Invalid target for Message ('%s') : %s" % (name, message)
+									self.logger.warn(tolog)
 				
 				
 				# Deliver any waiting messages to children
@@ -305,7 +303,7 @@ class Postman:
 						getattr(child, methname)(message)
 					else:
 						tolog = 'Unhandled message in %s: %s' % (name, message.ident)
-						self.__Log(LOG_DEBUG, tolog)
+						self.logger.debug(tolog)
 				
 				
 				# Poll our sockets
@@ -314,7 +312,7 @@ class Postman:
 					obj = asyncore.socket_map.get(fd)
 					if obj is None:
 						tolog = 'Invalid FD for poll(): %d - unregistered' % (fd)
-						self.__Log(LOG_WARNING, tolog)
+						self.logger.crit(tolog)
 						asyncore.poller.unregister(fd)
 						continue
 					
@@ -324,10 +322,10 @@ class Postman:
 						asyncore.write(obj)
 					elif event & select.POLLNVAL:
 						tolog = "FD %d is still in the poll, but it's closed!" % fd
-						self.__Log(LOG_WARNING, tolog)
+						self.logger.crit(tolog)
 					else:
 						tolog = 'Bizarre poll response! %d: %d' % (fd, event)
-						self.__Log(LOG_WARNING, tolog)
+						self.logger.crit(tolog)
 				
 				
 				# Run any always loops
@@ -340,8 +338,8 @@ class Postman:
 					currtime = time.time()
 					
 					# See if our log file has to rotate
-					if currtime >= self.__rotate_after:
-						self.__Log_Rotate()
+					#if currtime >= self.__rotate_after:
+					#	self.__Log_Rotate()
 					
 					# If we're shutting down, see if all of our children have
 					# stopped.
@@ -367,16 +365,13 @@ class Postman:
 	def sendMessage(self, *args):
 		message = Message('Postman', *args)
 		
-		# Log the message if debug is enabled
-		self.__Log(LOG_MSG, message)
-		
 		if message.targets:
 			for name in message.targets:
 				if name in self.__Children:
 					self.__Children[name].inQueue.append(message)
 				else:
-					tolog = "WARNING: invalid target for Message ('%s')" % name
-					self.__Log(LOG_ALWAYS, tolog)
+					tolog = "Invalid target for Message ('%s')" % name
+					self.logger.warn(tolog)
 		
 		else:
 			for child in self.__Children.values():
@@ -394,7 +389,7 @@ class Postman:
 		self.__Shutdown_Start = time.time()
 		
 		tolog = 'Shutting down (%s)...' % why
-		self.__Log(LOG_ALWAYS, tolog)
+		self.logger.info(tolog)
 		
 		# Send shutdown messages to everyone
 		self.sendMessage(None, REQ_SHUTDOWN, why)
@@ -405,73 +400,44 @@ class Postman:
 		
 		# If our children are asleep, and we have no messages, die
 		if not alive and not self.inQueue:
-			self.__Log(LOG_ALWAYS, 'Shutdown complete')
+			self.logger.info('Shutdown complete')
 			return 1
 		
 		elif alive:
 			# If we've been shutting down for a while, just give up
 			if time.time() - self.__Shutdown_Start >= 10:
 				tolog = 'Shutdown timeout expired: %s' % ', '.join(alive)
-				self.__Log(LOG_ALWAYS, tolog)
+				self.warn(LOG_ALWAYS, tolog)
 				return 1
 			
 			else:
 				tolog = 'Objects still alive: %s' % ', '.join(alive)
-				self.__Log(LOG_DEBUG, tolog)
+				self.logger.warn(LOG_DEBUG, tolog)
 				return 0
 		
 		return 0
 	
 	# -----------------------------------------------------------------------
-	# Open our log file and work out what time we should start thinking about
-	# rotating it.
+	# Initialise the logging system
 	# -----------------------------------------------------------------------
-	def __Log_Open(self):
-		try:
-			self.__logfile = open(self.__logfile_filename, 'a+')
+	def __Log_Init(self):
+		self.logger = logging.getLogger('hangle')
+		self.logger.setLevel(logging.INFO)
 		
-		except Exception, msg:
-			print "Failed to open our log file: %s" % (msg)
-			sys.exit(1)
+		# Log to file
+		file_handler = logging.handlers.TimedRotatingFileHandler(self.__logfile_filename, 'midnight', 1)
+		file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		file_handler.setFormatter(file_formatter)
+		self.logger.addHandler(file_handler)
 		
-		else:
-			if self.__logfile.tell() > 0:
-				self.__logfile.seek(0, 0)
-				
-				firstline = self.__logfile.readline()
-				if firstline:
-					self.__logdate = firstline[0:10]
-					self.__logfile.seek(0, 2)
-				
-				else:
-					self.__logdate = time.strftime("%Y/%m/%d")
-			
-			else:
-				self.__logdate = time.strftime("%Y/%m/%d")
-			
-			# Scary :|
-			t = time.localtime()
-			t2 = (t[0], t[1], t[2], 23, 59, 55, t[6], t[7], t[8])
-			self.__rotate_after = time.mktime(t2)
-	
-	# -----------------------------------------------------------------------
-	# See if it's time to rotate our log file yet.
-	# -----------------------------------------------------------------------
-	def __Log_Rotate(self):
-		today = time.strftime("%Y/%m/%d")
+		# Log to console
+		console_handler = logging.StreamHandler()
+		console_handler.setLevel(logging.DEBUG)
+		console_formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s', '%Y-%m-%d %H:%M:%S')
+		console_handler.setFormatter(console_formatter)
+		self.logger.addHandler(console_handler)
 		
-		if self.__logdate != today:
-			self.__logfile.close()
-			
-			newname = '%s-%s' % (self.__logfile_filename, self.__logdate.replace('/', ''))
-			os.rename(self.__logfile_filename, newname)
-			
-			ld = self.__logdate
-			
-			self.__Log_Open()
-			
-			tolog = 'Rotated log file for %s' % ld
-			self.__Log(LOG_ALWAYS, tolog)
+		#self._logger.setLevel(logging.DEBUG)
 	
 	# -----------------------------------------------------------------------
 	# Log a line to our log file.
@@ -513,10 +479,16 @@ class Postman:
 	# -----------------------------------------------------------------------
 	# Log an exception nicely
 	def __Log_Exception(self, dontcrash=0, exc_info=None):
-		if exc_info:
-			_type, _value, _tb = exc_info
+		if exc_info is not None:
+			self.logger.error('Trapped exception!', exc_info=exc_info)
 		else:
-			_type, _value, _tb = sys.exc_info()
+			self.logger.exception('Trapped exception!')
+		#self.logger.exception(exc_info)
+		return
+		#if exc_info:
+		#	_type, _value, _tb = exc_info
+		#else:
+		#	_type, _value, _tb = sys.exc_info()
 		
 		# If it's a SystemExit exception, we're really meant to die now
 		if _type == SystemExit:
@@ -551,8 +523,8 @@ class Postman:
 		logme.append('*******************************************************')
 		
 		# Log all that stuff now
-		for line in logme:
-			self.__Log(LOG_ALWAYS, line)
+		#for line in logme:
+			#self.logger.exception((_type, _)
 		
 		# Maybe e-mail our boss(es)
 		if self.__mail_tracebacks:
@@ -586,15 +558,15 @@ class Postman:
 			
 			except Exception, msg:
 				tolog = 'Error sending mail: %s' % msg
-				self.__Log(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			
 			else:
 				tolog = 'Sent error mail to: %s' % mailto
-				self.__Log(LOG_ALWAYS, tolog)
+				self.logger.warn(tolog)
 		
 		# We crashed during shutdown? Not Good.
 		if self.__Stopping == 1:
-			self.__Log(LOG_ALWAYS, "Exception during shutdown, I'm outta here.")
+			self.logger.critical("Exception during shutdown, I'm outta here.")
 			sys.exit(1)
 		
 		else:
@@ -646,7 +618,7 @@ class Postman:
 	
 	# Reload our configs and update stuff
 	def __Rehash(self):
-		self.__Log(LOG_ALWAYS, 'Rehashing...')
+		self.logger.info('Rehashing...')
 		
 		# Make a copy of the plugin list
 		old_plugin_list = self.__plugin_list[:]
@@ -682,7 +654,7 @@ class Postman:
 						self.__reloadme[plugin_name] = 1
 						
 						tolog = "Plugin '%s' has been updated, reloading" % plugin_name
-						self.__Log(LOG_ALWAYS, tolog)
+						self.logger.info(tolog)
 						
 						self.sendMessage(plugin_name, REQ_SHUTDOWN, None)
 		

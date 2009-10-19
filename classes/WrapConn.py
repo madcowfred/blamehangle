@@ -30,6 +30,7 @@ Wraps an asyncIRC connection and the various things we need to care about
 into one object that's a lot easier to deal with.
 """
 
+import logging
 import random
 import socket
 import time
@@ -74,6 +75,8 @@ class WrapConn:
 	"Wraps an asyncIRC object and the various data we keep about it."
 	
 	def __init__(self, parent, network, conn, options):
+		self.logger = logging.getLogger('hangle.WrapConn')
+		
 		self.parent = parent
 		self.network = network
 		self.conn = conn
@@ -116,7 +119,7 @@ class WrapConn:
 				self.servers.append(data)
 			else:
 				tolog = "Invalid server definition: '%s'" % (server)
-				self.connlog(LOG_WARNING, tolog)
+				self.connlog(self.logger.warn, tolog)
 		
 		# Put the server list in a random order
 		random.shuffle(self.servers)
@@ -151,7 +154,7 @@ class WrapConn:
 		self.username = options.get('username', 'blamehangle').strip() or 'blamehangle'
 		self.vhost = options.get('vhost', '').strip() or None
 		if self.vhost and not hasattr(socket, 'gaierror'):
-			self.connlog(LOG_WARNING, "vhost is set, but socket module doesn't have getaddrinfo()!")
+			self.connlog(self.logger.warn, "vhost is set, but socket module doesn't have getaddrinfo()!")
 			self.vhost = None
 		
 		self.ignore_strangers = int(options.get('ignore_strangers', 0))
@@ -167,9 +170,9 @@ class WrapConn:
 	
 	# -----------------------------------------------------------------------
 	
-	def connlog(self, level, text):
-		newtext = '(%s) %s' % (self.name, text)
-		self.parent.putlog(level, newtext)
+	def connlog(self, logfunc, tolog):
+		newlog = '(%s) %s' % (self.name, tolog)
+		logfunc(newlog)
 	
 	# -----------------------------------------------------------------------
 	# Reset ourselves to the disconnected state
@@ -194,7 +197,7 @@ class WrapConn:
 		
 		if not self.servers:
 			self.last_connect = time.time() + 25
-			self.connlog(LOG_WARNING, "No servers defined for this connection!")
+			self.connlog(self.logger.warn, "No servers defined for this connection!")
 			return
 		
 		self.server = self.servers[0]
@@ -224,7 +227,7 @@ class WrapConn:
 		# Resolve failure
 		if hosts is None:
 			tolog = 'Unable to resolve server: %s' % (host)
-			self.connlog(LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, tolog)
 		
 		# Something useful happened
 		else:
@@ -239,7 +242,7 @@ class WrapConn:
 			
 			if hosts == []:
 				tolog = "No usable IPs found for '%s'" % (host)
-				self.connlog(LOG_ALWAYS, tolog)
+				self.connlog(self.logger.info, tolog)
 			
 			else:
 				# We don't want to connect to an IP that we've tried recently
@@ -253,7 +256,7 @@ class WrapConn:
 				
 				# Off we go
 				tolog = 'Connecting to %s (%s) port %d...' % (host, ip, port)
-				self.connlog(LOG_ALWAYS, tolog)
+				self.connlog(self.logger.info, tolog)
 				
 				# IPv6 host, set the socket family
 				if ips[0][0] == 6:
@@ -386,7 +389,7 @@ class WrapConn:
 			
 			# Nowhere, argh!
 			else:
-				self.connlog(LOG_WARNING, 'Refusing to send extremely long un-splittable line!')
+				self.connlog(self.logger.warn, 'Refusing to send extremely long un-splittable line!')
 				return []
 	
 	# -----------------------------------------------------------------------
@@ -399,7 +402,7 @@ class WrapConn:
 		# Connecting stuff
 		elif self.conn.status == STATUS_CONNECTING:
 			if (currtime - self.last_connect) >= CONNECT_TIMEOUT:
-				self.connlog(LOG_ALWAYS, "Connection failed: timed out")
+				self.connlog(self.logger.info, "Connection failed: timed out")
 				self.conn.disconnect()
 		
 		# Connected stuff!
@@ -447,7 +450,7 @@ class WrapConn:
 					self.stoned += 1
 					
 					if self.stoned > STONED_COUNT:
-						self.connlog(LOG_ALWAYS, "Server is stoned, disconnecting")
+						self.connlog(self.logger.info, "Server is stoned, disconnecting")
 						self.conn.disconnect()
 					else:
 						self.privmsg(self.conn.getnick(), "Stoned yet?")

@@ -71,7 +71,7 @@ class News(Plugin):
 		self.__outgoing = self.loadPickle('.news_queue') or []
 		if self.__outgoing:
 			tolog = '%d news item(s) loaded into outgoing queue' % len(self.__outgoing)
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 		
 		self._RSS_Feeds = {}
 		
@@ -166,7 +166,7 @@ class News(Plugin):
 				interval = 10,
 			)
 			tolog = 'Registered %d RSS feed(s)' % (len(self._RSS_Feeds))
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 		# Timed event for cleaning up the database once an hour
 		self.addTimedEvent(
 			method = self.__Query_Cleanup,
@@ -181,7 +181,7 @@ class News(Plugin):
 	# -----------------------------------------------------------------------
 	# Cleanup old news
 	def __Query_Cleanup(self, trigger):
-		self.putlog(LOG_DEBUG, 'Purging old news')
+		self.logger.debug('Purging old news')
 		
 		old = int(time.time()) - self.__old_threshold
 		self.dbQuery(trigger, None, TIME_QUERY, old)
@@ -220,7 +220,7 @@ class News(Plugin):
 		# No targets... kill everything for that feed and try again
 		if not targets:
 			tolog = "Found news item for '%s' but it has no targets!" % (source)
-			self.putlog(LOG_DEBUG, tolog)
+			self.logger.debug(tolog)
 			
 			self.__outgoing = [i for i in self.__outgoing if i[0] != source]
 			if self.__outgoing:
@@ -231,7 +231,7 @@ class News(Plugin):
 		self.privmsg(targets, None, replytext)
 		
 		tolog = "%s news item(s) remaining in outgoing queue" % (len(self.__outgoing))
-		self.putlog(LOG_DEBUG, tolog)
+		self.logger.debug(tolog)
 	
 	# -----------------------------------------------------------------------
 	# List of feeds
@@ -296,7 +296,7 @@ class News(Plugin):
 		
 		except Exception, msg:
 			tolog = "Error parsing RSS feed '%s': %s" % (name, msg)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Remember the Last-Modified header if it was sent
@@ -316,7 +316,7 @@ class News(Plugin):
 			if not item.has_key('link'):
 				if self.RSS_Options['ignore_no_link']:
 					tolog = "RSS item '%s' has no link!" % item_title
-					self.putlog(LOG_DEBUG, tolog)
+					self.logger.debug(tolog)
 					continue
 				article_link = '<No Link>'
 			else:
@@ -344,12 +344,12 @@ class News(Plugin):
 		# If we found no real articles, cry a bit
 		if len(articles) == 0:
 			tolog = "Failed to find any items for feed '%s'!" % (name)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Log some timing info
 		tolog = "Feed '%s' parsed in %.03fs" % (name, time.time() - started)
-		self.putlog(LOG_DEBUG, tolog)
+		self.logger.debug(tolog)
 		
 		# Go for it!
 		self.__News_New(trigger, articles)
@@ -383,7 +383,7 @@ class News(Plugin):
 	def __News_Reply(self, trigger, result):
 		# Error!
 		if result is None:
-			self.putlog(LOG_WARNING, '__News_Reply: A DB error occurred!')
+			self.logger.warn('__News_Reply: A DB error occurred!')
 			return
 		
 		source = trigger.source
@@ -434,7 +434,7 @@ class News(Plugin):
 			self.dbQuery(trigger, None, INSERT_QUERY, title, url, description, ctime)
 		
 		tolog = "Added %d news item(s) to the outgoing queue" % (len(newarticles))
-		self.putlog(LOG_DEBUG, tolog)
+		self.logger.debug(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Search for a news article in our news db that matches the partial title
@@ -445,7 +445,7 @@ class News(Plugin):
 		# Error!
 		if result is None:
 			replytext = 'An unknown database error occurred.'
-			self.putlog(LOG_WARNING, '__News_Searched: A DB error occurred!')
+			self.logger.warn('__News_Searched: A DB error occurred!')
 		
 		# No matches
 		elif result == ():

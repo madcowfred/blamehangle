@@ -103,7 +103,7 @@ class GoonHooks(Plugin):
 				matchme = self.__Compile_Hook(row['hook'])
 				if matchme is None:
 					tolog = 'Hook compilation failed: %r' % (row['hook'])
-					self.putlog(LOG_WARNING, tolog)
+					self.logger.warn(tolog)
 				else:
 					self.__Hooks[row['hook']] = (matchme, row['reply'])
 	
@@ -197,7 +197,7 @@ class GoonHooks(Plugin):
 			matchme = self.__Compile_Hook(hook)
 			if matchme is None:
 				tolog = 'Hook compilation failed: %r' % (hook)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				self.sendReply(trigger, 'Hook compilation failed.')
 			else:
 				self.dbQuery(trigger, self.__Reply_AddHook, INSERT_QUERY,

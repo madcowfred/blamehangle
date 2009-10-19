@@ -103,7 +103,7 @@ class GetBotOps(Plugin):
 							self.privmsg(wrap, ui.nick, text)
 							
 							tolog = 'Asked %s for ops on %s.' % (ui.nick, chan)
-							self.connlog(wrap, LOG_ALWAYS, tolog)
+							self.connlog(self.logger.info, wrap, tolog)
 							
 							found = 1
 							break

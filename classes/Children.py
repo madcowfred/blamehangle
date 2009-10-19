@@ -31,6 +31,7 @@ Plugin. Don't touch.
 """
 
 import cPickle
+import logging
 import os
 
 from classes.Constants import *
@@ -41,6 +42,9 @@ from classes.OptionsDict import OptionsDict
 
 class Child:
 	def __init__(self, name, outQueue, Config, Userlist):
+		# Get our logging instance
+		self.logger = logging.getLogger('hangle.%s' % name)
+		
 		# Initialise our variables
 		self._name = name
 		
@@ -63,7 +67,7 @@ class Child:
 			schema = os.path.join('schemas', filename)
 			if not os.path.exists(schema):
 				tolog = "%s defines _UsesDatabase, but '%s' doesn't exist!" % (self._name, schema)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				return
 			
 			# Load up the schema, look for the first table name
@@ -85,11 +89,17 @@ class Child:
 			
 			except Exception, msg:
 				tolog = "Error while trying to check DB for %s: %s" % (self._name, msg)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			
 			else:
 				tolog = "%s defines _UsesDatabase, but '%s' contains no CREATE TABLE statements!" % (self._name, schema)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
+	
+	# -----------------------------------------------------------------------
+	# Log a message with the name of the network wrap is associated with
+	def connlog(self, logfunc, wrap, tolog):
+		newlog = '(%s) %s' % (wrap.name, tolog)
+		logfunc(newlog)
 	
 	# -----------------------------------------------------------------------
 	# If the database table doesn't exist, we get to create it now
@@ -98,7 +108,7 @@ class Child:
 		
 		if result is None:
 			tolog = "Creating database table for %s!" % (self._name)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			
 			self.dbQuery(query, self._DB_Create, query)
 		
@@ -122,7 +132,7 @@ class Child:
 		else:
 			tolog = "Created table for %s." % (self._name)
 		
-		self.putlog(LOG_WARNING, tolog)
+		self.logger.warn(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Get the method that meth_name refers to
@@ -229,9 +239,6 @@ class Child:
 	def notice(self, conn, nick, text):
 		self.sendMessage('ChatterGizmo', REQ_NOTICE, [conn, nick, text])
 	
-	def putlog(self, level, text):
-		self.sendMessage('Postman', REQ_LOG, [level, text])
-	
 	# Request a DB query
 	def dbQuery(self, trigger, method, query, *args):
 		data = [trigger, getattr(method, '__name__', None), query, args]
@@ -278,7 +285,7 @@ class Child:
 			# What the hell is it?
 			else:
 				tolog = "Unknown option '%s'" % (option)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 		
 		return dict
 	
@@ -300,17 +307,17 @@ class Child:
 			f = open(filename, 'wb')
 		except:
 			tolog = "Unable to open %s for writing" % (filename)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		try:
 			cPickle.dump(obj, f, 1)
 		except Exception, msg:
 			tolog = "Saving pickle to '%s' failed: %s" % (filename, msg)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 		else:
 			tolog = "Saved pickle to '%s'" % (filename)
-			self.putlog(LOG_DEBUG, tolog)
+			self.logger.debug(tolog)
 		
 		f.close()
 	
@@ -327,11 +334,11 @@ class Child:
 			obj = cPickle.load(f)
 		except Exception, msg:
 			tolog = "Loading pickle from '%s' failed: %s" % (filename, msg)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return None
 		else:
 			tolog = "Loaded pickle from '%s'" % (filename)
-			self.putlog(LOG_DEBUG, tolog)
+			self.logger.debug(tolog)
 			return obj
 
 # ---------------------------------------------------------------------------

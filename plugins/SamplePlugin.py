@@ -126,7 +126,7 @@ class SamplePlugin(Plugin):
 	# some work to be easier to use :|
 	def __Method3(self, trigger):
 		replytext = "Wow, %d seconds have passed!" % (trigger.interval)
-		self.putlog(LOG_ALWAYS, replytext)
+		self.logger.info(replytext)
 		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------

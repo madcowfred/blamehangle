@@ -47,9 +47,8 @@ class Plugin(Child):
 	def __init__(self, *args, **kwargs):
 		Child.__init__(self, *args, **kwargs)
 		
-		self.__setup_time = time.time()
-		
 		self.__Events = []
+		self.__setup_time = time.time()
 	
 	# Default REQ_REHASH handler. We don't want to rehash just after we started!
 	def _message_REQ_REHASH(self, message):
@@ -64,7 +63,7 @@ class Plugin(Child):
 			
 			else:
 				tolog = 'Not rehashing %s, started %.1fs ago!' % (self._name, interval)
-				self.putlog(LOG_DEBUG, tolog)
+				self.logger.debug(tolog)
 	
 	# Default PLUGIN_REGISTER handler. We have to reset things here!
 	def _message_PLUGIN_REGISTER(self, message):
@@ -103,10 +102,6 @@ class Plugin(Child):
 	def sendReply(self, trigger, replytext, process=1):
 		reply = PluginReply(trigger, replytext, process)
 		self.sendMessage('PluginHandler', PLUGIN_REPLY, reply)
-	
-	def connlog(self, wrap, level, text):
-		newtext = '(%s) %s' % (wrap.name, text)
-		self.putlog(level, newtext)
 	
 	# -----------------------------------------------------------------------
 	# Simple way to add text and timed events

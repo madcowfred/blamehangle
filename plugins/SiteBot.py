@@ -108,7 +108,7 @@ class SiteBot(Plugin):
 			
 			if len(parts) != 6:
 				tolog = 'BAD LINE: %s' % line
-				self.putlog(LOG_DEBUG, tolog)
+				self.logger.debug(tolog)
 			
 			# See if we handle it
 			logtype, data = parts[5].split(':', 1)
@@ -119,7 +119,7 @@ class SiteBot(Plugin):
 			name = 'parse_%s' % logtype.lower()
 			if hasattr(self, name):
 				replytext = getattr(self, name)(data[1:])
-				self.putlog(LOG_DEBUG, replytext)
+				self.logger.debug(replytext)
 				
 				# Spruce it up a bit
 				replytext = '\02(\02%s\02)\02 %s' % (self.Options['site_name'], replytext)

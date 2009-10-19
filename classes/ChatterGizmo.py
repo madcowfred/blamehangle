@@ -144,16 +144,17 @@ class ChatterGizmo(Child):
 		self.Conns[connid].really_connect(hosts)
 	
 	# -----------------------------------------------------------------------
-	
+	# Redefine these to override the default methods that just send data to us
+	# anyway.
 	def privmsg(self, connid, nick, text):
 		self.Conns[connid].privmsg(nick, text)
 	
 	def notice(self, connid, nick, text):
 		self.Conns[connid].notice(nick, text)
 	
-	def connlog(self, connid, level, text):
-		newtext = '(%s) %s' % (self.Conns[connid].name, text)
-		self.putlog(level, newtext)
+	# Redefine this, we use connid here instead of a WrapConn instance
+	def connlog(self, logfunc, connid, tolog):
+		Child.connlog(self, logfunc, self.Conns[connid], tolog)
 	
 	# -----------------------------------------------------------------------
 	# Our handy dandy generic event handler
@@ -167,7 +168,7 @@ class ChatterGizmo(Child):
 			except ValueError:
 				tolog = 'Invalid hostmask! prefix: %r, hostmask: %r, command: %r, target: %r, arguments: %r' % (
 					prefix, hostmask, command, target, arguments)
-				self.connlog(connid, LOG_WARNING, tolog)
+				self.connlog(self.logger.warn, connid, tolog)
 		else:
 			userinfo = None
 		
@@ -197,7 +198,7 @@ class ChatterGizmo(Child):
 		wrap.conn.status = STATUS_CONNECTED
 		
 		tolog = 'Connected to %s' % (wrap.server[0])
-		self.connlog(connid, LOG_ALWAYS, tolog)
+		self.connlog(self.logger.info, connid, tolog)
 		
 		# Set ourselves +i
 		text = 'MODE %s +i' % (wrap.conn.getnick())
@@ -209,7 +210,7 @@ class ChatterGizmo(Child):
 		# If we're supposed to use NickServ, do so
 		if wrap.nickserv_nick and wrap.nickserv_pass:
 			tolog = 'Identifying with %s' % (wrap.nickserv_nick)
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.log.info, connid, tolog)
 			
 			text = 'IDENTIFY %s' % (wrap.nickserv_pass)
 			self.privmsg(connid, wrap.nickserv_nick, text)
@@ -233,12 +234,12 @@ class ChatterGizmo(Child):
 			tolog = 'Disconnected from server: %s' % (event.arguments[0])
 		else:
 			tolog = 'Disconnected from server'
-		self.connlog(connid, LOG_ALWAYS, tolog)
+		self.connlog(self.logger.info, connid, tolog)
 		
 		if not self.stopping:
 			if self.Conns[connid].requested_quit:
 				tolog = 'Removing network!'
-				self.connlog(connid, LOG_ALWAYS, tolog)
+				self.connlog(self.logger.info, connid, tolog)
 				
 				del self.Conns[connid]
 				del conn
@@ -253,7 +254,7 @@ class ChatterGizmo(Child):
 			errormsg = m.group('error')
 		
 		tolog = 'ERROR: %s' % (errormsg)
-		self.connlog(connid, LOG_ALWAYS, tolog)
+		self.connlog(self.logger.info, connid, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone just joined a channel (including ourselves)
@@ -266,7 +267,7 @@ class ChatterGizmo(Child):
 		# Us
 		if nick == conn.getnick():
 			tolog = "Joined %s" % chan
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			
 			# Our userlist needs to know that we joined
 			wrap.ircul.user_joined(chan)
@@ -303,7 +304,7 @@ class ChatterGizmo(Child):
 		# Us
 		if nick == conn.getnick():
 			tolog = 'Left %s' % chan
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			
 			wrap.ircul.user_parted(chan)
 			
@@ -354,7 +355,7 @@ class ChatterGizmo(Child):
 			if mode in wrap.conn.features['user_modes']:
 				if arg is None:
 					tolog = 'Unmatched mode "%s%s" in mode string!' % (sign, mode)
-					self.putlog(LOG_WARNING, tolog)
+					self.logger.warn(tolog)
 					continue
 				
 				if sign == '+':
@@ -402,11 +403,11 @@ class ChatterGizmo(Child):
 		
 		if chan in self.Conns[connid].channels:
 			tolog = '%s invited me to %s, joining...' % (event.userinfo, chan)
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			self.Conns[connid].join_channels(chan)
 		else:
 			tolog = '%s invited me to %s, which is NOT in my channel list!' % (event.userinfo, chan)
-			self.connlog(connid, LOG_WARNING, tolog)
+			self.connlog(self.logger.warn, connid, tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone was just kicked from a channel (including ourselves)
@@ -418,7 +419,7 @@ class ChatterGizmo(Child):
 		
 		if kicked == conn.getnick():
 			tolog = '%s kicked me from %s, rejoining...' % (event.userinfo, chan)
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			
 			wrap.ircul.user_parted(chan)
 			wrap.join_channels(chan)
@@ -495,7 +496,7 @@ class ChatterGizmo(Child):
 		wrap.ircul._c[chan].synched = True
 		
 		tolog = 'Userlist synched for %s' % (chan)
-		self.connlog(connid, LOG_ALWAYS, tolog)
+		self.connlog(self.logger.info, connid, tolog)
 		
 		# Start the next /WHO if there's one to go
 		wrap.wholist.pop(0)
@@ -567,7 +568,7 @@ class ChatterGizmo(Child):
 				data = [wrap, IRCT_PUBLIC_D, event.userinfo, chan, newtext]
 				
 				tolog = "Rewrote public command '%s' to '%s'" % (text, newtext)
-				self.putlog(LOG_DEBUG, tolog)
+				self.logger.debug(tolog)
 			
 			# Look for param commands
 			elif len(parts) == 2 and parts[0] in self.__Public_Param:
@@ -575,7 +576,7 @@ class ChatterGizmo(Child):
 				data = [wrap, IRCT_PUBLIC_D, event.userinfo, chan, newtext]
 				
 				tolog = "Rewrote public command '%s' to '%s'" % (text, newtext)
-				self.putlog(LOG_DEBUG, tolog)
+				self.logger.debug(tolog)
 			
 			# Oh well, guess it's just public text
 			else:
@@ -644,14 +645,14 @@ class ChatterGizmo(Child):
 		# Someone wants to see what sort of CTCP stuff we can handle
 		if first == 'CLIENTINFO':
 			tolog = 'CTCP CLIENTINFO from %s' % (event.userinfo)
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			
 			self.Conns[connid].ctcp_reply(event.userinfo.nick, 'CLIENTINFO PING VERSION')
 		
 		# Someone wants to see if we're lagged
 		elif first == 'PING':
 			tolog = 'CTCP PING from %s' % (event.userinfo)
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			
 			# We only actually reply if they gave us some data
 			if len(rest) > 0:
@@ -661,7 +662,7 @@ class ChatterGizmo(Child):
 		# Someone wants to know what we're running
 		elif first == 'VERSION':
 			tolog = 'CTCP VERSION from %s' % (event.userinfo)
-			self.connlog(connid, LOG_ALWAYS, tolog)
+			self.connlog(self.logger.info, connid, tolog)
 			
 			reply = 'VERSION blamehangle v%s - no space aliens were harmed in the making of this hangle.' % BH_VERSION
 			self.Conns[connid].ctcp_reply(event.userinfo.nick, reply)
@@ -671,7 +672,7 @@ class ChatterGizmo(Child):
 			# If they have access, rehash
 			if self.Userlist.Has_Flag(event.userinfo, 'Global', 'admin'):
 				tolog = "Admin %s requested a rehash." % (event.userinfo)
-				self.connlog(connid, LOG_WARNING, tolog)
+				self.connlog(self.logger.warn, connid, tolog)
 				
 				self.Conns[connid].notice(event.userinfo.nick, 'Rehashing...')
 				
@@ -680,7 +681,7 @@ class ChatterGizmo(Child):
 			# If not, cry
 			else:
 				tolog = "Unknown lamer %s requested rehash!" % (event.userinfo)
-				self.connlog(connid, LOG_WARNING, tolog)
+				self.connlog(self.logger.warn, connid, tolog)
 		
 		# No idea, see if a plugin cares
 		else:
@@ -727,11 +728,11 @@ class ChatterGizmo(Child):
 				
 				if found == 0:
 					tolog = "Invalid network in NOTICE/PRIVMSG from '%s': %s" % (message.source, net)
-					self.putlog(LOG_WARNING, tolog)
+					self.logger.warn(tolog)
 		
 		else:
 			tolog = "Unknown NOTICE/PRIVMSG parameter type from %s: %s" % (message.source, type(conn))
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Something wants to receive some raw-ish IRC events

@@ -33,11 +33,11 @@ BH_VERSION = '0.2.0'
 # Log constants
 # ---------------------------------------------------------------------------
 
-LOG_ALWAYS = 'LOG_ALWAYS'
-LOG_DEBUG = 'LOG_DEBUG'
-LOG_WARNING = 'LOG_WARNING'
-LOG_MSG = 'LOG_MSG'
-LOG_QUERY = 'LOG_QUERY'
+#LOG_ALWAYS = 'LOG_ALWAYS'
+#LOG_DEBUG = 'LOG_DEBUG'
+#LOG_WARNING = 'LOG_WARNING'
+#LOG_MSG = 'LOG_MSG'
+#LOG_QUERY = 'LOG_QUERY'
 LOG_EXCEPTION = 'LOG_EXCEPTION'
 
 # ---------------------------------------------------------------------------
@@ -75,7 +75,6 @@ REQ_IRC_EVENTS = 'REQ_IRC_EVENTS'
 # Request constants
 # ---------------------------------------------------------------------------
 REQ_DNS = 'REQ_DNS'
-REQ_LOG = 'REQ_LOG'
 REQ_NOTICE = 'REQ_NOTICE'
 REQ_PRIVMSG = 'REQ_PRIVMSG'
 REQ_QUERY = 'REQ_QUERY'

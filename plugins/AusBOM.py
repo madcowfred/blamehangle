@@ -92,7 +92,7 @@ class AusBOM(Plugin):
 	# -----------------------------------------------------------------------
 	# Send URL requests for updating
 	def __Update_Locations(self):
-		self.putlog(LOG_ALWAYS, 'AusBOM: Updating location data...')
+		self.logger.info('AusBOM: Updating location data...')
 		
 		# Reset the location data
 		self.__Locations = {}
@@ -193,7 +193,7 @@ class AusBOM(Plugin):
 			
 			# If we've finished updating, party
 			if trigger.count == len(PRODUCTS):
-				self.putlog(LOG_ALWAYS, 'AusBOM: Finished updating location data.')
+				self.logger.info('AusBOM: Finished updating location data.')
 				
 				self.__Locations['_updated_'] = time.time()
 				self.savePickle('.ausbom.locations', self.__Locations)
@@ -222,7 +222,7 @@ class AusBOM(Plugin):
 		for area, product in PRODUCTS:
 			if area not in self.__Locations:
 				tolog = 'AusBOM: %s not in area data?!' % area
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				continue
 			
 			# Exact match, don't need dodgy matching

@@ -138,7 +138,7 @@ class WeatherMan(Plugin):
 		#		self.urlRequest(trigger, self.__Parse_Weather, url)
 		#	else:
 		#		tolog = "Weather page parsing failed for '%s'!" % trigger.match.group('location')
-		#		self.putlog(LOG_WARNING, tolog)
+		#		self.logger.warn(tolog)
 		#		
 		#		replytext = "Page parsing failed for '%s'!" % trigger.match.group('location')
 		#		self.sendReply(trigger, replytext)
@@ -155,7 +155,7 @@ class WeatherMan(Plugin):
 			# Find the chunk that tells us where we are
 			chunk = FindChunk(resp.data, '<div id="breadcrumbs">', '</div>')
 			if chunk is None:
-				self.putlog(LOG_WARNING, 'Weather page parsing failed: no location data')
+				self.logger.warn('Weather page parsing failed: no location data')
 				self.sendReply(trigger, 'Page parsing failed: location data.')
 				return
 			lines = StripHTML(chunk)
@@ -169,7 +169,7 @@ class WeatherMan(Plugin):
 			# Find the chunk with the weather data we need
 			chunk = FindChunk(resp.data, '<div id="forecast-temperature">', '<ul>')
 			if not chunk:
-				self.putlog(LOG_WARNING, 'Weather parsing failed: weather data 1.')
+				self.logger.warn('Weather parsing failed: weather data 1.')
 				self.sendReply(trigger, 'Parsing failed: weather data 1.')
 				open('weather.html', 'w').write(resp.data)
 				return

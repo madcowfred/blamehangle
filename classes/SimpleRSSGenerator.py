@@ -27,10 +27,9 @@
 
 "Implements a very simple RSS feed generator."
 
+import logging
 import re
 import time
-
-from classes.Constants import LOG_DEBUG, LOG_WARNING
 
 # ---------------------------------------------------------------------------
 # ARGH!
@@ -38,15 +37,16 @@ ENTITY_RE = re.compile(r'&(?![a-z]{1,4};)')
 
 # ---------------------------------------------------------------------------
 
-def SimpleRSSGenerator(filename, feedinfo, items, putlog=None):
+def SimpleRSSGenerator(filename, feedinfo, items):
+	logger = logging.getLogger('hangle.SimpleRSSGenerator')
+	
 	started = time.time()
 	
 	try:
 		rssfile = open(filename, 'w')
 	except Exception, msg:
-		if putlog is not None:
-			tolog = "Error opening '%s' for writing: %s" % (filename, msg)
-			putlog(LOG_WARNING, tolog)
+		tolog = "Error opening '%s' for writing: %s" % (filename, msg)
+		logger.warn(tolog)
 		return
 	
 	feedinfo['builddate'] = ISODate(time.gmtime())
@@ -95,9 +95,8 @@ def SimpleRSSGenerator(filename, feedinfo, items, putlog=None):
 	rssfile.close()
 	
 	# Done
-	if putlog is not None:
-		tolog = "RSS feed '%s' generated in %0.2fs" % (feedinfo['title'], time.time() - started)
-		putlog(LOG_DEBUG, tolog)
+	tolog = "RSS feed '%s' generated in %0.2fs" % (feedinfo['title'], time.time() - started)
+	logger.info(tolog)
 
 # ---------------------------------------------------------------------------
 

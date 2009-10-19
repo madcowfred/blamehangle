@@ -88,7 +88,7 @@ class Resolver(Child):
 			self.__threads.append(t)
 		
 		tolog = 'Started %d resolver thread(s)' % (len(self.__threads))
-		self.putlog(LOG_ALWAYS, tolog)
+		self.logger.info(tolog)
 	
 	# Stop our threads!
 	def __Stop_Threads(self):
@@ -101,7 +101,7 @@ class Resolver(Child):
 			t.join()
 		
 		tolog = 'All resolver threads halted'
-		self.putlog(LOG_ALWAYS, tolog)
+		self.logger.info(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to resolve something, woo

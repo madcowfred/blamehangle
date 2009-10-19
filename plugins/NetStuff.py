@@ -91,7 +91,7 @@ class NetStuff(Plugin):
 		try:
 			cctld_file = open(filename, 'r')
 		except IOError:
-			self.putlog(LOG_WARNING, "Can't find data/cctlds!")
+			self.logger.warn("Can't find data/cctlds!")
 		else:
 			for line in cctld_file:
 				line = line.strip()

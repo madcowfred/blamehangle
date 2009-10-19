@@ -48,7 +48,7 @@ class GrabBT(Plugin):
 		self.Options = self.OptionsDict('GrabBT', autosplit=True)
 		
 		if not self.Options['commands']:
-			self.putlog(LOG_WARNING, "GrabBT has no channels configured!")
+			self.logger.warn("GrabBT has no channels configured!")
 		
 		# Compile our regexps
 		self.__grab_res = []
@@ -57,7 +57,7 @@ class GrabBT(Plugin):
 				r = re.compile(regexp)
 			except Exception, msg:
 				tolog = "Failed to compile regexp '%s': %s" % (regexp, msg)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			else:
 				self.__grab_res.append(r)
 	
@@ -88,7 +88,7 @@ class GrabBT(Plugin):
 		# Make sure they're in an allowed channel
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
 			tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Make sure they have the right user mode
@@ -102,7 +102,7 @@ class GrabBT(Plugin):
 			if hasmode == 0:
 				self.sendReply(trigger, "Access denied.")
 				tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				return
 		
 		# If the user has the grabany flag, go for it
@@ -125,14 +125,14 @@ class GrabBT(Plugin):
 			self.urlRequest(trigger, self.__Save_Torrent, url)
 			
 			tolog = "%s on %s/%s asked me to download a torrent" % (trigger.userinfo, network, chan)
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 		
 		# And if we didn't, cry
 		else:
 			self.sendReply(trigger, "That URL is not allowed.")
 			
 			tolog = "%s on %s/%s tried to grab torrent: %s" % (trigger.userinfo, network, chan, url)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Torrent grabbed
@@ -180,14 +180,14 @@ class GrabBT(Plugin):
 		
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
 			tolog = "%s on %s/%s trying to list torrents." % (trigger.userinfo, network, chan)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Get the list of torrents
 		try:
 			files = os.listdir(self.Options['session_dir'])
 		except:
-			self.putlog(LOG_WARNING, "Torrent status directory does not exist or is unaccessible.")
+			self.logger.warn("Torrent status directory does not exist or is unaccessible.")
 			self.sendReply(trigger, "Status directory no worky!")
 			return
 		
@@ -202,11 +202,11 @@ class GrabBT(Plugin):
 				metainfo = bdecode(open(filepath, 'rb').read())
 			except ValueError:
 				tolog = '%r is not a valid torrent' % (filename)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				continue
 			except Exception, m:
 				tolog = 'Error reading %r - %s' % (filename, m)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				continue
 			
 			# Various stats
@@ -244,7 +244,7 @@ class GrabBT(Plugin):
 		
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
 			tolog = "%s on %s/%s trying to see torrent speed." % (trigger.userinfo, network, chan)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Get the list of torrents

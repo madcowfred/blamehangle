@@ -27,6 +27,7 @@
 
 'Various commands for playing with words.'
 
+import logging
 import os
 import random
 import re
@@ -81,7 +82,7 @@ class WordStuff(Plugin):
 		if self.Options['spell_bin']:
 			if not os.access(self.Options['spell_bin'], os.X_OK):
 				tolog = '%s is not executable or not a file, spell command will not work!' % (self.Options['spell_bin'])
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				
 				self.__spell_bin = None
 			else:
@@ -205,7 +206,7 @@ class WordStuff(Plugin):
 			tolog = 'Dictionary: %s asked me to look up "%s"' % (trigger.userinfo.nick, word)
 			async_dict(self, trigger)
 		
-		self.putlog(LOG_ALWAYS, tolog)
+		self.logger.info(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Parse the output of an AcronymFinder page
@@ -429,7 +430,7 @@ class WordStuff(Plugin):
 		# Err?
 		else:
 			replytext = 'Failed to parse [ai]spell output.'
-			self.putlog(LOG_DEBUG, line)
+			self.logger.debug(line)
 		
 		self.sendReply(trigger, replytext)
 	
@@ -522,6 +523,8 @@ class async_dict(buffered_dispatcher):
 	def __init__(self, parent, trigger):
 		buffered_dispatcher.__init__(self)
 		
+		self.logger = logging.getLogger('hangle.async_dict')
+		
 		self.__read_buf = ''
 		self.state = 0
 		
@@ -539,7 +542,7 @@ class async_dict(buffered_dispatcher):
 			self.connect((self.parent.Options['dict_host'], self.parent.Options['dict_port']))
 		except socket.gaierror, msg:
 			tolog = "Error while connecting to DICT server: %s - %s" % (self.url, msg)
-			self.parent.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			self.close()
 	
 	# We don't have to do anything when it connects
@@ -566,12 +569,12 @@ class async_dict(buffered_dispatcher):
 				
 				elif line.startswith('530 '):
 					tolog = "DICT server '%s' says: %s" % (self.parent.Options['dict_host'], line)
-					self.putlog(LOG_ALWAYS, tolog)
+					self.logger.info(tolog)
 					self.close()
 				
 				else:
 					tolog = "DICT server gave me an unknown response: %s" % line
-					self.putlog(LOG_ALWAYS, tolog)
+					self.logger.info(tolog)
 			
 			# Asked for a word
 			elif self.state == 1:
@@ -590,9 +593,6 @@ class async_dict(buffered_dispatcher):
 				
 				# A definition has finished
 				elif line.startswith('250 '):
-					tolog = 'Definition found!'
-					self.putlog(tolog)
-					
 					replytext = " ".join(self.__def[1:])
 					self.parent.sendReply(self.trigger, replytext)
 					
@@ -602,8 +602,6 @@ class async_dict(buffered_dispatcher):
 				elif line.startswith('552 '):
 					replytext = 'No match found for "%s"' % (self.word)
 					self.parent.sendReply(self.trigger, replytext)
-					
-					self.putlog(replytext)
 					
 					self.quit()
 			
@@ -616,11 +614,6 @@ class async_dict(buffered_dispatcher):
 	
 	def handle_close(self):
 		self.close()
-	
-	# Log stuff nicely
-	def putlog(self, text):
-		tolog = 'Dictionary: %s' % (text)
-		self.parent.putlog(LOG_ALWAYS, tolog)
 	
 	# Shortcut, it gets used twice!
 	def quit(self):

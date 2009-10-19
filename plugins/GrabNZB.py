@@ -63,12 +63,12 @@ class GrabNZB(Plugin):
 				r = re.compile(regexp)
 			except Exception, msg:
 				tolog = "Failed to compile regexp '%s': %s" % (regexp, msg)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			else:
 				self.__grab_res.append(r)
 		
 		if not self.Options['commands'] and not self.Options['newfiles']:
-			self.putlog(LOG_WARNING, "GrabBT has no channels configured!")
+			self.logger.warn("GrabBT has no channels configured!")
 	
 	def register(self):
 		self.addTextEvent(
@@ -87,7 +87,7 @@ class GrabNZB(Plugin):
 		# Make sure they're in an allowed channel
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
 			tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 			return
 		
 		# Make sure they have the right user mode
@@ -101,7 +101,7 @@ class GrabNZB(Plugin):
 			if hasmode == 0:
 				self.sendReply(trigger, "Access denied.")
 				tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
-				self.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 				return
 		
 		# If the user has the grabany flag, go for it
@@ -123,7 +123,7 @@ class GrabNZB(Plugin):
 			self.sendReply(trigger, "Downloading NZB...")
 			
 			tolog = "%s on %s/%s asked me to download an NZB" % (trigger.userinfo, network, chan)
-			self.putlog(LOG_ALWAYS, tolog)
+			self.logger.info(tolog)
 			
 			# See if it's a newzbin url
 			m = NEWZBIN_URL_RE.match(url)
@@ -151,7 +151,7 @@ class GrabNZB(Plugin):
 			self.sendReply(trigger, "That URL is not allowed.")
 			
 			tolog = "%s on %s/%s tried to grab torrent: %s" % (trigger.userinfo, network, chan, url)
-			self.putlog(LOG_WARNING, tolog)
+			self.logger.warn(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Save a Newzbin NZB

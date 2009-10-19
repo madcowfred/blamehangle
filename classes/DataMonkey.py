@@ -32,6 +32,7 @@ read() on the socket. We can run database requests in a thread and allow
 other things to happen at the same time.
 """
 
+import logging
 import sys
 import time
 
@@ -89,7 +90,7 @@ class DataMonkey(Child):
 			self.__threads.append(t)
 		
 		tolog = 'Started %d database thread(s)' % (len(self.__threads))
-		self.putlog(LOG_ALWAYS, tolog)
+		self.logger.info(tolog)
 	
 	# Stop our threads
 	def __Stop_Threads(self):
@@ -102,7 +103,7 @@ class DataMonkey(Child):
 			t.join()
 		
 		tolog = 'All database threads halted'
-		self.putlog(LOG_ALWAYS, tolog)
+		self.logger.info(tolog)
 	
 	# -----------------------------------------------------------------------
 	# Someone wants some stats
@@ -122,10 +123,13 @@ class DataMonkey(Child):
 class DatabaseThread(Thread):
 	def __init__(self, parent, ParentLock, Requests, db):
 		Thread.__init__(self)
+		
 		self.parent = parent
 		self.ParentLock = ParentLock
 		self.Requests = Requests
 		self.db = db
+		
+		self.logger = logging.getLogger('hangle.DatabaseThread')
 	
 	def run(self):
 		while True:
@@ -151,10 +155,10 @@ class DatabaseThread(Thread):
 			# Maybe log some things and return the results
 			self.ParentLock.acquire()
 			
-			if newquery is not None:
-				self.parent.putlog(LOG_QUERY, newquery)
+			#if newquery is not None:
+			#	self.parent.putlog(LOG_QUERY, newquery)
 			if tolog is not None:
-				self.parent.putlog(LOG_WARNING, tolog)
+				self.logger.warn(tolog)
 			
 			data = [trigger, method, result]
 			self.parent.sendMessage(message.source, REPLY_QUERY, data)

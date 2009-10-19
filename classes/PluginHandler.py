@@ -75,7 +75,7 @@ class PluginHandler(Child):
 		if self.Plugins:
 			self.sendMessage(self.Plugins, PLUGIN_REGISTER, [])
 		else:
-			self.putlog(LOG_WARNING, 'No plugins are loaded!')
+			self.logger.warn('No plugins are loaded!')
 	
 	# When we're shutting down, we don't want to trigger events any more
 	def shutdown(self, message):
@@ -196,7 +196,7 @@ class PluginHandler(Child):
 	def __Query_Log(self, trigger, result):
 		# Error!
 		if result is None:
-			self.putlog(LOG_WARNING, "Database error occurred while inserting command log entry.")
+			self.logger.warn("Database error occurred while inserting command log entry.")
 	
 	# -----------------------------------------------------------------------
 	# We just got a reply from a plugin.
@@ -229,7 +229,7 @@ class PluginHandler(Child):
 		
 		elif isinstance(reply.trigger, PluginFakeTrigger):
 			tolog = "PluginFakeTrigger: '%s'" % reply.replytext
-			self.putlog(LOG_DEBUG, tolog)
+			self.logger.debug(tolog)
 		
 		else:
 			# wtf
