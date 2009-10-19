@@ -37,7 +37,6 @@ import logging.handlers
 import os
 import select
 import signal
-import smtplib
 import sys
 import time
 import traceback
@@ -213,11 +212,11 @@ class Postman:
 	# -----------------------------------------------------------------------
 	
 	def SIG_HUP(self, signum, frame):
-		self.logger.crit('Received SIGHUP')
+		self.logger.critical('Received SIGHUP')
 		self.__Rehash()
 	
 	def SIG_TERM(self, signum, frame):
-		self.logger.crit('Received SIGTERM')
+		self.logger.critical('Received SIGTERM')
 		self.__Shutdown('Terminated!')
 	
 	# -----------------------------------------------------------------------
@@ -312,7 +311,7 @@ class Postman:
 					obj = asyncore.socket_map.get(fd)
 					if obj is None:
 						tolog = 'Invalid FD for poll(): %d - unregistered' % (fd)
-						self.logger.crit(tolog)
+						self.logger.critical(tolog)
 						asyncore.poller.unregister(fd)
 						continue
 					
@@ -322,10 +321,10 @@ class Postman:
 						asyncore.write(obj)
 					elif event & select.POLLNVAL:
 						tolog = "FD %d is still in the poll, but it's closed!" % fd
-						self.logger.crit(tolog)
+						self.logger.critical(tolog)
 					else:
 						tolog = 'Bizarre poll response! %d: %d' % (fd, event)
-						self.logger.crit(tolog)
+						self.logger.critical(tolog)
 				
 				
 				# Run any always loops
@@ -481,14 +480,10 @@ class Postman:
 	def __Log_Exception(self, dontcrash=0, exc_info=None):
 		if exc_info is not None:
 			self.logger.error('Trapped exception!', exc_info=exc_info)
+			_type, _value, _tb = exc_info
 		else:
 			self.logger.exception('Trapped exception!')
-		#self.logger.exception(exc_info)
-		return
-		#if exc_info:
-		#	_type, _value, _tb = exc_info
-		#else:
-		#	_type, _value, _tb = sys.exc_info()
+			_type, _value, _tb = sys.exc_info()
 		
 		# If it's a SystemExit exception, we're really meant to die now
 		if _type == SystemExit:
@@ -498,79 +493,18 @@ class Postman:
 		entries = traceback.extract_tb(_tb)
 		del _tb
 		
-		# Log these lines
-		logme = []
-		
-		# Remember the filenames
+		# Find all the filenames involved in the traceback
 		crash_files = []
-		
-		logme.append('*******************************************************')
-		
-		logme.append('Traceback (most recent call last):')
-		
 		for entry in entries:
 			crash_files.insert(0, entry[:-1][0])
-			
-			tolog = '  File "%s", line %d, in %s' % entry[:-1]
-			logme.append(tolog)
-			tolog = '    %s' % entry[-1]
-			logme.append(tolog)
-		
-		for line in traceback.format_exception_only(_type, _value):
-			tolog = line.replace('\n', '')
-			logme.append(tolog)
-		
-		logme.append('*******************************************************')
-		
-		# Log all that stuff now
-		#for line in logme:
-			#self.logger.exception((_type, _)
-		
-		# Maybe e-mail our boss(es)
-		if self.__mail_tracebacks:
-			lines = []
-			
-			line = 'From: %s' % self.__mail_from
-			lines.append(line)
-			
-			mailto = ', '.join(self.__mail_tracebacks)
-			line = 'To: %s' % mailto
-			lines.append(line)
-			
-			line = 'Subject: blamehangle error message'
-			lines.append(line)
-			
-			line = 'X-Mailer: blamehangle Postman'
-			lines.append(line)
-			
-			lines.append('')
-			lines.append(MAIL_TEXT)
-			lines.append('')
-			lines.extend(logme)
-			
-			# Send it!
-			message = '\r\n'.join(lines)
-			
-			try:
-				server = smtplib.SMTP(self.__mail_server)
-				server.sendmail(self.__mail_from, self.__mail_tracebacks, message)
-				server.quit()
-			
-			except Exception, msg:
-				tolog = 'Error sending mail: %s' % msg
-				self.logger.warn(tolog)
-			
-			else:
-				tolog = 'Sent error mail to: %s' % mailto
-				self.logger.warn(tolog)
 		
 		# We crashed during shutdown? Not Good.
 		if self.__Stopping == 1:
 			self.logger.critical("Exception during shutdown, I'm outta here.")
 			sys.exit(1)
 		
+		# Was it a plugin? If so, we can try shutting it down
 		else:
-			# Was it a plugin? If so, we can try shutting it down
 			was_plugin = 0
 			for filename in crash_files:
 				head, tail = os.path.split(filename)
