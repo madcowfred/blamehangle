@@ -27,8 +27,7 @@
 
 'Miscellaneous commands for playing with text.'
 
-import md5
-import sha
+import hashlib
 import urllib
 import zlib
 
@@ -94,7 +93,7 @@ class TextStuff(Plugin):
 	# Compute the MD5 checksum of some text
 	def __MD5(self, trigger):
 		text = trigger.match.group('text')
-		replytext = md5.new(text).hexdigest()
+		replytext = hashlib.md5(text).hexdigest()
 		self.sendReply(trigger, replytext)
 	# ROT13 some text
 	def __ROT13(self, trigger):
@@ -104,7 +103,7 @@ class TextStuff(Plugin):
 	# Compute the SHA1 checksum of some text
 	def __SHA1(self, trigger):
 		text = trigger.match.group('text')
-		replytext = sha.new(text).hexdigest()
+		replytext = hashlib.sha1(text).hexdigest()
 		self.sendReply(trigger, replytext)
 	# URL quote some text?
 	def __QuoteURL(self, trigger):
