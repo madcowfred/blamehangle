@@ -187,7 +187,7 @@ class SQLite(DatabaseWrapper):
 		if self.db:
 			return
 		
-		module = __import__('sqlite', globals(), locals(), [])
+		module = __import__('sqlite3', globals(), locals(), [])
 		
 		self.db = module.connect(self.Config.get('database', 'database'))
 	
