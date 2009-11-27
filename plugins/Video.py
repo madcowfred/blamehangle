@@ -40,7 +40,7 @@ IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'/b.gif\?link=/title/tt(\d+)/\';">([^<>]+)</a> \((\d+)[\)\/]')
 # Maximum length of Plot: spam
-IMDB_MAX_PLOT = 150
+IMDB_MAX_PLOT = 180
 
 # ---------------------------------------------------------------------------
 
@@ -165,16 +165,27 @@ class Video(Plugin):
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot
+			#<h5>Plot:</h5>
+			#<div class="info-content">
+			#St Trinian's, a school for "young ladies" with its anarchic doctrine of free expression, brings together a motley crew of ungovernable girls who, using their wit and ingenuity, save the school from bankruptcy. <a class="tn15more inline" href="/title/tt0964587/plotsummary" onClick="(new Image()).src='/rg/title-tease/plotsummary/images/b.gif?link=/title/tt0964587/plotsummary';">full summary</a> | <a class="tn15more inline" href="synopsis">full synopsis</a>
+			#</div>
+			
 			chunk = FindChunk(resp.data, 'Plot:</h5>', '</div>')
 			if chunk:
-				chunk = chunk.strip()
-				n = chunk.find(' | ')
-				if n >= 0:
-					chunk = chunk[:n]
+				chunk = chunk.strip().replace('\n', '')
 				
-				n = chunk.find(' <a')
-				if n >= 0:
-					chunk = chunk[:n]
+				print repr(chunk)
+				
+				chunk = chunk[chunk.find('>')+1:]
+				
+				print repr(chunk)
+				
+				for s in (' | ', ' <a'):
+					n = chunk.find(s)
+					if n >= 0:
+						chunk = chunk[:n]
+				
+				print repr(chunk)
 				
 				if len(chunk) > IMDB_MAX_PLOT:
 					n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
