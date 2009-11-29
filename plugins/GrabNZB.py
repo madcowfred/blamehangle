@@ -45,6 +45,8 @@ NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?
 NEWZLEECH_GET_URL = 'http://www.newzleech.com/?m=gen'
 NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/(?:posts/|)\?p=(\d+).*$')
 
+BINSEARCH_URL_RE = re.compile(r'^http://(?:www\.|)binsearch\.info/\?b=.+$')
+
 CD_FILENAME_RE = re.compile('filename=([^;]+)')
 
 # ---------------------------------------------------------------------------
@@ -68,7 +70,7 @@ class GrabNZB(Plugin):
 				self.__grab_res.append(r)
 		
 		if not self.Options['commands'] and not self.Options['newfiles']:
-			self.logger.warn("GrabBT has no channels configured!")
+			self.logger.warn("GrabNZB has no channels configured!")
 	
 	def register(self):
 		self.addTextEvent(
@@ -86,7 +88,7 @@ class GrabNZB(Plugin):
 		
 		# Make sure they're in an allowed channel
 		if network not in self.Options['commands'] or chan not in self.Options['commands'][network]:
-			tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
+			tolog = "%s on %s/%s trying to grab an NZB but not in an allowed channel." % (trigger.userinfo, network, chan)
 			self.logger.warn(tolog)
 			return
 		
@@ -100,7 +102,7 @@ class GrabNZB(Plugin):
 			
 			if hasmode == 0:
 				self.sendReply(trigger, "Access denied.")
-				tolog = "%s on %s/%s trying to grab a torrent." % (trigger.userinfo, network, chan)
+				tolog = "%s on %s/%s trying to grab an NZB but has incorrect mode." % (trigger.userinfo, network, chan)
 				self.logger.warn(tolog)
 				return
 		
@@ -125,7 +127,7 @@ class GrabNZB(Plugin):
 			tolog = "%s on %s/%s asked me to download an NZB" % (trigger.userinfo, network, chan)
 			self.logger.info(tolog)
 			
-			# See if it's a newzbin url
+			# newzbin.com
 			m = NEWZBIN_URL_RE.match(url)
 			if m:
 				data = {
@@ -135,16 +137,22 @@ class GrabNZB(Plugin):
 				}
 				trigger._reportid = m.group(1)
 				self.urlRequest(trigger, self.__Save_Newzbin, DNZB_URL, data)
+				return
 			
-			# Maybe newzleech
-			else:
-				m = NEWZLEECH_URL_RE.match(url)
-				if m:
-					self.urlRequest(trigger, self.__Parse_Newzleech, url)
-				
-				# Oh well
-				else:
-					self.urlRequest(trigger, self.__Save_NZB, url)
+			# newzleech.com
+			m = NEWZLEECH_URL_RE.match(url)
+			if m:
+				self.urlRequest(trigger, self.__Parse_Newzleech, url)
+				return
+			
+			# binsearch.info
+			m = BINSEARCH_URL_RE.match(url)
+			if m:
+				self.urlRequest(trigger, self.__Parse_Binsearch, url)
+				return
+			
+			# Random link
+			self.urlRequest(trigger, self.__Save_NZB, url)
 		
 		# And if we didn't, cry
 		else:
@@ -209,6 +217,17 @@ class GrabNZB(Plugin):
 			
 			replytext = 'Newzbin error: %s' % (err)
 			self.sendReply(trigger, replytext)
+	
+	# -----------------------------------------------------------------------
+	# Parse a Binsearch post page
+	def __Parse_Binsearch(self, trigger, resp):
+		if resp.response == '200':
+			data = [ ('action', 'nzb'), ('b', '1') ]
+			
+			for input in FindChunks(resp.data, '<input type="checkbox" name="', '"'):
+				data.append((input, 'on'))
+			
+			self.urlRequest(trigger, self.__Save_NZB, resp.url, data)
 	
 	# -----------------------------------------------------------------------
 	# Parse a Newzleech post page
