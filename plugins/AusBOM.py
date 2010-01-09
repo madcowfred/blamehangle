@@ -37,20 +37,20 @@ from classes.Plugin import Plugin, PluginFakeTrigger
 # ---------------------------------------------------------------------------
 # Tuples of 'products'. Should be (product name, page code).
 PRODUCTS = (
-	('New South Wales', 'IDN60800'),
-	('Northern Territory', 'IDD60800'),
-	('Queensland', 'IDQ60800'),
-	('South Australia', 'IDS60800'),
-	('Tasmania', 'IDT60800'),
-	('Victoria', 'IDV60800'),
-	('Western Australia', 'IDW60800'),
+	('New South Wales', 'nsw'),
+	('NT', 'nt'),
+	('Queensland', 'qld'),
+	('South Australia', 'sa'),
+	('Tasmania', 'tas'),
+	('Victoria', 'vic'),
+	('Western Australia', 'wa'),
 )
 
 MONTH = 60 * 60 * 24 * 30
 
 # ---------------------------------------------------------------------------
 
-AUSBOM_URL = 'http://www.bom.gov.au/products/%s.shtml'
+AUSBOM_URL = 'http://www.bom.gov.au/weather/%s/observations/%sall.shtml'
 
 # ---------------------------------------------------------------------------
 
@@ -65,10 +65,11 @@ class AusBOM(Plugin):
 	def rehash(self):
 		# Load our location data from the pickle.
 		self.__Locations = self.loadPickle('.ausbom.locations')
-		# If there isn't any, trigger an update.
+		
+		# If there aren't any, trigger an update.
  		if self.__Locations is None and not self.__updating:
 			self.__Update_Locations()
-		# If there is, and it's more than a month old, update
+		# If there are, and they're more than a month old, update
 		elif time.time() - self.__Locations['_updated_'] > MONTH:
 			self.__Update_Locations()
 	
@@ -86,7 +87,7 @@ class AusBOM(Plugin):
 	def __Fetch_AusBOM(self, trigger):
 		product = self.__Find_Product(trigger, trigger.match.group('location'))
 		if product:
-			url = AUSBOM_URL % (product)
+			url = AUSBOM_URL % (product, product)
 			self.urlRequest(trigger, self.__Parse_Current, url)
 	
 	# -----------------------------------------------------------------------
@@ -102,7 +103,7 @@ class AusBOM(Plugin):
 		trigger.count = 0
 		
 		# Go to get the first one
-		url = AUSBOM_URL % PRODUCTS[0][1]
+		url = AUSBOM_URL % (PRODUCTS[0][1], PRODUCTS[0][1])
 		self.urlRequest(trigger, self.__Parse_Current, url)
 	
 	# -----------------------------------------------------------------------
@@ -115,14 +116,18 @@ class AusBOM(Plugin):
 			location = None
 		
 		# Find the area
-		area = FindChunk(resp.data, '<title>Latest Weather Observations ', '</title>')
+		area = FindChunk(resp.data, '<title>Latest Weather Observations for ', '</title>')
 		if area is None:
-			self.sendReply(trigger, 'Page parsing failed: area.')
-			return
+			area = FindChunk(resp.data, '<title>All ', ' Weather Observations')
+			if area is None:
+				self.logger.warn('Page parsing failed: area.')
+				self.sendReply(trigger, 'Page parsing failed: area.')
+				return
 		
 		# Find the timezone
 		tz = FindChunk(resp.data, 'Date/Time<br', '/th>')
 		if tz is None:
+			self.logger.warn('Page parsing failed: timezone.')
 			self.sendReply(trigger, 'Page parsing failed: timezone.')
 			return
 		tz = FindChunk(tz, '>', '<')
@@ -130,6 +135,7 @@ class AusBOM(Plugin):
 		# Find the table rows
 		trs = FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
 		if not trs:
+			self.logger.warn('Page parsing failed: rows.')
 			self.sendReply(trigger, 'Page parsing failed: rows.')
 			return
 		
@@ -202,7 +208,7 @@ class AusBOM(Plugin):
 			
 			# Otherwise, go get the next one
 			else:
-				url = AUSBOM_URL % PRODUCTS[trigger.count][1]
+				url = AUSBOM_URL % (PRODUCTS[trigger.count][1], PRODUCTS[trigger.count][1])
 				self.urlRequest(trigger, self.__Parse_Current, url)
 		
 		# If we're not updating, maybe spit out something
