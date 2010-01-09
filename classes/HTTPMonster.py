@@ -80,8 +80,13 @@ class HTTPMonster(Child):
 	# -----------------------------------------------------------------------
 	
 	def run_sometimes(self, currtime):
+		# See if anything has timed out
+		async_objects = [v for v in asyncore.socket_map.values() if isinstance(v, async_http)]
+		for v in async_objects:
+			v.timeout_check(currtime)
+		
 		# See if we should start a new HTTP transfer
-		if self.urls and self.active < self.max_conns:
+		if self.urls and len(async_objects) < self.max_conns:
 			host, message, chunks = self.urls.pop(0)
 			
 			# Nasty hack to allow redirects to work properly
@@ -93,9 +98,8 @@ class HTTPMonster(Child):
 			
 			async_http(self, host, message, chunks, seen)
 		
-		# See if anything has timed out
-		for a in [a for a in asyncore.socket_map.values() if isinstance(a, async_http)]:
-			a.timeout_check(currtime)
+		elif self.urls:
+			print self.urls
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to go fetch a URL
@@ -165,7 +169,7 @@ class async_http(buffered_dispatcher):
 		self.logger = logging.getLogger('hangle.async_http')
 		
 		self._error = None
-		self.closed = 0
+		self.closed = False
 		self.received = 0
 		
 		self.data = []
@@ -239,7 +243,6 @@ class async_http(buffered_dispatcher):
 		except socket.gaierror, msg:
 			self.failed(msg)
 		else:
-			self.parent.active += 1
 			self.last_activity = time.time()
 	
 	# -----------------------------------------------------------------------
@@ -427,9 +430,8 @@ class async_http(buffered_dispatcher):
 			self.failed('no headers returned')
 		
 		# Clean up
-		if not self.closed:
-			self.closed = 1
-			self.parent.active -= 1
+		if self.closed is False:
+			self.closed = True
 			self.parent._totalbytes += self.received
 		
 		self.close()
@@ -466,9 +468,8 @@ class async_http(buffered_dispatcher):
 		self.parent.sendMessage(self.message.source, REPLY_URL, data)
 		
 		# Clean up
-		if not self.closed:
-			self.closed = 1
-			self.parent.active -= 1
+		if  self.closed is False:
+			self.closed = True
 			self.parent._totalbytes += self.received
 		
 		self.close()
