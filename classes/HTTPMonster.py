@@ -56,7 +56,6 @@ line_re = re.compile('(?:\r\n|\r|\n)')
 
 class HTTPMonster(Child):
 	def setup(self):
-		self.active = 0
 		self.urls = []
 		
 		self._requests = 0
@@ -97,9 +96,6 @@ class HTTPMonster(Child):
 				seen = {}
 			
 			async_http(self, host, message, chunks, seen)
-		
-		elif self.urls:
-			print self.urls
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to go fetch a URL
@@ -132,7 +128,7 @@ class HTTPMonster(Child):
 				hosts = [h for h in hosts if h[0] == 4]
 		
 		# We got no hosts, DNS failure!
-		if hosts is None or hosts == []:
+		if not hosts:
 			trigger, method, url = message.data[:3]
 			
 			# Log an error
@@ -140,7 +136,7 @@ class HTTPMonster(Child):
 				tolog = "Error while trying to fetch URL '%s': DNS failure" % (url)
 			else:
 				tolog = "Error while trying to fetch URL '%s': no valid DNS results" % (url)
-			self.logger.info(tolog)
+			self.logger.warn(tolog)
 			
 			# Build the response and return it
 			resp = HTTPResponse(url, None, None, None)
@@ -173,7 +169,6 @@ class async_http(buffered_dispatcher):
 		self.received = 0
 		
 		self.data = []
-		self.headlines = []
 		
 		self.parent = parent
 		self.hosts = hosts
@@ -304,128 +299,22 @@ class async_http(buffered_dispatcher):
 		data = ''.join(self.data)
 		
 		# Try to split the data into header/body
-		while 1:
+		headlines = []
+		while True:
 			try:
 				line, data = line_re.split(data, 1)
 			except:
 				break
 			
 			if line:
-				self.headlines.append(line)
+				headlines.append(line)
 			else:
 				break
 		
-		# We have some data, might as well process it?
-		if self.headlines:
-			try:
-				response = self.headlines[0].split()[1]
-			except:
-				failmsg = 'Invalid HTTP response: %s' % (repr(self.headlines[0]))
-				self.failed(failmsg)
-			else:
-				# Build a header dictionary
-				headers = {}
-				for line in self.headlines[1:]:
-					try:
-						k, v = re.split(':+ ', line, 1)
-					except ValueError:
-						tolog = 'Bad header line: %r' % (line)
-						self.logger.info(tolog)
-					else:
-						headers[k.lower()] = v
-				
-				parsepage = False
-				
-				# Various redirect responses
-				if response in ('301', '302', '303', '307'):
-					if 'location' in headers:
-						# Same path, stupid server?
-						if headers['location'] == self.path and len(data) > 0:
-							self.logger.warn('Stupid server redirected to same location!')
-							parsepage = True
-						else:
-							newurl = urlparse.urljoin(self.url, headers['location'])
-							
-							if newurl in self.seen:
-								self.failed('Redirection loop encountered!')
-							else:
-								self.seen[self.url] = 1
-								if len(self.seen) > self.parent.redirect_limit:
-									self.failed('Redirection limit reached!')
-								else:
-									self.message.data[2] = newurl
-									self.message._seen = self.seen
-									self.parent._message_REQ_URL(self.message)
-					
-					else:
-						self.failed('Redirect without Location header!')
-				
-				# Not Modified
-				elif response == '304':
-					# Log something
-					tolog = 'URL not modified: %s' % (self.url)
-					self.logger.info(tolog)
-					
-					# Build the response and return it
-					resp = HTTPResponse(self.url, response, headers, '')
-					data = [self.trigger, self.method, resp]
-					self.parent.sendMessage(self.message.source, REPLY_URL, data)
-				
-				# Anything else
-				else:
-					parsepage = True
-				
-				# Parse the page if we have to
-				if parsepage:
-					if len(data) > 0:
-						page_text = None
-						
-						# Check for gzip
-						is_gzip = 0
-						
-						if 'content-encoding' in headers:
-							chunks = headers['content-encoding'].split()
-							if 'gzip' in chunks:
-								is_gzip = 1
-							else:
-								tolog = 'Unknown Content-Encoding: %s' % (repr(headers['content-encoding']))
-								self.logger.warn(tolog)
-						
-						# If we think it's gzip compressed, try to unsquish it
-						if is_gzip:
-							try:
-								gzf = gzip.GzipFile(fileobj=StringIO(data))
-								page_text = gzf.read()
-								gzf.close()
-							except Exception, msg:
-								self.failed('gunzip failed: %s' % msg)
-						
-						else:
-							page_text = data[:]
-						
-						# And if we still have page text, keep going
-						if page_text is not None:
-							# If it was compressed, log a bit extra
-							if is_gzip:
-								tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(data), len(page_text))
-							else:
-								tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
-							self.logger.info(tolog)
-							
-							# Build the response and return it
-							resp = HTTPResponse(self.url, response, headers, page_text)
-							data = [self.trigger, self.method, resp]
-							self.parent.sendMessage(self.message.source, REPLY_URL, data)
-						
-						# No text, log an error
-						else:
-							self.failed('no page text: response = %s' % response)
-					
-					# We got no data!
-					else:
-						self.failed('no data returned: response = %s' % response)
-		
-		# We got no header lines... strange
+		# If we have some valid headers, process the other data
+		if headlines:
+			self.process_response(headlines, data)
+		# Or throw an error
 		else:
 			self.failed('no headers returned')
 		
@@ -435,6 +324,121 @@ class async_http(buffered_dispatcher):
 			self.parent._totalbytes += self.received
 		
 		self.close()
+	
+	# -----------------------------------------------------------------------
+	# Process the returned data
+	def process_response(self, headlines, data):
+		try:
+			response = headlines[0].split()[1]
+		except:
+			failmsg = 'Invalid HTTP response: %s' % (repr(headlines[0]))
+			self.failed(failmsg)
+			return
+		
+		# Build a header dictionary
+		headers = {}
+		for line in headlines[1:]:
+			try:
+				k, v = re.split(':+ ', line, 1)
+			except ValueError:
+				tolog = 'Bad header line: %r' % (line)
+				self.logger.info(tolog)
+			else:
+				headers[k.lower()] = v
+		
+		
+		# Work out if we need to do some actual parsing of the page?
+		parsepage = False
+		
+		# Various redirect responses
+		if response in ('301', '302', '303', '307'):
+			if 'location' not in headers:
+				self.failed('Redirect without Location header!')
+				return
+			
+			# Same path, stupid server?
+			if headers['location'] == self.path and len(data) > 0:
+				self.logger.warn('Stupid server redirected to same location!')
+				parsepage = True
+			else:
+				newurl = urlparse.urljoin(self.url, headers['location'])
+				
+				if newurl in self.seen:
+					self.failed('Redirection loop encountered!')
+				else:
+					self.seen[self.url] = True
+					if len(self.seen) > self.parent.redirect_limit:
+						self.failed('Redirection limit reached!')
+					else:
+						self.message.data[2] = newurl
+						self.message._seen = self.seen
+						self.parent._message_REQ_URL(self.message)
+		
+		# Not Modified
+		elif response == '304':
+			# Log something
+			tolog = 'URL not modified: %s' % (self.url)
+			self.logger.info(tolog)
+			
+			# Build the response and return it
+			resp = HTTPResponse(self.url, response, headers, '')
+			data = [self.trigger, self.method, resp]
+			self.parent.sendMessage(self.message.source, REPLY_URL, data)
+			
+			return
+		
+		# Anything else
+		else:
+			parsepage = True
+		
+		
+		# Parse the page if we have to
+		if parsepage:
+			if len(data) == 0:
+				self.failed('no data returned: response = %s' % response)
+				return
+			
+			page_text = None
+			
+			# Check for gzip
+			is_gzip = False
+			if 'content-encoding' in headers:
+				chunks = headers['content-encoding'].split()
+				if 'gzip' in chunks:
+					is_gzip = True
+				else:
+					tolog = 'Unknown Content-Encoding: %s' % (repr(headers['content-encoding']))
+					self.logger.warn(tolog)
+			
+			# If we think it's gzip compressed, try to unsquish it
+			if is_gzip:
+				try:
+					gzf = gzip.GzipFile(fileobj=StringIO(data))
+					page_text = gzf.read()
+					gzf.close()
+				except Exception, msg:
+					self.failed('gunzip failed: %s' % msg)
+					return
+			
+			else:
+				page_text = data[:]
+			
+			# No text
+			if page_text is None:
+				self.failed('no page text: response = %s' % response)
+				return
+			
+			# If it was compressed, log a bit extra
+			if is_gzip:
+				tolog = 'Finished fetching URL: %s - %d bytes (%d bytes)' % (self.url, len(data), len(page_text))
+			else:
+				tolog = 'Finished fetching URL: %s - %d bytes' % (self.url, len(page_text))
+			self.logger.info(tolog)
+			
+			# Build the response and return it
+			resp = HTTPResponse(self.url, response, headers, page_text)
+			data = [self.trigger, self.method, resp]
+			self.parent.sendMessage(self.message.source, REPLY_URL, data)
 	
 	# -----------------------------------------------------------------------
 	# An exception occured somewhere
