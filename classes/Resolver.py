@@ -1,4 +1,4 @@
-# Copyright (c) 2003-2009, blamehangle team
+# Copyright (c) 2003-2010, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ class Resolver(Child):
 			t = ResolverThread(self, parentlock, self.Requests, self.Options['use_ipv6'])
 			#t = Thread(target=ResolverThread, args=(self, i))
 			#t.setDaemon(1)
-			t.setName('DNS%d' % i)
+			t.setName('ResolverThread%d' % i)
 			t.start()
 			self.__threads.append(t)
 		
@@ -164,7 +164,7 @@ class ResolverThread(Thread):
 			else:
 				try:
 					results = socket.gethostbyname_ex(host)
-				except socket.gaierror:
+				except socket.herror:
 					pass
 				else:
 					hosts = [(4, h) for h in results[2]]
