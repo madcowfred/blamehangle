@@ -31,10 +31,10 @@ Implements threaded DNS lookups and a cache.
 
 import re
 import socket
+import threading
 import time
 
 from Queue import Empty, Queue
-from threading import Lock, Thread
 
 from classes.Children import Child
 from classes.Common import MinMax
@@ -45,6 +45,9 @@ from classes.SimpleCacheDict import SimpleCacheDict
 # This doesn't actually check for a valid IP, just the basic structure.
 IPV4_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 
+# Number of seconds between checking for dead threads
+THREAD_CHECK_INTERVAL = 5
+
 # ---------------------------------------------------------------------------
 
 class Resolver(Child):
@@ -54,6 +57,9 @@ class Resolver(Child):
 			self.DNSCache = SimpleCacheDict(1)
 		self.Requests = Queue(0)
 		self.__threads = []
+		
+		self._lock = threading.Lock()
+		self._last_check = 0
 		
 		self.rehash()
 	
@@ -75,18 +81,42 @@ class Resolver(Child):
 	def run_once(self):
 		self.__Start_Threads()
 	
+	# Occasionally check for dead threads and start any new ones
+	def run_sometimes(self, currtime):
+		if currtime - self._last_check > THREAD_CHECK_INTERVAL:
+			self.__Start_Threads()
+	
 	# -----------------------------------------------------------------------
 	# Start our threads!
 	def __Start_Threads(self):
-		parentlock = Lock()
-		for i in range(MinMax(1, 10, self.Options['resolver_threads'])):
-			t = ResolverThread(self, parentlock, self.Requests, self.Options['use_ipv6'])
-			t.setName('ResolverThread%d' % i)
+		self._last_check = time.time()
+		
+		threads = len([t for t in threading.enumerate() if isinstance(t, ResolverThread)])
+		n = MinMax(1, 10, self.Options['resolver_threads'])
+		if threads >= n:
+			return
+		
+		tolog = '%d resolver thread(s) running, should be %d' % (threads, n)
+		self.logger.warning(tolog)
+		
+		make = n - threads
+		for i in range(make):
+			t = ResolverThread(self, self._lock, self.Requests, self.Options['use_ipv6'])
+			t.setName('ResolverThread')
 			t.start()
 			self.__threads.append(t)
 		
-		tolog = 'Started %d resolver thread(s)' % (len(self.__threads))
+		tolog = 'Started %d resolver thread(s)' % (make)
 		self.logger.info(tolog)
+	
+	# Check to see if any of our threads crashed
+	def __Check_Threads(self):
+		self._last_check = time.time()
+		
+		threads = len([t for t in threading.enumerate() if isinstance(t, ResolverThread)])
+		n = MinMax(1, 10, self.Options['resolver_threads'])
+		if threads < n:
+			self.__Start_Threads()
 	
 	# Stop our threads!
 	def __Stop_Threads(self):
@@ -100,6 +130,8 @@ class Resolver(Child):
 		
 		tolog = 'All resolver threads halted'
 		self.logger.info(tolog)
+		
+		self._last_check = time.time() + 5000
 	
 	# -----------------------------------------------------------------------
 	# Someone wants us to resolve something, woo
@@ -125,9 +157,9 @@ class Resolver(Child):
 
 # ---------------------------------------------------------------------------
 
-class ResolverThread(Thread):
+class ResolverThread(threading.Thread):
 	def __init__(self, parent, ParentLock, Requests, use_ipv6):
-		Thread.__init__(self)
+		threading.Thread.__init__(self)
 		self.parent = parent
 		self.ParentLock = ParentLock
 		self.Requests = Requests
@@ -181,8 +213,5 @@ class ResolverThread(Thread):
 			self.parent.sendMessage(message.source, REPLY_DNS, data)
 			
 			self.ParentLock.release()
-			
-			# Clean up temporary crap
-			#del message, trigger, method, host, args, hosts, 
 
 # ---------------------------------------------------------------------------
