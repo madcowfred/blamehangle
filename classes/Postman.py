@@ -114,7 +114,7 @@ class Postman:
 		
 		system = [ PluginHandler, Resolver, ChatterGizmo, DataMonkey, HTTPMonster ]
 		for cls in system:
-			tolog = "Starting system object '%s'" % cls.__name__
+			tolog = "Starting system object '%s'" % (cls.__name__)
 			self.logger.info(tolog)
 			
 			instance = cls(cls.__name__, self.inQueue, self.Config, self.Userlist)
@@ -148,7 +148,7 @@ class Postman:
 		
 		else:
 			# Start it up
-			tolog = "Starting plugin object '%s'" % name
+			tolog = "Starting plugin object '%s'" % (name)
 			self.logger.info(tolog)
 			
 			try:
@@ -163,7 +163,7 @@ class Postman:
 				self.__Plugin_Unload(name)
 			
 			else:
-				pluginpath = '%s.py' % os.path.join('plugins', name)
+				pluginpath = '%s.py' % (os.path.join('plugins', name))
 				self.__mtimes[name] = os.stat(pluginpath).st_mtime
 				
 				self.__Children[cls.__name__] = instance
@@ -175,7 +175,7 @@ class Postman:
 	
 	# Unload a plugin, making sure we unload the module too
 	def __Plugin_Unload(self, name):
-		tolog = "Unloading plugin object '%s'" % name
+		tolog = "Unloading plugin object '%s'" % (name)
 		self.logger.info(tolog)
 		
 		if self.__Children.has_key(name):
@@ -297,7 +297,7 @@ class Postman:
 					
 					message = child.inQueue.pop(0)
 					
-					methname = '_message_%s' % message.ident
+					methname = '_message_%s' % (message.ident)
 					if hasattr(child, methname):
 						getattr(child, methname)(message)
 					else:
@@ -320,7 +320,7 @@ class Postman:
 					elif event & select.POLLOUT:
 						asyncore.write(obj)
 					elif event & select.POLLNVAL:
-						tolog = "FD %d is still in the poll, but it's closed!" % fd
+						tolog = "FD %d is still in the poll, but it's closed!" % (fd)
 						self.logger.critical(tolog)
 					else:
 						tolog = 'Bizarre poll response! %d: %d' % (fd, event)
@@ -369,7 +369,7 @@ class Postman:
 				if name in self.__Children:
 					self.__Children[name].inQueue.append(message)
 				else:
-					tolog = "Invalid target for Message ('%s')" % name
+					tolog = "Invalid target for Message ('%s')" % (name)
 					self.logger.warn(tolog)
 		
 		else:
@@ -387,7 +387,7 @@ class Postman:
 		self.__Stopping = 1
 		self.__Shutdown_Start = time.time()
 		
-		tolog = 'Shutting down (%s)...' % why
+		tolog = 'Shutting down (%s)...' % (why)
 		self.logger.info(tolog)
 		
 		# Send shutdown messages to everyone
@@ -404,13 +404,15 @@ class Postman:
 		
 		elif alive:
 			# If we've been shutting down for a while, just give up
+			alives = ', '.join(alive)
+			
 			if time.time() - self.__Shutdown_Start >= 10:
-				tolog = 'Shutdown timeout expired: %s' % ', '.join(alive)
+				tolog = 'Shutdown timeout expired: %s' % (alives)
 				self.warn(LOG_ALWAYS, tolog)
 				return 1
 			
 			else:
-				tolog = 'Objects still alive: %s' % ', '.join(alive)
+				tolog = 'Objects still alive: %s' % (alives)
 				self.logger.warn(LOG_DEBUG, tolog)
 				return 0
 		
@@ -437,43 +439,6 @@ class Postman:
 		self.logger.addHandler(console_handler)
 		
 		#self._logger.setLevel(logging.DEBUG)
-	
-	# -----------------------------------------------------------------------
-	# Log a line to our log file.
-	# -----------------------------------------------------------------------
-	def __Log(self, level, text):
-		currtime = time.localtime()
-		timeshort = time.strftime("[%H:%M:%S]", currtime)
-		timelong = time.strftime("%Y/%m/%d %H:%M:%S", currtime)
-		
-		# Special case for exceptions
-		if level == LOG_EXCEPTION:
-			self.__Log_Exception(dontcrash=1, exc_info=text)
-		
-		else:
-			if level == LOG_WARNING:
-				text = 'WARNING: %s' % text
-			
-			elif level == LOG_DEBUG:
-				if not self.__log_debug:
-					return
-				text = '[DEBUG] %s' % text
-			
-			elif level == LOG_MSG:
-				if not self.__log_debug_msg:
-					return
-				text = '[DEBUG] %s' % text
-			
-			elif level == LOG_QUERY:
-				if not self.__log_debug_query:
-					return
-				text = '[QUERY] %s' % text
-			
-			print timeshort, text
-			
-			tolog = '%s %s\n' % (timelong, text)
-			self.__logfile.write(tolog)
-			self.__logfile.flush()
 	
 	# -----------------------------------------------------------------------
 	# Log an exception nicely
