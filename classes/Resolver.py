@@ -81,8 +81,6 @@ class Resolver(Child):
 		parentlock = Lock()
 		for i in range(MinMax(1, 10, self.Options['resolver_threads'])):
 			t = ResolverThread(self, parentlock, self.Requests, self.Options['use_ipv6'])
-			#t = Thread(target=ResolverThread, args=(self, i))
-			#t.setDaemon(1)
 			t.setName('ResolverThread%d' % i)
 			t.start()
 			self.__threads.append(t)
@@ -165,6 +163,8 @@ class ResolverThread(Thread):
 				try:
 					results = socket.gethostbyname_ex(host)
 				except socket.herror:
+					pass
+				except socket.gaierror:
 					pass
 				else:
 					hosts = [(4, h) for h in results[2]]
