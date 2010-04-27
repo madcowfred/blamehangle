@@ -29,6 +29,7 @@
 Implements threaded DNS lookups and a cache.
 """
 
+import logging
 import re
 import socket
 import threading
@@ -109,15 +110,6 @@ class Resolver(Child):
 		tolog = 'Started %d resolver thread(s)' % (make)
 		self.logger.info(tolog)
 	
-	# Check to see if any of our threads crashed
-	def __Check_Threads(self):
-		self._last_check = time.time()
-		
-		threads = len([t for t in threading.enumerate() if isinstance(t, ResolverThread)])
-		n = MinMax(1, 10, self.Options['resolver_threads'])
-		if threads < n:
-			self.__Start_Threads()
-	
 	# Stop our threads!
 	def __Stop_Threads(self):
 		# Tell all of our threads to exit
@@ -138,12 +130,11 @@ class Resolver(Child):
 	def _message_REQ_DNS(self, message):
 		trigger, method, host, args = message.data
 		
-		# If the requested host is cached, just send that back
-		if host in self.DNSCache:
-			data = [trigger, method, self.DNSCache[host], args]
-			self.sendMessage(message.source, REPLY_DNS, data)
+		# See if the requested host is cached
+		try:
+			cached = self.DNSCache[host]
 		# If not, go resolve it
-		else:
+		except KeyError:
 			# Well, make sure it's not an IP first, as we don't do reverse
 			# lookups (yet)
 			if IPV4_RE.match(host):
@@ -154,6 +145,10 @@ class Resolver(Child):
 				self.sendMessage(message.source, REPLY_DNS, data)
 			else:
 				self.Requests.put(message)
+		# It was cached, send it back
+		else:
+			data = [trigger, method, cached, args]
+			self.sendMessage(message.source, REPLY_DNS, data)
 
 # ---------------------------------------------------------------------------
 
@@ -164,6 +159,8 @@ class ResolverThread(threading.Thread):
 		self.ParentLock = ParentLock
 		self.Requests = Requests
 		self.use_ipv6 = use_ipv6
+		
+		self.logger = logging.getLogger('hangle.ResolverThread')
 	
 	def run(self):
 		while True:
@@ -181,6 +178,8 @@ class ResolverThread(threading.Thread):
 					results = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
 				except socket.gaierror:
 					pass
+				except:
+					self.logger.exception('Trapped exception!')
 				else:
 					# parse the results a bit here
 					for af, socktype, proto, canonname, sa in results:
