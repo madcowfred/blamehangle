@@ -270,15 +270,23 @@ class MoneyMangler(Plugin):
 	# -----------------------------------------------------------------------
 	# Parse the exchange page and spit out a result
 	def __Parse_Exchange(self, trigger, resp):
-		# Find the data chunks
-		chunks = FindChunks(resp.data, '<h2 class="XE"', '</h2>')
+		# Find the data chunk
+		chunk = FindChunk(resp.data, 'class="rate"', '</tr>')
+		if not chunk:
+			self.sendReply(trigger, 'Page parsing failed: class.')
+			return
+		
+		# Find the TDs
+		chunks = FindChunks(chunk, '>', '</td>')
 		if not chunks:
-			self.sendReply(trigger, 'Page parsing failed: h2.')
+			self.sendReply(trigger, 'Page parsing failed: tds.')
 			return
 		
 		# And off we go
-		if len(chunks) == 3:
-			replytext = '%s == %s' % (FindChunk(chunks[0], '>', '<'), FindChunk(chunks[2], '>', '<'))
+		if len(chunks) == 4:
+			src = chunks[0].split()
+			dst = chunks[2].split()
+			replytext = '%s %s == %s %s' % (src[0], src[1][:3], dst[0], dst[1][:3])
 		else:
 			replytext = 'Page parsing failed: chunks.'
 			self.logger.warn('Page parsing failed: chunks')
