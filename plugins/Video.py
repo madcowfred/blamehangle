@@ -35,16 +35,12 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-IMDB_SEARCH_URL = 'http://us.imdb.com/find?s=tt&q=%s&x=0&y=0'
-IMDB_TITLE_URL = 'http://us.imdb.com/title/tt%07d/'
+IMDB_SEARCH_URL = 'http://www.imdb.com/find?s=tt&q=%s'
+IMDB_TITLE_URL = 'http://www.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'/b.gif\?link=/title/tt(\d+)/\';">([^<>]+)</a> \((\d+)[\)\/]')
 # Maximum length of Plot: spam
 IMDB_MAX_PLOT = 180
-
-# ---------------------------------------------------------------------------
-
-TVTOME_URL = 'http://www.tvtome.com/tvtome/servlet/Search'
 
 # ---------------------------------------------------------------------------
 
@@ -57,26 +53,16 @@ class Video(Plugin):
 			regexp = r'^imdb (?P<findme>.+)$',
 			help = ('imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
 		)
-		#self.addTextEvent(
-		#	method = self.__Fetch_TVTome,
-		#	regexp = r'^tvtome (.+)$',
-		#	help = ('tvtome', '\02tvtome\02 <search term> : Search for a TV show  on TV Tome.'),
-		#)
 	
 	# ---------------------------------------------------------------------------
 	
 	def __Fetch_IMDb(self, trigger):
 		findme = trigger.match.group(1)
-		url = IMDB_SEARCH_URL % QuoteURL(findme)
+		if findme.startswith('tt'):
+			url = IMDB_TITLE_URL % (int(findme[2:]))
+		else:
+			url = IMDB_SEARCH_URL % QuoteURL(findme)
 		self.urlRequest(trigger, self.__Parse_IMDb, url)
-	
-	def __Fetch_TVTome(self, trigger):
-		data = {
-			'searchType': 'show',
-			'searchString': trigger.match.group(1).lower(),
-		}
-		
-		self.urlRequest(trigger, self.__Parse_TVTome, TVTOME_URL, data)
 	
 	# ---------------------------------------------------------------------------
 	# Parse an IMDb search results page
@@ -165,27 +151,16 @@ class Video(Plugin):
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot
-			#<h5>Plot:</h5>
-			#<div class="info-content">
-			#St Trinian's, a school for "young ladies" with its anarchic doctrine of free expression, brings together a motley crew of ungovernable girls who, using their wit and ingenuity, save the school from bankruptcy. <a class="tn15more inline" href="/title/tt0964587/plotsummary" onClick="(new Image()).src='/rg/title-tease/plotsummary/images/b.gif?link=/title/tt0964587/plotsummary';">full summary</a> | <a class="tn15more inline" href="synopsis">full synopsis</a>
-			#</div>
-			
 			chunk = FindChunk(resp.data, 'Plot:</h5>', '</div>')
 			if chunk:
 				chunk = chunk.strip().replace('\n', '')
 				
-				print repr(chunk)
-				
 				chunk = chunk[chunk.find('>')+1:]
-				
-				print repr(chunk)
 				
 				for s in (' | ', ' <a'):
 					n = chunk.find(s)
 					if n >= 0:
 						chunk = chunk[:n]
-				
-				print repr(chunk)
 				
 				if len(chunk) > IMDB_MAX_PLOT:
 					n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
@@ -217,105 +192,5 @@ class Video(Plugin):
 			
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
-	
-	# ---------------------------------------------------------------------------
-	# Parse a TVTome search results page
-	def __Parse_TVTome(self, trigger, resp):
-		findme = trigger.match.group(1).lower()
-		
-		# It's not a search result
-		if resp.data.find('Show search for:') < 0:
-			self.__TVTome_Show(trigger, resp)
-		
-		# It is a search result!
-		else:
-			# Find the results block
-			chunk = FindChunk(resp.data, 'Show search for:', "Didn't find what you")
-			if not chunk:
-				self.sendReply(trigger, 'Page parsing failed: results.')
-				return
-			
-			# Find the shows
-			shows = FindChunks(chunk, '<a href="', '</a>')
-			if shows:
-				exact = None
-				parts = []
-				
-				for show in shows:
-					try:
-						path, show = show.split('">')
-					except ValueError:
-						continue
-					
-					part = '\02[\02%s\02]\02' % (show)
-					parts.append(part)
-					
-					if show.lower() == findme:
-						exact = (path, show)
-				
-				if len(parts) > 10:
-					replytext = 'Found \02%d\02 results, first 10: %s' % (len(parts), ' '.join(parts[:10]))
-				else:
-					replytext = 'Found \02%d\02 results: %s' % (len(parts), ' '.join(parts))
-				
-				# If we found an exact match, go fetch it now
-				if exact is not None:
-					replytext += " :: Using '%s'" % (exact[1])
-					
-					url = 'http://www.tvtome.com' + exact[0]
-					self.urlRequest(trigger, self.__TVTome_Show, url)
-			
-			else:
-				replytext = 'No results found.'
-			
-			self.sendReply(trigger, replytext)
-	
-	# ---------------------------------------------------------------------------
-	# Parse a TVTome show info page
-	def __TVTome_Show(self, trigger, resp):
-		# Find the show title
-		show_title = FindChunk(resp.data, '<h1>', '</h1>')
-		if not show_title:
-			self.sendReply(trigger, 'Page parsing failed: show title.')
-			return
-		
-		# Find the show info
-		chunk = FindChunk(resp.data, '<!-- Show Information body Begins -->', '<!-- Show Information body Ends -->')
-		if not chunk:
-			self.sendReply(trigger, 'Page parsing failed: show info.')
-			return
-		
-		chunk = FindChunk(chunk, '<table width="575"', '</table>')
-		if not chunk:
-			self.sendReply(trigger, 'Page parsing failed: show info table.')
-			return
-		
-		# Find the table cells!
-		data = [('Title', show_title)]
-		
-		trs = FindChunks(chunk, '<tr>', '</tr>')
-		for tr in trs:
-			tds = FindChunks(tr, '">', '</td>')
-			if len(tds) == 2:
-				data.append(tds)
-		
-		# Find the page URL
-		path = FindChunk(resp.data, '<input type="hidden" name="returnTo" value="', '">')
-		if path:
-			url = 'http://www.tvtome.com' + path
-			data.append(('URL', url))
-		
-		# We found stuff!
-		if len(data) > 1:
-			parts = []
-			for k, v in data:
-				part = '\02[\02%s: %s\02]\02' % (k, v)
-				parts.append(part)
-			replytext = ' '.join(parts)
-		
-		else:
-			replytext = 'Page parsing failed: show info table cells.'
-		
-		self.sendReply(trigger, replytext)
 
 # ---------------------------------------------------------------------------
