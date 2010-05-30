@@ -45,7 +45,7 @@ NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?
 NEWZLEECH_GET_URL = 'http://www.newzleech.com/?m=gen'
 NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/(?:posts/|)\?p=(\d+).*$')
 
-BINSEARCH_URL_RE = re.compile(r'^http://(?:www\.|)binsearch\.info/\?b=.+$')
+BINSEARCH_URL_RE = re.compile(r'^http://(?:www\.|)binsearch\.info/\?(?:b|server)=.+$')
 
 CD_FILENAME_RE = re.compile('filename=([^;]+)')
 
