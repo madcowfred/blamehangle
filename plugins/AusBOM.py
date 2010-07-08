@@ -50,7 +50,7 @@ MONTH = 60 * 60 * 24 * 30
 
 # ---------------------------------------------------------------------------
 
-AUSBOM_URL = 'http://www.bom.gov.au/weather/%s/observations/%sall.shtml'
+AUSBOM_URL = 'http://www.bom.gov.au/%s/observations/%sall.shtml'
 
 # ---------------------------------------------------------------------------
 
