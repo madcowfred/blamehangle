@@ -230,6 +230,8 @@ class TorrentScraper(Plugin):
 					newurl = UnquoteURL(item['enclosure']['url']).replace('%20', ' ')
 				else:
 					newurl = UnquoteURL(item['link']).replace('%20', ' ')
+					if newurl.startswith('<![CDATA['):
+						newurl = newurl[9:-3]
 				
 				torrents[newurl] = True
 		
