@@ -45,6 +45,12 @@ NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?
 NEWZLEECH_GET_URL = 'http://www.newzleech.com/?m=gen'
 NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/(?:posts/|)\?p=(\d+).*$')
 
+NZBMATRIX_GET_URL = 'http://nzbmatrix.com/api-nzb-download.php?id=%s&username=%s&apikey=%s'
+NZBMATRIX_URL_REs = (
+	re.compile(r'^http://(?:www\.|)nzbmatrix\.com/nzb-details.php\?id=(\d+)&hit=1$'),
+	re.compile(r'^http://(?:www\.|)nzbmatrix\.com/nzb-download.php\?id=(\d+)&name=.+$'),
+)
+
 BINSEARCH_URL_RE = re.compile(r'^http://(?:www\.|)binsearch\.info/\?(?:b|server)=.+$')
 
 CD_FILENAME_RE = re.compile('filename=([^;]+)')
@@ -150,6 +156,14 @@ class GrabNZB(Plugin):
 			if m:
 				self.urlRequest(trigger, self.__Parse_Binsearch, url)
 				return
+			
+			# nzbmatrix.com
+			for r in NZBMATRIX_URL_REs:
+				m = r.match(url)
+				if m:
+					newurl = NZBMATRIX_GET_URL % (m.group(1), self.Options['nzbmatrix_user'], self.Options['nzbmatrix_apikey'])
+					self.urlRequest(trigger, self.__Save_NZB, newurl)
+					return
 			
 			# Random link
 			self.urlRequest(trigger, self.__Save_NZB, url)
@@ -269,7 +283,11 @@ class GrabNZB(Plugin):
 		if resp.response == '200':
 			# Very basic check that it's an NZB
 			if '<nzb' not in resp.data[:1000].lower():
-				replytext = "Error: that doesn't seem to be an NZB file!"
+				# Nzbmatrix hack here
+				if 'nzbmatrix.com' in resp.url:
+					replytext = resp.data
+				else:
+					replytext = "Error: that doesn't seem to be an NZB file!"
 				self.sendReply(trigger, replytext)
 				return
 			
