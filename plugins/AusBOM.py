@@ -133,7 +133,7 @@ class AusBOM(Plugin):
 		tz = FindChunk(tz, '>', '<')
 		
 		# Find the table rows
-		trs = FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
+		trs = FindChunks(resp.data, '<td class=rowleftcolumn>', '</tr>') + FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
 		if not trs:
 			self.logger.warn('Page parsing failed: rows.')
 			self.sendReply(trigger, 'Page parsing failed: rows.')
@@ -144,7 +144,7 @@ class AusBOM(Plugin):
 		
 		for tr in trs:
 			# Place name
-			place = FindChunk(tr, 'html">', '</a>')
+			place = FindChunk(tr, '.shtml>', '</a>') or FindChunk(tr, '.shtml">', '</a>')
 			for crap in ('*',):
 				place = place.replace(crap, '')
 			place = place.strip()
