@@ -45,7 +45,8 @@ NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?
 NEWZLEECH_GET_URL = 'http://www.newzleech.com/?m=gen'
 NEWZLEECH_URL_RE = re.compile(r'^http://(?:www\.|)newzleech\.com/(?:posts/|)\?p=(\d+).*$')
 
-NZBMATRIX_GET_URL = 'http://nzbmatrix.com/api-nzb-download.php?id=%s&username=%s&apikey=%s'
+#http://api.nzbmatrix.com/v1.1/download.php?id={NZBID}&username={USERNAME}&apikey={APIKEY}
+NZBMATRIX_GET_URL = 'http://api.nzbmatrix.com/v1.1/download.php?id=%s&username=%s&apikey=%s'
 NZBMATRIX_URL_REs = (
 	re.compile(r'^http://(?:www\.|)nzbmatrix\.com/nzb-details.php\?id=(\d+)&hit=1$'),
 	re.compile(r'^http://(?:www\.|)nzbmatrix\.com/nzb-download.php\?id=(\d+)&name=.+$'),
