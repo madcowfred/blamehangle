@@ -32,6 +32,7 @@ Downloads NZB files and sticks them in a configured directory.
 import os
 import re
 import urlparse
+import xml.etree.ElementTree as ET
 
 from classes.Common import *
 from classes.Constants import *
@@ -51,6 +52,8 @@ NZBMATRIX_URL_REs = (
 	re.compile(r'^http://(?:www\.|)nzbmatrix\.com/nzb-details.php\?id=(\d+)&hit=1$'),
 	re.compile(r'^http://(?:www\.|)nzbmatrix\.com/nzb-download.php\?id=(\d+)&name=.+$'),
 )
+
+SABNZBD_QUEUE_URL = 'http://%s:%s/api?mode=qstatus&output=xml&apikey=%s'
 
 BINSEARCH_URL_RE = re.compile(r'^http://(?:www\.|)binsearch\.info/\?(?:b|server)=.+$')
 
@@ -85,6 +88,47 @@ class GrabNZB(Plugin):
 			regexp = r'^grabnzb (.+)$',
 			IRCTypes = (IRCT_PUBLIC_D,),
 		)
+		if self.Options.get('sabnzbd_api_host'):
+			self.addTextEvent(
+				method = self.__Fetch_NZB_Queue,
+				regexp = r'^nzbqueue$',
+				IRCTypes = (IRCT_PUBLIC_D,),
+			)
+	
+	# -----------------------------------------------------------------------
+	# Fetch the queue from sabnzbd
+	def __Fetch_NZB_Queue(self, trigger):
+		url = SABNZBD_QUEUE_URL % (self.Options['sabnzbd_api_host'], self.Options['sabnzbd_api_port'],
+			self.Options['sabnzbd_api_key'])
+		self.urlRequest(trigger, self.__Parse_NZB_Queue, url)
+	
+	def __Parse_NZB_Queue(self, trigger, resp):
+		# No data
+		if not resp.data:
+			self.sendReply(trigger, 'No data returned.')
+			return
+		# Not XML
+		if not resp.data.startswith('<?xml'):
+			self.sendReply(trigger, 'Unknown error: %s' % (resp.data))
+			return
+		
+		root = ET.fromstring(resp.data)
+		jobs = root.findall('jobs/job')
+		
+		mbleft = float(root.find('mbleft').text)
+		speed = float(root.find('kbpersec').text)
+		
+		replytext = '\x02[\x02Queued: %.1f MB\x02]\x02 \x02[\x02Speed: %.1fKB/s\x02]\x02' % (mbleft, speed)
+		self.sendReply(trigger, replytext, process=0)
+		
+		for i, job in enumerate(jobs):
+			filename = job.find('filename').text
+			timeleft = job.find('timeleft').text
+			totalmb = float(job.find('mb').text)
+			leftmb = float(job.find('mbleft').text)
+			
+			replytext = '\-%s. %s \x02[\x02%.1f/%.1f MB\x02]\x02 \x02[\x02%s remaining\x02]\x02' % (i+1, filename, leftmb, totalmb, timeleft)
+			self.sendReply(trigger, replytext, process=0)
 	
 	# -----------------------------------------------------------------------
 	# Do the heavy lifting
