@@ -447,7 +447,7 @@ class WordStuff(Plugin):
 		# Some matches!
 		else:
 			# Find the definitions
-			chunks = FindChunks(resp.data, "<div class='definition'", '<span')
+			chunks = FindChunks(resp.data, "<td class='text'", '</tr>')
 			if not chunks:
 				self.sendReply(trigger, 'Page parsing failed: entries.')
 				return
@@ -459,10 +459,9 @@ class WordStuff(Plugin):
 				out = []
 				
 				# Find the definition
-				definition = FindChunk(chunk, '>', '</div>')
+				definition = FindChunk(chunk, '<div class="definition">', '</div>')
 				if not definition:
-					self.sendReply(trigger, 'Page parsing failed: definition.')
-					return
+					continue
 				
 				# Strip annoying junk
 				definition = definition.replace('\r', ' ').replace('\n', ' ')
