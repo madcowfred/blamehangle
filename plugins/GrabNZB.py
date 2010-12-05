@@ -281,10 +281,12 @@ class GrabNZB(Plugin):
 	# Parse a Binsearch post page
 	def __Parse_Binsearch(self, trigger, resp):
 		if resp.response == '200':
-			data = [ ('action', 'nzb'), ('b', '1') ]
+			b = FindChunk(resp.data, '<input type="hidden" name="b" value="', '"')
+			data = [ ('action', 'nzb'), ('b', b) ]
 			
-			for input in FindChunks(resp.data, '<input type="checkbox" name="', '"'):
-				data.append((input, 'on'))
+			for name in FindChunks(resp.data, '<input type="checkbox" name="', '"'):
+				if name.startswith('('):
+					data.append((name, 'on'))
 			
 			self.urlRequest(trigger, self.__Save_NZB, resp.url, data)
 	
