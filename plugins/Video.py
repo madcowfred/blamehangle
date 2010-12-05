@@ -129,7 +129,7 @@ class Video(Plugin):
 			data = {}
 			
 			# Find the movie's title and year
-			m = re.search(r'<title>(.+) \((\d+).*?\)</title>', resp.data)
+			m = re.search(r'<title>(.+) \((\d+).*?\) - IMDb</title>', resp.data)
 			if not m:
 				self.sendReply(trigger, 'Page parsing failed: title.')
 				return
@@ -141,44 +141,37 @@ class Video(Plugin):
 			data['url'] = resp.url[:len(IMDB_SEARCH_URL)+4]
 			
 			# Find the movie's genre(s)
-			chunk = FindChunk(resp.data, 'Genre:</h5>', '</div>')
+			chunk = FindChunk(resp.data, 'Genres:</h4>', '</div>')
 			if chunk:
-				genres = FindChunks(chunk, '/">', '</a>')
+				genres = FindChunks(chunk, '">', '</a>')
 				if not genres:
-					self.sendReply(trigger, 'Page parsing failed: genre.')
+					self.sendReply(trigger, 'Page parsing failed: genres.')
 					return
 				
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot
-			chunk = FindChunk(resp.data, 'Plot:</h5>', '</div>')
+			chunk = FindChunk(resp.data, '<p>', '/p>')
 			if chunk:
-				chunk = chunk.strip().replace('\n', '')
-				
-				chunk = chunk[chunk.find('>')+1:]
-				
-				for s in (' | ', ' <a'):
-					n = chunk.find(s)
-					if n >= 0:
-						chunk = chunk[:n]
-				
-				if len(chunk) > IMDB_MAX_PLOT:
-					n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
-					chunk = chunk[:n] + '...'
-				
-				data['plot'] = chunk
+				chunk = FindChunk(chunk, '>', '<')
+				if chunk:
+					if len(chunk) > IMDB_MAX_PLOT:
+						n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
+						chunk = chunk[:n] + '...'
+					
+					data['plot'] = chunk.strip()
 			
 			# Find the rating
-			chunk = FindChunk(resp.data, '<div class="meta">', '</div>')
+			chunk = FindChunk(resp.data, '<span class="rating-rating">', '<')
 			if chunk:
-				if 'awaiting 5 votes' not in chunk:
-					rating = FindChunk(chunk, '<b>', '</b>')
-					votes = FindChunk(chunk, '">', '</a>')
-					if not rating or not votes:
-						self.sendReply(trigger, 'Page parsing failed: rating.')
-						return
+				#if 'awaiting 5 votes' not in chunk:
+				#	rating = FindChunk(chunk, '<b>', '</b>')
+				#	votes = FindChunk(chunk, '">', '</a>')
+				#	if not rating or not votes:
+				#		self.sendReply(trigger, 'Page parsing failed: rating.')
+				#		return
 					
-					data['rating'] = '%s - %s' % (rating, votes)
+				data['rating'] = chunk
 			
 			
 			# Spit out the data
@@ -187,7 +180,7 @@ class Video(Plugin):
 				if data.get(field.lower(), None) is None:
 					continue
 				
-				part = '\02[\02%s: %s\02]\02' % (field, data[field.lower()])
+				part = '\x02[\x02%s: %s\x02]\x02' % (field, data[field.lower()])
 				parts.append(part)
 			
 			replytext = ' '.join(parts)
