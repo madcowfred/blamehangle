@@ -133,7 +133,7 @@ class AusBOM(Plugin):
 		tz = FindChunk(tz, '>', '<')
 		
 		# Find the table rows
-		trs = FindChunks(resp.data, '<td class=rowleftcolumn>', '</tr>') + FindChunks(resp.data, '<td class="rowleftcolumn">', '</tr>')
+		trs = FindChunks(resp.data, '<tr class="rowleftcolumn">', '</tr>')
 		if not trs:
 			self.logger.warn('Page parsing failed: rows.')
 			self.sendReply(trigger, 'Page parsing failed: rows.')
@@ -149,7 +149,7 @@ class AusBOM(Plugin):
 				place = place.replace(crap, '')
 			place = place.strip()
 			
-			tds = FindChunks(tr, '<td', '</td>')
+			tds = FindChunks(tr, '<td', '/td>')
 			
 			# If we're just updating location data, do that
 			if location is None:
@@ -158,21 +158,21 @@ class AusBOM(Plugin):
 			# If we're looking for some info, do that
 			elif place.lower() == location.lower() and len(tds) >= 7:
 				# updated
-				part = '\02[\02%s %s\02]\02' % (tds[0][1:].strip(), tz)
+				part = '\02[\02%s %s\02]\02' % (FindChunk(tds[0], '>', '<').strip(), tz)
 				parts.append(part)
 				
 				# temperature
-				part = '\02[\02Temp: %s\xb0C\02]\02' % (tds[1][1:].strip())
+				part = '\02[\02Temp: %s\xb0C\02]\02' % (FindChunk(tds[1], '>', '<').strip())
 				parts.append(part)
 				
 				# apparent temperature
 				if tds[2] != '-':
-					part = '\02[\02Apparent Temp: %s\xb0C\02]\02' % (tds[2][1:].strip())
+					part = '\02[\02Apparent Temp: %s\xb0C\02]\02' % (FindChunk(tds[2], '>', '<').strip())
 					parts.append(part)
 				
 				# humidity
 				try:
-					humidity = float(tds[4][1:].strip())
+					humidity = float(FindChunk(tds[4], '>', '<').strip())
 				except ValueError:
 					pass
 				else:
@@ -180,8 +180,8 @@ class AusBOM(Plugin):
 					parts.append(part)
 				
 				# Wind is a bit messy
-				wind_dir = tds[6][1:].strip()
-				wind_speed = tds[7][1:].strip()
+				wind_dir = FindChunk(tds[6], '>', '<').strip()
+				wind_speed = FindChunk(tds[7], '>', '<').strip()
 				if wind_dir != '-' and wind_speed != '-':
 					if wind_dir == 'CALM':
 						wind_info = 'Calm'
