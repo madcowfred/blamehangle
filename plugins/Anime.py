@@ -1,4 +1,4 @@
-# Copyright (c) 2003-2009, blamehangle team
+# Copyright (c) 2003-2010, blamehangle team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
-ANIDB_URL = "http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=%s"
+ANIDB_URL = 'http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=%s&do.search=search'
 AID_URL = 'http://anidb.net/perl-bin/animedb.pl?show=anime&aid=%s'
 
 # Urgh.
@@ -100,15 +100,16 @@ class Anime(Plugin):
 	# Parse an AniDB page
 	def __Parse_AniDB(self, trigger, resp):
 		findme = trigger.match.group('findme').lower()
-		resp.data = UnquoteHTML(resp.data)
+		data = UnquoteHTML(resp.data)
 		
 		# If it's search results, parse them and spit them out
-		if resp.data.find('Search for:') >= 0:
+		if 'Results for:' in data:
 			# We need some results, damn you
-			chunks = FindChunks(resp.data, '<a href="animedb.pl?show=anime&aid=', '</td>')
+			chunks = FindChunks(data, '<a href="animedb.pl?show=anime&aid=', '</td>')
 			if not chunks:
-				replytext = 'No results found for "%s"' % findme
+				replytext = 'No results found for "%s"' % (findme)
 				self.sendReply(trigger, replytext)
+				open('/tmp/anidb.html', 'w').write(data)
 				return
 			
 			# See if any of them are useful
@@ -233,7 +234,7 @@ class Anime(Plugin):
 				
 				if field == 'ERROR':
 					errortext = ANIMENFO_ERRORS.get(value, 'Unknown error')
-					replytext = 'AnimeNFO returned error: %s' % errortext
+					replytext = 'AnimeNFO returned error: %s' % (errortext)
 				
 				elif field == 'RESULT':
 					if value == '0':
@@ -251,8 +252,7 @@ class Anime(Plugin):
 						items = ['"%s"' % v for f, v in fields[1:]]
 						items.sort()
 						
-						replytext = 'Found \02%d\02 results: ' % (len(items))
-						replytext += ', '.join(items)
+						replytext = 'Found \02%d\02 results: %s' % (len(items), ', '.join(items))
 				
 				else:
 					replytext = 'Unable to parse AnimeNFO output.'
