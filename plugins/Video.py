@@ -39,7 +39,7 @@ IMDB_SEARCH_URL = 'http://www.imdb.com/find?s=tt&q=%s'
 IMDB_TITLE_URL = 'http://www.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'/b.gif\?link=/title/tt(\d+)/\';">([^<>]+)</a> \((\d+)[\)\/]')
-# Maximum length of Plot: spam
+# Maximum length of Plot: spam"
 IMDB_MAX_PLOT = 180
 
 # ---------------------------------------------------------------------------
@@ -59,7 +59,10 @@ class Video(Plugin):
 	def __Fetch_IMDb(self, trigger):
 		findme = trigger.match.group(1)
 		if findme.startswith('tt'):
-			url = IMDB_TITLE_URL % (int(findme[2:]))
+			if findme[2:].isdigit():
+				url = IMDB_TITLE_URL % (int(findme[2:]))
+			else:
+				url = IMDB_SEARCH_URL % QuoteURL(findme)
 		else:
 			url = IMDB_SEARCH_URL % QuoteURL(findme)
 		self.urlRequest(trigger, self.__Parse_IMDb, url)
