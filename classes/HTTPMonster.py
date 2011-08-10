@@ -449,7 +449,7 @@ class async_http(buffered_dispatcher):
 			raise
 		else:
 			self.failed(_value)
-			self.logger.error('Trapped exception!', (_type, _value, _tb))
+			self.logger.exception('Trapped exception!', exc_info=(_type, _value, _tb))
 			#self.parent.putlog(LOG_EXCEPTION, [_type, _value, _tb])
 		
 		del _tb
