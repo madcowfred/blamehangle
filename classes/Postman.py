@@ -444,11 +444,11 @@ class Postman:
 	# Log an exception nicely
 	def __Log_Exception(self, dontcrash=0, exc_info=None):
 		if exc_info is not None:
-			self.logger.exception('Trapped exception!', exc_info=exc_info)
 			_type, _value, _tb = exc_info
 		else:
-			self.logger.exception('Trapped exception!')
 			_type, _value, _tb = sys.exc_info()
+		
+		self.logger.debug('Trapped exception!', exc_info=exc_info)
 		
 		# If it's a SystemExit exception, we're really meant to die now
 		if _type == SystemExit:
