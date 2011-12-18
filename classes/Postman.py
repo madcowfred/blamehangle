@@ -388,7 +388,7 @@ class Postman:
 		self.__Shutdown_Start = time.time()
 		
 		tolog = 'Shutting down (%s)...' % (why)
-		self.logger.info(tolog)
+		self.logger.critical(tolog)
 		
 		# Send shutdown messages to everyone
 		self.sendMessage(None, REQ_SHUTDOWN, why)
@@ -448,7 +448,7 @@ class Postman:
 		else:
 			_type, _value, _tb = sys.exc_info()
 		
-		self.logger.debug('Trapped exception!', exc_info=exc_info)
+		self.logger.error('Trapped exception!', exc_info=(_type, _value, _tb))
 		
 		# If it's a SystemExit exception, we're really meant to die now
 		if _type == SystemExit:
