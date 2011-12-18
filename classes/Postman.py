@@ -37,6 +37,7 @@ import logging.handlers
 import os
 import select
 import signal
+import socket
 import sys
 import time
 import traceback
@@ -316,7 +317,10 @@ class Postman:
 						continue
 					
 					if event & select.POLLIN:
-						asyncore.read(obj)
+						try:
+							asyncore.read(obj)
+						except socket.error, msg:
+							obj.really_close(msg)
 					elif event & select.POLLOUT:
 						asyncore.write(obj)
 					elif event & select.POLLNVAL:
@@ -406,14 +410,14 @@ class Postman:
 			# If we've been shutting down for a while, just give up
 			alives = ', '.join(alive)
 			
-			if time.time() - self.__Shutdown_Start >= 10:
+			if time.time() - self.__Shutdown_Start >= 5:
 				tolog = 'Shutdown timeout expired: %s' % (alives)
 				self.warn(LOG_ALWAYS, tolog)
 				return 1
 			
 			else:
 				tolog = 'Objects still alive: %s' % (alives)
-				self.logger.warn(LOG_DEBUG, tolog)
+				self.logger.warn(tolog)
 				return 0
 		
 		return 0
