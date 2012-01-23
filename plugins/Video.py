@@ -146,7 +146,7 @@ class Video(Plugin):
 			# Find the movie's genre(s)
 			chunk = FindChunk(resp.data, 'Genres:</h4>', '</div>')
 			if chunk:
-				genres = FindChunks(chunk, '">', '</a>')
+				genres = FindChunks(chunk, '    >', '</a>')
 				if not genres:
 					self.sendReply(trigger, 'Page parsing failed: genres.')
 					return
@@ -154,18 +154,17 @@ class Video(Plugin):
 				data['genres'] = ', '.join(genres)
 			
 			# Find the plot
-			chunk = FindChunk(resp.data, '<p>', '/p>')
+			chunk = FindChunk(resp.data, '<p itemprop="description">', '</p>')
 			if chunk:
-				chunk = FindChunk(chunk, '>', '<')
-				if chunk:
-					if len(chunk) > IMDB_MAX_PLOT:
-						n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
-						chunk = chunk[:n] + '...'
-					
-					data['plot'] = chunk.strip()
+				chunk = chunk.strip()
+				if len(chunk) > IMDB_MAX_PLOT:
+					n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
+					chunk = chunk[:n] + '...'
+				
+				data['plot'] = chunk
 			
 			# Find the rating
-			chunk = FindChunk(resp.data, '<span class="rating-rating">', '<')
+			chunk = FindChunk(resp.data, '<span itemprop="ratingValue">', '</span>')
 			if chunk:
 				#if 'awaiting 5 votes' not in chunk:
 				#	rating = FindChunk(chunk, '<b>', '</b>')
@@ -173,7 +172,7 @@ class Video(Plugin):
 				#	if not rating or not votes:
 				#		self.sendReply(trigger, 'Page parsing failed: rating.')
 				#		return
-					
+				
 				data['rating'] = chunk
 			
 			
