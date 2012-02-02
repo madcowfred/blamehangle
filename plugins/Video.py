@@ -39,6 +39,7 @@ IMDB_SEARCH_URL = 'http://www.imdb.com/find?s=tt&q=%s'
 IMDB_TITLE_URL = 'http://www.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'/b.gif\?link=/title/tt(\d+)/\';">([^<>]+)</a> \((\d+)[\)\/]')
+IMDB_YEAR_RE = re.compile(r'(\d+)')
 # Maximum length of Plot: spam"
 IMDB_MAX_PLOT = 180
 
@@ -132,13 +133,23 @@ class Video(Plugin):
 			data = {}
 			
 			# Find the movie's title and year
-			m = re.search(r'<title>(.+) \((\d+).*?\) - IMDb</title>', resp.data)
-			if not m:
+			chunk = FindChunk(resp.data, '<h1 class="header" itemprop="name"', '</h1>')
+			if not chunk:
+				self.sendReply(trigger, 'Page parsing failed: h1/name.')
+				return
+			
+			title_chunk = FindChunk(chunk, '>', '<span')
+			if not title_chunk:
 				self.sendReply(trigger, 'Page parsing failed: title.')
 				return
 			
-			data['title'] = m.group(1)
-			data['year'] = m.group(2)
+			m = IMDB_YEAR_RE.search(chunk)
+			if not m:
+				self.sendReply(trigger, 'Page parsing failed: year.')
+				return
+			
+			data['title'] = title_chunk.strip()
+			data['year'] = m.group(1)
 			
 			# 'http://us.imdb.com/title/tt%07d/'
 			data['url'] = resp.url[:len(IMDB_SEARCH_URL)+4]
