@@ -54,9 +54,6 @@ class AutoOp(Plugin):
             chan, ui = args
             network = wrap.name.lower()
             
-            tolog = '%s joined %s' % (ui.nick, chan)
-            self.connlog(self.logger.info, wrap, tolog)
-            
             if network not in self.Options['chans'] or chan not in self.Options['chans'][network]:
                 return
             if ui is None:
