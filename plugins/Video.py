@@ -38,7 +38,7 @@ from classes.Plugin import Plugin
 IMDB_SEARCH_URL = 'http://www.imdb.com/find?s=tt&q=%s'
 IMDB_TITLE_URL = 'http://www.imdb.com/title/tt%07d/'
 
-IMDB_RESULT_RE = re.compile(r'/b.gif\?link=/title/tt(\d+)/\';">([^<>]+)</a> \((\d+)[\)\/]')
+IMDB_RESULT_RE = re.compile(r'<td class="result_text">\s*<a href="/title/tt(\d+)/.*?"\s*>\s*([^<>]+)</a>\s*\((\d+)[\)\/]')
 IMDB_YEAR_RE = re.compile(r'(\d+)')
 # Maximum length of Plot: spam"
 IMDB_MAX_PLOT = 180
@@ -72,7 +72,7 @@ class Video(Plugin):
 	# Parse an IMDb search results page
 	def __Parse_IMDb(self, trigger, resp):
 		# If this isn't a search result, try it as a title.
-		if 'Search</title>' not in resp.data:
+		if '<title>Find -' not in resp.data:
 			self.__IMDb_Title(trigger, resp)
 			return
 		
@@ -83,10 +83,11 @@ class Video(Plugin):
 		
 		# Find some chunks to look at
 		chunks = [
-			FindChunk(resp.data, '<b>Popular Titles</b>', '</table>'),
-			FindChunk(resp.data, '<b>Titles (Exact Matches)</b>', '</table>'),
-			FindChunk(resp.data, '<b>Titles (Approx Matches)</b>', '</table>'),
-			FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</table>'),
+			#FindChunk(resp.data, '<b>Popular Titles</b>', '</table>'),
+			#FindChunk(resp.data, '<b>Titles (Exact Matches)</b>', '</table>'),
+			#FindChunk(resp.data, '<b>Titles (Approx Matches)</b>', '</table>'),
+			#FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</table>'),
+			FindChunk(resp.data, '<h3 class="findSectionHeader">', '</table>')
 		]
 		
 		# Find the titles
