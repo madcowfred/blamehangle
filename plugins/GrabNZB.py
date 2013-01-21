@@ -40,6 +40,9 @@ from classes.Plugin import Plugin
 
 # ---------------------------------------------------------------------------
 
+GLOME_GET_URL = 'http://glome.biz:8110/api?apikey=%s&t=get&id=%s'
+GLOME_URL_RE = re.compile(r'^http://glome.biz:8110/(?:details|getnzb)/([0-9a-f]+)/.*$')
+
 DNZB_URL = 'http://v3.newzbin.com/api/dnzb/'
 NEWZBIN_URL_RE = re.compile(r'^http://(?:www|v3).newzbin.com/browse/post/(\d+)/?$')
 
@@ -209,6 +212,13 @@ class GrabNZB(Plugin):
 					newurl = NZBMATRIX_GET_URL % (m.group(1), self.Options['nzbmatrix_user'], self.Options['nzbmatrix_apikey'])
 					self.urlRequest(trigger, self.__Save_NZB, newurl)
 					return
+
+			# glome.biz
+			m = GLOME_URL_RE.match(url)
+			if m:
+				newurl = GLOME_GET_URL % (self.Options['glome_apikey'], m.group(1))
+				self.urlRequest(trigger, self.__Save_NZB, newurl)
+				return
 			
 			# Random link
 			self.urlRequest(trigger, self.__Save_NZB, url)
