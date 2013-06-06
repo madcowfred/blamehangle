@@ -95,7 +95,7 @@ class Misc(Plugin):
 			self.sendReply(trigger, 'Site has been barred from BugMeNot!')
 		
 		# No accounts
-		elif 'No accounts have been listed' in resp.data:
+		elif 'No Accounts Found' in resp.data:
 			self.sendReply(trigger, 'No accounts found!')
 		
 		# Result!

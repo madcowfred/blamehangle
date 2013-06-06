@@ -39,7 +39,7 @@ IMDB_SEARCH_URL = 'http://www.imdb.com/find?s=tt&q=%s'
 IMDB_TITLE_URL = 'http://www.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'<td class="result_text">\s*<a href="/title/tt(\d+)/.*?"\s*>\s*([^<>]+)</a>\s*\((\d+)[\)\/]')
-IMDB_YEAR_RE = re.compile(r'(\d+)')
+IMDB_YEAR_RE = re.compile(r'>(\d+)')
 # Maximum length of Plot: spam"
 IMDB_MAX_PLOT = 180
 
@@ -134,12 +134,12 @@ class Video(Plugin):
 			data = {}
 			
 			# Find the movie's title and year
-			chunk = FindChunk(resp.data, '<h1 class="header" itemprop="name"', '</h1>')
+			chunk = FindChunk(resp.data, '<span class="itemprop" itemprop="name"', '</h1>')
 			if not chunk:
 				self.sendReply(trigger, 'Page parsing failed: h1/name.')
 				return
 			
-			title_chunk = FindChunk(chunk, '>', '<span')
+			title_chunk = FindChunk(chunk, '>', '</span')
 			if not title_chunk:
 				self.sendReply(trigger, 'Page parsing failed: title.')
 				return
@@ -158,7 +158,7 @@ class Video(Plugin):
 			# Find the movie's genre(s)
 			chunk = FindChunk(resp.data, 'Genres:</h4>', '</div>')
 			if chunk:
-				genres = FindChunks(chunk, '    >', '</a>')
+				genres = FindChunks(chunk, '" >', '</a>')
 				if not genres:
 					self.sendReply(trigger, 'Page parsing failed: genres.')
 					return
