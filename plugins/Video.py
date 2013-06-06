@@ -43,6 +43,12 @@ IMDB_YEAR_RE = re.compile(r'>(\d+)')
 # Maximum length of Plot: spam"
 IMDB_MAX_PLOT = 180
 
+YOUTUBE_REs = (
+	re.compile('http://(?:www\.)youtube\.com/.*?v=([^\&\#\s]+)'),
+	re.compile('http://youtu.be/([^\?\#\s]+)'),
+)
+YOUTUBE_URL = 'http://www.youtube.com/watch?v=%s'
+
 # ---------------------------------------------------------------------------
 
 class Video(Plugin):
@@ -53,6 +59,13 @@ class Video(Plugin):
 			method = self.__Fetch_IMDb,
 			regexp = r'^imdb (?P<findme>.+)$',
 			help = ('imdb', "\02imdb\02 <search term> : Search for a movie on IMDb. Use 'tt1234567' for a specific title."),
+		)
+
+		self.addTextEvent(
+			method = self.__Check_YouTube,
+			regexp = r'^(.+)$',
+			priority = -10,
+			IRCTypes = (IRCT_PUBLIC,),
 		)
 	
 	# ---------------------------------------------------------------------------
@@ -199,5 +212,21 @@ class Video(Plugin):
 			
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
+
+	# ---------------------------------------------------------------------------
+
+	def __Check_YouTube(self, trigger):
+		text = trigger.match.group(1)
+		for r in YOUTUBE_REs:
+			m = r.search(text)
+			if m:
+				url = YOUTUBE_URL % (m.group(1))
+				self.urlRequest(trigger, self.__Parse_YouTube, url)
+
+	def __Parse_YouTube(self, trigger, resp):
+		title = FindChunk(resp.data, '<title>', '</title>')
+		title = title.replace('YouTube - ', '').replace(' - YouTube', '')
+		replytext = 'YouTube: %s' % (title)
+		self.sendReply(trigger, replytext, process=0)
 
 # ---------------------------------------------------------------------------
