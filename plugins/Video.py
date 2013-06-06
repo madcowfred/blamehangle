@@ -39,7 +39,7 @@ IMDB_SEARCH_URL = 'http://www.imdb.com/find?s=tt&q=%s'
 IMDB_TITLE_URL = 'http://www.imdb.com/title/tt%07d/'
 
 IMDB_RESULT_RE = re.compile(r'<td class="result_text">\s*<a href="/title/tt(\d+)/.*?"\s*>\s*([^<>]+)</a>\s*\((\d+)[\)\/]')
-IMDB_YEAR_RE = re.compile(r'>(\d\-+)')
+IMDB_YEAR_RE = re.compile(r'>\(?(\d+[^\)<]*\d*)\s*\)?<')
 # Maximum length of Plot: spam"
 IMDB_MAX_PLOT = 180
 
