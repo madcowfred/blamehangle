@@ -44,8 +44,8 @@ IMDB_YEAR_RE = re.compile(r'>\(?(\d+[^\)<]*\d*)\s*\)?<')
 IMDB_MAX_PLOT = 180
 
 YOUTUBE_REs = (
-	re.compile('http://(?:www\.)youtube\.com/.*?v=([^\&\#\s]+)'),
-	re.compile('http://youtu.be/([^\?\#\s]+)'),
+	re.compile('https?://(?:www\.)youtube\.com/.*?v=([^\&\#\s]+)'),
+	re.compile('https?://youtu.be/([^\?\#\s]+)'),
 )
 YOUTUBE_URL = 'http://www.youtube.com/watch?v=%s'
 
@@ -53,7 +53,7 @@ YOUTUBE_URL = 'http://www.youtube.com/watch?v=%s'
 
 class Video(Plugin):
 	_HelpSection = 'video'
-	
+
 	def register(self):
 		self.addTextEvent(
 			method = self.__Fetch_IMDb,
@@ -67,9 +67,9 @@ class Video(Plugin):
 			priority = -10,
 			IRCTypes = (IRCT_PUBLIC,),
 		)
-	
+
 	# ---------------------------------------------------------------------------
-	
+
 	def __Fetch_IMDb(self, trigger):
 		findme = trigger.match.group(1)
 		if findme.startswith('tt'):
@@ -80,7 +80,7 @@ class Video(Plugin):
 		else:
 			url = IMDB_SEARCH_URL % QuoteURL(findme)
 		self.urlRequest(trigger, self.__Parse_IMDb, url)
-	
+
 	# ---------------------------------------------------------------------------
 	# Parse an IMDb search results page
 	def __Parse_IMDb(self, trigger, resp):
@@ -88,12 +88,12 @@ class Video(Plugin):
 		if '<title>Find -' not in resp.data:
 			self.__IMDb_Title(trigger, resp)
 			return
-		
+
 		findme = trigger.match.group(1)
 		resp.data = UnquoteHTML(resp.data)
-		
+
 		parts = []
-		
+
 		# Find some chunks to look at
 		chunks = [
 			#FindChunk(resp.data, '<b>Popular Titles</b>', '</table>'),
@@ -102,13 +102,13 @@ class Video(Plugin):
 			#FindChunk(resp.data, '<b>Titles (Partial Matches)</b>', '</table>'),
 			FindChunk(resp.data, '<h3 class="findSectionHeader">', '</table>')
 		]
-		
+
 		# Find the titles
 		results = []
 		for chunk in chunks:
 			if chunk is not None:
 				results += IMDB_RESULT_RE.findall(chunk)
-		
+
 		# We found something!
 		if results:
 			parts = []
@@ -120,54 +120,54 @@ class Video(Plugin):
 				else:
 					part = '\x02[\x02tt%s: %s (%s)\x02]\x02' % (tt, title, year)
 					parts.append(part)
-			
+
 			# Spit it out
 			if parts == []:
 				replytext = 'Failed to parse page: no results!'
 			else:
 				replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
-		
+
 		# No we didn't :<
 		else:
 			replytext = 'Found no matches at all!'
 			self.sendReply(trigger, replytext)
-	
+
 	# ---------------------------------------------------------------------------
-	
+
 	def __IMDb_Title(self, trigger, resp):
 		resp.data = UnquoteHTML(resp.data)
-		
+
 		# No match, arg!
 		if resp.data.find('Page not found') >= 0:
 			self.sendReply(trigger, 'Title not found!')
-		
+
 		# We have a winner
 		else:
 			data = {}
-			
+
 			# Find the movie's title and year
 			chunk = FindChunk(resp.data, '<span class="itemprop" itemprop="name"', '</h1>')
 			if not chunk:
 				self.sendReply(trigger, 'Page parsing failed: h1/name.')
 				return
-			
+
 			title_chunk = FindChunk(chunk, '>', '</span')
 			if not title_chunk:
 				self.sendReply(trigger, 'Page parsing failed: title.')
 				return
-			
+
 			m = IMDB_YEAR_RE.search(chunk)
 			if not m:
 				self.sendReply(trigger, 'Page parsing failed: year.')
 				return
-			
+
 			data['title'] = title_chunk.strip()
 			data['year'] = m.group(1)
-			
+
 			# 'http://us.imdb.com/title/tt%07d/'
 			data['url'] = resp.url[:len(IMDB_SEARCH_URL)+4]
-			
+
 			# Find the movie's genre(s)
 			chunk = FindChunk(resp.data, 'Genres:</h4>', '</div>')
 			if chunk:
@@ -175,9 +175,9 @@ class Video(Plugin):
 				if not genres:
 					self.sendReply(trigger, 'Page parsing failed: genres.')
 					return
-				
+
 				data['genres'] = ', '.join(genres)
-			
+
 			# Find the plot
 			chunk = FindChunk(resp.data, '<p itemprop="description">', '</p>')
 			if chunk:
@@ -185,9 +185,9 @@ class Video(Plugin):
 				if len(chunk) > IMDB_MAX_PLOT:
 					n = chunk.rfind(' ', 0, IMDB_MAX_PLOT)
 					chunk = chunk[:n] + '...'
-				
+
 				data['plot'] = chunk
-			
+
 			# Find the rating
 			chunk = FindChunk(resp.data, '<span itemprop="ratingValue">', '</span>')
 			if chunk:
@@ -197,19 +197,19 @@ class Video(Plugin):
 				#	if not rating or not votes:
 				#		self.sendReply(trigger, 'Page parsing failed: rating.')
 				#		return
-				
+
 				data['rating'] = chunk
-			
-			
+
+
 			# Spit out the data
 			parts = []
 			for field in ('Title', 'Year', 'Genres', 'Rating', 'URL', 'Plot'):
 				if data.get(field.lower(), None) is None:
 					continue
-				
+
 				part = '\x02[\x02%s: %s\x02]\x02' % (field, data[field.lower()])
 				parts.append(part)
-			
+
 			replytext = ' '.join(parts)
 			self.sendReply(trigger, replytext)
 
